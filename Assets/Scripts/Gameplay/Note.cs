@@ -119,6 +119,30 @@ namespace FallenAngel.Gameplay
             float extraHeight = height * durationMultiplier;
             bodyRect.sizeDelta = new Vector2(bodyRect.sizeDelta.x, height + extraHeight);
             bodyRect.anchoredPosition = new Vector2(0, (height + extraHeight) * 0.5f);
+
+            if (!bodyCreatedLogged)
+            {
+                bodyCreatedLogged = true;
+                Debug.Log($"[Note] 长按身体配置完成: lane={Data.lane} size={bodyRect.sizeDelta} " +
+                          $"bottom={bodyGraphic.bottomColor} top={bodyGraphic.topColor} " +
+                          $"hasRenderer={bodyGraphic.canvasRenderer != null} hasCanvas={bodyGraphic.canvas != null}");
+                StartCoroutine(LogBodyRenderStateNextFrame());
+            }
+        }
+
+        /// <summary>
+        /// 诊断用：配置后一帧输出身体的实际渲染状态（网格是否生成、激活状态、矩形）
+        /// </summary>
+        private System.Collections.IEnumerator LogBodyRenderStateNextFrame()
+        {
+            yield return null;
+            if (bodyGraphic == null) yield break;
+
+            Mesh mesh = bodyGraphic.canvasRenderer != null ? bodyGraphic.canvasRenderer.GetMesh() : null;
+            int vertexCount = mesh != null ? mesh.vertexCount : -1;
+            Debug.Log($"[Note] 身体渲染状态(配置后1帧): activeInHierarchy={bodyGraphic.gameObject.activeInHierarchy} " +
+                      $"meshVerts={vertexCount} rect={bodyRect.rect} localPos={bodyGraphic.transform.localPosition} " +
+                      $"graphicEnabled={bodyGraphic.enabled} color={bodyGraphic.color}");
         }
 
         /// <summary>
@@ -149,12 +173,6 @@ namespace FallenAngel.Gameplay
 
             bodyGraphic = g;
             bodyRect = rt;
-
-            if (!bodyCreatedLogged)
-            {
-                bodyCreatedLogged = true;
-                Debug.Log("[Note] 长按身体渐变图形已自生成（LongNoteBody_Gradient）");
-            }
         }
 
         /// <summary>
