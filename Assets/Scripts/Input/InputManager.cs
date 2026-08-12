@@ -56,6 +56,8 @@ namespace FallenAngel.InputSystem
         private Dictionary<int, int> touchIdToLane = new Dictionary<int, int>();
         // 上一帧的键盘按下状态
         private bool[] lastKeyStates = new bool[4];
+        // 编辑器鼠标模拟触摸：当前按下的轨道（-1 = 未按下）
+        private int editorMouseLane = -1;
 
         private void Awake()
         {
@@ -99,11 +101,24 @@ namespace FallenAngel.InputSystem
             // 键盘状态始终跟踪（暂停期间也同步 lastKeyStates，防止恢复后状态错位吞键）
             TrackKeyboardStates(playing);
 
-            // 触摸：暂停期间不处理并清空跟踪（暂停菜单上的触摸不属于轨道输入）
+            // 轨道触摸/点击输入：暂停期间不处理并清空跟踪
             if (playing)
+            {
+#if UNITY_EDITOR
+                // 编辑器内以鼠标为准：Device Simulator 的触摸注入与鼠标同源，
+                // 且旧输入系统下注入坐标可能偏移，直接读鼠标最可靠
+                HandleEditorMouseInput();
+#else
                 HandleTouchInput();
+#endif
+            }
             else
+            {
                 touchIdToLane.Clear();
+#if UNITY_EDITOR
+                ReleaseEditorMouseLane();
+#endif
+            }
         }
 
         /// <summary>
@@ -125,7 +140,62 @@ namespace FallenAngel.InputSystem
                 }
             }
             touchIdToLane.Clear();
+#if UNITY_EDITOR
+            ReleaseEditorMouseLane();
+#endif
         }
+
+#if UNITY_EDITOR
+        /// <summary>
+        /// 编辑器鼠标模拟触摸：按下/拖动/抬起映射为轨道输入。
+        /// 与真实触摸同样的规则：仅下半部有效区、UI 上不响应、支持跨轨拖动。
+        /// 修复：Device Simulator 在旧输入系统下的触摸注入坐标偏移导致无法操作。
+        /// </summary>
+        private void HandleEditorMouseInput()
+        {
+            bool held = UnityEngine.Input.GetMouseButton(0);
+            Vector2 mousePos = UnityEngine.Input.mousePosition;
+
+            if (!held)
+            {
+                ReleaseEditorMouseLane();
+                return;
+            }
+
+            // 只处理下半部触摸区域 / UI 上的点击不响应（与真实触摸一致）
+            if (mousePos.y < Screen.height * (1f - touchBottomRatio) || IsPointerOverUI(mousePos))
+            {
+                ReleaseEditorMouseLane();
+                return;
+            }
+
+            int lane = GetLaneFromX(mousePos.x);
+            if (lane < 0 || lane > 3)
+            {
+                ReleaseEditorMouseLane();
+                return;
+            }
+
+            if (editorMouseLane != lane)
+            {
+                // 按下或跨轨：释放旧轨道、按下新轨道（与触摸 Moved 行为一致）
+                if (editorMouseLane >= 0)
+                    SetLaneState(editorMouseLane, false, mousePos);
+                SetLaneState(lane, true, mousePos);
+                editorMouseLane = lane;
+            }
+        }
+
+        /// <summary>
+        /// 编辑器鼠标抬起/失效时释放当前按下的轨道
+        /// </summary>
+        private void ReleaseEditorMouseLane()
+        {
+            if (editorMouseLane < 0) return;
+            SetLaneState(editorMouseLane, false, UnityEngine.Input.mousePosition);
+            editorMouseLane = -1;
+        }
+#endif
 
         /// <summary>
         /// 处理移动端触屏输入
