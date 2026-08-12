@@ -74,6 +74,15 @@ namespace FallenAngel.Core
             gamePanel.SetActive(false);
             CreateLaneAndNotesUI(gamePanel.transform, out NoteSpawner spawner);
 
+            // 若工程里已有 Note.prefab，自动赋值给 NoteSpawner（否则使用默认Prefab）
+            GameObject notePrefabAsset = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Note.prefab");
+            if (notePrefabAsset != null)
+            {
+                Note prefabNote = notePrefabAsset.GetComponent<Note>();
+                if (prefabNote != null)
+                    SetPrivateField(spawner, "notePrefab", prefabNote);
+            }
+
             // HUD
             GameObject hudPanel = CreatePanel("HUDPanel", gamePanel.transform);
             HUDController hud = CreateHUD(hudPanel.transform);

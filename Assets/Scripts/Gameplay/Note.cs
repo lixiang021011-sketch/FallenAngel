@@ -45,6 +45,9 @@ namespace FallenAngel.Gameplay
         private Vector3 originalScale;
         private Color originalNoteColor;
 
+        // 长按身体渐变精灵（全局共享，懒生成）
+        private static Sprite longBodyGradientSprite;
+
         private void Awake()
         {
             rectTransform = GetComponent<RectTransform>();
@@ -84,7 +87,7 @@ namespace FallenAngel.Gameplay
             if (longNoteBodyImage != null)
             {
                 Color bodyColor = c;
-                bodyColor.a = 0.5f;
+                bodyColor.a = 1f;   // 透明度由渐变精灵控制（贴近头部不透明→远端透明）
                 longNoteBodyImage.color = bodyColor;
             }
 
@@ -102,6 +105,9 @@ namespace FallenAngel.Gameplay
             if (Data.type == NoteType.LongStart && Data.duration > 0f)
             {
                 longNoteBodyImage.gameObject.SetActive(true);
+                // 渐变透明身体：贴近头部不透明、远端透明，与普通音符明显区分
+                longNoteBodyImage.sprite = GetLongBodyGradientSprite();
+                longNoteBodyImage.type = Image.Type.Simple;
                 isLongNoteConfigured = true;
                 // 音符身体从生成位置延伸到判定线位置（向下）
                 float height = Mathf.Abs(spawnPos.y - judgeLinePos.y);
@@ -116,6 +122,38 @@ namespace FallenAngel.Gameplay
             {
                 longNoteBodyImage.gameObject.SetActive(false);
             }
+        }
+
+        /// <summary>
+        /// 生成长按身体的渐变透明精灵（白色，底部不透明→顶部透明）。
+        /// 白色精灵叠加 Image.color（轨道色）得到带渐变的轨道色身体；
+        /// 底部对应身体贴近头部的一端，保持实体，远端渐隐。
+        /// </summary>
+        private static Sprite GetLongBodyGradientSprite()
+        {
+            if (longBodyGradientSprite != null) return longBodyGradientSprite;
+
+            const int width = 4;
+            const int height = 64;
+            Texture2D tex = new Texture2D(width, height, TextureFormat.RGBA32, false);
+            tex.wrapMode = TextureWrapMode.Clamp;
+            tex.filterMode = FilterMode.Bilinear;
+
+            Color[] pixels = new Color[width * height];
+            for (int y = 0; y < height; y++)
+            {
+                // y=0 为精灵底部（贴近头部）→ 不透明；顶部 → 透明
+                float alpha = 1f - (float)y / (height - 1);
+                for (int x = 0; x < width; x++)
+                {
+                    pixels[y * width + x] = new Color(1f, 1f, 1f, alpha);
+                }
+            }
+            tex.SetPixels(pixels);
+            tex.Apply();
+
+            longBodyGradientSprite = Sprite.Create(tex, new Rect(0f, 0f, width, height), new Vector2(0.5f, 0.5f));
+            return longBodyGradientSprite;
         }
 
         /// <summary>
