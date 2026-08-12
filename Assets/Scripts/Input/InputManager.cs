@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using FallenAngel.Core;
 
 namespace FallenAngel.InputSystem
 {
@@ -66,14 +67,64 @@ namespace FallenAngel.InputSystem
             Instance = this;
         }
 
+        private void OnEnable()
+        {
+            SubscribeStateChanged();
+        }
+
+        private void Start()
+        {
+            // 先退订再订阅，防止 Awake 执行顺序导致漏订/重订
+            SubscribeStateChanged();
+        }
+
+        private void OnDisable()
+        {
+            if (GameManager.Instance != null)
+                GameManager.Instance.OnStateChanged -= OnGameStateChanged;
+        }
+
+        private void SubscribeStateChanged()
+        {
+            if (GameManager.Instance == null) return;
+            GameManager.Instance.OnStateChanged -= OnGameStateChanged;
+            GameManager.Instance.OnStateChanged += OnGameStateChanged;
+        }
+
         private void Update()
         {
-            if (FallenAngel.Core.GameManager.Instance != null &&
-                FallenAngel.Core.GameManager.Instance.CurrentState != FallenAngel.Core.GameState.Playing)
-                return;
+            bool playing = GameManager.Instance != null &&
+                           GameManager.Instance.CurrentState == GameState.Playing;
 
-            HandleTouchInput();
-            HandleKeyboardInput();
+            // 键盘状态始终跟踪（暂停期间也同步 lastKeyStates，防止恢复后状态错位吞键）
+            TrackKeyboardStates(playing);
+
+            // 触摸：暂停期间不处理并清空跟踪（暂停菜单上的触摸不属于轨道输入）
+            if (playing)
+                HandleTouchInput();
+            else
+                touchIdToLane.Clear();
+        }
+
+        /// <summary>
+        /// 游戏恢复时按真实按键状态同步一次：
+        /// 暂停期间发生的按下/抬起会补发对应事件，修复按键卡在各种状态的问题
+        /// </summary>
+        private void OnGameStateChanged(GameState state)
+        {
+            if (state != GameState.Playing) return;
+
+            for (int i = 0; i < 4; i++)
+            {
+                bool actual = UnityEngine.Input.GetKey(laneKeys[i]);
+                lastKeyStates[i] = actual;
+                if (LanePressStates[i] != actual)
+                {
+                    Vector2 pos = new Vector2(Screen.width * (i + 0.5f) / 4f, Screen.height * 0.3f);
+                    SetLaneState(i, actual, pos);
+                }
+            }
+            touchIdToLane.Clear();
         }
 
         /// <summary>
@@ -133,9 +184,9 @@ namespace FallenAngel.InputSystem
         }
 
         /// <summary>
-        /// 处理PC端键盘输入
+        /// 处理PC端键盘输入：始终跟踪实际按键状态，仅在进行中发出轨道输入事件
         /// </summary>
-        private void HandleKeyboardInput()
+        private void TrackKeyboardStates(bool emitEvents)
         {
             for (int i = 0; i < 4; i++)
             {
@@ -144,14 +195,17 @@ namespace FallenAngel.InputSystem
 
                 if (isKeyDown != wasDown)
                 {
+                    lastKeyStates[i] = isKeyDown;
+                    if (emitEvents)
+                    {
 #if UNITY_EDITOR
-                    if (isKeyDown)
-                        Debug.Log($"[InputManager] Key DOWN lane={i} key={laneKeys[i]}");
+                        if (isKeyDown)
+                            Debug.Log($"[InputManager] Key DOWN lane={i} key={laneKeys[i]}");
 #endif
-                    Vector2 pos = new Vector2(Screen.width * (i + 0.5f) / 4f, Screen.height * 0.3f);
-                    SetLaneState(i, isKeyDown, pos);
+                        Vector2 pos = new Vector2(Screen.width * (i + 0.5f) / 4f, Screen.height * 0.3f);
+                        SetLaneState(i, isKeyDown, pos);
+                    }
                 }
-                lastKeyStates[i] = isKeyDown;
             }
             // SPACE/ESC 由 PauseController 处理
         }

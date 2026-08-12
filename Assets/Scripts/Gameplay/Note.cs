@@ -111,13 +111,13 @@ namespace FallenAngel.Gameplay
             bodyGraphic.SetVerticesDirty(); // 复用实例时强制重绘顶点色
             bodyGraphic.gameObject.SetActive(true);
 
-            // 音符身体从生成位置延伸到判定线位置（向上，作为头部拖尾）
-            float height = Mathf.Abs(spawnPos.y - judgeLinePos.y);
-            // 持续时间越长，身体越长（基于下落速度）
+            // 身体长度 = 按住期间音符下落的距离（不再叠加整条轨道高度），
+            // 修复：此前 body = 轨道全长 + 按住距离，远超屏幕高度，观感像无限长
+            float fallDistance = Mathf.Abs(spawnPos.y - judgeLinePos.y); // 轨道全长（下落距离）
             float fallTime = GameManager.Instance != null ? GameManager.Instance.ActualFallTime : 2f;
-            float durationMultiplier = Data.duration / fallTime;
-            float extraHeight = height * durationMultiplier;
-            bodyRect.sizeDelta = new Vector2(bodyRect.sizeDelta.x, height + extraHeight);
+            float holdDistance = fallDistance * (Data.duration / fallTime); // 按住期间下落距离
+            float bodyHeight = Mathf.Max(holdDistance, 300f);               // 最短拖尾保证可辨识
+            bodyRect.sizeDelta = new Vector2(bodyRect.sizeDelta.x, bodyHeight);
             // 底边贴住头部中心（pivot 在底部，anchoredPosition 必须为 0）：
             // 修复原版 bug——此前用 height/2 定位，pivot 又在底部，双重偏移导致身体整体在屏幕外
             bodyRect.anchoredPosition = Vector2.zero;
