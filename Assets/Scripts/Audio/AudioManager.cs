@@ -6,7 +6,10 @@ namespace FallenAngel.Audio
 {
     /// <summary>
     /// 音频管理器 - 负责背景音乐和音效播放
-    /// 与GameManager同步歌曲时间
+    /// 同时也是游戏时间的唯一权威供时方：
+    ///   - 有音频：以 bgmSource.time 为准（与人耳听到的音乐天然对齐）
+    ///   - 无音频：内部虚拟钟（unscaledTime 推进）兜底，保证开发期可测
+    /// GameManager 只从这里读取时间，不自己计时（架构约定 §5）。
     /// </summary>
     [RequireComponent(typeof(AudioSource))]
     public class AudioManager : MonoBehaviour
@@ -31,13 +34,21 @@ namespace FallenAngel.Audio
         [Range(0f, 1f)] public float sfxVolume = 0.7f;
         [Range(0f, 1f)] public float hitVolume = 0.6f;
 
-        /// <summary>BGM是否正在播放</summary>
-        public bool IsPlaying => bgmSource.isPlaying;
+        /// <summary>真实音频是否正在播放</summary>
+        public bool IsPlaying => audioStarted && bgmSource.isPlaying;
 
-        /// <summary>当前歌曲播放进度（秒）</summary>
-        public float CurrentTime => bgmSource.time;
+        /// <summary>真实音频已开始且已停止（曲终信号，暂停期间勿用）</summary>
+        public bool HasAudioFinished => audioStarted && !bgmSource.isPlaying;
+
+        /// <summary>
+        /// 当前权威游戏时间（秒）：
+        /// 真实音频播放中返回播放位置；否则返回虚拟钟时间（无音频兜底）
+        /// </summary>
+        public float CurrentTime => audioStarted ? bgmSource.time : virtualTime;
 
         private bool isInitialized;
+        private bool audioStarted;   // 真实音频是否已开始播放（clip 已装载且 Play 成功）
+        private float virtualTime;   // 虚拟钟累计时间（仅无音频时推进）
 
         private void Awake()
         {
@@ -59,52 +70,90 @@ namespace FallenAngel.Audio
             isInitialized = true;
         }
 
-        /// <summary>
-        /// 加载并播放谱面对应的背景音乐
-        /// </summary>
-        public void LoadAndPlayBGM(ChartData chart, float startTime = 0f)
+        private void OnEnable()
         {
-            if (chart == null || string.IsNullOrEmpty(chart.metadata.audioFileName))
+            SubscribeGameStart();
+        }
+
+        private void Start()
+        {
+            // 先退订再订阅，防止 Awake 执行顺序导致漏订/重订（架构约定 §3）
+            SubscribeGameStart();
+        }
+
+        private void OnDisable()
+        {
+            if (GameManager.Instance != null)
+                GameManager.Instance.OnGameStart -= PlayBGM;
+        }
+
+        private void SubscribeGameStart()
+        {
+            if (GameManager.Instance == null) return;
+            GameManager.Instance.OnGameStart -= PlayBGM;
+            GameManager.Instance.OnGameStart += PlayBGM;
+        }
+
+        private void Update()
+        {
+            // 虚拟钟推进：仅在无真实音频时进行（真实音频以播放位置为准）
+            if (audioStarted) return;
+
+            if (GameManager.Instance != null &&
+                GameManager.Instance.CurrentState == GameState.Playing)
             {
-                Debug.LogWarning("[AudioManager] 谱面未配置音频文件，使用无音频模式");
+                virtualTime += Time.unscaledDeltaTime;
+            }
+        }
+
+        /// <summary>
+        /// 装载谱面对应的BGM（不播放）。
+        /// 实际播放由 GameManager.OnGameStart 统一触发（倒计时结束后），
+        /// 保证开局时刻游戏时间从 0 起与音乐对齐。
+        /// 找不到音频时进入虚拟钟模式，游戏仍可正常测试。
+        /// </summary>
+        public void LoadBGM(ChartData chart)
+        {
+            audioStarted = false;
+            virtualTime = 0f;
+
+            bgmSource.Stop();
+            bgmSource.clip = null;
+
+            if (chart == null || chart.metadata == null ||
+                string.IsNullOrEmpty(chart.metadata.audioFileName))
+            {
+                Debug.LogWarning("[AudioManager] 谱面未配置音频文件，使用虚拟钟模式");
                 return;
             }
 
             AudioClip clip = Resources.Load<AudioClip>($"Audio/{chart.metadata.audioFileName}");
             if (clip == null)
             {
-                Debug.LogWarning($"[AudioManager] 找不到音频文件: Audio/{chart.metadata.audioFileName}，使用无音频模式");
+                Debug.LogWarning($"[AudioManager] 找不到音频文件: Audio/{chart.metadata.audioFileName}，使用虚拟钟模式");
                 return;
             }
 
-            PlayBGM(clip, startTime);
+            bgmSource.clip = clip;
         }
 
         /// <summary>
-        /// 播放指定AudioClip作为BGM
+        /// 从 0 开始播放已装载的BGM（由 GameManager.OnGameStart 触发）
         /// </summary>
-        public void PlayBGM(AudioClip clip, float startTime = 0f)
+        private void PlayBGM()
         {
             if (!isInitialized) return;
 
-            bgmSource.Stop();
-            bgmSource.clip = clip;
-            bgmSource.time = Mathf.Max(0f, startTime);
-            bgmSource.Play();
-        }
-
-        /// <summary>
-        /// 同步BGM时间到GameManager
-        /// </summary>
-        private void Update()
-        {
-            if (FallenAngel.Core.GameManager.Instance != null &&
-                FallenAngel.Core.GameManager.Instance.CurrentState == FallenAngel.Core.GameState.Playing)
+            if (bgmSource.clip != null)
             {
-                if (bgmSource.isPlaying)
-                {
-                    FallenAngel.Core.GameManager.Instance.SetSongTime(bgmSource.time);
-                }
+                bgmSource.time = 0f;
+                bgmSource.Play();
+                audioStarted = true;
+                Debug.Log("[AudioManager] BGM 开始播放（音频时钟模式）");
+            }
+            else
+            {
+                Debug.Log("[AudioManager] 无音频，虚拟钟模式运行");
             }
         }
 
@@ -143,7 +192,7 @@ namespace FallenAngel.Audio
         }
 
         /// <summary>
-        /// 暂停BGM
+        /// 暂停BGM（虚拟钟由状态门控自动冻结，无需处理）
         /// </summary>
         public void PauseBGM()
         {
@@ -159,13 +208,15 @@ namespace FallenAngel.Audio
         }
 
         /// <summary>
-        /// 停止所有音频
+        /// 停止所有音频（并复位供时状态）
         /// </summary>
         public void StopAll()
         {
             bgmSource.Stop();
             sfxSource.Stop();
             hitSource.Stop();
+            audioStarted = false;
+            virtualTime = 0f;
         }
 
         /// <summary>

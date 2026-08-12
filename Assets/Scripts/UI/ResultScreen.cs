@@ -243,11 +243,9 @@ namespace FallenAngel.UI
 
             if (GameManager.Instance != null && GameManager.Instance.CurrentChart != null)
             {
-                // 重启音频
+                // 重新装载音频（播放由 OnGameStart 统一触发）
                 AudioManager.Instance?.StopAll();
-                AudioManager.Instance?.LoadAndPlayBGM(
-                    GameManager.Instance.CurrentChart,
-                    GameManager.Instance.CurrentChart.metadata.offset >= 0 ? GameManager.Instance.CurrentChart.metadata.offset : 0f);
+                AudioManager.Instance?.LoadBGM(GameManager.Instance.CurrentChart);
 
                 // 加载谱面并开始倒计时
                 GameManager.Instance.LoadChart(GameManager.Instance.CurrentChart);

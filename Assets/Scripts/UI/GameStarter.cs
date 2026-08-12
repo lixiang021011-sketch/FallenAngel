@@ -121,9 +121,10 @@ namespace FallenAngel.UI
             AudioManager.Instance?.StopAll();
             GameManager.Instance.LoadChart(chart);
 
+            // 装载BGM但不播放：倒计时结束后由 OnGameStart 统一触发播放，保证开局时间对齐
             if (AudioManager.Instance != null && chart != null)
             {
-                AudioManager.Instance.LoadAndPlayBGM(chart, chart.metadata.offset >= 0 ? chart.metadata.offset : 0f);
+                AudioManager.Instance.LoadBGM(chart);
             }
 
             // 不直接 StartGame，而是通过 LoadChart 触发 Loading 状态

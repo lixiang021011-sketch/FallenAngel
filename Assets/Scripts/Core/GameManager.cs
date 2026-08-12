@@ -1,6 +1,7 @@
 using UnityEngine;
 using TMPro;
 using FallenAngel.Data;
+using FallenAngel.Audio;
 
 namespace FallenAngel.Core
 {
@@ -55,10 +56,9 @@ namespace FallenAngel.Core
         public System.Action OnGameStart;
         public System.Action OnGameEnd;
 
-        private float songStartTime;
-        private float pauseStartTime;
         private bool isInitialized;
         private bool isCountingDown;
+        private bool warnedMissingAudioManager;
 
         private void Awake()
         {
@@ -171,19 +171,10 @@ namespace FallenAngel.Core
 
             Time.timeScale = 1f;
             ChangeState(GameState.Playing);
-            songStartTime = Time.unscaledTime;
             isInitialized = true;
             IsSongStarted = true;
             OnGameStart?.Invoke();
             Debug.Log("[GameManager] 游戏开始！");
-        }
-
-        /// <summary>
-        /// 手动设置歌曲时间（用于同步音频）
-        /// </summary>
-        public void SetSongTime(float time)
-        {
-            SongTime = Mathf.Max(0f, time - (CurrentChart?.metadata.offset ?? 0f));
         }
 
         private void Update()
@@ -191,12 +182,22 @@ namespace FallenAngel.Core
             if (CurrentState != GameState.Playing || !isInitialized)
                 return;
 
-            // 更新歌曲时间（使用Time.unscaledTime避免暂停/时间缩放影响）
-            float currentTime = Time.unscaledTime - songStartTime;
-            SetSongTime(currentTime);
+            // 唯一权威时间：从 AudioManager 读取（真实音频钟或虚拟钟），在此统一扣除谱面偏移
+            if (AudioManager.Instance == null)
+            {
+                if (!warnedMissingAudioManager)
+                {
+                    warnedMissingAudioManager = true;
+                    Debug.LogError("[GameManager] 场景中缺少 AudioManager，无法推进游戏时间！请用菜单 Tools > FallenAngel > Build Default Game Scene 重建场景");
+                }
+                return;
+            }
 
-            // 检查歌曲是否结束
-            if (CurrentChart != null && SongTime >= CurrentChart.GetTotalDuration())
+            SongTime = Mathf.Max(0f, AudioManager.Instance.CurrentTime - (CurrentChart?.metadata.offset ?? 0f));
+
+            // 曲终检测：真实音频播完，或时间超过谱面总时长（虚拟钟模式兜底）
+            if (AudioManager.Instance.HasAudioFinished ||
+                (CurrentChart != null && SongTime >= CurrentChart.GetTotalDuration()))
             {
                 EndGame();
             }
@@ -227,26 +228,22 @@ namespace FallenAngel.Core
         public void PauseGame()
         {
             if (CurrentState != GameState.Playing) return;
-            pauseStartTime = Time.unscaledTime;
             ChangeState(GameState.Paused);
             Time.timeScale = 0f;
-            // 暂停BGM
-            if (FallenAngel.Audio.AudioManager.Instance != null)
-                FallenAngel.Audio.AudioManager.Instance.PauseBGM();
+            // 暂停BGM（虚拟钟由状态门控自动冻结，无需处理）
+            if (AudioManager.Instance != null)
+                AudioManager.Instance.PauseBGM();
             Debug.Log("[GameManager] 游戏暂停");
         }
 
         public void ResumeGame()
         {
             if (CurrentState != GameState.Paused) return;
-            // 修正 songStartTime：扣除暂停期间的时长，使恢复后 SongTime 连续
-            float pauseDuration = Time.unscaledTime - pauseStartTime;
-            songStartTime += pauseDuration;
             ChangeState(GameState.Playing);
             Time.timeScale = 1f;
-            // 恢复BGM
-            if (FallenAngel.Audio.AudioManager.Instance != null)
-                FallenAngel.Audio.AudioManager.Instance.ResumeBGM();
+            // 恢复BGM（时间连续性由单一音频时钟自然保证）
+            if (AudioManager.Instance != null)
+                AudioManager.Instance.ResumeBGM();
             Debug.Log("[GameManager] 游戏继续");
         }
 
@@ -268,6 +265,9 @@ namespace FallenAngel.Core
         public void BackToMenu()
         {
             Time.timeScale = 1f;
+            // 返回菜单时停止音乐（修复：此前音乐会继续在菜单播放）
+            if (AudioManager.Instance != null)
+                AudioManager.Instance.StopAll();
             CurrentChart = null;
             SongTime = 0f;
             IsSongStarted = false;
