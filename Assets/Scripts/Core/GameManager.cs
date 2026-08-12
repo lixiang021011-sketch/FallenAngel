@@ -210,6 +210,8 @@ namespace FallenAngel.Core
         {
             if (CurrentState == GameState.Result) return;
             ChangeState(GameState.Result);
+            // 曲终音乐淡出（音频长于谱面时结算页不再残留播放；音频已播完时为空操作）
+            AudioManager.Instance?.FadeOutBGM();
             OnGameEnd?.Invoke();
             Debug.Log("[GameManager] 游戏结束！");
         }

@@ -34,6 +34,10 @@ namespace FallenAngel.Audio
         [Range(0f, 1f)] public float sfxVolume = 0.7f;
         [Range(0f, 1f)] public float hitVolume = 0.6f;
 
+        [Header("曲终淡出")]
+        [Tooltip("结算时BGM淡出时长（秒）")]
+        [SerializeField] private float endFadeOutDuration = 1.5f;
+
         /// <summary>真实音频是否正在播放</summary>
         public bool IsPlaying => audioStarted && bgmSource.isPlaying;
 
@@ -49,6 +53,7 @@ namespace FallenAngel.Audio
         private bool isInitialized;
         private bool audioStarted;   // 真实音频是否已开始播放（clip 已装载且 Play 成功）
         private float virtualTime;   // 虚拟钟累计时间（仅无音频时推进）
+        private Coroutine fadeOutCoroutine;  // 曲终淡出协程引用（可中断）
 
         private void Awake()
         {
@@ -147,6 +152,7 @@ namespace FallenAngel.Audio
             if (bgmSource.clip != null)
             {
                 bgmSource.time = 0f;
+                bgmSource.volume = bgmVolume;  // 复位上一局淡出期间被改动的音量
                 bgmSource.Play();
                 audioStarted = true;
                 Debug.Log("[AudioManager] BGM 开始播放（音频时钟模式）");
@@ -155,6 +161,49 @@ namespace FallenAngel.Audio
             {
                 Debug.Log("[AudioManager] 无音频，虚拟钟模式运行");
             }
+        }
+
+        /// <summary>
+        /// BGM 淡出（曲终结算时调用）。
+        /// 音频已停止时直接复位；淡出完成后停止音源并恢复默认音量。
+        /// </summary>
+        public void FadeOutBGM()
+        {
+            if (fadeOutCoroutine != null)
+            {
+                StopCoroutine(fadeOutCoroutine);
+                fadeOutCoroutine = null;
+            }
+
+            if (!bgmSource.isPlaying)
+            {
+                // 音频已播完（曲终信号路径），无需淡出，仅确保状态干净
+                bgmSource.Stop();
+                bgmSource.volume = bgmVolume;
+                return;
+            }
+
+            fadeOutCoroutine = StartCoroutine(FadeOutCoroutine());
+        }
+
+        private System.Collections.IEnumerator FadeOutCoroutine()
+        {
+            float startVolume = bgmSource.volume;
+            float duration = Mathf.Max(0.05f, endFadeOutDuration);
+            float timer = 0f;
+
+            // 用 unscaledDeltaTime：淡出属于演出表现，与游戏时间缩放解耦（架构约定 §7）
+            while (timer < duration)
+            {
+                timer += Time.unscaledDeltaTime;
+                bgmSource.volume = Mathf.Lerp(startVolume, 0f, Mathf.Clamp01(timer / duration));
+                yield return null;
+            }
+
+            bgmSource.Stop();
+            bgmSource.volume = bgmVolume;   // 恢复默认音量，供下一局使用
+            audioStarted = false;           // 真实音频已停止，供时状态复位
+            fadeOutCoroutine = null;
         }
 
         /// <summary>
@@ -208,13 +257,19 @@ namespace FallenAngel.Audio
         }
 
         /// <summary>
-        /// 停止所有音频（并复位供时状态）
+        /// 停止所有音频（并复位供时状态与淡出）
         /// </summary>
         public void StopAll()
         {
+            if (fadeOutCoroutine != null)
+            {
+                StopCoroutine(fadeOutCoroutine);
+                fadeOutCoroutine = null;
+            }
             bgmSource.Stop();
             sfxSource.Stop();
             hitSource.Stop();
+            bgmSource.volume = bgmVolume;   // 复位淡出期间被改动的音量
             audioStarted = false;
             virtualTime = 0f;
         }
