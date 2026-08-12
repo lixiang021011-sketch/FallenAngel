@@ -118,7 +118,9 @@ namespace FallenAngel.Gameplay
             float durationMultiplier = Data.duration / fallTime;
             float extraHeight = height * durationMultiplier;
             bodyRect.sizeDelta = new Vector2(bodyRect.sizeDelta.x, height + extraHeight);
-            bodyRect.anchoredPosition = new Vector2(0, (height + extraHeight) * 0.5f);
+            // 底边贴住头部中心（pivot 在底部，anchoredPosition 必须为 0）：
+            // 修复原版 bug——此前用 height/2 定位，pivot 又在底部，双重偏移导致身体整体在屏幕外
+            bodyRect.anchoredPosition = Vector2.zero;
 
             // 运行时自建的UI必须显式标记脏并强制Canvas立即重建，否则网格不会生成
             bodyGraphic.SetAllDirty();
@@ -220,7 +222,7 @@ namespace FallenAngel.Gameplay
                 HoldProgress = Mathf.Clamp01((currentSongTime - Data.time) / Mathf.Max(0.01f, Data.duration));
                 float currentHeight = bodyRect.sizeDelta.y * (1f - HoldProgress);
                 bodyRect.sizeDelta = new Vector2(bodyRect.sizeDelta.x, Mathf.Max(0f, currentHeight));
-                bodyRect.anchoredPosition = new Vector2(0, bodyRect.sizeDelta.y * 0.5f);
+                bodyRect.anchoredPosition = Vector2.zero; // 底边始终贴住头部
             }
         }
 
