@@ -134,14 +134,18 @@ namespace FallenAngel.Gameplay
             if (note == null)
             {
                 // 没找到音符 — 空按
+#if UNITY_EDITOR
                 Debug.Log($"[JudgeManager] Press lane={lane} songTime={songTime:F2} -> No note found (air press)");
+#endif
                 return;
             }
 
             float timeDiff = songTime - note.Data.time;
             JudgeResultType result = judgeWindows.Judge(timeDiff);
 
+#if UNITY_EDITOR
             Debug.Log($"[JudgeManager] Press lane={lane} songTime={songTime:F2} noteTime={note.Data.time:F2} diff={timeDiff:F3} result={result}");
+#endif
 
             if (result == JudgeResultType.Miss)
             {

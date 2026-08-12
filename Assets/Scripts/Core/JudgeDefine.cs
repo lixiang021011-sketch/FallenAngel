@@ -27,6 +27,9 @@ namespace FallenAngel.Core
         public float badWindow = 0.200f;     // 200ms
         // 超过 badWindow 的都算 Miss
 
+        /// <summary>默认判定窗口共享实例（热路径复用避免重复分配；static 不参与序列化）</summary>
+        public static readonly JudgeWindows Default = new JudgeWindows();
+
         /// <summary>
         /// 根据时间差计算判定结果
         /// </summary>

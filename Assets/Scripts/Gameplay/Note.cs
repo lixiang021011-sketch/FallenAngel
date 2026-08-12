@@ -196,8 +196,7 @@ namespace FallenAngel.Gameplay
             if (Data.type != NoteType.LongStart) return JudgeResultType.None;
             IsHolding = false;
 
-            JudgeWindows windows = new JudgeWindows();
-            JudgeResultType result = windows.Judge(releaseTimeDiff);
+            JudgeResultType result = JudgeWindows.Default.Judge(releaseTimeDiff);
             // 长按至少按到Good才算成功
             if (result == JudgeResultType.Bad) result = JudgeResultType.Good;
             JudgeResult = result;

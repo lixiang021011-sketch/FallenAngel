@@ -53,6 +53,9 @@ namespace FallenAngel.Gameplay
         private int nextNoteIndex;
         private bool isPlaying;
 
+        // 自动Miss阈值（音符过判定窗口多久后强制Miss，开局计算一次，避免热路径每帧分配）
+        private float missThreshold;
+
         public float JudgeLineY => judgeLineY;
         public float SpawnY => spawnY;
         public IReadOnlyList<Note> ActiveNotes => activeNotes;
@@ -91,6 +94,9 @@ namespace FallenAngel.Gameplay
             }
 
             InitializePool();
+
+            // 开局计算一次（JudgeWindows.Default 为共享实例；将来 roguelike 接入时改读 Rules）
+            missThreshold = JudgeWindows.Default.badWindow + 0.1f;
         }
 
         /// <summary>
@@ -261,14 +267,30 @@ namespace FallenAngel.Gameplay
 
         private void CleanupMissedNotes(float songTime)
         {
-            JudgeWindows win = new JudgeWindows();
-            float missThreshold = win.badWindow + 0.1f; // 超出判定窗口后视为Miss
-
             for (int i = activeNotes.Count - 1; i >= 0; i--)
             {
                 Note note = activeNotes[i];
 
-                // 对普通音符/LongEnd，超出判定窗口太久自动Miss
+                // 长按尾/身体不独立判定：跟随头部生命周期。
+                // 头部结束（释放判定完成）后静默回收，不产生任何判定事件。
+                // 修复：此前 LongEnd 会被自动Miss——正确完成的长按也会凭空蹦出 MISS、
+                // 断连击、计 Miss 数，曲终无音符时也会跳 MISS。
+                if (note.Data.type == NoteType.LongEnd || note.Data.type == NoteType.LongBody)
+                {
+                    bool headHolding = note.Data.longNoteId >= 0
+                        && activeLongNotesById.TryGetValue(note.Data.longNoteId, out Note head)
+                        && head != null && head.IsHolding;
+                    if (!headHolding)
+                    {
+                        if (note.Data.longNoteId >= 0)
+                            activeLongNotesById.Remove(note.Data.longNoteId);
+                        ReleaseNote(note);
+                        activeNotes.RemoveAt(i);
+                    }
+                    continue;
+                }
+
+                // 对普通音符，超出判定窗口太久自动Miss
                 if (!note.IsJudged || (note.Data.type == NoteType.LongStart && note.IsHolding))
                 {
                     if (note.Data.type != NoteType.LongStart)
@@ -287,11 +309,7 @@ namespace FallenAngel.Gameplay
                             activeNotes.RemoveAt(i);
                         }
                     }
-                    else if (note.IsHolding && !IsLaneHeld(note.Data.lane))
-                    {
-                        // 长按中用户提前松开 -> 由Input事件处理，这里兜底
-                        // 如果用户松手超过一小段时间，触发提前结束
-                    }
+                    // LongStart 保持中：提前松手由输入事件判定（兜底逻辑见技术债清单）
                 }
                 else if (!note.gameObject.activeSelf)
                 {

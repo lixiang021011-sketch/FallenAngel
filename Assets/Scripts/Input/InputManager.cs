@@ -144,8 +144,10 @@ namespace FallenAngel.InputSystem
 
                 if (isKeyDown != wasDown)
                 {
+#if UNITY_EDITOR
                     if (isKeyDown)
                         Debug.Log($"[InputManager] Key DOWN lane={i} key={laneKeys[i]}");
+#endif
                     Vector2 pos = new Vector2(Screen.width * (i + 0.5f) / 4f, Screen.height * 0.3f);
                     SetLaneState(i, isKeyDown, pos);
                 }
