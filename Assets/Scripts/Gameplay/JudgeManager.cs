@@ -1,0 +1,313 @@
+using System.Collections.Generic;
+using UnityEngine;
+using FallenAngel.Data;
+using FallenAngel.Core;
+using FallenAngel.InputSystem;
+using FallenAngel.Audio;
+
+namespace FallenAngel.Gameplay
+{
+    /// <summary>
+    /// 判定管理器 - 监听输入事件，执行命中判定、计分、连击
+    /// 协调 NoteSpawner、ScoreManager、AudioManager
+    /// </summary>
+    public class JudgeManager : MonoBehaviour
+    {
+        public static JudgeManager Instance { get; private set; }
+
+        [Header("判定窗口")]
+        [SerializeField] private JudgeWindows judgeWindows = new JudgeWindows();
+
+        /// <summary>当前判定结果（供UI订阅显示）</summary>
+        public event System.Action<JudgeResultType, int> OnJudgeResult; // (result, lane)
+
+        /// <summary>连击数更新事件</summary>
+        public event System.Action<int, bool> OnComboUpdate; // (combo, isFullComboNow)
+
+        /// <summary>分数更新事件</summary>
+        public event System.Action<int> OnScoreUpdate; // (totalScore)
+
+        /// <summary>各判定计数更新</summary>
+        public event System.Action<int, int, int, int, int> OnJudgeCountsUpdate;
+        // (perfect, great, good, bad, miss)
+
+        // 判定计数
+        public int PerfectCount { get; private set; }
+        public int GreatCount { get; private set; }
+        public int GoodCount { get; private set; }
+        public int BadCount { get; private set; }
+        public int MissCount { get; private set; }
+
+        /// <summary>当前连击数</summary>
+        public int Combo { get; private set; }
+        /// <summary>最大连击数</summary>
+        public int MaxCombo { get; private set; }
+        /// <summary>当前总分</summary>
+        public int Score { get; private set; }
+
+        // 每音轨按下时的"最近音符"引用
+        private Note[] laneHitNote = new Note[4];
+        // 长按按下时的开始时间（用于长按释放判定）
+        private float[] laneHoldStartTime = new float[4];
+        private int[] laneHoldLongId = new int[4] { -1, -1, -1, -1 };
+
+        private void Awake()
+        {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
+        }
+
+        private void OnEnable()
+        {
+            if (InputManager.Instance != null)
+                InputManager.Instance.OnLaneInput += HandleLaneInput;
+            if (GameManager.Instance != null)
+                GameManager.Instance.OnGameStart += ResetStats;
+        }
+
+        private void Start()
+        {
+            // 防止 Awake 执行顺序导致漏订阅
+            if (InputManager.Instance != null)
+            {
+                InputManager.Instance.OnLaneInput -= HandleLaneInput;
+                InputManager.Instance.OnLaneInput += HandleLaneInput;
+            }
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.OnGameStart -= ResetStats;
+                GameManager.Instance.OnGameStart += ResetStats;
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (InputManager.Instance != null)
+                InputManager.Instance.OnLaneInput -= HandleLaneInput;
+            if (GameManager.Instance != null)
+                GameManager.Instance.OnGameStart -= ResetStats;
+        }
+
+        private void ResetStats()
+        {
+            PerfectCount = GreatCount = GoodCount = BadCount = MissCount = 0;
+            Combo = 0;
+            MaxCombo = 0;
+            Score = 0;
+            laneHitNote = new Note[4];
+            laneHoldLongId = new int[4] { -1, -1, -1, -1 };
+
+            OnScoreUpdate?.Invoke(0);
+            OnComboUpdate?.Invoke(0, true);
+            OnJudgeCountsUpdate?.Invoke(0, 0, 0, 0, 0);
+        }
+
+        /// <summary>
+        /// 输入事件处理
+        /// </summary>
+        private void HandleLaneInput(object sender, LaneInputArgs e)
+        {
+            if (GameManager.Instance == null ||
+                GameManager.Instance.CurrentState != GameState.Playing) return;
+
+            if (e.isPressed)
+                HandlePress(e.laneIndex);
+            else
+                HandleRelease(e.laneIndex);
+        }
+
+        private void HandlePress(int lane)
+        {
+            if (NoteSpawner.Instance == null)
+            {
+                Debug.LogWarning("[JudgeManager] NoteSpawner.Instance is null!");
+                return;
+            }
+            float songTime = GameManager.Instance.SongTime;
+
+            Note note = NoteSpawner.Instance.GetClosestJudgableNote(lane, false);
+
+            if (note == null)
+            {
+                // 没找到音符 — 空按
+                Debug.Log($"[JudgeManager] Press lane={lane} songTime={songTime:F2} -> No note found (air press)");
+                return;
+            }
+
+            float timeDiff = songTime - note.Data.time;
+            JudgeResultType result = judgeWindows.Judge(timeDiff);
+
+            Debug.Log($"[JudgeManager] Press lane={lane} songTime={songTime:F2} noteTime={note.Data.time:F2} diff={timeDiff:F3} result={result}");
+
+            if (result == JudgeResultType.Miss)
+            {
+                // 太远不判定（空按）
+                return;
+            }
+
+            // 命中
+            ApplyJudge(note, result, lane);
+            laneHitNote[lane] = note;
+
+            // 如果是长按，记录按住开始
+            if (note.Data.type == NoteType.LongStart)
+            {
+                laneHoldStartTime[lane] = songTime;
+                laneHoldLongId[lane] = note.Data.longNoteId;
+            }
+        }
+
+        private void HandleRelease(int lane)
+        {
+            float songTime = GameManager.Instance.SongTime;
+
+            // 检查是否是长按的释放
+            int longId = laneHoldLongId[lane];
+            if (longId >= 0 && NoteSpawner.Instance != null)
+            {
+                Note longHead = NoteSpawner.Instance.GetLongNoteHead(longId);
+                if (longHead != null && longHead.IsHolding)
+                {
+                    // 释放时间点 vs LongEnd的时间点
+                    float longEndTime = longHead.Data.time + longHead.Data.duration;
+                    float releaseDiff = songTime - longEndTime;
+                    JudgeResultType releaseResult = longHead.JudgeLongRelease(releaseDiff);
+
+                    // 计数
+                    if (releaseResult == JudgeResultType.Miss)
+                    {
+                        ProcessMiss(lane);
+                    }
+                    else
+                    {
+                        AddScoreAndCombo(JudgeWindows.GetScore(releaseResult, true));
+                        AddJudgeCount(releaseResult);
+                        OnJudgeResult?.Invoke(releaseResult, lane);
+                        PlayAudioJudge(releaseResult);
+                    }
+                }
+                laneHoldLongId[lane] = -1;
+            }
+
+            laneHitNote[lane] = null;
+        }
+
+        /// <summary>
+        /// 应用一次判定结果（非长按头部）
+        /// </summary>
+        private void ApplyJudge(Note note, JudgeResultType result, int lane)
+        {
+            note.JudgeHit(result);
+
+            if (result == JudgeResultType.Miss)
+            {
+                ProcessMiss(lane);
+                return;
+            }
+
+            // 普通音符直接加分，长按头部仅触发视觉
+            if (note.Data.type != NoteType.LongStart)
+            {
+                AddScoreAndCombo(JudgeWindows.GetScore(result));
+            }
+            AddJudgeCount(result);
+            OnJudgeResult?.Invoke(result, lane);
+            PlayAudioJudge(result);
+        }
+
+        /// <summary>
+        /// 处理自动Miss（音符走过未击中）
+        /// </summary>
+        public void HandleAutoMiss(Note note)
+        {
+            if (note == null) return;
+            // LongStart的Miss也应该触发
+            ProcessMiss(note.Data.lane);
+            if (note.Data.type != NoteType.LongStart)
+            {
+                OnJudgeResult?.Invoke(JudgeResultType.Miss, note.Data.lane);
+                PlayAudioJudge(JudgeResultType.Miss);
+            }
+        }
+
+        private void ProcessMiss(int lane)
+        {
+            MissCount++;
+            Combo = 0;
+            OnComboUpdate?.Invoke(Combo, false);
+            OnJudgeCountsUpdate?.Invoke(PerfectCount, GreatCount, GoodCount, BadCount, MissCount);
+        }
+
+        private void AddScoreAndCombo(int score)
+        {
+            Score += score;
+            Combo++;
+            if (Combo > MaxCombo) MaxCombo = Combo;
+
+            // 连击加成（简化版）
+            int comboBonus = Mathf.RoundToInt(score * (Mathf.Clamp01(Combo / 100f) * 0.2f));
+            Score += comboBonus;
+
+            OnScoreUpdate?.Invoke(Score);
+            bool isFull = MissCount == 0;
+            OnComboUpdate?.Invoke(Combo, isFull);
+        }
+
+        private void AddJudgeCount(JudgeResultType result)
+        {
+            switch (result)
+            {
+                case JudgeResultType.Perfect: PerfectCount++; break;
+                case JudgeResultType.Great: GreatCount++; break;
+                case JudgeResultType.Good: GoodCount++; break;
+                case JudgeResultType.Bad: BadCount++; break;
+            }
+            OnJudgeCountsUpdate?.Invoke(PerfectCount, GreatCount, GoodCount, BadCount, MissCount);
+        }
+
+        private void PlayAudioJudge(JudgeResultType result)
+        {
+            if (AudioManager.Instance != null)
+                AudioManager.Instance.PlayHitSfx(result);
+        }
+
+        /// <summary>
+        /// 计算当前的达成率（百分比，0~100）
+        /// </summary>
+        public float CalculateAccuracy()
+        {
+            float total = PerfectCount + GreatCount + GoodCount + BadCount + MissCount;
+            if (total <= 0) return 100f;
+
+            float weightSum =
+                PerfectCount * 100f +
+                GreatCount * 80f +
+                GoodCount * 50f +
+                BadCount * 20f +
+                MissCount * 0f;
+            return weightSum / total;
+        }
+
+        /// <summary>
+        /// 获取评级字符串 (S~D)
+        /// </summary>
+        public string GetRank()
+        {
+            float acc = CalculateAccuracy();
+            if (MissCount == 0 && PerfectCount >= GreatCount + GoodCount + BadCount) return "S";
+            if (acc >= 95f) return "A";
+            if (acc >= 85f) return "B";
+            if (acc >= 70f) return "C";
+            return "D";
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
+        }
+    }
+}
