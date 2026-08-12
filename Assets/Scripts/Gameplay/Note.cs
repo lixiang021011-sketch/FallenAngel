@@ -120,6 +120,10 @@ namespace FallenAngel.Gameplay
             bodyRect.sizeDelta = new Vector2(bodyRect.sizeDelta.x, height + extraHeight);
             bodyRect.anchoredPosition = new Vector2(0, (height + extraHeight) * 0.5f);
 
+            // 运行时自建的UI必须显式标记脏并强制Canvas立即重建，否则网格不会生成
+            bodyGraphic.SetAllDirty();
+            Canvas.ForceUpdateCanvases();
+
             if (!bodyCreatedLogged)
             {
                 bodyCreatedLogged = true;
@@ -141,8 +145,8 @@ namespace FallenAngel.Gameplay
             Mesh mesh = bodyGraphic.canvasRenderer != null ? bodyGraphic.canvasRenderer.GetMesh() : null;
             int vertexCount = mesh != null ? mesh.vertexCount : -1;
             Debug.Log($"[Note] 身体渲染状态(配置后1帧): activeInHierarchy={bodyGraphic.gameObject.activeInHierarchy} " +
-                      $"meshVerts={vertexCount} rect={bodyRect.rect} localPos={bodyGraphic.transform.localPosition} " +
-                      $"graphicEnabled={bodyGraphic.enabled} color={bodyGraphic.color}");
+                      $"hasRenderer={bodyGraphic.canvasRenderer != null} meshVerts={vertexCount} rect={bodyRect.rect} " +
+                      $"localPos={bodyGraphic.transform.localPosition} graphicEnabled={bodyGraphic.enabled} color={bodyGraphic.color}");
         }
 
         /// <summary>
@@ -169,6 +173,9 @@ namespace FallenAngel.Gameplay
             rt.sizeDelta = new Vector2(80f, 300f);
 
             GradientImage g = bodyGO.AddComponent<GradientImage>();
+            // 显式补挂 CanvasRenderer（运行时 AddComponent 时 RequireComponent 不保证生效）
+            if (bodyGO.GetComponent<CanvasRenderer>() == null)
+                bodyGO.AddComponent<CanvasRenderer>();
             g.raycastTarget = false;
 
             bodyGraphic = g;
