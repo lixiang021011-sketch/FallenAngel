@@ -13,8 +13,6 @@ namespace FallenAngel.Gameplay
     {
         [Header("引用")]
         [SerializeField] private Image noteImage;          // 音符图像
-        [SerializeField] private Image longNoteBodyImage;  // 长按音符身体
-        [SerializeField] private RectTransform bodyRect;   // 长按身体RectTransform
 
         [Header("颜色（4个音轨不同颜色）")]
         [SerializeField] private Color[] laneColors = new Color[]
@@ -45,8 +43,10 @@ namespace FallenAngel.Gameplay
         private Vector3 originalScale;
         private Color originalNoteColor;
 
-        // 长按身体渐变精灵（全局共享，懒生成）
-        private static Sprite longBodyGradientSprite;
+        // 长按身体：运行时自生成（GradientImage 顶点色渐变，零纹理/预制体依赖）
+        private GradientImage bodyGraphic;
+        private RectTransform bodyRect;
+        private bool bodyCreatedLogged;
 
         private void Awake()
         {
@@ -84,76 +84,77 @@ namespace FallenAngel.Gameplay
                 // 确保 Image 可见
                 noteImage.enabled = true;
             }
-            if (longNoteBodyImage != null)
-            {
-                Color bodyColor = c;
-                bodyColor.a = 1f;   // 透明度由渐变精灵控制（贴近头部不透明→远端透明）
-                longNoteBodyImage.color = bodyColor;
-            }
 
             // 配置长按音符身体
             ConfigureLongNoteBody(spawnPos, judgeLinePos);
         }
 
         /// <summary>
-        /// 配置长按音符的身体渲染
+        /// 配置长按音符的身体渲染（渐变透明：贴近头部实体→远端渐隐）
         /// </summary>
         private void ConfigureLongNoteBody(Vector2 spawnPos, Vector2 judgeLinePos)
         {
-            if (longNoteBodyImage == null || bodyRect == null) return;
+            if (Data.type != NoteType.LongStart || Data.duration <= 0f)
+            {
+                // 普通音符：隐藏身体（若该实例此前是长按，从池中复用后需隐藏）
+                if (bodyGraphic != null)
+                    bodyGraphic.gameObject.SetActive(false);
+                return;
+            }
 
-            if (Data.type == NoteType.LongStart && Data.duration > 0f)
-            {
-                longNoteBodyImage.gameObject.SetActive(true);
-                // 渐变透明身体：贴近头部不透明、远端透明，与普通音符明显区分
-                longNoteBodyImage.sprite = GetLongBodyGradientSprite();
-                longNoteBodyImage.type = Image.Type.Simple;
-                isLongNoteConfigured = true;
-                // 音符身体从生成位置延伸到判定线位置（向下）
-                float height = Mathf.Abs(spawnPos.y - judgeLinePos.y);
-                // 持续时间越长，身体越长（基于下落速度）
-                float fallTime = GameManager.Instance != null ? GameManager.Instance.ActualFallTime : 2f;
-                float durationMultiplier = Data.duration / fallTime;
-                float extraHeight = height * durationMultiplier;
-                bodyRect.sizeDelta = new Vector2(bodyRect.sizeDelta.x, height + extraHeight);
-                bodyRect.anchoredPosition = new Vector2(0, (height + extraHeight) * 0.5f);
-            }
-            else
-            {
-                longNoteBodyImage.gameObject.SetActive(false);
-            }
+            EnsureBodyGraphic();
+            isLongNoteConfigured = true;
+
+            Color c = laneColors[Mathf.Clamp(Data.lane, 0, 3)];
+            bodyGraphic.bottomColor = new Color(c.r, c.g, c.b, 0.9f); // 贴近头部：接近实体
+            bodyGraphic.topColor = new Color(c.r, c.g, c.b, 0f);      // 远端：完全透明
+            bodyGraphic.SetVerticesDirty(); // 复用实例时强制重绘顶点色
+            bodyGraphic.gameObject.SetActive(true);
+
+            // 音符身体从生成位置延伸到判定线位置（向上，作为头部拖尾）
+            float height = Mathf.Abs(spawnPos.y - judgeLinePos.y);
+            // 持续时间越长，身体越长（基于下落速度）
+            float fallTime = GameManager.Instance != null ? GameManager.Instance.ActualFallTime : 2f;
+            float durationMultiplier = Data.duration / fallTime;
+            float extraHeight = height * durationMultiplier;
+            bodyRect.sizeDelta = new Vector2(bodyRect.sizeDelta.x, height + extraHeight);
+            bodyRect.anchoredPosition = new Vector2(0, (height + extraHeight) * 0.5f);
         }
 
         /// <summary>
-        /// 生成长按身体的渐变透明精灵（白色，底部不透明→顶部透明）。
-        /// 白色精灵叠加 Image.color（轨道色）得到带渐变的轨道色身体；
-        /// 底部对应身体贴近头部的一端，保持实体，远端渐隐。
+        /// 确保长按身体存在：运行时自生成渐变图形节点，不依赖预制体是否带身体。
+        /// 旧版预制体/默认Prefab上遗留的纯色身体节点（"LongNoteBody"）会被关闭。
         /// </summary>
-        private static Sprite GetLongBodyGradientSprite()
+        private void EnsureBodyGraphic()
         {
-            if (longBodyGradientSprite != null) return longBodyGradientSprite;
+            if (bodyGraphic != null && bodyRect != null) return;
 
-            const int width = 4;
-            const int height = 64;
-            Texture2D tex = new Texture2D(width, height, TextureFormat.RGBA32, false);
-            tex.wrapMode = TextureWrapMode.Clamp;
-            tex.filterMode = FilterMode.Bilinear;
+            // 关闭旧方案遗留的纯色身体（Image 节点）
+            Transform legacy = transform.Find("LongNoteBody");
+            if (legacy != null) legacy.gameObject.SetActive(false);
 
-            Color[] pixels = new Color[width * height];
-            for (int y = 0; y < height; y++)
+            GameObject bodyGO = new GameObject("LongNoteBody_Gradient", typeof(RectTransform));
+            bodyGO.transform.SetParent(transform, false);
+            bodyGO.transform.SetAsFirstSibling(); // 画在头部后面
+
+            RectTransform rt = bodyGO.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0.5f, 0.5f);
+            rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0f);
+            rt.anchoredPosition = Vector2.zero;
+            rt.sizeDelta = new Vector2(80f, 300f);
+
+            GradientImage g = bodyGO.AddComponent<GradientImage>();
+            g.raycastTarget = false;
+
+            bodyGraphic = g;
+            bodyRect = rt;
+
+            if (!bodyCreatedLogged)
             {
-                // y=0 为精灵底部（贴近头部）→ 不透明；顶部 → 透明
-                float alpha = 1f - (float)y / (height - 1);
-                for (int x = 0; x < width; x++)
-                {
-                    pixels[y * width + x] = new Color(1f, 1f, 1f, alpha);
-                }
+                bodyCreatedLogged = true;
+                Debug.Log("[Note] 长按身体渐变图形已自生成（LongNoteBody_Gradient）");
             }
-            tex.SetPixels(pixels);
-            tex.Apply();
-
-            longBodyGradientSprite = Sprite.Create(tex, new Rect(0f, 0f, width, height), new Vector2(0.5f, 0.5f));
-            return longBodyGradientSprite;
         }
 
         /// <summary>

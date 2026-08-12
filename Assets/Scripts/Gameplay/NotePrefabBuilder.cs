@@ -38,31 +38,12 @@ namespace FallenAngel.Gameplay
             Image noteImg = noteImgGO.GetComponent<Image>();
             noteImg.color = Color.white;
 
-            // 长按音符身体（在NoteImage之后，渲染层级更高）
-            GameObject bodyGO = new GameObject("LongNoteBody", typeof(RectTransform), typeof(Image));
-            bodyGO.transform.SetParent(root.transform, false);
-            RectTransform bodyRT = (RectTransform)bodyGO.transform;
-            bodyRT.anchorMin = new Vector2(0.5f, 0.5f);
-            bodyRT.anchorMax = new Vector2(0.5f, 0.5f);
-            bodyRT.pivot = new Vector2(0.5f, 0f);
-            bodyRT.anchoredPosition = Vector2.zero;
-            bodyRT.sizeDelta = new Vector2(80, 300);
-            bodyRT.SetAsFirstSibling(); // 在NoteImage后面（实际上应该先画身体再画头）
-            Image bodyImg = bodyGO.GetComponent<Image>();
-            bodyImg.color = new Color(1, 1, 1, 0.5f);
-
-            // Note 组件
+            // Note 组件（长按身体由 Note 运行时自生成渐变图形，预制体不再包含身体节点）
             Note note = root.AddComponent<Note>();
             // 反射设置私有字段
             var f1 = typeof(Note).GetField("noteImage",
                 System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
             f1?.SetValue(note, noteImg);
-            var f2 = typeof(Note).GetField("longNoteBodyImage",
-                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            f2?.SetValue(note, bodyImg);
-            var f3 = typeof(Note).GetField("bodyRect",
-                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            f3?.SetValue(note, bodyRT);
 
             // 保存Prefab
             GameObject prefab = PrefabUtility.SaveAsPrefabAsset(root, path);

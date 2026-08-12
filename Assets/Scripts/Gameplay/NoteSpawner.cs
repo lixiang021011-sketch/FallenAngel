@@ -117,34 +117,13 @@ namespace FallenAngel.Gameplay
             img.color = new Color(0.3f, 0.8f, 1f, 0.9f);
             img.raycastTarget = false; // 音符不拦截触摸
 
-            // 长按身体（与 NotePrefabBuilder 生成的预制体结构一致）：
-            // 没有它，长按头部与普通音符外观完全相同，玩家会当普通音符单击，
-            // 松手即被判定为"提前释放"而断连击——长按必须视觉可辨识
-            GameObject bodyGO = new GameObject("LongNoteBody", typeof(RectTransform), typeof(UnityEngine.UI.Image));
-            bodyGO.transform.SetParent(go.transform, false);
-            RectTransform bodyRT = bodyGO.GetComponent<RectTransform>();
-            bodyRT.anchorMin = new Vector2(0.5f, 0.5f);
-            bodyRT.anchorMax = new Vector2(0.5f, 0.5f);
-            bodyRT.pivot = new Vector2(0.5f, 0f);
-            bodyRT.anchoredPosition = Vector2.zero;
-            bodyRT.sizeDelta = new Vector2(80f, 300f);
-            bodyRT.SetAsFirstSibling(); // 身体画在头部后面
-            UnityEngine.UI.Image bodyImg = bodyGO.GetComponent<UnityEngine.UI.Image>();
-            bodyImg.color = new Color(1f, 1f, 1f, 0.5f);
-            bodyImg.raycastTarget = false;
-            bodyGO.SetActive(false); // 由 Note.ConfigureLongNoteBody 按需显示
-
+            // 长按身体由 Note 运行时自生成（GradientImage 顶点色渐变），
+            // 预制体不再包含身体节点，避免依赖与双重渲染
             Note note = go.AddComponent<Note>();
-            // 自动绑定引用（NotePrefabBuilder 同样以反射设置私有字段）
+            // 自动绑定 noteImage
             var noteImageField = typeof(Note).GetField("noteImage",
                 System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
             if (noteImageField != null) noteImageField.SetValue(note, img);
-            var bodyImageField = typeof(Note).GetField("longNoteBodyImage",
-                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            if (bodyImageField != null) bodyImageField.SetValue(note, bodyImg);
-            var bodyRectField = typeof(Note).GetField("bodyRect",
-                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-            if (bodyRectField != null) bodyRectField.SetValue(note, bodyRT);
             return note;
         }
 
