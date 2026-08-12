@@ -189,7 +189,7 @@ namespace FallenAngel.Core
                 new Color(1f, 0.85f, 0.2f, 0.12f),
                 new Color(1f, 0.3f, 0.3f, 0.12f)
             };
-            float[] laneX = new float[] { -225f, -75f, 75f, 225f };
+            float[] laneX = LaneLayout.CentersX; // 轨道布局统一取自 LaneLayout（与输入判定同源）
             float laneWidth = 140f;
 
             // 按键区域容器（下半屏）

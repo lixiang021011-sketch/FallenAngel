@@ -23,9 +23,8 @@ namespace FallenAngel.InputSystem
     {
         public static InputManager Instance { get; private set; }
 
-        [Header("音轨输入区域配置（按屏幕宽度比例 0-1）")]
-        [Tooltip("4个音轨的屏幕X轴划分，每段为一个 [左, 右) 区间")]
-        [SerializeField] private float[] laneXRatios = new float[] { 0f, 0.25f, 0.5f, 0.75f, 1.0f };
+        [Header("音轨输入区域配置")]
+        [Tooltip("轨道判定使用 Canvas 坐标（LaneLayout），与按键视觉同源，不依赖屏幕比例")]
 
         [Header("键盘映射（PC调试用）")]
         [SerializeField] private KeyCode[] laneKeys = new KeyCode[]
@@ -58,6 +57,8 @@ namespace FallenAngel.InputSystem
         private bool[] lastKeyStates = new bool[4];
         // 编辑器鼠标模拟触摸：当前按下的轨道（-1 = 未按下）
         private int editorMouseLane = -1;
+        // Canvas 引用（懒解析）：屏幕坐标 → Canvas 本地坐标的轨道映射用
+        private Canvas canvasForLaneMapping;
 
         private void Awake()
         {
@@ -169,7 +170,7 @@ namespace FallenAngel.InputSystem
                 return;
             }
 
-            int lane = GetLaneFromX(mousePos.x);
+            int lane = GetLaneFromScreenPos(mousePos);
             if (lane < 0 || lane > 3)
             {
                 ReleaseEditorMouseLane();
@@ -218,7 +219,7 @@ namespace FallenAngel.InputSystem
                 if (IsPointerOverUI(touchPos))
                     continue;
 
-                int lane = GetLaneFromX(touchPos.x);
+                int lane = GetLaneFromScreenPos(touchPos);
                 if (lane < 0 || lane > 3) continue;
 
                 switch (touch.phase)
@@ -298,19 +299,27 @@ namespace FallenAngel.InputSystem
         }
 
         /// <summary>
-        /// 根据屏幕X坐标计算所属音轨
+        /// 根据屏幕坐标计算所属音轨：
+        /// 先把屏幕坐标转换为 Canvas 本地坐标，再按 LaneLayout 判定轨道。
+        /// 修复：此前按屏幕四等分判定，与 CanvasScaler 缩放/裁切后的按键视觉错位
+        /// （不同视图下按红色可能触发黄色）。
         /// </summary>
-        private int GetLaneFromX(float screenX)
+        private int GetLaneFromScreenPos(Vector2 screenPos)
         {
-            float xRatio = Mathf.Clamp01(screenX / Screen.width);
-            for (int i = 0; i < 4; i++)
+            if (canvasForLaneMapping == null)
             {
-                if (xRatio >= laneXRatios[i] && xRatio < laneXRatios[i + 1])
-                    return i;
+                canvasForLaneMapping = FindObjectOfType<Canvas>();
+                if (canvasForLaneMapping == null) return -1;
             }
-            // 边界值归属于最后一个音轨
-            if (xRatio >= laneXRatios[4]) return 3;
-            return -1;
+
+            RectTransform canvasRect = canvasForLaneMapping.transform as RectTransform;
+            if (canvasRect == null) return -1;
+
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                    canvasRect, screenPos, null, out Vector2 local))
+                return -1;
+
+            return LaneLayout.GetLaneFromCanvasX(local.x);
         }
 
         /// <summary>
