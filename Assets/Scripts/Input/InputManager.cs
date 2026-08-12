@@ -37,7 +37,7 @@ namespace FallenAngel.InputSystem
         };
 
         [Header("触屏判定区域底部高度（屏幕高度比例）")]
-        [Tooltip("触屏时，只有屏幕下半部的触摸才会判定为音轨输入")]
+        [Tooltip("判定区为屏幕底部 touchBottomRatio 比例（0.6 = 底部60%），y=0 为屏幕底边")]
         [Range(0.1f, 0.9f)]
         public float touchBottomRatio = 0.6f;
 
@@ -162,8 +162,8 @@ namespace FallenAngel.InputSystem
                 return;
             }
 
-            // 只处理下半部触摸区域 / UI 上的点击不响应（与真实触摸一致）
-            if (mousePos.y < Screen.height * (1f - touchBottomRatio) || IsPointerOverUI(mousePos))
+            // 只处理底部判定区 / UI 上的点击不响应（与真实触摸一致）
+            if (mousePos.y > Screen.height * touchBottomRatio || IsPointerOverUI(mousePos))
             {
                 ReleaseEditorMouseLane();
                 return;
@@ -210,8 +210,8 @@ namespace FallenAngel.InputSystem
                 Vector2 touchPos = touch.position;
                 int touchId = touch.fingerId;
 
-                // 只处理屏幕下半部的触摸
-                if (touch.position.y < Screen.height * (1f - touchBottomRatio))
+                // 只处理底部判定区的触摸（y=0 在屏幕底部；超过底部区域高度比例的一律忽略）
+                if (touch.position.y > Screen.height * touchBottomRatio)
                     continue;
 
                 // 跳过UI上的触摸
