@@ -71,6 +71,7 @@ namespace FallenAngel.Audio
 
             bgmSource.loop = false;
             bgmSource.playOnAwake = false;
+            EnsureDefaultSfx();
             ApplyVolumeSettings();
             isInitialized = true;
         }
@@ -204,6 +205,20 @@ namespace FallenAngel.Audio
             bgmSource.volume = bgmVolume;   // 恢复默认音量，供下一局使用
             audioStarted = false;           // 真实音频已停止，供时状态复位
             fadeOutCoroutine = null;
+        }
+
+        /// <summary>
+        /// 判定音效兜底：clip 字段为空时用程序合成音（零资源依赖，虚拟钟模式下也立即可用）。
+        /// 未来替换为真实采样时直接给字段赋值即可，合成音自动失效。
+        /// </summary>
+        private void EnsureDefaultSfx()
+        {
+            // 不同判定用不同音调：判定越准音调越高越清脆，Miss 最低最闷
+            if (perfectHitSfx == null) perfectHitSfx = SynthesizedSfx.CreateHitClip(880f, 0.08f);
+            if (greatHitSfx == null) greatHitSfx = SynthesizedSfx.CreateHitClip(660f, 0.09f);
+            if (goodHitSfx == null) goodHitSfx = SynthesizedSfx.CreateHitClip(440f, 0.11f);
+            if (missSfx == null) missSfx = SynthesizedSfx.CreateHitClip(220f, 0.13f, 14f);
+            if (buttonClickSfx == null) buttonClickSfx = SynthesizedSfx.CreateHitClip(1000f, 0.05f, 24f);
         }
 
         /// <summary>
