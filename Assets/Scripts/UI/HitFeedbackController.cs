@@ -15,10 +15,10 @@ namespace FallenAngel.UI
         private const int PoolSize = 16;
 
         [Header("涟漪外观")]
-        [SerializeField] private Color rippleColor = new Color(1f, 1f, 1f, 0.35f);
-        [SerializeField] private float rippleStartSize = 60f;
-        [SerializeField] private float rippleEndSize = 300f;
-        [SerializeField] private float rippleDuration = 0.25f;
+        [SerializeField] private Color rippleColor = new Color(1f, 1f, 1f, 0.55f);
+        [SerializeField] private float rippleStartSize = 80f;
+        [SerializeField] private float rippleEndSize = 380f;
+        [SerializeField] private float rippleDuration = 0.3f;
 
         private class RippleEntry
         {

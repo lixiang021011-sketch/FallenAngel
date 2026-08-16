@@ -24,7 +24,6 @@ namespace FallenAngel.UI
         [SerializeField] private TextMeshProUGUI pulseText;     // 视觉脉冲（● 缩放）
 
         [Header("按钮")]
-        [SerializeField] private Button openButton;      // 菜单上的"节拍校准"按钮
         [SerializeField] private Button startTestButton; // 开始测试
         [SerializeField] private Button applyButton;     // 应用推荐值
         [SerializeField] private Button plusButton;      // +5ms
@@ -48,8 +47,9 @@ namespace FallenAngel.UI
 
         private void Awake()
         {
-            // 按钮监听必须在 Play 模式接（编辑模式添加的监听进 Play 会被清空）
-            if (openButton != null) openButton.onClick.AddListener(Open);
+            // 注意：本组件挂在初始非激活的 CalibrationPanel 上，Awake 在面板
+            // 首次激活时才执行（此时按钮监听才被接上——这正是面板打开的正确时机）。
+            // 菜单上的入口按钮由 GameStarter 负责接线（GameStarter 始终激活）。
             if (startTestButton != null) startTestButton.onClick.AddListener(StartTest);
             if (applyButton != null) applyButton.onClick.AddListener(ApplyRecommended);
             if (plusButton != null) plusButton.onClick.AddListener(() => AdjustOffset(5));
@@ -69,7 +69,8 @@ namespace FallenAngel.UI
                 pulseOriginalScale = pulseText.transform.localScale;
                 pulseText.text = "";
             }
-            if (panelRoot != null) panelRoot.SetActive(false);
+            // 面板初始状态由 SceneBuilder 控制（非激活），这里不要再关面板，
+            // 否则 Open() 激活面板后会被 Start 立刻关掉
             RefreshOffsetText();
         }
 

@@ -20,6 +20,8 @@ namespace FallenAngel.UI
         [SerializeField] private Button drumsButton;
         [SerializeField] private Button bassButton;
         [SerializeField] private Button synthButton;
+        [SerializeField] private Button calibrationButton;
+        [SerializeField] private CalibrationController calibrationController;
         [SerializeField] private InputField chartNameInput;
 
         [Header("自动启动Demo（无UI时使用）")]
@@ -34,6 +36,12 @@ namespace FallenAngel.UI
             if (drumsButton != null) drumsButton.onClick.AddListener(() => { AudioManager.Instance?.PlayButtonClick(); StartChartFromResources("demo_drums"); });
             if (bassButton != null) bassButton.onClick.AddListener(() => { AudioManager.Instance?.PlayButtonClick(); StartChartFromResources("demo_bass"); });
             if (synthButton != null) synthButton.onClick.AddListener(() => { AudioManager.Instance?.PlayButtonClick(); StartChartFromResources("demo_synth"); });
+            // 校准面板挂的 CalibrationController 初始非激活（其 Awake 不执行），入口按钮由这里接
+            if (calibrationButton != null) calibrationButton.onClick.AddListener(() =>
+            {
+                AudioManager.Instance?.PlayButtonClick();
+                if (calibrationController != null) calibrationController.Open();
+            });
 
             if (autoStartDemoOnAwake)
             {

@@ -146,8 +146,8 @@ namespace FallenAngel.Core
 
             GameStarter starter = CreateGameStarter(menuPanel.transform, gamePanel);
 
-            // 节拍校准面板（含菜单入口按钮，监听在 CalibrationController.Awake 接）
-            CreateCalibrationPanel(canvasRect, menuPanel.transform);
+            // 节拍校准面板：入口按钮监听由 GameStarter.Awake 接（校准面板初始非激活，其自身 Awake 不执行）
+            CreateCalibrationPanel(canvasRect, menuPanel.transform, starter);
 
             // ---- 5. 链接引用 ----
             // (多数引用通过Inspector面板拖入，这里尽量给默认值)
@@ -539,7 +539,7 @@ namespace FallenAngel.Core
         /// <summary>
         /// 节拍校准：菜单入口按钮 + 校准面板（开始测试/应用推荐/±5ms/关闭）
         /// </summary>
-        private static void CreateCalibrationPanel(RectTransform canvasRect, Transform menuParent)
+        private static void CreateCalibrationPanel(RectTransform canvasRect, Transform menuParent, GameStarter starter)
         {
             GameObject openBtn = CreateButton("CalibrationButton", menuParent,
                 new Vector2(0.5f, 0.055f), new Vector2(400, 90), "节拍校准", 40);
@@ -588,13 +588,16 @@ namespace FallenAngel.Core
             SetPrivateField(cal, "statusText", statusTxt);
             SetPrivateField(cal, "offsetText", offsetTxt);
             SetPrivateField(cal, "pulseText", pulse);
-            SetPrivateField(cal, "openButton", openBtn.GetComponent<Button>());
             SetPrivateField(cal, "startTestButton", startBtn.GetComponent<Button>());
             SetPrivateField(cal, "applyButton", applyBtn.GetComponent<Button>());
             SetPrivateField(cal, "plusButton", plusBtn.GetComponent<Button>());
             SetPrivateField(cal, "minusButton", minusBtn.GetComponent<Button>());
             SetPrivateField(cal, "closeButton", closeBtn.GetComponent<Button>());
             panel.SetActive(false);
+
+            // 入口按钮与控制器交给 GameStarter（始终激活，Awake 时接线）
+            SetPrivateField(starter, "calibrationButton", openBtn.GetComponent<Button>());
+            SetPrivateField(starter, "calibrationController", cal);
         }
 
         private static PauseController CreatePausePanel(Transform parent)

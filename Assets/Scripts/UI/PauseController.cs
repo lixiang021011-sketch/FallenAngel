@@ -19,6 +19,7 @@ namespace FallenAngel.UI
 
         [Header("面板（留空自动查找）")]
         [SerializeField] private GameObject pausePanel;
+        [SerializeField] private GameObject pauseRoot;      // 按钮容器（创建时非激活，暂停时激活）
         [SerializeField] private GameObject menuPanel;
         [SerializeField] private GameObject gamePanel;
 
@@ -74,6 +75,7 @@ namespace FallenAngel.UI
                 Transform pr = pausePanel.transform.Find("PauseRoot");
                 if (pr != null)
                 {
+                    pauseRoot = pr.gameObject;
                     Transform rb = pr.Find("ResumeButton");
                     if (rb != null) resumeButton = rb.GetComponent<Button>();
                     Transform retb = pr.Find("RetryButton");
@@ -135,6 +137,9 @@ namespace FallenAngel.UI
             {
                 GameManager.Instance.PauseGame();
                 if (pausePanel != null) pausePanel.SetActive(true);
+                // 关键：按钮容器 PauseRoot 创建时非激活，暂停时必须一并激活
+                // （否则只看到黑幕和 PAUSED 文字，没有 RESUME/RETRY/EXIT 按钮）
+                if (pauseRoot != null) pauseRoot.SetActive(true);
             }
         }
 
