@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using TMPro;
 using FallenAngel.Audio;
 using FallenAngel.Core;
@@ -14,8 +15,10 @@ namespace FallenAngel.UI
     ///   3. 平均延迟 → 推荐校准偏移（正 = 音符推迟，补偿设备音频延迟）
     ///   4. ±5ms 手动微调，写入 CalibrationSettings（PlayerPrefs 持久化）
     /// 注意：测试只反映"听+按"综合延迟，多次测试取平均更稳。
+    /// 点击捕获：主路径为 IPointerDownHandler（OS 事件队列驱动，快速轻点不丢帧边沿）；
+    /// Update 轮询为兜底（面板外/按钮区域的点击），两路径经 RegisterTap 去重。
     /// </summary>
-    public class CalibrationController : MonoBehaviour
+    public class CalibrationController : MonoBehaviour, IPointerDownHandler
     {
         [Header("面板引用")]
         [SerializeField] private GameObject panelRoot;
@@ -46,6 +49,8 @@ namespace FallenAngel.UI
         private readonly List<float> tapDelays = new List<float>();
         private float recommendedMs;
         private Vector3 pulseOriginalScale;
+        private float lastTapTime = -99f; // 双路径去重用
+        private const float TapDedupeWindow = 0.05f;
 
         private void Awake()
         {
@@ -87,18 +92,37 @@ namespace FallenAngel.UI
 
             if (!testing) return;
 
-            // 测试期间全屏点击计为一次校准点击。
-            // 编辑器下鼠标与触摸双通道捕获（Device Simulator 注入的是触摸而非鼠标事件，
-            // 单靠 GetMouseButtonDown 在模拟器视图下可能收不到）
+            // 兜底捕获：面板外/按钮区域的点击（主路径是 OnPointerDown，OS 事件驱动不丢帧）
             bool tapped = Input.GetMouseButtonDown(0);
             if (Input.touchCount > 0)
             {
                 for (int i = 0; i < Input.touchCount; i++)
                     if (Input.GetTouch(i).phase == TouchPhase.Began) tapped = true;
             }
-            if (!tapped) return;
+            if (tapped)
+                RegisterTap((float)Time.unscaledTimeAsDouble);
+        }
 
-            double now = Time.unscaledTimeAsDouble;
+        /// <summary>
+        /// 主点击捕获路径：EventSystem 指针按下（OS 事件队列驱动）。
+        /// 快速轻点（按下+抬起在一帧内完成）不会被逐帧轮询的 GetMouseButtonDown 捕捉，
+        /// 而 OS 事件会完整送达——这就是"轻点不识别、用力按才识别"的根因修复。
+        /// </summary>
+        public void OnPointerDown(PointerEventData eventData)
+        {
+            RegisterTap((float)eventData.clickTime);
+        }
+
+        /// <summary>
+        /// 登记一次校准点击：与最近滴答关联并记录延迟（双路径 50ms 去重）
+        /// </summary>
+        private void RegisterTap(float tapTime)
+        {
+            if (!testing) return;
+            if (tapTime - lastTapTime < TapDedupeWindow) return;
+            lastTapTime = tapTime;
+
+            double now = tapTime;
             if (scheduledTicks.Count == 0) return;
 
             // 关联到最近的已播放滴答
@@ -114,6 +138,9 @@ namespace FallenAngel.UI
             tapDelays.Add((float)(now - nearest));
             if (statusText != null)
                 statusText.text = Loc.T("cal.collected", tapDelays.Count);
+#if UNITY_EDITOR
+            Debug.Log($"[CalibrationController] tap #{tapDelays.Count} at {tapTime:F3}, delay {(float)(now - nearest) * 1000f:F0}ms");
+#endif
         }
 
         /// <summary>打开面板（菜单按钮）</summary>
