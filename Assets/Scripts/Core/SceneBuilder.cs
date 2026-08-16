@@ -508,25 +508,18 @@ namespace FallenAngel.Core
             SetPrivateField(starter, "startDemoButton", startBtn.GetComponent<Button>());
             SetPrivateField(starter, "autoStartDemoOnAwake", false);
 
-            // 自动生成谱的选择按钮（谱面由 chart_tools 分析真实音频生成，命名不含 .json 后缀）
-            AddChartButton(menuParent, starter, "DemoDrumsButton", new Vector2(0.28f, 0.16f), "鼓谱", "demo_drums");
-            AddChartButton(menuParent, starter, "DemoBassButton", new Vector2(0.5f, 0.16f), "贝斯谱", "demo_bass");
-            AddChartButton(menuParent, starter, "DemoSynthButton", new Vector2(0.72f, 0.16f), "合成器谱", "demo_synth");
+            // 自动生成谱的选择按钮：只创建按钮，监听在 GameStarter.Awake（Play 模式）统一接
+            // （编辑模式 AddListener 会在进入 Play 时被序列化清空）
+            GameObject drumsBtn = CreateButton("DemoDrumsButton", menuParent,
+                new Vector2(0.28f, 0.16f), new Vector2(340, 100), "鼓谱", 40);
+            GameObject bassBtn = CreateButton("DemoBassButton", menuParent,
+                new Vector2(0.5f, 0.16f), new Vector2(340, 100), "贝斯谱", 40);
+            GameObject synthBtn = CreateButton("DemoSynthButton", menuParent,
+                new Vector2(0.72f, 0.16f), new Vector2(340, 100), "合成器谱", 40);
+            SetPrivateField(starter, "drumsButton", drumsBtn.GetComponent<Button>());
+            SetPrivateField(starter, "bassButton", bassBtn.GetComponent<Button>());
+            SetPrivateField(starter, "synthButton", synthBtn.GetComponent<Button>());
             return starter;
-        }
-
-        /// <summary>
-        /// 菜单里加一个按名加载谱面的按钮（配合 GameStarter.StartChartFromResources）
-        /// </summary>
-        private static void AddChartButton(Transform menuParent, GameStarter starter,
-            string name, Vector2 anchor, string label, string chartName)
-        {
-            GameObject btn = CreateButton(name, menuParent, anchor, new Vector2(340, 100), label, 40);
-            btn.GetComponent<Button>().onClick.AddListener(() =>
-            {
-                AudioManager.Instance?.PlayButtonClick();
-                starter.StartChartFromResources(chartName);
-            });
         }
 
         private static PauseController CreatePausePanel(Transform parent)

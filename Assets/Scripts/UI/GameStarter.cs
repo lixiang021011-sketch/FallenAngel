@@ -17,6 +17,9 @@ namespace FallenAngel.UI
         [Header("启动按钮（可选）")]
         [SerializeField] private Button startDemoButton;
         [SerializeField] private Button pauseButton;
+        [SerializeField] private Button drumsButton;
+        [SerializeField] private Button bassButton;
+        [SerializeField] private Button synthButton;
         [SerializeField] private InputField chartNameInput;
 
         [Header("自动启动Demo（无UI时使用）")]
@@ -25,8 +28,12 @@ namespace FallenAngel.UI
 
         private void Awake()
         {
+            // 按钮监听必须在 Play 模式接（编辑模式添加的监听会在进 Play 时被序列化清空）
             if (startDemoButton != null) startDemoButton.onClick.AddListener(() => { AudioManager.Instance?.PlayButtonClick(); StartDemoChart(); });
             if (pauseButton != null) pauseButton.onClick.AddListener(() => { AudioManager.Instance?.PlayButtonClick(); GameManager.Instance?.TogglePause(); });
+            if (drumsButton != null) drumsButton.onClick.AddListener(() => { AudioManager.Instance?.PlayButtonClick(); StartChartFromResources("demo_drums"); });
+            if (bassButton != null) bassButton.onClick.AddListener(() => { AudioManager.Instance?.PlayButtonClick(); StartChartFromResources("demo_bass"); });
+            if (synthButton != null) synthButton.onClick.AddListener(() => { AudioManager.Instance?.PlayButtonClick(); StartChartFromResources("demo_synth"); });
 
             if (autoStartDemoOnAwake)
             {
