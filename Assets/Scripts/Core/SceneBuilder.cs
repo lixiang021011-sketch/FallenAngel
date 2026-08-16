@@ -507,7 +507,26 @@ namespace FallenAngel.Core
             SetPrivateField(starter, "gamePanel", gamePanel);
             SetPrivateField(starter, "startDemoButton", startBtn.GetComponent<Button>());
             SetPrivateField(starter, "autoStartDemoOnAwake", false);
+
+            // 自动生成谱的选择按钮（谱面由 chart_tools 分析真实音频生成，命名不含 .json 后缀）
+            AddChartButton(menuParent, starter, "DemoDrumsButton", new Vector2(0.28f, 0.16f), "鼓谱", "demo_drums");
+            AddChartButton(menuParent, starter, "DemoBassButton", new Vector2(0.5f, 0.16f), "贝斯谱", "demo_bass");
+            AddChartButton(menuParent, starter, "DemoSynthButton", new Vector2(0.72f, 0.16f), "合成器谱", "demo_synth");
             return starter;
+        }
+
+        /// <summary>
+        /// 菜单里加一个按名加载谱面的按钮（配合 GameStarter.StartChartFromResources）
+        /// </summary>
+        private static void AddChartButton(Transform menuParent, GameStarter starter,
+            string name, Vector2 anchor, string label, string chartName)
+        {
+            GameObject btn = CreateButton(name, menuParent, anchor, new Vector2(340, 100), label, 40);
+            btn.GetComponent<Button>().onClick.AddListener(() =>
+            {
+                AudioManager.Instance?.PlayButtonClick();
+                starter.StartChartFromResources(chartName);
+            });
         }
 
         private static PauseController CreatePausePanel(Transform parent)
