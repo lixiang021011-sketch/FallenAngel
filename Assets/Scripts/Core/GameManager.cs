@@ -193,7 +193,9 @@ namespace FallenAngel.Core
                 return;
             }
 
-            SongTime = Mathf.Max(0f, AudioManager.Instance.CurrentTime - (CurrentChart?.metadata.offset ?? 0f));
+            // 谱面偏移 + 全局节拍校准偏移（CalibrationSettings，PlayerPrefs 持久化）
+            SongTime = Mathf.Max(0f, AudioManager.Instance.CurrentTime -
+                ((CurrentChart?.metadata.offset ?? 0f) + CalibrationSettings.OffsetSeconds));
 
             // 曲终检测：真实音频播完，或时间超过谱面总时长（虚拟钟模式兜底）
             if (AudioManager.Instance.HasAudioFinished ||

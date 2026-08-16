@@ -74,6 +74,10 @@ namespace FallenAngel.Core
             gamePanel.SetActive(false);
             CreateLaneAndNotesUI(gamePanel.transform, out NoteSpawner spawner);
 
+            // 触点涟漪层：盖在 GamePanel 之上、MenuPanel 之下（层级顺序即渲染顺序）
+            GameObject rippleLayer = CreatePanel("HitFeedbackLayer", canvasRect);
+            rippleLayer.AddComponent<HitFeedbackController>();
+
             // 若工程里已有 Note.prefab，自动赋值给 NoteSpawner（否则使用默认Prefab）
             GameObject notePrefabAsset = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Note.prefab");
             if (notePrefabAsset != null)
@@ -141,6 +145,9 @@ namespace FallenAngel.Core
             SetPrivateField(gamePanelRS, "menuPanel", menuPanel);
 
             GameStarter starter = CreateGameStarter(menuPanel.transform, gamePanel);
+
+            // 节拍校准面板（含菜单入口按钮，监听在 CalibrationController.Awake 接）
+            CreateCalibrationPanel(canvasRect, menuPanel.transform);
 
             // ---- 5. 链接引用 ----
             // (多数引用通过Inspector面板拖入，这里尽量给默认值)
@@ -328,6 +335,12 @@ namespace FallenAngel.Core
                 "", 72, TextAlignmentOptions.Center);
             judge.fontStyle = FontStyles.Bold;
 
+            // 早/晚指示（Phigros 手感参考），显示在判定文本下方
+            TextMeshProUGUI judgeBias = CreateText("JudgeBiasText", hudGO.transform,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 40), new Vector2(400, 50),
+                "", 36, TextAlignmentOptions.Center);
+            judgeBias.fontStyle = FontStyles.Bold;
+
             // Song Title
             TextMeshProUGUI title = CreateText("SongTitle", hudGO.transform,
                 new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(40, -40), new Vector2(800, 60),
@@ -368,6 +381,7 @@ namespace FallenAngel.Core
             SetPrivateField(hudC, "comboText", combo);
             SetPrivateField(hudC, "comboLabelText", comboLabel);
             SetPrivateField(hudC, "judgeResultText", judge);
+            SetPrivateField(hudC, "judgeBiasText", judgeBias);
             SetPrivateField(hudC, "songTitleText", title);
             SetPrivateField(hudC, "progressFillImage", fillImg);
             SetPrivateField(hudC, "progressText", progressTxt);
@@ -520,6 +534,67 @@ namespace FallenAngel.Core
             SetPrivateField(starter, "bassButton", bassBtn.GetComponent<Button>());
             SetPrivateField(starter, "synthButton", synthBtn.GetComponent<Button>());
             return starter;
+        }
+
+        /// <summary>
+        /// 节拍校准：菜单入口按钮 + 校准面板（开始测试/应用推荐/±5ms/关闭）
+        /// </summary>
+        private static void CreateCalibrationPanel(RectTransform canvasRect, Transform menuParent)
+        {
+            GameObject openBtn = CreateButton("CalibrationButton", menuParent,
+                new Vector2(0.5f, 0.055f), new Vector2(400, 90), "节拍校准", 40);
+
+            GameObject panel = new GameObject("CalibrationPanel", typeof(RectTransform), typeof(Image));
+            panel.transform.SetParent(canvasRect, false);
+            RectTransform rt = (RectTransform)panel.transform;
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            panel.GetComponent<Image>().color = new Color(0, 0, 0, 0.85f);
+
+            TextMeshProUGUI title = CreateText("CalTitle", panel.transform,
+                new Vector2(0.5f, 0.8f), new Vector2(0.5f, 0.8f), Vector2.zero, new Vector2(700, 100),
+                "节拍校准", 56, TextAlignmentOptions.Center);
+            title.fontStyle = FontStyles.Bold;
+
+            TextMeshProUGUI offsetTxt = CreateText("CalOffsetText", panel.transform,
+                new Vector2(0.5f, 0.68f), new Vector2(0.5f, 0.68f), Vector2.zero, new Vector2(800, 90),
+                "", 40, TextAlignmentOptions.Center);
+
+            TextMeshProUGUI statusTxt = CreateText("CalStatusText", panel.transform,
+                new Vector2(0.5f, 0.56f), new Vector2(0.5f, 0.56f), Vector2.zero, new Vector2(900, 160),
+                "点击开始测试，跟着滴答节拍点击屏幕", 32, TextAlignmentOptions.Center);
+
+            TextMeshProUGUI pulse = CreateText("CalPulseText", panel.transform,
+                new Vector2(0.5f, 0.36f), new Vector2(0.5f, 0.36f), Vector2.zero, new Vector2(200, 200),
+                "", 120, TextAlignmentOptions.Center);
+            pulse.raycastTarget = false;
+
+            GameObject startBtn = CreateButton("CalStartButton", panel.transform,
+                new Vector2(0.5f, 0.22f), new Vector2(400, 100), "开始测试", 40);
+            GameObject applyBtn = CreateButton("CalApplyButton", panel.transform,
+                new Vector2(0.5f, 0.14f), new Vector2(400, 90), "应用推荐值", 36);
+            applyBtn.GetComponent<Button>().interactable = false;
+            GameObject minusBtn = CreateButton("CalMinusButton", panel.transform,
+                new Vector2(0.35f, 0.085f), new Vector2(220, 80), "-5ms", 36);
+            GameObject plusBtn = CreateButton("CalPlusButton", panel.transform,
+                new Vector2(0.65f, 0.085f), new Vector2(220, 80), "+5ms", 36);
+            GameObject closeBtn = CreateButton("CalCloseButton", panel.transform,
+                new Vector2(0.5f, 0.025f), new Vector2(300, 70), "关闭", 34);
+
+            CalibrationController cal = panel.AddComponent<CalibrationController>();
+            SetPrivateField(cal, "panelRoot", panel);
+            SetPrivateField(cal, "statusText", statusTxt);
+            SetPrivateField(cal, "offsetText", offsetTxt);
+            SetPrivateField(cal, "pulseText", pulse);
+            SetPrivateField(cal, "openButton", openBtn.GetComponent<Button>());
+            SetPrivateField(cal, "startTestButton", startBtn.GetComponent<Button>());
+            SetPrivateField(cal, "applyButton", applyBtn.GetComponent<Button>());
+            SetPrivateField(cal, "plusButton", plusBtn.GetComponent<Button>());
+            SetPrivateField(cal, "minusButton", minusBtn.GetComponent<Button>());
+            SetPrivateField(cal, "closeButton", closeBtn.GetComponent<Button>());
+            panel.SetActive(false);
         }
 
         private static PauseController CreatePausePanel(Transform parent)

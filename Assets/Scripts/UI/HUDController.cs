@@ -17,6 +17,7 @@ namespace FallenAngel.UI
         [SerializeField] private TextMeshProUGUI comboText;
         [SerializeField] private TextMeshProUGUI comboLabelText;
         [SerializeField] private TextMeshProUGUI judgeResultText;  // 判定结果（PERFECT/GOOD...）
+        [SerializeField] private TextMeshProUGUI judgeBiasText;    // 早/晚指示（Phigros 手感参考）
         [SerializeField] private TextMeshProUGUI songTitleText;    // 歌曲名
         [SerializeField] private TextMeshProUGUI progressText;     // 进度文本 01:23 / 03:45
 
@@ -37,10 +38,17 @@ namespace FallenAngel.UI
         [SerializeField] private Color comboFullColor = Color.yellow;
         [SerializeField] private Color comboBrokenColor = Color.white;
 
+        [Header("早/晚指示（Phigros 同款配色）")]
+        [SerializeField] private Color earlyColor = new Color(0.012f, 0.667f, 0.976f); // #03aaf9
+        [SerializeField] private Color lateColor = new Color(1f, 0.275f, 0.071f);       // #ff4612
+        [Tooltip("偏差绝对值小于该值视为 Perfect(Max)，不显示早/晚指示（秒）")]
+        [SerializeField] private float biasShowThreshold = 0.04f;
+
         private Vector3 comboOriginalScale;
         private Vector3 judgeOriginalScale;
         private Coroutine comboPunchCoroutine;
         private Coroutine judgeFadeCoroutine;
+        private Coroutine biasFadeCoroutine;
 
         private void Start()
         {
@@ -70,6 +78,7 @@ namespace FallenAngel.UI
                 JudgeManager.Instance.OnScoreUpdate += HandleScoreUpdate;
                 JudgeManager.Instance.OnComboUpdate += HandleComboUpdate;
                 JudgeManager.Instance.OnJudgeResult += HandleJudgeResult;
+                JudgeManager.Instance.OnJudgeBias += HandleJudgeBias;
             }
             if (GameManager.Instance != null)
             {
@@ -84,6 +93,7 @@ namespace FallenAngel.UI
                 JudgeManager.Instance.OnScoreUpdate -= HandleScoreUpdate;
                 JudgeManager.Instance.OnComboUpdate -= HandleComboUpdate;
                 JudgeManager.Instance.OnJudgeResult -= HandleJudgeResult;
+                JudgeManager.Instance.OnJudgeBias -= HandleJudgeBias;
             }
             if (GameManager.Instance != null)
             {
@@ -200,6 +210,41 @@ namespace FallenAngel.UI
 
             if (judgeFadeCoroutine != null) StopCoroutine(judgeFadeCoroutine);
             judgeFadeCoroutine = StartCoroutine(JudgeFade());
+        }
+
+        /// <summary>
+        /// 早/晚指示（Phigros 手感参考）：
+        /// |偏差| ≤ 阈值 → Perfect(Max) 不显示；正=按早了（蓝"早"），负=按晚了（橙"晚"）
+        /// </summary>
+        private void HandleJudgeBias(float bias)
+        {
+            if (judgeBiasText == null) return;
+
+            if (Mathf.Abs(bias) <= biasShowThreshold)
+            {
+                return; // Perfect(Max) 区间，保留上一次的指示直到自然淡出
+            }
+
+            judgeBiasText.text = bias > 0f ? "早" : "晚";
+            judgeBiasText.color = bias > 0f ? earlyColor : lateColor;
+
+            if (biasFadeCoroutine != null) StopCoroutine(biasFadeCoroutine);
+            biasFadeCoroutine = StartCoroutine(BiasFade());
+        }
+
+        private System.Collections.IEnumerator BiasFade()
+        {
+            float timer = 0f;
+            Color orig = judgeBiasText.color;
+            while (timer < judgeFadeDuration)
+            {
+                timer += Time.unscaledDeltaTime;
+                Color c = orig;
+                c.a = 1f - timer / judgeFadeDuration;
+                judgeBiasText.color = c;
+                yield return null;
+            }
+            judgeBiasText.text = "";
         }
 
         private System.Collections.IEnumerator JudgeFade()

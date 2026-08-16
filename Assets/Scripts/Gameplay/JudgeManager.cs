@@ -21,6 +21,12 @@ namespace FallenAngel.Gameplay
         /// <summary>当前判定结果（供UI订阅显示）</summary>
         public event System.Action<JudgeResultType, int> OnJudgeResult; // (result, lane)
 
+        /// <summary>
+        /// 判定偏差事件（秒，正=按早了，负=按晚了），供 HUD 显示"早/晚"指示（Phigros 手感参考）。
+        /// 仅非 Miss 判定触发。
+        /// </summary>
+        public event System.Action<float> OnJudgeBias;
+
         /// <summary>连击数更新事件</summary>
         public event System.Action<int, bool> OnComboUpdate; // (combo, isFullComboNow)
 
@@ -188,9 +194,13 @@ namespace FallenAngel.Gameplay
                     }
                     else
                     {
-                        AddScoreAndCombo(JudgeWindows.GetScore(releaseResult, true));
+                        if (JudgeWindows.BreaksCombo(releaseResult))
+                            BreakCombo();
+                        else
+                            AddScoreAndCombo(JudgeWindows.GetScore(releaseResult, true));
                         AddJudgeCount(releaseResult);
                         OnJudgeResult?.Invoke(releaseResult, lane);
+                        OnJudgeBias?.Invoke(-releaseDiff); // 正=早，负=晚
                         PlayAudioJudge(releaseResult);
                     }
                 }
@@ -213,13 +223,17 @@ namespace FallenAngel.Gameplay
                 return;
             }
 
-            // 普通音符直接加分，长按头部仅触发视觉
+            // 长按头部仅触发视觉；Good/Bad 断连击不给分（Phigros 语义）
             if (note.Data.type != NoteType.LongStart)
             {
-                AddScoreAndCombo(JudgeWindows.GetScore(result));
+                if (JudgeWindows.BreaksCombo(result))
+                    BreakCombo();
+                else
+                    AddScoreAndCombo(JudgeWindows.GetScore(result));
             }
             AddJudgeCount(result);
             OnJudgeResult?.Invoke(result, lane);
+            OnJudgeBias?.Invoke(-(GameManager.Instance.SongTime - note.Data.time)); // 正=早，负=晚
             PlayAudioJudge(result);
         }
 
@@ -241,9 +255,17 @@ namespace FallenAngel.Gameplay
         private void ProcessMiss(int lane)
         {
             MissCount++;
+            BreakCombo();
+            OnJudgeCountsUpdate?.Invoke(PerfectCount, GreatCount, GoodCount, BadCount, MissCount);
+        }
+
+        /// <summary>
+        /// 断连击（Miss/Good/Bad 共用；不增加 Miss 计数）
+        /// </summary>
+        private void BreakCombo()
+        {
             Combo = 0;
             OnComboUpdate?.Invoke(Combo, false);
-            OnJudgeCountsUpdate?.Invoke(PerfectCount, GreatCount, GoodCount, BadCount, MissCount);
         }
 
         private void AddScoreAndCombo(int score)
@@ -281,6 +303,7 @@ namespace FallenAngel.Gameplay
 
         /// <summary>
         /// 计算当前的达成率（百分比，0~100）
+        /// 权重与计分语义一致（Phigros 对齐）：Great≈65%，Good/Bad 0
         /// </summary>
         public float CalculateAccuracy()
         {
@@ -289,9 +312,9 @@ namespace FallenAngel.Gameplay
 
             float weightSum =
                 PerfectCount * 100f +
-                GreatCount * 80f +
-                GoodCount * 50f +
-                BadCount * 20f +
+                GreatCount * 65f +
+                GoodCount * 0f +
+                BadCount * 0f +
                 MissCount * 0f;
             return weightSum / total;
         }
