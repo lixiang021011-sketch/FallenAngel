@@ -1,43 +1,136 @@
 {
   "entries": [
-    { "key": "menu.title", "value": "Fallen Angel" },
-    { "key": "menu.subtitle", "value": "4K 下落式节奏游戏" },
-    { "key": "menu.hint", "value": "PC: D F J K 击打音符 | 空格 暂停 | ESC 退出\n移动端: 点击屏幕下方四个按键区" },
-    { "key": "menu.startDemo", "value": "开始 DEMO" },
-    { "key": "menu.chartDrums", "value": "鼓谱" },
-    { "key": "menu.chartBass", "value": "贝斯谱" },
-    { "key": "menu.chartSynth", "value": "合成器谱" },
-    { "key": "menu.calibration", "value": "节拍校准" },
-    { "key": "lang.title", "value": "语言" },
-    { "key": "lang.close", "value": "关闭" },
-    { "key": "lang.Chinese", "value": "中文" },
-    { "key": "lang.English", "value": "English" },
-    { "key": "hud.comboLabel", "value": "COMBO" },
-    { "key": "pause.paused", "value": "已暂停" },
-    { "key": "pause.resume", "value": "继续" },
-    { "key": "pause.retry", "value": "重试" },
-    { "key": "pause.exit", "value": "返回主界面" },
-    { "key": "result.perfect", "value": "完美" },
-    { "key": "result.great", "value": "优秀" },
-    { "key": "result.good", "value": "良好" },
-    { "key": "result.bad", "value": "较差" },
-    { "key": "result.miss", "value": "失误" },
-    { "key": "result.retry", "value": "重试" },
-    { "key": "result.back", "value": "返回" },
-    { "key": "cal.title", "value": "节拍校准" },
-    { "key": "cal.hint", "value": "点击「开始测试」，音符到达判定线时点击屏幕" },
-    { "key": "cal.start", "value": "开始测试" },
-    { "key": "cal.apply", "value": "应用推荐值" },
-    { "key": "cal.plus5", "value": "+5ms" },
-    { "key": "cal.minus5", "value": "-5ms" },
-    { "key": "cal.close", "value": "关闭" },
-    { "key": "cal.testing", "value": "测试开始，音符到达判定线时点击…" },
-    { "key": "cal.ready", "value": "准备… {0} 秒后音符开始下落" },
-    { "key": "cal.progress", "value": "音符到达判定线时点击…（{0}/{1}）已采集 {2} 次" },
-    { "key": "cal.collected", "value": "已采集 {0} 次点击" },
-    { "key": "cal.tooFew", "value": "有效点击太少，请跟着滴答节奏重新测试" },
-    { "key": "cal.result", "value": "平均延迟 {0} ms（共 {1} 次）" },
-    { "key": "cal.applied", "value": "已应用，回到游戏试听对拍" },
-    { "key": "cal.offset", "value": "当前偏移: {0} ms（正 = 音符推迟）" }
+    {
+      "key": "menu.title",
+      "value": "Fallen Angel"
+    },
+    {
+      "key": "menu.subtitle",
+      "value": "4K 下落式节奏游戏"
+    },
+    {
+      "key": "menu.hint",
+      "value": "PC: D F J K 击打音符 | 空格 暂停 | ESC 退出\n移动端: 点击屏幕下方四个按键区"
+    },
+    {
+      "key": "menu.startDemo",
+      "value": "开始 DEMO"
+    },
+    {
+      "key": "menu.chartDrums",
+      "value": "鼓谱"
+    },
+    {
+      "key": "menu.chartBass",
+      "value": "贝斯谱"
+    },
+    {
+      "key": "menu.chartSynth",
+      "value": "合成器谱"
+    },
+    {
+      "key": "menu.calibration",
+      "value": "节拍校准"
+    },
+    {
+      "key": "lang.title",
+      "value": "语言"
+    },
+    {
+      "key": "lang.close",
+      "value": "关闭"
+    },
+    {
+      "key": "lang.Chinese",
+      "value": "中文"
+    },
+    {
+      "key": "lang.English",
+      "value": "English"
+    },
+    {
+      "key": "hud.comboLabel",
+      "value": "COMBO"
+    },
+    {
+      "key": "pause.paused",
+      "value": "已暂停"
+    },
+    {
+      "key": "pause.resume",
+      "value": "继续"
+    },
+    {
+      "key": "pause.retry",
+      "value": "重试"
+    },
+    {
+      "key": "pause.exit",
+      "value": "返回主界面"
+    },
+    {
+      "key": "result.perfect",
+      "value": "完美"
+    },
+    {
+      "key": "result.great",
+      "value": "优秀"
+    },
+    {
+      "key": "result.good",
+      "value": "良好"
+    },
+    {
+      "key": "result.bad",
+      "value": "较差"
+    },
+    {
+      "key": "result.miss",
+      "value": "失误"
+    },
+    {
+      "key": "result.retry",
+      "value": "重试"
+    },
+    {
+      "key": "result.back",
+      "value": "返回"
+    },
+    {
+      "key": "cal.title",
+      "value": "节拍校准"
+    },
+    {
+      "key": "cal.plus5",
+      "value": "+5ms"
+    },
+    {
+      "key": "cal.minus5",
+      "value": "-5ms"
+    },
+    {
+      "key": "cal.close",
+      "value": "关闭"
+    },
+    {
+      "key": "cal.offset",
+      "value": "当前偏移: {0} ms（正 = 音符推迟）"
+    },
+    {
+      "key": "cal.observe",
+      "value": "开始观察"
+    },
+    {
+      "key": "cal.observeStop",
+      "value": "停止观察"
+    },
+    {
+      "key": "cal.observeHint",
+      "value": "观察音画是否重合：\n声音比音符晚 → 按 +5ms\n声音比音符早 → 按 -5ms\n直到音画完全重合"
+    },
+    {
+      "key": "cal.observing",
+      "value": "观察中…用 ±5ms 调整，直到音画重合（ESC 退出）"
+    }
   ]
 }

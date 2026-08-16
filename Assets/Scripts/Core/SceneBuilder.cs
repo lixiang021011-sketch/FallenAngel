@@ -695,25 +695,28 @@ namespace FallenAngel.Core
             judgeGO.GetComponent<Image>().color = new Color(1f, 0.45f, 0.45f, 0.9f);
             judgeGO.GetComponent<Image>().raycastTarget = false;
 
+            // 开始/停止观察：label 为动态文本（key 空串），由 CalibrationController
+            // 在观察/空闲状态切换文案（开始观察 ↔ 停止观察）
             GameObject startBtn = CreateButton("CalStartButton", panel.transform,
-                new Vector2(0.5f, 0.22f), new Vector2(400, 100), "cal.start", 40);
-            GameObject applyBtn = CreateButton("CalApplyButton", panel.transform,
-                new Vector2(0.5f, 0.14f), new Vector2(400, 90), "cal.apply", 36);
-            applyBtn.GetComponent<Button>().interactable = false;
+                new Vector2(0.5f, 0.22f), new Vector2(400, 100), "", 40);
+            TextMeshProUGUI startBtnLabel =
+                startBtn.transform.Find("Label").GetComponent<TextMeshProUGUI>();
+
+            // ±5ms 是观察式校准的主操作，做大一点
             GameObject minusBtn = CreateButton("CalMinusButton", panel.transform,
-                new Vector2(0.35f, 0.085f), new Vector2(220, 80), "cal.minus5", 36);
+                new Vector2(0.32f, 0.12f), new Vector2(300, 100), "cal.minus5", 40);
             GameObject plusBtn = CreateButton("CalPlusButton", panel.transform,
-                new Vector2(0.65f, 0.085f), new Vector2(220, 80), "cal.plus5", 36);
+                new Vector2(0.68f, 0.12f), new Vector2(300, 100), "cal.plus5", 40);
             GameObject closeBtn = CreateButton("CalCloseButton", panel.transform,
-                new Vector2(0.5f, 0.025f), new Vector2(300, 70), "cal.close", 34);
+                new Vector2(0.5f, 0.035f), new Vector2(300, 70), "cal.close", 34);
 
             CalibrationController cal = panel.AddComponent<CalibrationController>();
             SetPrivateField(cal, "panelRoot", panel);
             SetPrivateField(cal, "statusText", statusTxt);
             SetPrivateField(cal, "offsetText", offsetTxt);
             SetPrivateField(cal, "judgeLine", judgeRT);
-            SetPrivateField(cal, "startTestButton", startBtn.GetComponent<Button>());
-            SetPrivateField(cal, "applyButton", applyBtn.GetComponent<Button>());
+            SetPrivateField(cal, "startStopButton", startBtn.GetComponent<Button>());
+            SetPrivateField(cal, "startStopLabel", startBtnLabel);
             SetPrivateField(cal, "plusButton", plusBtn.GetComponent<Button>());
             SetPrivateField(cal, "minusButton", minusBtn.GetComponent<Button>());
             SetPrivateField(cal, "closeButton", closeBtn.GetComponent<Button>());
