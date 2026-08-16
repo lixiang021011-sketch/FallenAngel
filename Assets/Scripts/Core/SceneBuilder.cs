@@ -126,6 +126,14 @@ namespace FallenAngel.Core
         [MenuItem("Tools/FallenAngel/Build Default Game Scene")]
         public static void BuildDefaultScene()
         {
+            // 播放模式下 EditorApplication.NewScene 不可用（会抛 InvalidOperationException）
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                EditorUtility.DisplayDialog("FallenAngel",
+                    "请先退出播放模式（点播放按钮停止运行），再重建场景。", "OK");
+                return;
+            }
+
             // 先确认
             if (!EditorUtility.DisplayDialog("FallenAngel",
                 "这将清除当前场景并重建游戏场景结构。\n\n确定要继续吗？",
