@@ -32,6 +32,7 @@
     { "key": "cal.minus5", "value": "-5ms" },
     { "key": "cal.close", "value": "CLOSE" },
     { "key": "cal.testing", "value": "Testing… tap along with the ticks" },
+    { "key": "cal.ready", "value": "Get ready… ticks start in {0}s" },
     { "key": "cal.progress", "value": "Tap along… ({0}/{1}) taps: {2}" },
     { "key": "cal.collected", "value": "Taps collected: {0}" },
     { "key": "cal.tooFew", "value": "Too few valid taps — retry and follow the ticks" },

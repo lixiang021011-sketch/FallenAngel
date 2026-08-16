@@ -32,6 +32,7 @@
     { "key": "cal.minus5", "value": "-5ms" },
     { "key": "cal.close", "value": "关闭" },
     { "key": "cal.testing", "value": "测试开始，跟着滴答点击屏幕…" },
+    { "key": "cal.ready", "value": "准备… {0} 秒后滴答开始" },
     { "key": "cal.progress", "value": "跟着滴答点击屏幕…（{0}/{1}）已采集 {2} 次" },
     { "key": "cal.collected", "value": "已采集 {0} 次点击" },
     { "key": "cal.tooFew", "value": "有效点击太少，请跟着滴答节奏重新测试" },

@@ -35,6 +35,8 @@ namespace FallenAngel.UI
         [SerializeField] private float tickInterval = 0.6f;
         [Tooltip("点击与最近滴答偏差超过该值不计入（秒）")]
         [SerializeField] private float tapTolerance = 0.4f;
+        [Tooltip("测试开始前的准备时长（秒），避免按下按钮瞬间第一声滴答就响")]
+        [SerializeField] private float readySeconds = 1.5f;
 
         private AudioSource testSource;
         private AudioClip tickClip;
@@ -85,17 +87,15 @@ namespace FallenAngel.UI
 
             if (!testing) return;
 
-            // 测试期间全屏点击计为一次校准点击（编辑器鼠标 + 真机触摸）
-            bool tapped = false;
-#if UNITY_EDITOR
-            tapped = Input.GetMouseButtonDown(0);
-#else
+            // 测试期间全屏点击计为一次校准点击。
+            // 编辑器下鼠标与触摸双通道捕获（Device Simulator 注入的是触摸而非鼠标事件，
+            // 单靠 GetMouseButtonDown 在模拟器视图下可能收不到）
+            bool tapped = Input.GetMouseButtonDown(0);
             if (Input.touchCount > 0)
             {
                 for (int i = 0; i < Input.touchCount; i++)
                     if (Input.GetTouch(i).phase == TouchPhase.Began) tapped = true;
             }
-#endif
             if (!tapped) return;
 
             double now = Time.unscaledTimeAsDouble;
@@ -164,6 +164,13 @@ namespace FallenAngel.UI
 
         private System.Collections.IEnumerator TickLoop()
         {
+            // 准备期：按下"开始测试"后稍等，避免第一声滴答在玩家没准备好时响起
+            if (statusText != null)
+                statusText.text = Loc.T("cal.ready", (int)Mathf.Ceil(readySeconds));
+            double readyEnd = Time.unscaledTimeAsDouble + readySeconds;
+            while (Time.unscaledTimeAsDouble < readyEnd)
+                yield return null;
+
             for (int i = 0; i < tickCount; i++)
             {
                 double t = Time.unscaledTimeAsDouble;
