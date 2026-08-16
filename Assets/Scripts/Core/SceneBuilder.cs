@@ -663,24 +663,37 @@ namespace FallenAngel.Core
             panel.GetComponent<Image>().color = new Color(0, 0, 0, 0.85f);
 
             TextMeshProUGUI title = CreateText("CalTitle", panel.transform,
-                new Vector2(0.5f, 0.8f), new Vector2(0.5f, 0.8f), Vector2.zero, new Vector2(700, 100),
+                new Vector2(0.5f, 0.86f), new Vector2(0.5f, 0.86f), Vector2.zero, new Vector2(700, 100),
                 "cal.title", 56, TextAlignmentOptions.Center);
             title.fontStyle = FontStyles.Bold;
 
             TextMeshProUGUI offsetTxt = CreateText("CalOffsetText", panel.transform,
-                new Vector2(0.5f, 0.68f), new Vector2(0.5f, 0.68f), Vector2.zero, new Vector2(800, 90),
+                new Vector2(0.5f, 0.78f), new Vector2(0.5f, 0.78f), Vector2.zero, new Vector2(800, 90),
                 "", 40, TextAlignmentOptions.Center);
 
             // 状态文本为运行时动态内容（控制器写入，含进度/结果），key 传空串保持"动态"，
             // 避免语言切换时 LocalizedText 把运行时状态覆盖回提示文案
             TextMeshProUGUI statusTxt = CreateText("CalStatusText", panel.transform,
-                new Vector2(0.5f, 0.56f), new Vector2(0.5f, 0.56f), Vector2.zero, new Vector2(900, 160),
+                new Vector2(0.5f, 0.68f), new Vector2(0.5f, 0.68f), Vector2.zero, new Vector2(900, 120),
                 "", 32, TextAlignmentOptions.Center);
 
-            TextMeshProUGUI pulse = CreateText("CalPulseText", panel.transform,
-                new Vector2(0.5f, 0.36f), new Vector2(0.5f, 0.36f), Vector2.zero, new Vector2(200, 200),
-                "", 120, TextAlignmentOptions.Center);
-            pulse.raycastTarget = false;
+            // 下落式校准轨道（与核心游玩视觉一致）：轨道条 + 判定线
+            // 判定线本地 y = (0.32-0.5)*1920 ≈ -346，音符从 -346+576=+230 处出生
+            GameObject laneGO = new GameObject("CalLane", typeof(RectTransform), typeof(Image));
+            laneGO.transform.SetParent(panel.transform, false);
+            RectTransform laneRT = (RectTransform)laneGO.transform;
+            laneRT.anchorMin = laneRT.anchorMax = new Vector2(0.5f, 0.47f);
+            laneRT.sizeDelta = new Vector2(180, 576);
+            laneGO.GetComponent<Image>().color = new Color(0, 0, 0, 0.35f);
+            laneGO.GetComponent<Image>().raycastTarget = false;
+
+            GameObject judgeGO = new GameObject("CalJudgeLine", typeof(RectTransform), typeof(Image));
+            judgeGO.transform.SetParent(panel.transform, false);
+            RectTransform judgeRT = (RectTransform)judgeGO.transform;
+            judgeRT.anchorMin = judgeRT.anchorMax = new Vector2(0.5f, 0.32f);
+            judgeRT.sizeDelta = new Vector2(240, 6);
+            judgeGO.GetComponent<Image>().color = new Color(1f, 0.45f, 0.45f, 0.9f);
+            judgeGO.GetComponent<Image>().raycastTarget = false;
 
             GameObject startBtn = CreateButton("CalStartButton", panel.transform,
                 new Vector2(0.5f, 0.22f), new Vector2(400, 100), "cal.start", 40);
@@ -698,7 +711,7 @@ namespace FallenAngel.Core
             SetPrivateField(cal, "panelRoot", panel);
             SetPrivateField(cal, "statusText", statusTxt);
             SetPrivateField(cal, "offsetText", offsetTxt);
-            SetPrivateField(cal, "pulseText", pulse);
+            SetPrivateField(cal, "judgeLine", judgeRT);
             SetPrivateField(cal, "startTestButton", startBtn.GetComponent<Button>());
             SetPrivateField(cal, "applyButton", applyBtn.GetComponent<Button>());
             SetPrivateField(cal, "plusButton", plusBtn.GetComponent<Button>());
