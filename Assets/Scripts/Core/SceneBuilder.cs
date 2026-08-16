@@ -71,15 +71,11 @@ namespace FallenAngel.Core
                 AssetDatabase.CreateAsset(fa, assetPath);
             }
 
-            // 设为全局默认字体（所有新建文本生效；已有场景需重建）
-            // 注意：TMP 3.x 中 defaultFontAsset 是静态成员
-            if (TMP_Settings.instance != null)
-            {
-                TMP_Settings.defaultFontAsset = fa;
-                EditorUtility.SetDirty(TMP_Settings.instance);
-            }
+            // 刷新字体缓存，让后续 CreateText 使用中文字体（不走 TMP_Settings，
+            // 因为不同 TMP 版本 defaultFontAsset 的 API 形态不一）
+            cjkFontLoaded = false;
             AssetDatabase.SaveAssets();
-            Debug.Log($"[SceneBuilder] 中文字体资产已就绪并设为默认: {assetPath}（请重新执行 Build Default Game Scene）");
+            Debug.Log($"[SceneBuilder] 中文字体资产已就绪: {assetPath}（请重新执行 Build Default Game Scene）");
             EditorUtility.DisplayDialog("FallenAngel",
                 "中文字体已就绪。\n\n请重新执行 Tools > FallenAngel > Build Default Game Scene 重建场景，中文 UI 即可正常显示。", "OK");
         }
@@ -706,6 +702,22 @@ namespace FallenAngel.Core
         }
 
         // ================ Text 创建辅助 ================
+
+        // 中文字体资产缓存（由 Create Chinese TMP Font 菜单生成，CreateText 统一使用）
+        private static TMP_FontAsset cjkFontAsset;
+        private static bool cjkFontLoaded;
+
+        /// <summary>获取中文字体资产（不存在则返回 null，文本回退到 TMP 默认字体）</summary>
+        private static TMP_FontAsset GetCjkFontAsset()
+        {
+            if (!cjkFontLoaded)
+            {
+                cjkFontLoaded = true;
+                cjkFontAsset = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Fonts/CJK_Font SDF.asset");
+            }
+            return cjkFontAsset;
+        }
+
         private static TextMeshProUGUI CreateText(string name, Transform parent,
             Vector2 aMin, Vector2 aMax, Vector2 anchoredPos, Vector2 size,
             string text, int fontSize, TextAlignmentOptions align)
@@ -724,6 +736,10 @@ namespace FallenAngel.Core
             txt.alignment = align;
             txt.color = Color.white;
             txt.enableWordWrapping = true;
+
+            // 使用中文字体（若已生成），否则回退 TMP 默认字体（中文会显示方块）
+            TMP_FontAsset cjk = GetCjkFontAsset();
+            if (cjk != null) txt.font = cjk;
             return txt;
         }
 
