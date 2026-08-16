@@ -32,3 +32,9 @@ sysinfo.txt
 *.stackdump
 crashlytics-build.properties
 compile.log
+
+# chart_tools 生成物与缓存
+chart_tools/__pycache__/
+chart_tools/*_analysis.json
+chart_tools/*_instruments.json
+chart_tools/detailed_map.txt
