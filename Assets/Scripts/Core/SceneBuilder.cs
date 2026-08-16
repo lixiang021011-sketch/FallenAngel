@@ -72,9 +72,10 @@ namespace FallenAngel.Core
             }
 
             // 设为全局默认字体（所有新建文本生效；已有场景需重建）
+            // 注意：TMP 3.x 中 defaultFontAsset 是静态成员
             if (TMP_Settings.instance != null)
             {
-                TMP_Settings.instance.defaultFontAsset = fa;
+                TMP_Settings.defaultFontAsset = fa;
                 EditorUtility.SetDirty(TMP_Settings.instance);
             }
             AssetDatabase.SaveAssets();
