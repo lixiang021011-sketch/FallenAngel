@@ -113,7 +113,7 @@ namespace FallenAngel.UI
 
             tapDelays.Add((float)(now - nearest));
             if (statusText != null)
-                statusText.text = $"已采集 {tapDelays.Count} 次点击";
+                statusText.text = Loc.T("cal.collected", tapDelays.Count);
         }
 
         /// <summary>打开面板（菜单按钮）</summary>
@@ -124,7 +124,7 @@ namespace FallenAngel.UI
             RefreshOffsetText();
             SetButtonsInteractable(true);
             if (applyButton != null) applyButton.interactable = false; // 新测试前不可应用旧结果
-            if (statusText != null) statusText.text = "点击「开始测试」，跟着滴答节拍点击屏幕";
+            if (statusText != null) statusText.text = Loc.T("cal.hint");
         }
 
         /// <summary>关闭面板</summary>
@@ -143,7 +143,7 @@ namespace FallenAngel.UI
             testing = true;
             scheduledTicks.Clear();
             tapDelays.Clear();
-            if (statusText != null) statusText.text = "测试开始，跟着滴答点击屏幕…";
+            if (statusText != null) statusText.text = Loc.T("cal.testing");
             // 测试期间只禁用"开始测试"与"应用推荐值"；关闭/±5ms 保持可用，避免被困
             if (startTestButton != null) startTestButton.interactable = false;
             if (applyButton != null) applyButton.interactable = false;
@@ -177,7 +177,7 @@ namespace FallenAngel.UI
                     pulseCoroutine = StartCoroutine(PulseShrink());
                 }
                 if (statusText != null)
-                    statusText.text = $"跟着滴答点击屏幕…（{i + 1}/{tickCount}）已采集 {tapDelays.Count} 次";
+                    statusText.text = Loc.T("cal.progress", i + 1, tickCount, tapDelays.Count);
 
                 // 等待一个间隔（保持节拍稳定，不受渲染帧率影响）
                 double next = t + tickInterval;
@@ -211,7 +211,7 @@ namespace FallenAngel.UI
 
             if (tapDelays.Count < 5)
             {
-                if (statusText != null) statusText.text = "有效点击太少，请跟着滴答节奏重新测试";
+                if (statusText != null) statusText.text = Loc.T("cal.tooFew");
                 SetButtonsInteractable(true);
                 return;
             }
@@ -221,7 +221,7 @@ namespace FallenAngel.UI
             recommendedMs = sum / tapDelays.Count * 1000f;
 
             if (statusText != null)
-                statusText.text = $"平均延迟 {recommendedMs:F1} ms（共 {tapDelays.Count} 次）";
+                statusText.text = Loc.T("cal.result", recommendedMs.ToString("F1"), tapDelays.Count);
             if (applyButton != null) applyButton.interactable = true;
             SetButtonsInteractable(true);
         }
@@ -232,7 +232,7 @@ namespace FallenAngel.UI
             CalibrationSettings.OffsetMs = Mathf.RoundToInt(recommendedMs);
             AudioManager.Instance?.PlayButtonClick();
             RefreshOffsetText();
-            if (statusText != null) statusText.text = "已应用，回到游戏试听对拍";
+            if (statusText != null) statusText.text = Loc.T("cal.applied");
         }
 
         /// <summary>手动微调偏移</summary>
@@ -246,7 +246,8 @@ namespace FallenAngel.UI
         private void RefreshOffsetText()
         {
             if (offsetText != null)
-                offsetText.text = $"当前偏移: {(CalibrationSettings.OffsetMs >= 0 ? "+" : "")}{CalibrationSettings.OffsetMs} ms\n（正 = 音符推迟）";
+                offsetText.text = Loc.T("cal.offset",
+                    $"{(CalibrationSettings.OffsetMs >= 0 ? "+" : "")}{CalibrationSettings.OffsetMs}");
         }
 
         private void SetButtonsInteractable(bool interactable)

@@ -426,7 +426,7 @@ namespace FallenAngel.Core
 
             TextMeshProUGUI comboLabel = CreateText("ComboLabel", hudGO.transform,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 180), new Vector2(400, 60),
-                "COMBO", 40, TextAlignmentOptions.Center);
+                "hud.comboLabel", 40, TextAlignmentOptions.Center);
 
             // JudgeResult
             TextMeshProUGUI judge = CreateText("JudgeText", hudGO.transform,
@@ -532,7 +532,7 @@ namespace FallenAngel.Core
                 new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -870), new Vector2(500, 40),
                 "MAX COMBO: 999", 30, TextAlignmentOptions.Center);
 
-            // 判定统计
+            // 判定统计（节点名保持英文，显示文本走语言表 key）
             string[] labels = { "PERFECT", "GREAT", "GOOD", "BAD", "MISS" };
             float startY = -1000f;
             TextMeshProUGUI perfectTxt = null, greatTxt = null, goodTxt = null, badTxt = null, missTxt = null;
@@ -541,7 +541,7 @@ namespace FallenAngel.Core
                 CreateText($"Label_{labels[i]}", root.transform,
                     new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
                     new Vector2(-150, startY - i * 60), new Vector2(250, 40),
-                    labels[i], 28, TextAlignmentOptions.Right);
+                    $"result.{labels[i].ToLower()}", 28, TextAlignmentOptions.Right);
 
                 TextMeshProUGUI val = CreateText($"Val_{labels[i]}", root.transform,
                     new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
@@ -561,9 +561,9 @@ namespace FallenAngel.Core
 
             // 按钮
             GameObject btnRetry = CreateButton("RetryButton", root.transform,
-                new Vector2(0.3f, 0.08f), new Vector2(300, 120), "RETRY", 48);
+                new Vector2(0.3f, 0.08f), new Vector2(300, 120), "result.retry", 48);
             GameObject btnBack = CreateButton("BackButton", root.transform,
-                new Vector2(0.7f, 0.08f), new Vector2(300, 120), "BACK", 48);
+                new Vector2(0.7f, 0.08f), new Vector2(300, 120), "result.back", 48);
 
             // 设置挂在 GamePanel 上的 ResultScreen 的所有引用
             // 通过 parent.parent 找到 GamePanel 上的 ResultScreen
@@ -597,38 +597,42 @@ namespace FallenAngel.Core
             // 菜单标题
             TextMeshProUGUI title = CreateText("GameTitle", menuParent,
                 new Vector2(0.5f, 0.8f), new Vector2(0.5f, 0.8f), Vector2.zero, new Vector2(900, 200),
-                "Fallen Angel", 120, TextAlignmentOptions.Center);
+                "menu.title", 120, TextAlignmentOptions.Center);
             title.fontStyle = FontStyles.Bold;
             title.color = new Color(0.7f, 0.85f, 1f);
 
             TextMeshProUGUI subtitle = CreateText("Subtitle", menuParent,
                 new Vector2(0.5f, 0.7f), new Vector2(0.5f, 0.7f), Vector2.zero, new Vector2(600, 60),
-                "4K Rhythm Game", 40, TextAlignmentOptions.Center);
+                "menu.subtitle", 40, TextAlignmentOptions.Center);
             subtitle.color = new Color(1, 1, 1, 0.8f);
 
             TextMeshProUGUI hint = CreateText("Hint", menuParent,
                 new Vector2(0.5f, 0.45f), new Vector2(0.5f, 0.45f), Vector2.zero, new Vector2(900, 200),
-                "PC: D F J K to hit notes  |  SPACE to pause  |  ESC to exit\nMobile: Tap the 4 areas at bottom screen",
-                32, TextAlignmentOptions.Center);
+                "menu.hint", 32, TextAlignmentOptions.Center);
             hint.color = new Color(1, 1, 1, 0.7f);
 
+            // 语言切换按钮（右上角）：label 显示"目标语言"，切换后经 LocalizedText 全局刷新
+            GameObject langBtn = CreateButton("LanguageButton", menuParent,
+                new Vector2(0.87f, 0.94f), new Vector2(180, 80), "menu.langToggle", 34);
+
             GameObject startBtn = CreateButton("StartDemoButton", menuParent,
-                new Vector2(0.5f, 0.3f), new Vector2(500, 160), "START DEMO", 56);
+                new Vector2(0.5f, 0.3f), new Vector2(500, 160), "menu.startDemo", 56);
 
             GameStarter starter = menuParent.gameObject.AddComponent<GameStarter>();
             SetPrivateField(starter, "menuPanel", menuParent.gameObject);
             SetPrivateField(starter, "gamePanel", gamePanel);
             SetPrivateField(starter, "startDemoButton", startBtn.GetComponent<Button>());
+            SetPrivateField(starter, "languageButton", langBtn.GetComponent<Button>());
             SetPrivateField(starter, "autoStartDemoOnAwake", false);
 
             // 自动生成谱的选择按钮：只创建按钮，监听在 GameStarter.Awake（Play 模式）统一接
             // （编辑模式 AddListener 会在进入 Play 时被序列化清空）
             GameObject drumsBtn = CreateButton("DemoDrumsButton", menuParent,
-                new Vector2(0.28f, 0.16f), new Vector2(340, 100), "鼓谱", 40);
+                new Vector2(0.28f, 0.16f), new Vector2(340, 100), "menu.chartDrums", 40);
             GameObject bassBtn = CreateButton("DemoBassButton", menuParent,
-                new Vector2(0.5f, 0.16f), new Vector2(340, 100), "贝斯谱", 40);
+                new Vector2(0.5f, 0.16f), new Vector2(340, 100), "menu.chartBass", 40);
             GameObject synthBtn = CreateButton("DemoSynthButton", menuParent,
-                new Vector2(0.72f, 0.16f), new Vector2(340, 100), "合成器谱", 40);
+                new Vector2(0.72f, 0.16f), new Vector2(340, 100), "menu.chartSynth", 40);
             SetPrivateField(starter, "drumsButton", drumsBtn.GetComponent<Button>());
             SetPrivateField(starter, "bassButton", bassBtn.GetComponent<Button>());
             SetPrivateField(starter, "synthButton", synthBtn.GetComponent<Button>());
@@ -641,7 +645,7 @@ namespace FallenAngel.Core
         private static void CreateCalibrationPanel(RectTransform canvasRect, Transform menuParent, GameStarter starter)
         {
             GameObject openBtn = CreateButton("CalibrationButton", menuParent,
-                new Vector2(0.5f, 0.055f), new Vector2(400, 90), "节拍校准", 40);
+                new Vector2(0.5f, 0.055f), new Vector2(400, 90), "menu.calibration", 40);
 
             GameObject panel = new GameObject("CalibrationPanel", typeof(RectTransform), typeof(Image));
             panel.transform.SetParent(canvasRect, false);
@@ -654,16 +658,18 @@ namespace FallenAngel.Core
 
             TextMeshProUGUI title = CreateText("CalTitle", panel.transform,
                 new Vector2(0.5f, 0.8f), new Vector2(0.5f, 0.8f), Vector2.zero, new Vector2(700, 100),
-                "节拍校准", 56, TextAlignmentOptions.Center);
+                "cal.title", 56, TextAlignmentOptions.Center);
             title.fontStyle = FontStyles.Bold;
 
             TextMeshProUGUI offsetTxt = CreateText("CalOffsetText", panel.transform,
                 new Vector2(0.5f, 0.68f), new Vector2(0.5f, 0.68f), Vector2.zero, new Vector2(800, 90),
                 "", 40, TextAlignmentOptions.Center);
 
+            // 状态文本为运行时动态内容（控制器写入，含进度/结果），key 传空串保持"动态"，
+            // 避免语言切换时 LocalizedText 把运行时状态覆盖回提示文案
             TextMeshProUGUI statusTxt = CreateText("CalStatusText", panel.transform,
                 new Vector2(0.5f, 0.56f), new Vector2(0.5f, 0.56f), Vector2.zero, new Vector2(900, 160),
-                "点击开始测试，跟着滴答节拍点击屏幕", 32, TextAlignmentOptions.Center);
+                "", 32, TextAlignmentOptions.Center);
 
             TextMeshProUGUI pulse = CreateText("CalPulseText", panel.transform,
                 new Vector2(0.5f, 0.36f), new Vector2(0.5f, 0.36f), Vector2.zero, new Vector2(200, 200),
@@ -671,16 +677,16 @@ namespace FallenAngel.Core
             pulse.raycastTarget = false;
 
             GameObject startBtn = CreateButton("CalStartButton", panel.transform,
-                new Vector2(0.5f, 0.22f), new Vector2(400, 100), "开始测试", 40);
+                new Vector2(0.5f, 0.22f), new Vector2(400, 100), "cal.start", 40);
             GameObject applyBtn = CreateButton("CalApplyButton", panel.transform,
-                new Vector2(0.5f, 0.14f), new Vector2(400, 90), "应用推荐值", 36);
+                new Vector2(0.5f, 0.14f), new Vector2(400, 90), "cal.apply", 36);
             applyBtn.GetComponent<Button>().interactable = false;
             GameObject minusBtn = CreateButton("CalMinusButton", panel.transform,
-                new Vector2(0.35f, 0.085f), new Vector2(220, 80), "-5ms", 36);
+                new Vector2(0.35f, 0.085f), new Vector2(220, 80), "cal.minus5", 36);
             GameObject plusBtn = CreateButton("CalPlusButton", panel.transform,
-                new Vector2(0.65f, 0.085f), new Vector2(220, 80), "+5ms", 36);
+                new Vector2(0.65f, 0.085f), new Vector2(220, 80), "cal.plus5", 36);
             GameObject closeBtn = CreateButton("CalCloseButton", panel.transform,
-                new Vector2(0.5f, 0.025f), new Vector2(300, 70), "关闭", 34);
+                new Vector2(0.5f, 0.025f), new Vector2(300, 70), "cal.close", 34);
 
             CalibrationController cal = panel.AddComponent<CalibrationController>();
             SetPrivateField(cal, "panelRoot", panel);
@@ -717,25 +723,25 @@ namespace FallenAngel.Core
             // PAUSED 文本
             TextMeshProUGUI pausedText = CreateText("PausedText", root.transform,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 350), new Vector2(600, 120),
-                "PAUSED", 80, TextAlignmentOptions.Center);
+                "pause.paused", 80, TextAlignmentOptions.Center);
             pausedText.fontStyle = FontStyles.Bold;
             pausedText.color = Color.white;
 
             // Resume 按钮
             GameObject resumeBtn = CreateButton("ResumeButton", root.transform,
-                new Vector2(0.5f, 0.5f), new Vector2(400, 140), "RESUME", 48);
+                new Vector2(0.5f, 0.5f), new Vector2(400, 140), "pause.resume", 48);
             RectTransform rbt = (RectTransform)resumeBtn.transform;
             rbt.anchoredPosition = new Vector2(0, 180);
 
             // Retry 按钮
             GameObject retryBtn = CreateButton("RetryButton", root.transform,
-                new Vector2(0.5f, 0.5f), new Vector2(400, 140), "RETRY", 48);
+                new Vector2(0.5f, 0.5f), new Vector2(400, 140), "pause.retry", 48);
             RectTransform retbt = (RectTransform)retryBtn.transform;
             retbt.anchoredPosition = new Vector2(0, 0);
 
             // Exit 按钮
             GameObject exitBtn = CreateButton("ExitButton", root.transform,
-                new Vector2(0.5f, 0.5f), new Vector2(400, 140), "EXIT TO MENU", 40);
+                new Vector2(0.5f, 0.5f), new Vector2(400, 140), "pause.exit", 40);
             RectTransform ebt = (RectTransform)exitBtn.transform;
             ebt.anchoredPosition = new Vector2(0, -180);
 
@@ -768,7 +774,7 @@ namespace FallenAngel.Core
 
         private static TextMeshProUGUI CreateText(string name, Transform parent,
             Vector2 aMin, Vector2 aMax, Vector2 anchoredPos, Vector2 size,
-            string text, int fontSize, TextAlignmentOptions align)
+            string textKey, int fontSize, TextAlignmentOptions align)
         {
             GameObject go = new GameObject(name, typeof(RectTransform));
             go.transform.SetParent(parent, false);
@@ -779,7 +785,8 @@ namespace FallenAngel.Core
             rt.anchoredPosition = anchoredPos;
             rt.sizeDelta = size;
             TextMeshProUGUI txt = go.AddComponent<TextMeshProUGUI>();
-            txt.text = text;
+            // 初始文本按当前语言解析；动态文本（字面量作 key、不在语言表）原样返回
+            txt.text = Loc.T(textKey);
             txt.fontSize = fontSize;
             txt.alignment = align;
             txt.color = Color.white;
@@ -788,6 +795,10 @@ namespace FallenAngel.Core
             // 使用中文字体（若已生成），否则回退 TMP 默认字体（中文会显示方块）
             TMP_FontAsset cjk = GetCjkFontAsset();
             if (cjk != null) txt.font = cjk;
+
+            // 本地化刷新组件：语言切换时自动更新（动态文本经 Loc.HasKey 判断不受影响）
+            LocalizedText lt = go.AddComponent<LocalizedText>();
+            lt.SetKey(textKey);
             return txt;
         }
 

@@ -22,6 +22,7 @@ namespace FallenAngel.UI
         [SerializeField] private Button synthButton;
         [SerializeField] private Button calibrationButton;
         [SerializeField] private CalibrationController calibrationController;
+        [SerializeField] private Button languageButton;
         [SerializeField] private InputField chartNameInput;
 
         [Header("自动启动Demo（无UI时使用）")]
@@ -41,6 +42,13 @@ namespace FallenAngel.UI
             {
                 AudioManager.Instance?.PlayButtonClick();
                 if (calibrationController != null) calibrationController.Open();
+            });
+            // 语言切换（按钮 label 显示"目标语言"，切换后 LocalizedText 全局刷新）
+            if (languageButton != null) languageButton.onClick.AddListener(() =>
+            {
+                AudioManager.Instance?.PlayButtonClick();
+                Loc.SetLanguage(Loc.CurrentLanguage == Language.Chinese
+                    ? Language.English : Language.Chinese);
             });
 
             if (autoStartDemoOnAwake)
