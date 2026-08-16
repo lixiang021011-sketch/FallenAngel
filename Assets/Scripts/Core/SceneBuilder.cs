@@ -256,6 +256,9 @@ namespace FallenAngel.Core
             // 节拍校准面板：入口按钮监听由 GameStarter.Awake 接（校准面板初始非激活，其自身 Awake 不执行）
             CreateCalibrationPanel(canvasRect, menuPanel.transform, starter);
 
+            // 语言选择面板（遍历 Language 枚举生成按钮，新增语言自动扩展）
+            CreateLanguagePanel(canvasRect, menuPanel.transform, starter);
+
             // ---- 5. 链接引用 ----
             // (多数引用通过Inspector面板拖入，这里尽量给默认值)
             Debug.Log("[SceneBuilder] 场景基本结构已创建。请在Inspector中补充:");
@@ -619,10 +622,6 @@ namespace FallenAngel.Core
                 "menu.hint", 32, TextAlignmentOptions.Center);
             hint.color = new Color(1, 1, 1, 0.7f);
 
-            // 语言切换按钮（右上角）：label 显示"目标语言"，切换后经 LocalizedText 全局刷新
-            GameObject langBtn = CreateButton("LanguageButton", menuParent,
-                new Vector2(0.87f, 0.94f), new Vector2(180, 80), "menu.langToggle", 34);
-
             GameObject startBtn = CreateButton("StartDemoButton", menuParent,
                 new Vector2(0.5f, 0.3f), new Vector2(500, 160), "menu.startDemo", 56);
 
@@ -630,7 +629,6 @@ namespace FallenAngel.Core
             SetPrivateField(starter, "menuPanel", menuParent.gameObject);
             SetPrivateField(starter, "gamePanel", gamePanel);
             SetPrivateField(starter, "startDemoButton", startBtn.GetComponent<Button>());
-            SetPrivateField(starter, "languageButton", langBtn.GetComponent<Button>());
             SetPrivateField(starter, "autoStartDemoOnAwake", false);
 
             // 自动生成谱的选择按钮：只创建按钮，监听在 GameStarter.Awake（Play 模式）统一接
@@ -711,6 +709,60 @@ namespace FallenAngel.Core
             // 入口按钮与控制器交给 GameStarter（始终激活，Awake 时接线）
             SetPrivateField(starter, "calibrationButton", openBtn.GetComponent<Button>());
             SetPrivateField(starter, "calibrationController", cal);
+        }
+
+        /// <summary>
+        /// 语言选择面板：右上角入口按钮（label 动态显示当前语言）+ 面板内遍历
+        /// Language 枚举生成按钮（原生名称，key=lang.{枚举名}），当前语言置灰不可选。
+        /// </summary>
+        private static void CreateLanguagePanel(RectTransform canvasRect, Transform menuParent, GameStarter starter)
+        {
+            // 入口按钮：label 为动态文本（GameStarter 随语言切换刷新为当前语言名）
+            GameObject openBtn = CreateButton("LanguageButton", menuParent,
+                new Vector2(0.87f, 0.94f), new Vector2(180, 80), "", 34);
+            TextMeshProUGUI openLabel = openBtn.transform.Find("Label").GetComponent<TextMeshProUGUI>();
+
+            GameObject panel = new GameObject("LanguagePanel", typeof(RectTransform), typeof(Image));
+            panel.transform.SetParent(canvasRect, false);
+            RectTransform rt = (RectTransform)panel.transform;
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            panel.GetComponent<Image>().color = new Color(0, 0, 0, 0.85f);
+
+            TextMeshProUGUI title = CreateText("LangTitle", panel.transform,
+                new Vector2(0.5f, 0.78f), new Vector2(0.5f, 0.78f), Vector2.zero, new Vector2(600, 100),
+                "lang.title", 56, TextAlignmentOptions.Center);
+            title.fontStyle = FontStyles.Bold;
+
+            // 遍历语言枚举生成按钮（当前最多 4 个排布合理，更多语言时调整间距）
+            string[] names = System.Enum.GetNames(typeof(Language));
+            System.Collections.Generic.List<Button> langButtons =
+                new System.Collections.Generic.List<Button>();
+            float step = 0.14f;
+            float startY = 0.56f;
+            for (int i = 0; i < names.Length; i++)
+            {
+                GameObject b = CreateButton($"LangButton_{names[i]}", panel.transform,
+                    new Vector2(0.5f, startY - i * step), new Vector2(500, 110),
+                    $"lang.{names[i]}", 44);
+                langButtons.Add(b.GetComponent<Button>());
+            }
+
+            GameObject closeBtn = CreateButton("LangCloseButton", panel.transform,
+                new Vector2(0.5f, 0.08f), new Vector2(300, 80), "lang.close", 34);
+
+            LanguagePanelController lpc = panel.AddComponent<LanguagePanelController>();
+            SetPrivateField(lpc, "panelRoot", panel);
+            SetPrivateField(lpc, "languageButtons", langButtons);
+            SetPrivateField(lpc, "closeButton", closeBtn.GetComponent<Button>());
+            panel.SetActive(false);
+
+            // 入口按钮交给 GameStarter（始终激活，Awake 接线并刷新语言名）
+            SetPrivateField(starter, "languageButton", openBtn.GetComponent<Button>());
+            SetPrivateField(starter, "languageButtonLabel", openLabel);
+            SetPrivateField(starter, "languagePanelController", lpc);
         }
 
         private static PauseController CreatePausePanel(Transform parent)

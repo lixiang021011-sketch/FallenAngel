@@ -23,6 +23,8 @@ namespace FallenAngel.UI
         [SerializeField] private Button calibrationButton;
         [SerializeField] private CalibrationController calibrationController;
         [SerializeField] private Button languageButton;
+        [SerializeField] private TextMeshProUGUI languageButtonLabel;   // 动态显示当前语言名
+        [SerializeField] private LanguagePanelController languagePanelController;
         [SerializeField] private InputField chartNameInput;
 
         [Header("自动启动Demo（无UI时使用）")]
@@ -43,12 +45,11 @@ namespace FallenAngel.UI
                 AudioManager.Instance?.PlayButtonClick();
                 if (calibrationController != null) calibrationController.Open();
             });
-            // 语言切换（按钮 label 显示"目标语言"，切换后 LocalizedText 全局刷新）
+            // 语言面板入口：打开选择面板（面板内按钮由 LanguagePanelController 首次激活时接）
             if (languageButton != null) languageButton.onClick.AddListener(() =>
             {
                 AudioManager.Instance?.PlayButtonClick();
-                Loc.SetLanguage(Loc.CurrentLanguage == Language.Chinese
-                    ? Language.English : Language.Chinese);
+                if (languagePanelController != null) languagePanelController.Open();
             });
 
             if (autoStartDemoOnAwake)
@@ -63,6 +64,7 @@ namespace FallenAngel.UI
             {
                 GameManager.Instance.OnStateChanged += OnGameStateChanged;
             }
+            Loc.OnLanguageChanged += RefreshLanguageLabel;
         }
 
         private void Start()
@@ -72,6 +74,9 @@ namespace FallenAngel.UI
                 GameManager.Instance.OnStateChanged -= OnGameStateChanged;
                 GameManager.Instance.OnStateChanged += OnGameStateChanged;
             }
+            Loc.OnLanguageChanged -= RefreshLanguageLabel;
+            Loc.OnLanguageChanged += RefreshLanguageLabel;
+            RefreshLanguageLabel();
         }
 
         private void OnDisable()
@@ -80,6 +85,14 @@ namespace FallenAngel.UI
             {
                 GameManager.Instance.OnStateChanged -= OnGameStateChanged;
             }
+            Loc.OnLanguageChanged -= RefreshLanguageLabel;
+        }
+
+        /// <summary>菜单语言按钮 label 显示当前语言（原生名称，如 中文/English）</summary>
+        private void RefreshLanguageLabel()
+        {
+            if (languageButtonLabel != null)
+                languageButtonLabel.text = Loc.T($"lang.{Loc.CurrentLanguage}");
         }
 
         private void OnGameStateChanged(GameState state)
