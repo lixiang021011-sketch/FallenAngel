@@ -76,6 +76,13 @@ namespace FallenAngel.UI
 
         private void Update()
         {
+            // ESC 随时可关闭面板（测试中也可退出）
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                Close();
+                return;
+            }
+
             if (!testing) return;
 
             // 测试期间全屏点击计为一次校准点击（编辑器鼠标 + 真机触摸）
@@ -116,6 +123,8 @@ namespace FallenAngel.UI
             if (panelRoot != null) panelRoot.SetActive(true);
             RefreshOffsetText();
             SetButtonsInteractable(true);
+            if (applyButton != null) applyButton.interactable = false; // 新测试前不可应用旧结果
+            if (statusText != null) statusText.text = "点击「开始测试」，跟着滴答节拍点击屏幕";
         }
 
         /// <summary>关闭面板</summary>
@@ -134,9 +143,10 @@ namespace FallenAngel.UI
             testing = true;
             scheduledTicks.Clear();
             tapDelays.Clear();
-            if (statusText != null) statusText.text = "跟着滴答点击屏幕…";
+            if (statusText != null) statusText.text = "测试开始，跟着滴答点击屏幕…";
+            // 测试期间只禁用"开始测试"与"应用推荐值"；关闭/±5ms 保持可用，避免被困
+            if (startTestButton != null) startTestButton.interactable = false;
             if (applyButton != null) applyButton.interactable = false;
-            SetButtonsInteractable(false);
             testCoroutine = StartCoroutine(TickLoop());
         }
 
@@ -166,6 +176,8 @@ namespace FallenAngel.UI
                     if (pulseCoroutine != null) StopCoroutine(pulseCoroutine);
                     pulseCoroutine = StartCoroutine(PulseShrink());
                 }
+                if (statusText != null)
+                    statusText.text = $"跟着滴答点击屏幕…（{i + 1}/{tickCount}）已采集 {tapDelays.Count} 次";
 
                 // 等待一个间隔（保持节拍稳定，不受渲染帧率影响）
                 double next = t + tickInterval;
