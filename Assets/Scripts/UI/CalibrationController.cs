@@ -154,7 +154,11 @@ namespace FallenAngel.UI
             RefreshDynamicTexts();
         }
 
-        /// <summary>持续下落音符：到线瞬间响滴答，随后立即消失（无停留）</summary>
+        /// <summary>
+        /// 持续下落音符：音符视觉到达判定线为参照，滴答提前 offset 秒播放。
+        /// 校准偏移直接决定声音相对音符的早晚（+ = 声音提前 = 音符推迟），
+        /// 玩家按 ±5ms 后下一次滴答立刻听感移位——这就是观察式校准的反馈闭环。
+        /// </summary>
         private System.Collections.IEnumerator ObserveLoop()
         {
             int idx = 0;
@@ -165,15 +169,32 @@ namespace FallenAngel.UI
 
                 double spawn = Time.unscaledTimeAsDouble;
                 double arrival = spawn + fallTime;
+                bool ticked = false;
                 while (Time.unscaledTimeAsDouble < arrival)
                 {
                     float t = (float)((Time.unscaledTimeAsDouble - spawn) / fallTime);
                     SetNoteProgress(note, Mathf.Clamp01(t));
+
+                    // 滴答在 到达时刻 - offset 播放（当前偏移实时生效）
+                    if (!ticked && Time.unscaledTimeAsDouble >= arrival - CalibrationSettings.OffsetSeconds)
+                    {
+                        testSource.PlayOneShot(tickClip, 0.8f);
+                        ticked = true;
+                    }
+                    yield return null;
+                }
+                // 负偏移（声音应晚于音符）时滴答时刻在到达之后，继续等待
+                while (!ticked)
+                {
+                    if (Time.unscaledTimeAsDouble >= arrival - CalibrationSettings.OffsetSeconds)
+                    {
+                        testSource.PlayOneShot(tickClip, 0.8f);
+                        ticked = true;
+                    }
                     yield return null;
                 }
 
-                testSource.PlayOneShot(tickClip, 0.8f); // 到达判定线瞬间响滴答
-                note.gameObject.SetActive(false);       // 立即消失，避免与判定线长时间重合
+                note.gameObject.SetActive(false); // 到线立即消失
                 idx++;
 
                 // 相邻音符间隔（interval > fallTime 时音符间有喘息间隙）
