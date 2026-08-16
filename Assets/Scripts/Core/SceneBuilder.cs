@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using UnityEngine.TextCore.LowLevel; // GlyphRenderMode（TMP 字体图集渲染模式）
 using TMPro;
 using FallenAngel.Core;
 using FallenAngel.Data;
