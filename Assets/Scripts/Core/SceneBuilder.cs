@@ -79,8 +79,24 @@ namespace FallenAngel.Core
                         Object.DestroyImmediate(candidate);
                         continue;
                     }
-                    fa = candidate;
-                    AssetDatabase.CreateAsset(fa, assetPath);
+                    AssetDatabase.CreateAsset(candidate, assetPath);
+                    // 关键：图集纹理与材质必须存为资产子对象，否则只保存壳文件（约3KB），
+                    // 重新加载后 atlasTextures 为空 → 回退默认字体 → 中文方块
+                    if (candidate.material != null)
+                        AssetDatabase.AddObjectToAsset(candidate.material, candidate);
+                    if (candidate.atlasTextures != null)
+                        foreach (Texture2D tex in candidate.atlasTextures)
+                            if (tex != null) AssetDatabase.AddObjectToAsset(tex, candidate);
+                    AssetDatabase.SaveAssets();
+                    // 从磁盘重新加载，校验持久化结果（内存校验通过不等于落盘成功）
+                    fa = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(assetPath);
+                    if (!IsFontAssetUsable(fa))
+                    {
+                        Debug.LogWarning($"[SceneBuilder] {src} 持久化后图集丢失，尝试下一个候选");
+                        AssetDatabase.DeleteAsset(assetPath);
+                        fa = null;
+                        continue;
+                    }
                     Debug.Log($"[SceneBuilder] 中文字体资产生成成功: {src} -> {assetPath}");
                     break;
                 }
