@@ -28,56 +28,82 @@ namespace FallenAngel.Core
         public static void CreateChineseTmpFont()
         {
             // TMP 默认字体（Liberation Sans）不含中文字形，中文 UI 会显示为方块。
-            // 从 Windows 系统字体复制微软雅黑生成 TMP 字体资产，并设为全局默认。
-            // 注意：微软雅黑仅限本机开发使用，正式发布前需替换为可商用授权字体（如思源黑体）。
+            // 从系统字体生成 TMP 字体资产；优先纯 TTF（simhei），TTC 集合字体（msyh/simsun）
+            // 在部分环境下 CreateFontAsset 会生成空图集（m_AtlasTextures 为空），
+            // 因此生成后必须校验图集，坏资产自动删除并尝试下一个候选。
+            // 注意：系统字体仅限本机开发使用，正式发布前替换为可商用授权字体（如思源黑体）。
             string[] candidates =
             {
-                "C:/Windows/Fonts/msyh.ttc",     // 微软雅黑
-                "C:/Windows/Fonts/simhei.ttf",   // 黑体
-                "C:/Windows/Fonts/simsun.ttc",   // 宋体
+                "C:/Windows/Fonts/simhei.ttf",   // 黑体（纯 TTF，优先）
+                "C:/Windows/Fonts/msyh.ttc",     // 微软雅黑（TTC 集合）
+                "C:/Windows/Fonts/simsun.ttc",   // 宋体（TTC 集合）
             };
-            string src = null;
-            foreach (string c in candidates)
-            {
-                if (File.Exists(c)) { src = c; break; }
-            }
-            if (src == null)
-            {
-                Debug.LogError("[SceneBuilder] 未找到可用的系统中文字体（msyh/simhei/simsun）");
-                return;
-            }
 
             if (!AssetDatabase.IsValidFolder("Assets/Fonts"))
                 AssetDatabase.CreateFolder("Assets", "Fonts");
 
-            string fontPath = "Assets/Fonts/" + Path.GetFileName(src);
-            if (!File.Exists(fontPath))
+            const string assetPath = "Assets/Fonts/CJK_Font SDF.asset";
+
+            // 已有可用资产则直接用；损坏资产删除重建
+            TMP_FontAsset existing = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(assetPath);
+            if (existing != null && !IsFontAssetUsable(existing))
             {
-                File.Copy(src, fontPath);
-                AssetDatabase.ImportAsset(fontPath);
+                Debug.LogWarning("[SceneBuilder] 检测到损坏的中文字体资产，删除重建");
+                AssetDatabase.DeleteAsset(assetPath);
+                existing = null;
             }
-            Font font = AssetDatabase.LoadAssetAtPath<Font>(fontPath);
-            if (font == null)
+
+            TMP_FontAsset fa = existing;
+            if (fa == null)
             {
-                Debug.LogError($"[SceneBuilder] 字体导入失败: {fontPath}");
+                foreach (string src in candidates)
+                {
+                    if (!File.Exists(src)) continue;
+
+                    string fontPath = "Assets/Fonts/" + Path.GetFileName(src);
+                    if (!File.Exists(fontPath))
+                    {
+                        File.Copy(src, fontPath);
+                        AssetDatabase.ImportAsset(fontPath);
+                    }
+                    Font font = AssetDatabase.LoadAssetAtPath<Font>(fontPath);
+                    if (font == null) continue;
+
+                    TMP_FontAsset candidate = TMP_FontAsset.CreateFontAsset(
+                        font, 90, 9, GlyphRenderMode.SDFAA, 1024, 1024,
+                        AtlasPopulationMode.Dynamic, true);
+                    if (!IsFontAssetUsable(candidate))
+                    {
+                        Debug.LogWarning($"[SceneBuilder] {src} 生成图集失败（TTC 字体常见），尝试下一个候选");
+                        Object.DestroyImmediate(candidate);
+                        continue;
+                    }
+                    fa = candidate;
+                    AssetDatabase.CreateAsset(fa, assetPath);
+                    Debug.Log($"[SceneBuilder] 中文字体资产生成成功: {src} -> {assetPath}");
+                    break;
+                }
+            }
+
+            if (fa == null)
+            {
+                Debug.LogError("[SceneBuilder] 所有候选系统字体均生成失败，中文 UI 将无法显示");
+                EditorUtility.DisplayDialog("FallenAngel",
+                    "中文字体生成失败。\n\n候选字体（simhei/msyh/simsun）均未能生成有效图集。", "OK");
                 return;
             }
 
-            string assetPath = "Assets/Fonts/CJK_Font SDF.asset";
-            TMP_FontAsset fa = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(assetPath);
-            if (fa == null)
-            {
-                fa = TMP_FontAsset.CreateFontAsset(font);
-                AssetDatabase.CreateAsset(fa, assetPath);
-            }
-
-            // 刷新字体缓存，让后续 CreateText 使用中文字体（不走 TMP_Settings，
-            // 因为不同 TMP 版本 defaultFontAsset 的 API 形态不一）
             cjkFontLoaded = false;
             AssetDatabase.SaveAssets();
-            Debug.Log($"[SceneBuilder] 中文字体资产已就绪: {assetPath}（请重新执行 Build Default Game Scene）");
             EditorUtility.DisplayDialog("FallenAngel",
                 "中文字体已就绪。\n\n请重新执行 Tools > FallenAngel > Build Default Game Scene 重建场景，中文 UI 即可正常显示。", "OK");
+        }
+
+        /// <summary>字体资产是否可用（图集必须有效，否则 TMP 赋值即抛异常）</summary>
+        private static bool IsFontAssetUsable(TMP_FontAsset fa)
+        {
+            return fa != null && fa.atlasTextures != null &&
+                   fa.atlasTextures.Length > 0 && fa.atlasTextures[0] != null;
         }
 
         [MenuItem("Tools/FallenAngel/Build Default Game Scene")]
@@ -707,13 +733,18 @@ namespace FallenAngel.Core
         private static TMP_FontAsset cjkFontAsset;
         private static bool cjkFontLoaded;
 
-        /// <summary>获取中文字体资产（不存在则返回 null，文本回退到 TMP 默认字体）</summary>
+        /// <summary>获取中文字体资产（不存在或图集损坏则返回 null，回退 TMP 默认字体）</summary>
         private static TMP_FontAsset GetCjkFontAsset()
         {
             if (!cjkFontLoaded)
             {
                 cjkFontLoaded = true;
                 cjkFontAsset = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Fonts/CJK_Font SDF.asset");
+                if (cjkFontAsset != null && !IsFontAssetUsable(cjkFontAsset))
+                {
+                    Debug.LogWarning("[SceneBuilder] 中文字体资产图集损坏，回退 TMP 默认字体（请重跑 Create Chinese TMP Font）");
+                    cjkFontAsset = null;
+                }
             }
             return cjkFontAsset;
         }
