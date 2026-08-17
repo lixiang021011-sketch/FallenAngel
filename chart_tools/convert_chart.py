@@ -7,6 +7,8 @@ FallenAngel 谱面制作工具·第四步：.chart 转换器（Moonscraper / Clo
   --kick-lane N      底鼓（fret 5）映射到轨道 N（默认 0，与 AI 鼓谱 K0 约定一致）
   --author 名        谱面作者（默认取 .chart 的 Charter）
   --level N          等级数字（默认 7）
+  --offset 秒        覆盖谱面 offset（默认直搬 [Song].Offset；Unity 语义 = 音频时刻-谱面时刻，
+                     Moonscraper 的 Offset 需取反，如 +0.929 → --offset -0.929）
 
 .chart 格式要点:
   [Song]        Resolution(每四分音符 tick 数)、Offset(秒)、Name/Artist/Charter
@@ -177,7 +179,7 @@ def main():
             "difficulty": 1,
             "level": int(opts.get("level", 7)),
             "bpm": first_bpm,
-            "offset": float(song.get("Offset", 0.0)),
+            "offset": float(opts.get("offset", song.get("Offset", 0.0))),
             "audioFileName": song_name,
             "previewStartTime": 0.0,
             "previewDuration": 15.0,

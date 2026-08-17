@@ -71,6 +71,8 @@ namespace FallenAngel.Core
             Instance = this;
             DontDestroyOnLoad(gameObject);
             CurrentState = GameState.Menu;
+            // 适配高刷新率屏（120Hz 跑满；60Hz 屏自动锁 60，不产生副作用）
+            Application.targetFrameRate = 120;
         }
 
         /// <summary>

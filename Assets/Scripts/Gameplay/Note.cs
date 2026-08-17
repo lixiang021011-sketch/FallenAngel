@@ -1,7 +1,9 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using FallenAngel.Data;
 using FallenAngel.Core;
+using FallenAngel.UI;
 
 namespace FallenAngel.Gameplay
 {
@@ -13,15 +15,7 @@ namespace FallenAngel.Gameplay
     {
         [Header("引用")]
         [SerializeField] private Image noteImage;          // 音符图像
-
-        [Header("颜色（4个音轨不同颜色）")]
-        [SerializeField] private Color[] laneColors = new Color[]
-        {
-            new Color(0.2f, 0.6f, 1f),   // 蓝 - Lane 0 (D)
-            new Color(0.2f, 1f, 0.4f),   // 绿 - Lane 1 (F)
-            new Color(1f, 0.85f, 0.2f),  // 黄 - Lane 2 (J)
-            new Color(1f, 0.3f, 0.3f)    // 红 - Lane 3 (K)
-        };
+        // 轨道颜色统一取自 LaneColors（Moonscraper/Rock Band 标准：红黄蓝绿），不在此重复定义
 
         /// <summary>音符数据</summary>
         public NoteData Data { get; private set; }
@@ -48,6 +42,22 @@ namespace FallenAngel.Gameplay
         private RectTransform bodyRect;
         private bool bodyCreatedLogged;
 
+        // ===== 视觉增强：近大远小 / 鼓件图标 / 命中扩散环 =====
+        private const float PerspectiveMinScale = 0.55f; // 出生（屏幕顶部）时的缩放
+        private float hitScale = 1f;                     // 命中特效缩放（与透视分层，避免互抢 localScale）
+
+        /// <summary>普通音符宽度（与 NoteSpawner 默认预制体一致；kick 全宽条复用为普通音符时还原）</summary>
+        public const float DefaultNoteWidth = 130f;
+
+        /// <summary>普通音符厚度（高度；原 40 的三分之一）</summary>
+        public const float DefaultNoteHeight = 14f;
+        private DrumIconGraphic iconGraphic;             // 鼓件图标（运行时自生成，零资源）
+        private readonly List<HitRingEntry> hitRingPool = new List<HitRingEntry>(8); // 命中扩散环池
+
+        /// <summary>轨道 → 鼓件图标类型（对齐 Moonscraper 鼓件语义：0底鼓/1军鼓/2踩镲/3吊镲）</summary>
+        private static readonly DrumIconType[] LaneIconTypes =
+            { DrumIconType.Kick, DrumIconType.Snare, DrumIconType.HiHat, DrumIconType.Crash };
+
         private void Awake()
         {
             rectTransform = GetComponent<RectTransform>();
@@ -71,13 +81,14 @@ namespace FallenAngel.Gameplay
             // 重置缩放和颜色（从对象池复用时必须重置）
             transform.localScale = originalScale;
 
-            // 设置位置
+            // 设置位置（先还原标准尺寸：kick 全宽条复用为普通音符时）
             if (rectTransform == null) rectTransform = GetComponent<RectTransform>();
+            rectTransform.sizeDelta = new Vector2(DefaultNoteWidth, DefaultNoteHeight);
             rectTransform.anchoredPosition = spawnPos;
             gameObject.SetActive(true);
 
-            // 设置颜色
-            Color c = laneColors[Mathf.Clamp(data.lane, 0, 3)];
+            // 设置颜色（轨道语义色，与谱面编辑器 Moonscraper 一致）
+            Color c = LaneColors.GetLaneColor(data.lane);
             if (noteImage != null)
             {
                 noteImage.color = c;
@@ -87,6 +98,13 @@ namespace FallenAngel.Gameplay
 
             // 配置长按音符身体
             ConfigureLongNoteBody(spawnPos, judgeLinePos);
+
+            // 重置命中特效缩放，应用出生透视缩放（近大远小：顶部小、判定线大）
+            hitScale = 1f;
+            ApplyPerspectiveScale(0f);
+
+            // 鼓件图标（与谱面编辑器鼓件语义对应）
+            EnsureIcon(data.lane);
         }
 
         /// <summary>
@@ -104,8 +122,9 @@ namespace FallenAngel.Gameplay
 
             EnsureBodyGraphic();
             isLongNoteConfigured = true;
+            bodyRect.localScale = Vector3.one; // 池复用重置（收缩走 scaleY）
 
-            Color c = laneColors[Mathf.Clamp(Data.lane, 0, 3)];
+            Color c = LaneColors.GetLaneColor(Data.lane);
             bodyGraphic.bottomColor = new Color(c.r, c.g, c.b, 0.9f); // 贴近头部：接近实体
             bodyGraphic.topColor = new Color(c.r, c.g, c.b, 0f);      // 远端：完全透明
             bodyGraphic.SetVerticesDirty(); // 复用实例时强制重绘顶点色
@@ -117,7 +136,8 @@ namespace FallenAngel.Gameplay
             float fallTime = GameManager.Instance != null ? GameManager.Instance.ActualFallTime : 2f;
             float holdDistance = fallDistance * (Data.duration / fallTime); // 按住期间下落距离
             float bodyHeight = Mathf.Max(holdDistance, 300f);               // 最短拖尾保证可辨识
-            bodyRect.sizeDelta = new Vector2(bodyRect.sizeDelta.x, bodyHeight);
+            float bodyWidth = Mathf.Max(24f, rectTransform.sizeDelta.x - 2f); // 宽对齐音符头部（留 2px 边距；kick 全宽条随行）
+            bodyRect.sizeDelta = new Vector2(bodyWidth, bodyHeight);
             // 底边贴住头部中心（pivot 在底部，anchoredPosition 必须为 0）：
             // 修复原版 bug——此前用 height/2 定位，pivot 又在底部，双重偏移导致身体整体在屏幕外
             bodyRect.anchoredPosition = Vector2.zero;
@@ -172,7 +192,7 @@ namespace FallenAngel.Gameplay
             rt.anchorMax = new Vector2(0.5f, 0.5f);
             rt.pivot = new Vector2(0.5f, 0f);
             rt.anchoredPosition = Vector2.zero;
-            rt.sizeDelta = new Vector2(80f, 300f);
+            rt.sizeDelta = new Vector2(128f, 300f); // 宽对齐音符头部（130），留 2px 视觉边距
 
             GradientImage g = bodyGO.AddComponent<GradientImage>();
             // 显式补挂 CanvasRenderer（运行时 AddComponent 时 RequireComponent 不保证生效）
@@ -220,10 +240,23 @@ namespace FallenAngel.Gameplay
             if (Data.type == NoteType.LongStart && IsHolding && isLongNoteConfigured && bodyRect != null)
             {
                 HoldProgress = Mathf.Clamp01((currentSongTime - Data.time) / Mathf.Max(0.01f, Data.duration));
-                float currentHeight = bodyRect.sizeDelta.y * (1f - HoldProgress);
-                bodyRect.sizeDelta = new Vector2(bodyRect.sizeDelta.x, Mathf.Max(0f, currentHeight));
+                // 帧数优化：收缩用 localScale.y（pivot 在底部）——不重建网格
+                bodyRect.localScale = new Vector3(1f, Mathf.Max(0f, 1f - HoldProgress), 1f);
                 bodyRect.anchoredPosition = Vector2.zero; // 底边始终贴住头部
             }
+
+            // 近大远小：越靠近判定线越大（与命中特效缩放分层叠加）
+            ApplyPerspectiveScale(progress);
+        }
+
+        /// <summary>
+        /// 应用透视缩放：progress 0=出生（小）→ 1=判定线（原尺寸）。
+        /// localScale = 透视缩放 * hitScale（命中特效分层，二者互不覆盖）。
+        /// </summary>
+        private void ApplyPerspectiveScale(float progress)
+        {
+            float s = Mathf.Lerp(PerspectiveMinScale, 1f, Mathf.Clamp01(progress)) * hitScale;
+            transform.localScale = new Vector3(s, s, 1f);
         }
 
         /// <summary>
@@ -246,11 +279,13 @@ namespace FallenAngel.Gameplay
                     c.a = 0.6f;
                     noteImage.color = c;
                 }
+                SpawnHitRing(result);
             }
             else
             {
                 // 普通音符和长按尾命中 -> 播放消失动画
                 PlayHitEffect(result);
+                SpawnHitRing(result);
             }
         }
 
@@ -268,6 +303,7 @@ namespace FallenAngel.Gameplay
             JudgeResult = result;
             IsJudged = true;
             PlayHitEffect(result);
+            SpawnHitRing(result);
             return result;
         }
 
@@ -296,14 +332,16 @@ namespace FallenAngel.Gameplay
         {
             float duration = 0.2f;
             float timer = 0f;
-            Vector3 startScale = transform.localScale;
-            Vector3 targetScale = startScale * 1.5f;
+            // 特效只驱动 hitScale：透视缩放由 UpdatePosition 每帧叠加，
+            // 避免两者互抢 localScale（音符在 activeNotes 中直到动画结束，UpdatePosition 持续刷新）
+            float from = hitScale;
+            float to = 1.5f;
 
             while (timer < duration)
             {
                 timer += Time.unscaledDeltaTime;
                 float t = timer / duration;
-                transform.localScale = Vector3.Lerp(startScale, targetScale, t);
+                hitScale = Mathf.Lerp(from, to, t);
                 if (noteImage != null)
                 {
                     Color c = noteImage.color;
@@ -312,6 +350,7 @@ namespace FallenAngel.Gameplay
                 }
                 yield return null;
             }
+            hitScale = to; // 定格放大态，回收时由 Recycle/Initialize 重置
             gameObject.SetActive(false);
         }
 
@@ -351,8 +390,147 @@ namespace FallenAngel.Gameplay
         {
             StopAllCoroutines();
             // 重置缩放和颜色，防止从对象池复用时残留
+            hitScale = 1f;
             transform.localScale = originalScale;
             gameObject.SetActive(false);
+        }
+
+        /// <summary>是否为 kick（底鼓）：lane 0，任意键可判定（见 JudgeManager）</summary>
+        public bool IsKick => Data != null && Data.lane == 0;
+
+        /// <summary>
+        /// Kick（底鼓）视觉：横跨四键的全宽横条（任意键触发）。
+        /// 需在 Initialize 之后调用（覆盖宽度与 X 位置）。
+        /// </summary>
+        public void SetKickVisual(float fullWidth)
+        {
+            if (rectTransform == null) rectTransform = GetComponent<RectTransform>();
+            rectTransform.sizeDelta = new Vector2(fullWidth, rectTransform.sizeDelta.y);
+            Vector2 pos = rectTransform.anchoredPosition;
+            pos.x = 0f; // 横条居中跨四键
+            rectTransform.anchoredPosition = pos;
+
+            // 长按身体同步全宽（kick 长按未来可能出现；Initialize 时身体按标准宽生成）
+            if (bodyRect != null && bodyGraphic != null && bodyGraphic.gameObject.activeSelf)
+                bodyRect.sizeDelta = new Vector2(Mathf.Max(24f, fullWidth - 2f), bodyRect.sizeDelta.y);
+        }
+
+        // ============================================================
+        // 鼓件图标（与谱面编辑器鼓件语义对应，白色半透明叠加在头部色块上）
+        // ============================================================
+
+        /// <summary>确保图标子节点存在并设为对应轨道形状</summary>
+        private void EnsureIcon(int lane)
+        {
+            if (iconGraphic == null)
+            {
+                Transform existing = transform.Find("DrumIcon");
+                if (existing != null) iconGraphic = existing.GetComponent<DrumIconGraphic>();
+
+                if (iconGraphic == null)
+                {
+                    GameObject iconGO = new GameObject("DrumIcon",
+                        typeof(RectTransform), typeof(CanvasRenderer), typeof(DrumIconGraphic));
+                    iconGO.transform.SetParent(transform, false);
+                    iconGO.transform.SetAsLastSibling(); // 画在头部色块之上（长按身体在最底层）
+                    RectTransform irt = iconGO.GetComponent<RectTransform>();
+                    irt.sizeDelta = new Vector2(26f, 26f);
+                    irt.anchoredPosition = Vector2.zero;
+                    iconGraphic = iconGO.GetComponent<DrumIconGraphic>();
+                    iconGraphic.raycastTarget = false;
+                }
+            }
+
+            iconGraphic.IconType = LaneIconTypes[Mathf.Clamp(lane, 0, LaneIconTypes.Length - 1)];
+            iconGraphic.gameObject.SetActive(true);
+        }
+
+        // ============================================================
+        // 命中扩散环（判定线处向外扩散的音符色圆环，判定等级决定大小/亮度）
+        // ============================================================
+
+        /// <summary>命中时生成扩散环（环挂在 NotesContainer 下，与音符同一坐标系；协程挂环自身，不受音符回收影响）</summary>
+        private void SpawnHitRing(JudgeResultType result)
+        {
+            if (result == JudgeResultType.Miss || result == JudgeResultType.None) return;
+            if (transform.parent == null) return;
+
+            HitRingEntry entry = null;
+            for (int i = 0; i < hitRingPool.Count; i++)
+            {
+                if (!hitRingPool[i].rt.gameObject.activeSelf) { entry = hitRingPool[i]; break; }
+            }
+            if (entry == null)
+            {
+                if (hitRingPool.Count >= 8) return; // 池满丢弃（极密连打兜底）
+                entry = CreateHitRingEntry();
+            }
+
+            entry.rt.gameObject.SetActive(true);
+            entry.rt.anchoredPosition = rectTransform.anchoredPosition; // 命中瞬间音符已在判定线
+            entry.rt.sizeDelta = new Vector2(32f, 32f); // 网格固定，扩散用 localScale（零网格重建）
+            entry.rt.localScale = Vector3.one;
+            if (entry.canvasGroup != null) entry.canvasGroup.alpha = 1f;
+
+            Color c = LaneColors.GetLaneColor(Data.lane);
+            // Perfect：向白色混合 + 更亮，视觉上更"硬"
+            float perfectBlend = result == JudgeResultType.Perfect ? 1f : 0f;
+            c = Color.Lerp(c, Color.white, perfectBlend * 0.45f);
+            c.a = result == JudgeResultType.Perfect ? 0.9f : 0.75f;
+            entry.graphic.RingColor = c;
+
+            entry.coroutine = entry.graphic.StartCoroutine(AnimateHitRing(entry, result));
+        }
+
+        private HitRingEntry CreateHitRingEntry()
+        {
+            GameObject go = new GameObject("HitRing",
+                typeof(RectTransform), typeof(CanvasRenderer), typeof(HitRingGraphic), typeof(CanvasGroup));
+            go.transform.SetParent(transform.parent, false);
+            RectTransform rt = go.GetComponent<RectTransform>();
+            rt.sizeDelta = new Vector2(32f, 32f);
+            HitRingGraphic g = go.GetComponent<HitRingGraphic>();
+            g.raycastTarget = false;
+            CanvasGroup cg = go.GetComponent<CanvasGroup>();
+            go.SetActive(false);
+
+            HitRingEntry entry = new HitRingEntry { rt = rt, graphic = g, canvasGroup = cg };
+            hitRingPool.Add(entry);
+            return entry;
+        }
+
+        private System.Collections.IEnumerator AnimateHitRing(HitRingEntry entry, JudgeResultType result)
+        {
+            float duration = result == JudgeResultType.Perfect ? 0.35f : 0.28f;
+            float endScale = result == JudgeResultType.Perfect ? 5f : 3.8f;
+            float timer = 0f;
+            Color baseColor = entry.graphic.RingColor;
+
+            // 帧数优化：扩散用 localScale、淡出用 CanvasGroup——全程不重建 UI 网格
+            entry.rt.localScale = new Vector3(0.9f, 0.9f, 1f);
+            while (timer < duration)
+            {
+                timer += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(timer / duration);
+                float s = Mathf.Lerp(0.9f, endScale, t);
+                entry.rt.localScale = new Vector3(s, s, 1f);
+                if (entry.canvasGroup != null)
+                    entry.canvasGroup.alpha = baseColor.a * (1f - t * t); // 先慢后快淡出
+                yield return null;
+            }
+
+            entry.rt.localScale = Vector3.one;
+            entry.rt.gameObject.SetActive(false);
+            entry.coroutine = null;
+        }
+
+        /// <summary>命中扩散环池条目</summary>
+        private class HitRingEntry
+        {
+            public RectTransform rt;
+            public HitRingGraphic graphic;
+            public CanvasGroup canvasGroup;
+            public Coroutine coroutine;
         }
     }
 }

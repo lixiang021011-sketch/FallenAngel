@@ -21,6 +21,10 @@
       "value": "鼓谱"
     },
     {
+      "key": "menu.chartDrumsEasy",
+      "value": "鼓谱-简单"
+    },
+    {
       "key": "menu.chartBass",
       "value": "贝斯谱"
     },
@@ -67,6 +71,10 @@
     {
       "key": "pause.exit",
       "value": "返回主界面"
+    },
+    {
+      "key": "fallSpeed.title",
+      "value": "下落速度"
     },
     {
       "key": "result.perfect",

@@ -21,6 +21,10 @@
       "value": "Drums"
     },
     {
+      "key": "menu.chartDrumsEasy",
+      "value": "Drums (Easy)"
+    },
+    {
       "key": "menu.chartBass",
       "value": "Bass"
     },
@@ -67,6 +71,10 @@
     {
       "key": "pause.exit",
       "value": "EXIT TO MENU"
+    },
+    {
+      "key": "fallSpeed.title",
+      "value": "Scroll Speed"
     },
     {
       "key": "result.perfect",

@@ -18,6 +18,7 @@ namespace FallenAngel.UI
         [SerializeField] private Button startDemoButton;
         [SerializeField] private Button pauseButton;
         [SerializeField] private Button drumsButton;
+        [SerializeField] private Button easyDrumsButton;
         [SerializeField] private Button bassButton;
         [SerializeField] private Button synthButton;
         [SerializeField] private Button calibrationButton;
@@ -36,7 +37,8 @@ namespace FallenAngel.UI
             // 按钮监听必须在 Play 模式接（编辑模式添加的监听会在进 Play 时被序列化清空）
             if (startDemoButton != null) startDemoButton.onClick.AddListener(() => { AudioManager.Instance?.PlayButtonClick(); StartDemoChart(); });
             if (pauseButton != null) pauseButton.onClick.AddListener(() => { AudioManager.Instance?.PlayButtonClick(); GameManager.Instance?.TogglePause(); });
-            if (drumsButton != null) drumsButton.onClick.AddListener(() => { AudioManager.Instance?.PlayButtonClick(); StartChartFromResources("demo_drums"); });
+            if (drumsButton != null) drumsButton.onClick.AddListener(() => { AudioManager.Instance?.PlayButtonClick(); StartChartFromResources("酸橙色信笺_双指版"); });
+            if (easyDrumsButton != null) easyDrumsButton.onClick.AddListener(() => { AudioManager.Instance?.PlayButtonClick(); StartChartFromResources("酸橙色信笺_Easy"); });
             if (bassButton != null) bassButton.onClick.AddListener(() => { AudioManager.Instance?.PlayButtonClick(); StartChartFromResources("demo_bass"); });
             if (synthButton != null) synthButton.onClick.AddListener(() => { AudioManager.Instance?.PlayButtonClick(); StartChartFromResources("demo_synth"); });
             // 校准面板挂的 CalibrationController 初始非激活（其 Awake 不执行），入口按钮由这里接

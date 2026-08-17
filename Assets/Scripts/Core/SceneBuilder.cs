@@ -126,6 +126,12 @@ namespace FallenAngel.Core
         [MenuItem("Tools/FallenAngel/Build Default Game Scene")]
         public static void BuildDefaultScene()
         {
+            BuildDefaultScene(true);
+        }
+
+        /// <summary>confirm=false 供命令行打包（batchmode 下 DisplayDialog 返回 false 会中断流程）</summary>
+        public static void BuildDefaultScene(bool confirm)
+        {
             // 播放模式下 EditorApplication.NewScene 不可用（会抛 InvalidOperationException）
             if (EditorApplication.isPlayingOrWillChangePlaymode)
             {
@@ -135,7 +141,7 @@ namespace FallenAngel.Core
             }
 
             // 先确认
-            if (!EditorUtility.DisplayDialog("FallenAngel",
+            if (confirm && !EditorUtility.DisplayDialog("FallenAngel",
                 "这将清除当前场景并重建游戏场景结构。\n\n确定要继续吗？",
                 "重建", "取消"))
                 return;
@@ -237,6 +243,11 @@ namespace FallenAngel.Core
             CreatePausePanel(pausePanelGO.transform);
             // 关键：PauseController 挂在 HUDPanel（始终激活），不是 PauseRoot（SetActive(false)）
             PauseController hudPC = hudPanel.AddComponent<PauseController>();
+            // 下落速度调节控制器：同样挂 HUDPanel，注入 PauseRoot 引用
+            FallSpeedController fsc = hudPanel.AddComponent<FallSpeedController>();
+            Transform pauseRootT = pausePanelGO.transform.Find("PauseRoot");
+            if (pauseRootT != null)
+                SetPrivateField(fsc, "pauseRoot", pauseRootT.gameObject);
             SetPrivateField(hudPC, "pauseButton", pauseBtnGO.GetComponent<Button>());
             SetPrivateField(hudPC, "pausePanel", pausePanelGO);
             SetPrivateField(hudPC, "gamePanel", gamePanel);
@@ -298,14 +309,7 @@ namespace FallenAngel.Core
             lanesImg.color = new Color(0, 0, 0, 0.5f);
             lanesImg.raycastTarget = false; // 不拦截触摸
 
-            // 画四个竖条
-            Color[] laneColors = new Color[]
-            {
-                new Color(0.2f, 0.6f, 1f, 0.12f),
-                new Color(0.2f, 1f, 0.4f, 0.12f),
-                new Color(1f, 0.85f, 0.2f, 0.12f),
-                new Color(1f, 0.3f, 0.3f, 0.12f)
-            };
+            // 画四个竖条（轨道语义色统一取自 LaneColors，与谱面编辑器 Moonscraper 一致）
             float[] laneX = LaneLayout.CentersX; // 轨道布局统一取自 LaneLayout（与输入判定同源）
             float laneWidth = 140f;
 
@@ -360,7 +364,8 @@ namespace FallenAngel.Core
                 lRT.pivot = new Vector2(0.5f, 0.5f);
                 lRT.anchoredPosition = new Vector2(laneX[i], 0);
                 lRT.sizeDelta = new Vector2(laneWidth, 0);
-                lane.GetComponent<Image>().color = laneColors[i];
+                Color laneC = LaneColors.GetLaneColor(i); laneC.a = 0.12f;
+                lane.GetComponent<Image>().color = laneC;
                 lane.GetComponent<Image>().raycastTarget = false;
 
                 // 按键视觉（下半屏按键区域）
@@ -373,7 +378,7 @@ namespace FallenAngel.Core
                 kRT.anchoredPosition = new Vector2(laneX[i], 0);
                 kRT.sizeDelta = new Vector2(laneWidth, 0);
                 Image keyImg = keyArea.GetComponent<Image>();
-                Color c = laneColors[i]; c.a = 0.3f;
+                Color c = LaneColors.GetLaneColor(i); c.a = 0.3f;
                 keyImg.color = c;
                 keyImg.raycastTarget = false;
 
@@ -387,7 +392,7 @@ namespace FallenAngel.Core
                 kiRT.anchoredPosition = new Vector2(0, -100);
                 kiRT.sizeDelta = new Vector2(100, 100);
                 Image kiImg = keyIcon.GetComponent<Image>();
-                kiImg.color = laneColors[i];
+                kiImg.color = LaneColors.GetLaneColor(i);
                 kiImg.raycastTarget = false;
 
                 // 判定线发光效果（放按键顶部）
@@ -400,7 +405,8 @@ namespace FallenAngel.Core
                 gRT.anchoredPosition = Vector2.zero;
                 gRT.sizeDelta = new Vector2(laneWidth + 30, 60);
                 Image gImg = glow.GetComponent<Image>();
-                gImg.color = new Color(laneColors[i].r, laneColors[i].g, laneColors[i].b, 0f);
+                Color gc = LaneColors.GetLaneColor(i); gc.a = 0f;
+                gImg.color = gc;
                 gImg.raycastTarget = false;
 
                 LaneKeyVisual lkv = keyArea.AddComponent<LaneKeyVisual>();
@@ -635,11 +641,14 @@ namespace FallenAngel.Core
             // （编辑模式 AddListener 会在进入 Play 时被序列化清空）
             GameObject drumsBtn = CreateButton("DemoDrumsButton", menuParent,
                 new Vector2(0.28f, 0.16f), new Vector2(340, 100), "menu.chartDrums", 40);
+            GameObject easyDrumsBtn = CreateButton("EasyDrumsButton", menuParent,
+                new Vector2(0.28f, 0.10f), new Vector2(340, 80), "menu.chartDrumsEasy", 32);
             GameObject bassBtn = CreateButton("DemoBassButton", menuParent,
                 new Vector2(0.5f, 0.16f), new Vector2(340, 100), "menu.chartBass", 40);
             GameObject synthBtn = CreateButton("DemoSynthButton", menuParent,
                 new Vector2(0.72f, 0.16f), new Vector2(340, 100), "menu.chartSynth", 40);
             SetPrivateField(starter, "drumsButton", drumsBtn.GetComponent<Button>());
+            SetPrivateField(starter, "easyDrumsButton", easyDrumsBtn.GetComponent<Button>());
             SetPrivateField(starter, "bassButton", bassBtn.GetComponent<Button>());
             SetPrivateField(starter, "synthButton", synthBtn.GetComponent<Button>());
             return starter;
@@ -820,6 +829,23 @@ namespace FallenAngel.Core
                 new Vector2(0.5f, 0.5f), new Vector2(400, 140), "pause.exit", 40);
             RectTransform ebt = (RectTransform)exitBtn.transform;
             ebt.anchoredPosition = new Vector2(0, -180);
+
+            // 下落速度调节行（label 在上，控制行在下；数值文本为动态字面量，不受语言刷新覆盖）
+            CreateText("FallSpeedLabel", root.transform,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -275), new Vector2(400, 60),
+                "fallSpeed.title", 34, TextAlignmentOptions.Center);
+
+            GameObject speedMinus = CreateButton("FallSpeedMinusButton", root.transform,
+                new Vector2(0.5f, 0.5f), new Vector2(110, 70), "-", 40);
+            ((RectTransform)speedMinus.transform).anchoredPosition = new Vector2(-160, -350);
+
+            CreateText("FallSpeedText", root.transform,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -350), new Vector2(160, 70),
+                "1.0x", 36, TextAlignmentOptions.Center); // 字面量：FallSpeedController 动态更新
+
+            GameObject speedPlus = CreateButton("FallSpeedPlusButton", root.transform,
+                new Vector2(0.5f, 0.5f), new Vector2(110, 70), "+", 40);
+            ((RectTransform)speedPlus.transform).anchoredPosition = new Vector2(160, -350);
 
             // 只创建 UI 元素（PauseRoot + 按钮），不挂 PauseController
             // 真正的控制器在 HUDPanel 上

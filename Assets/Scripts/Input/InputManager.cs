@@ -236,8 +236,15 @@ namespace FallenAngel.InputSystem
                         // 触摸移动时，若跨音轨则切换
                         if (touchIdToLane.TryGetValue(touchId, out int oldLane) && oldLane != lane)
                         {
-                            SetLaneState(oldLane, false, touchPos);
                             touchIdToLane[touchId] = lane;
+                            // 旧轨道仅当没有其他手指按住时才释放（支持同轨多指交替）
+                            bool oldStillHeld = false;
+                            foreach (var kv in touchIdToLane)
+                            {
+                                if (kv.Value == oldLane) { oldStillHeld = true; break; }
+                            }
+                            if (!oldStillHeld)
+                                SetLaneState(oldLane, false, touchPos);
                             SetLaneState(lane, true, touchPos);
                         }
                         break;
@@ -246,8 +253,15 @@ namespace FallenAngel.InputSystem
                     case TouchPhase.Canceled:
                         if (touchIdToLane.TryGetValue(touchId, out int releaseLane))
                         {
-                            SetLaneState(releaseLane, false, touchPos);
                             touchIdToLane.Remove(touchId);
+                            // 仅当该轨道没有其他手指按住时才置为松开（支持同轨双指交替）
+                            bool stillHeld = false;
+                            foreach (var kv in touchIdToLane)
+                            {
+                                if (kv.Value == releaseLane) { stillHeld = true; break; }
+                            }
+                            if (!stillHeld)
+                                SetLaneState(releaseLane, false, touchPos);
                         }
                         break;
                 }

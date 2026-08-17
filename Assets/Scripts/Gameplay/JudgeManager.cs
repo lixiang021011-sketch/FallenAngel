@@ -98,6 +98,34 @@ namespace FallenAngel.Gameplay
                 GameManager.Instance.OnGameStart -= ResetStats;
         }
 
+        private void Update()
+        {
+            // Kick（lane 0）任意键判定：只要任意轨道处于按住状态、且 kick 音符落入
+            // 判定窗口内即触发——"按着任意键即可"语义。每帧轮询天然覆盖两种情况：
+            // ① 按下瞬间恰好到线；② 按住期间才落到线（例如长按其他轨时 kick 到达）。
+            // 已判定（IsJudged）的音符会被 GetClosestJudgableNote 跳过，不重复计分。
+            if (GameManager.Instance == null ||
+                GameManager.Instance.CurrentState != GameState.Playing) return;
+            if (NoteSpawner.Instance == null || InputManager.Instance == null) return;
+
+            bool anyHeld = false;
+            for (int i = 0; i < 4; i++)
+            {
+                if (InputManager.Instance.LanePressStates[i]) { anyHeld = true; break; }
+            }
+            if (!anyHeld) return;
+
+            Note kick = NoteSpawner.Instance.GetClosestJudgableNote(0, false);
+            if (kick == null) return;
+
+            float songTime = GameManager.Instance.SongTime;
+            float timeDiff = songTime - kick.Data.time;
+            JudgeResultType result = judgeWindows.Judge(timeDiff);
+            if (result == JudgeResultType.Miss) return; // 窗口外：交给 auto-miss，不误判
+
+            ApplyJudge(kick, result, 0);
+        }
+
         private void ResetStats()
         {
             PerfectCount = GreatCount = GoodCount = BadCount = MissCount = 0;

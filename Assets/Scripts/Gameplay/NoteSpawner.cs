@@ -108,7 +108,7 @@ namespace FallenAngel.Gameplay
             go.SetActive(false);
 
             RectTransform rt = go.GetComponent<RectTransform>();
-            rt.sizeDelta = new Vector2(130f, 40f);
+            rt.sizeDelta = new Vector2(Note.DefaultNoteWidth, Note.DefaultNoteHeight);
             rt.anchorMin = new Vector2(0.5f, 0.5f);
             rt.anchorMax = new Vector2(0.5f, 0.5f);
             rt.pivot = new Vector2(0.5f, 0.5f);
@@ -248,6 +248,14 @@ namespace FallenAngel.Gameplay
             Vector2 judgePos = new Vector2(x, judgeLineY);
 
             note.Initialize(data, spawnPos, judgePos);
+
+            // Kick（lane 0）= 横跨四键的全宽横条（任意键触发，见 JudgeManager）
+            if (data.lane == 0)
+            {
+                float fullWidth = (lanePositionsX[3] - lanePositionsX[0]) + Note.DefaultNoteWidth;
+                note.SetKickVisual(fullWidth);
+            }
+
             activeNotes.Add(note);
 
             // 长按音符加入字典

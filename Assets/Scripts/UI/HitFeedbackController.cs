@@ -24,6 +24,7 @@ namespace FallenAngel.UI
         {
             public RectTransform rt;
             public RippleGraphic graphic;
+            public CanvasGroup canvasGroup;
             public Coroutine coroutine;
         }
 
@@ -36,15 +37,16 @@ namespace FallenAngel.UI
             // 创建对象池（挂在本对象下，随场景重建销毁）
             for (int i = 0; i < PoolSize; i++)
             {
-                GameObject go = new GameObject($"Ripple_{i}", typeof(RectTransform), typeof(CanvasRenderer), typeof(RippleGraphic));
+                GameObject go = new GameObject($"Ripple_{i}", typeof(RectTransform), typeof(CanvasRenderer), typeof(RippleGraphic), typeof(CanvasGroup));
                 go.transform.SetParent(transform, false);
                 RectTransform rt = (RectTransform)go.transform;
                 rt.sizeDelta = new Vector2(rippleStartSize, rippleStartSize);
                 RippleGraphic g = go.GetComponent<RippleGraphic>();
                 g.raycastTarget = false;
                 g.CenterColor = new Color(rippleColor.r, rippleColor.g, rippleColor.b, 0f);
+                CanvasGroup cg = go.GetComponent<CanvasGroup>();
                 go.SetActive(false);
-                pool.Add(new RippleEntry { rt = rt, graphic = g });
+                pool.Add(new RippleEntry { rt = rt, graphic = g, canvasGroup = cg });
             }
 
             Subscribe();
@@ -99,8 +101,10 @@ namespace FallenAngel.UI
 
             entry.rt.gameObject.SetActive(true);
             entry.rt.anchoredPosition = canvasLocalPos;
-            entry.rt.sizeDelta = new Vector2(rippleStartSize, rippleStartSize);
+            entry.rt.sizeDelta = new Vector2(rippleStartSize, rippleStartSize); // 网格固定，扩散用 localScale
+            entry.rt.localScale = Vector3.one;
             entry.graphic.CenterColor = rippleColor;
+            if (entry.canvasGroup != null) entry.canvasGroup.alpha = 1f;
 
             entry.coroutine = StartCoroutine(AnimateRipple(entry));
         }
@@ -110,19 +114,21 @@ namespace FallenAngel.UI
             float timer = 0f;
             Color baseColor = rippleColor;
 
+            // 帧数优化：扩散用 localScale、淡出用 CanvasGroup——全程不重建 UI 网格
             while (timer < rippleDuration)
             {
                 timer += Time.unscaledDeltaTime;
                 float tt = Mathf.Clamp01(timer / rippleDuration);
-                float size = Mathf.Lerp(rippleStartSize, rippleEndSize, tt);
-                entry.rt.sizeDelta = new Vector2(size, size);
+                float s = Mathf.Lerp(1f, rippleEndSize / rippleStartSize, tt);
+                entry.rt.localScale = new Vector3(s, s, 1f);
 
                 // 后半段淡出
                 float alpha = tt < 0.5f ? 1f : 1f - (tt - 0.5f) * 2f;
-                entry.graphic.CenterColor = new Color(baseColor.r, baseColor.g, baseColor.b, baseColor.a * alpha);
+                if (entry.canvasGroup != null) entry.canvasGroup.alpha = baseColor.a * alpha;
                 yield return null;
             }
 
+            entry.rt.localScale = Vector3.one;
             entry.rt.gameObject.SetActive(false);
             entry.coroutine = null;
         }
