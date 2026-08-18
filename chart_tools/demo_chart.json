@@ -1,0 +1,179 @@
+{
+ "metadata": {
+  "songName": "demo-song",
+  "songArtist": "test",
+  "chartAuthor": "auto",
+  "formatVersion": 2,
+  "noteCounts": {
+   "tap": 8,
+   "hold": 2,
+   "flick": 6,
+   "slide": 2,
+   "drag": 7
+  }
+ },
+ "notes": [
+  {
+   "type": "tap",
+   "time": 0.0,
+   "lane": 0
+  },
+  {
+   "type": "hold",
+   "time": 0.0,
+   "lane": 1,
+   "duration": 1.5
+  },
+  {
+   "type": "hold",
+   "time": 0.0,
+   "lane": 2,
+   "duration": 0.75
+  },
+  {
+   "type": "tap",
+   "time": 0.0,
+   "lane": 3
+  },
+  {
+   "type": "tap",
+   "time": 0.187,
+   "lane": 2
+  },
+  {
+   "type": "tap",
+   "time": 0.375,
+   "lane": 1
+  },
+  {
+   "type": "flick",
+   "time": 0.562,
+   "lane": 2,
+   "direction": "up"
+  },
+  {
+   "type": "tap",
+   "time": 0.75,
+   "lane": 0
+  },
+  {
+   "type": "flick",
+   "time": 0.75,
+   "lane": 2,
+   "direction": "down"
+  },
+  {
+   "type": "slide",
+   "time": 0.75,
+   "duration": 0.75,
+   "path": [
+    {
+     "t": 0.0,
+     "x": 2.016
+    },
+    {
+     "t": 0.75,
+     "x": 2.766
+    }
+   ],
+   "lane": 2
+  },
+  {
+   "type": "tap",
+   "time": 1.125,
+   "lane": 1
+  },
+  {
+   "type": "drag",
+   "time": 1.5,
+   "lane": 1
+  },
+  {
+   "type": "drag",
+   "time": 1.5,
+   "lane": 0
+  },
+  {
+   "type": "drag",
+   "time": 1.5,
+   "lane": 2
+  },
+  {
+   "type": "slide",
+   "time": 1.5,
+   "duration": 0.6,
+   "path": [
+    {
+     "t": 0.0,
+     "x": 2.394
+    },
+    {
+     "t": 0.6,
+     "x": 2.488
+    }
+   ],
+   "lane": 2
+  },
+  {
+   "type": "tap",
+   "time": 1.5,
+   "lane": 3
+  },
+  {
+   "type": "drag",
+   "time": 1.527,
+   "lane": 1
+  },
+  {
+   "type": "drag",
+   "time": 1.553,
+   "lane": 2
+  },
+  {
+   "type": "drag",
+   "time": 1.58,
+   "lane": 2
+  },
+  {
+   "type": "drag",
+   "time": 1.687,
+   "lane": 1
+  },
+  {
+   "type": "tap",
+   "time": 2.25,
+   "lane": 2
+  },
+  {
+   "type": "flick",
+   "time": 2.25,
+   "lane": 3,
+   "direction": "up"
+  },
+  {
+   "type": "flick",
+   "time": 2.625,
+   "lane": 3,
+   "direction": "down"
+  },
+  {
+   "type": "flick",
+   "time": 3.0,
+   "lane": 1,
+   "direction": "down"
+  },
+  {
+   "type": "flick",
+   "time": 3.187,
+   "lane": 1,
+   "direction": "up"
+  }
+ ],
+ "events": [
+  {
+   "time": 0.0,
+   "type": "bpm",
+   "value": 160.0
+  }
+ ]
+}

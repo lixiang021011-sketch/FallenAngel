@@ -1,0 +1,355 @@
+{
+ "ir_version": 1,
+ "ppq": 768,
+ "events": [
+  {
+   "tick": 0,
+   "time": 0.0,
+   "pitch": 36,
+   "duration": 0.1,
+   "duration_ticks": 384,
+   "velocity": 0.5,
+   "instrument": "drums",
+   "staff": 0,
+   "articulations": [],
+   "pitch_end": null,
+   "tied": false,
+   "position": null
+  },
+  {
+   "tick": 384,
+   "time": 0.187,
+   "pitch": 42,
+   "duration": 0.1,
+   "duration_ticks": 384,
+   "velocity": 0.5,
+   "instrument": "drums",
+   "staff": 0,
+   "articulations": [],
+   "pitch_end": null,
+   "tied": false,
+   "position": null
+  },
+  {
+   "tick": 768,
+   "time": 0.375,
+   "pitch": 38,
+   "duration": 0.1,
+   "duration_ticks": 384,
+   "velocity": 0.5,
+   "instrument": "drums",
+   "staff": 0,
+   "articulations": [],
+   "pitch_end": null,
+   "tied": false,
+   "position": null
+  },
+  {
+   "tick": 1152,
+   "time": 0.562,
+   "pitch": 46,
+   "duration": 0.1,
+   "duration_ticks": 384,
+   "velocity": 0.5,
+   "instrument": "drums",
+   "staff": 0,
+   "articulations": [],
+   "pitch_end": null,
+   "tied": false,
+   "position": null
+  },
+  {
+   "tick": 1536,
+   "time": 0.75,
+   "pitch": 36,
+   "duration": 0.1,
+   "duration_ticks": 384,
+   "velocity": 0.5,
+   "instrument": "drums",
+   "staff": 0,
+   "articulations": [],
+   "pitch_end": null,
+   "tied": false,
+   "position": null
+  },
+  {
+   "tick": 1536,
+   "time": 0.75,
+   "pitch": 44,
+   "duration": 0.1,
+   "duration_ticks": 384,
+   "velocity": 0.5,
+   "instrument": "drums",
+   "staff": 0,
+   "articulations": [],
+   "pitch_end": null,
+   "tied": false,
+   "position": null
+  },
+  {
+   "tick": 2304,
+   "time": 1.125,
+   "pitch": 38,
+   "duration": 0.1,
+   "duration_ticks": 384,
+   "velocity": 0.5,
+   "instrument": "drums",
+   "staff": 0,
+   "articulations": [],
+   "pitch_end": null,
+   "tied": false,
+   "position": null
+  },
+  {
+   "tick": 3072,
+   "time": 1.5,
+   "pitch": 49,
+   "duration": 1.5,
+   "duration_ticks": 2304,
+   "velocity": 0.5,
+   "instrument": "drums",
+   "staff": 0,
+   "articulations": [],
+   "pitch_end": null,
+   "tied": false,
+   "position": null
+  },
+  {
+   "tick": 3072,
+   "time": 1.5,
+   "pitch": 37,
+   "duration": 0.5,
+   "duration_ticks": 768,
+   "velocity": 0.5,
+   "instrument": "drums",
+   "staff": 0,
+   "articulations": [
+    "tremolo"
+   ],
+   "pitch_end": null,
+   "tied": false,
+   "position": null
+  },
+  {
+   "tick": 0,
+   "time": 0.0,
+   "pitch": 36,
+   "duration": 1.5,
+   "duration_ticks": 2304,
+   "velocity": 0.5,
+   "instrument": "bass",
+   "staff": 0,
+   "articulations": [],
+   "pitch_end": null,
+   "tied": true,
+   "position": null
+  },
+  {
+   "tick": 3072,
+   "time": 1.5,
+   "pitch": 38,
+   "duration": 0.3,
+   "duration_ticks": 384,
+   "velocity": 0.5,
+   "instrument": "bass",
+   "staff": 0,
+   "articulations": [
+    "ghost"
+   ],
+   "pitch_end": null,
+   "tied": false,
+   "position": null
+  },
+  {
+   "tick": 3456,
+   "time": 1.687,
+   "pitch": 38,
+   "duration": 0.3,
+   "duration_ticks": 384,
+   "velocity": 0.5,
+   "instrument": "bass",
+   "staff": 0,
+   "articulations": [
+    "ghost"
+   ],
+   "pitch_end": null,
+   "tied": false,
+   "position": null
+  },
+  {
+   "tick": 6144,
+   "time": 3.0,
+   "pitch": 43,
+   "duration": 0.3,
+   "duration_ticks": 384,
+   "velocity": 0.5,
+   "instrument": "bass",
+   "staff": 0,
+   "articulations": [
+    "slap"
+   ],
+   "pitch_end": null,
+   "tied": false,
+   "position": null
+  },
+  {
+   "tick": 6528,
+   "time": 3.187,
+   "pitch": 45,
+   "duration": 0.3,
+   "duration_ticks": 384,
+   "velocity": 0.5,
+   "instrument": "bass",
+   "staff": 0,
+   "articulations": [
+    "hammer_on"
+   ],
+   "pitch_end": null,
+   "tied": false,
+   "position": null
+  },
+  {
+   "tick": 0,
+   "time": 0.0,
+   "pitch": 64,
+   "duration": 0.3,
+   "duration_ticks": 384,
+   "velocity": 0.5,
+   "instrument": "guitar",
+   "staff": 0,
+   "articulations": [],
+   "pitch_end": null,
+   "tied": false,
+   "position": null
+  },
+  {
+   "tick": 1536,
+   "time": 0.75,
+   "pitch": 64,
+   "duration": 1.0,
+   "duration_ticks": 1536,
+   "velocity": 0.5,
+   "instrument": "guitar",
+   "staff": 0,
+   "articulations": [
+    "bend"
+   ],
+   "pitch_end": null,
+   "tied": false,
+   "position": {
+    "bend_semitones": 2
+   }
+  },
+  {
+   "tick": 3072,
+   "time": 1.5,
+   "pitch": 57,
+   "duration": 0.4,
+   "duration_ticks": 768,
+   "velocity": 0.5,
+   "instrument": "guitar",
+   "staff": 0,
+   "articulations": [
+    "strum"
+   ],
+   "pitch_end": null,
+   "tied": false,
+   "position": {
+    "strum_pitches": [
+     40,
+     45,
+     52,
+     57
+    ]
+   }
+  },
+  {
+   "tick": 4608,
+   "time": 2.25,
+   "pitch": 55,
+   "duration": 0.2,
+   "duration_ticks": 384,
+   "velocity": 0.5,
+   "instrument": "guitar",
+   "staff": 0,
+   "articulations": [],
+   "pitch_end": null,
+   "tied": false,
+   "position": null
+  },
+  {
+   "tick": 0,
+   "time": 0.0,
+   "pitch": 72,
+   "duration": 3.0,
+   "duration_ticks": 6144,
+   "velocity": 0.5,
+   "instrument": "keys",
+   "staff": 0,
+   "articulations": [],
+   "pitch_end": null,
+   "tied": true,
+   "position": null
+  },
+  {
+   "tick": 3072,
+   "time": 1.5,
+   "pitch": 76,
+   "duration": 0.6,
+   "duration_ticks": 768,
+   "velocity": 0.5,
+   "instrument": "keys",
+   "staff": 0,
+   "articulations": [
+    "gliss"
+   ],
+   "pitch_end": 79,
+   "tied": false,
+   "position": null
+  },
+  {
+   "tick": 4608,
+   "time": 2.25,
+   "pitch": 81,
+   "duration": 0.1,
+   "duration_ticks": 192,
+   "velocity": 0.5,
+   "instrument": "keys",
+   "staff": 0,
+   "articulations": [
+    "grace"
+   ],
+   "pitch_end": 84,
+   "tied": false,
+   "position": null
+  },
+  {
+   "tick": 5376,
+   "time": 2.625,
+   "pitch": 84,
+   "duration": 0.1,
+   "duration_ticks": 192,
+   "velocity": 0.5,
+   "instrument": "keys",
+   "staff": 0,
+   "articulations": [
+    "grace"
+   ],
+   "pitch_end": 81,
+   "tied": false,
+   "position": null
+  }
+ ],
+ "metadata": {
+  "songName": "demo-song",
+  "songArtist": "test",
+  "chartAuthor": "auto"
+ },
+ "events_channel": [
+  {
+   "time": 0.0,
+   "type": "bpm",
+   "value": 160.0
+  }
+ ]
+}
