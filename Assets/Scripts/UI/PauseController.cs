@@ -124,6 +124,11 @@ namespace FallenAngel.UI
         private void OnPauseClicked()
         {
             if (GameManager.Instance == null) return;
+            if (GameManager.Instance.Portfolio?.OwnsSong == true)
+            {
+                GameManager.Instance.TogglePause();
+                return;
+            }
 
             // 如果正在暂停，点击暂停按钮直接恢复
             if (GameManager.Instance.CurrentState == GameState.Paused)
@@ -157,6 +162,7 @@ namespace FallenAngel.UI
 
         private void OnRetryClicked()
         {
+            if (GameManager.Instance?.Portfolio?.OwnsSong == true) return;
             try { AudioManager.Instance?.PlayButtonClick(); } catch { }
 
             if (pausePanel != null) pausePanel.SetActive(false);
@@ -176,8 +182,16 @@ namespace FallenAngel.UI
 
         private void OnExitClicked()
         {
+            if (GameManager.Instance?.Portfolio?.OwnsSong == true)
+            {
+                GameManager.Instance.PauseGame();
+                return;
+            }
             try { AudioManager.Instance?.PlayButtonClick(); } catch { }
             if (pausePanel != null) pausePanel.SetActive(false);
+
+            // 弃局清局（Roguelite 局状态清理；无局时为空操作）
+            RunManager.Instance?.AbandonRun();
 
             if (menuPanel != null) menuPanel.SetActive(true);
             if (gamePanel != null) gamePanel.SetActive(false);
@@ -188,6 +202,12 @@ namespace FallenAngel.UI
         private void Update()
         {
             if (GameManager.Instance == null) return;
+            if (GameManager.Instance.Portfolio?.OwnsSong == true)
+            {
+                if (UnityEngine.Input.GetKeyDown(KeyCode.Space) || UnityEngine.Input.GetKeyDown(KeyCode.Escape))
+                    GameManager.Instance.TogglePause();
+                return;
+            }
 
             GameState state = GameManager.Instance.CurrentState;
 

@@ -35,5 +35,32 @@ namespace FallenAngel.Audio
             clip.SetData(data, 0);
             return clip;
         }
+
+        /// <summary>
+        /// 生成无音调打击音：白噪声 + 一阶低通 + 指数衰减包络。
+        /// 不含正弦成分 → 无音高（需求 2026-09-01：命中反馈统一用无音调打击效果）。
+        /// </summary>
+        /// <param name="duration">时长（秒）</param>
+        /// <param name="decayRate">衰减速率，越大声音越短促</param>
+        public static AudioClip CreatePercussionClip(float duration, float decayRate = 26f)
+        {
+            int sampleRate = 44100;
+            int samples = Mathf.CeilToInt(sampleRate * duration);
+            float[] data = new float[samples];
+
+            float noise = 0f;
+            for (int i = 0; i < samples; i++)
+            {
+                float t = (float)i / sampleRate;
+                float env = Mathf.Exp(-decayRate * t);                       // 指数衰减包络
+                // 一阶低通白噪声：相邻采样相关 → 柔和噪声音色；无周期成分 → 无音高
+                noise = 0.7f * noise + 0.3f * (Random.value * 2f - 1f);
+                data[i] = noise * env * 0.8f;
+            }
+
+            AudioClip clip = AudioClip.Create("Sfx_Percussion", samples, 1, sampleRate, false);
+            clip.SetData(data, 0);
+            return clip;
+        }
     }
 }

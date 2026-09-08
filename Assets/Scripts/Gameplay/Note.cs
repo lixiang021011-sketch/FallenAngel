@@ -52,6 +52,9 @@ namespace FallenAngel.Gameplay
         /// <summary>普通音符厚度（高度；原 40 的三分之一）</summary>
         public const float DefaultNoteHeight = 14f;
         private DrumIconGraphic iconGraphic;             // 鼓件图标（运行时自生成，零资源）
+        private ArrowGraphic arrowGraphic;               // Flick 方向箭头（运行时自生成）
+        private SlidePathGraphic slidePathGraphic;       // Slide 路径折线（运行时自生成）
+        private RectTransform slidePathRect;
         private readonly List<HitRingEntry> hitRingPool = new List<HitRingEntry>(8); // 命中扩散环池
 
         /// <summary>轨道 → 鼓件图标类型（对齐 Moonscraper 鼓件语义：0底鼓/1军鼓/2踩镲/3吊镲）</summary>
@@ -96,15 +99,16 @@ namespace FallenAngel.Gameplay
                 noteImage.enabled = true;
             }
 
-            // 配置长按音符身体
+            // 配置长按音符身体 / Slide 路径（二者互斥，另一者自动隐藏）
             ConfigureLongNoteBody(spawnPos, judgeLinePos);
+            ConfigureSlidePath(spawnPos, judgeLinePos);
 
             // 重置命中特效缩放，应用出生透视缩放（近大远小：顶部小、判定线大）
             hitScale = 1f;
             ApplyPerspectiveScale(0f);
 
-            // 鼓件图标（与谱面编辑器鼓件语义对应）
-            EnsureIcon(data.lane);
+            // 头部图标：flick → 方向箭头；slide → 无；4 键鼓谱 → 鼓件图标
+            EnsureIcon(Data);
         }
 
         /// <summary>
@@ -205,6 +209,95 @@ namespace FallenAngel.Gameplay
         }
 
         /// <summary>
+        /// 配置 Slide 路径渲染：路径点转为相对头部中心的局部坐标
+        /// （x 随轨道坐标、y 随时间，自头部向上展开——与长按身体同向），
+        /// 子节点随头部移动，无需每帧重绘。
+        /// </summary>
+        private void ConfigureSlidePath(Vector2 spawnPos, Vector2 judgeLinePos)
+        {
+            if (Data.type != NoteType.Slide || Data.path == null || Data.path.Count < 2)
+            {
+                // 非 Slide：隐藏路径（池复用残留）
+                if (slidePathGraphic != null)
+                    slidePathGraphic.gameObject.SetActive(false);
+                return;
+            }
+
+            EnsureSlidePathGraphic();
+            slidePathRect.localScale = Vector3.one; // 池复用重置
+            slidePathRect.anchoredPosition = Vector2.zero;
+
+            float fallDistance = Mathf.Abs(spawnPos.y - judgeLinePos.y); // 轨道全长（下落距离）
+            float fallTime = GameManager.Instance != null ? GameManager.Instance.ActualFallTime : 2f;
+            float startX = LaneLayout.GetXFromLaneCoord(Data.path[0].x);
+
+            System.Collections.Generic.List<Vector2> local =
+                new System.Collections.Generic.List<Vector2>(Data.path.Count);
+            foreach (SlidePathPoint pt in Data.path)
+            {
+                float lx = LaneLayout.GetXFromLaneCoord(pt.x) - startX;
+                float ly = fallDistance * pt.t / fallTime; // 路径自头部向上展开（与长按身体同向）
+                local.Add(new Vector2(lx, ly));
+            }
+            slidePathGraphic.SetLocalPoints(local);
+            slidePathGraphic.gameObject.SetActive(true);
+
+            // 运行时自建的UI必须显式标记脏并强制Canvas立即重建，否则网格不会生成
+            slidePathGraphic.SetAllDirty();
+            Canvas.ForceUpdateCanvases();
+        }
+
+        /// <summary>确保 Slide 路径子节点存在：运行时自生成折线图形节点</summary>
+        private void EnsureSlidePathGraphic()
+        {
+            if (slidePathGraphic != null && slidePathRect != null) return;
+
+            GameObject go = new GameObject("SlidePath", typeof(RectTransform));
+            go.transform.SetParent(transform, false);
+            go.transform.SetAsFirstSibling(); // 画在头部后面（与长按身体同层）
+
+            RectTransform rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0.5f, 0.5f);
+            rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = Vector2.zero;
+
+            SlidePathGraphic g = go.AddComponent<SlidePathGraphic>();
+            // 显式补挂 CanvasRenderer（运行时 AddComponent 时 RequireComponent 不保证生效）
+            if (go.GetComponent<CanvasRenderer>() == null)
+                go.AddComponent<CanvasRenderer>();
+            g.raycastTarget = false;
+
+            slidePathGraphic = g;
+            slidePathRect = rt;
+        }
+
+        /// <summary>
+        /// 按进度采样 slide 路径 x（线性插值；path 异常时回退当前 x）
+        /// </summary>
+        private float SampleSlidePathX(float t01)
+        {
+            if (Data.path == null || Data.path.Count == 0)
+                return rectTransform.anchoredPosition.x;
+            if (Data.path.Count == 1)
+                return LaneLayout.GetXFromLaneCoord(Data.path[0].x);
+
+            System.Collections.Generic.List<SlidePathPoint> pts = Data.path;
+            float total = Mathf.Max(0.001f, pts[pts.Count - 1].t);
+            float time = t01 * total;
+            for (int i = 0; i < pts.Count - 1; i++)
+            {
+                float t0 = pts[i].t, t1 = pts[i + 1].t;
+                if (time >= t0 && time <= t1)
+                {
+                    float seg = (t1 > t0) ? (time - t0) / (t1 - t0) : 0f;
+                    return LaneLayout.GetXFromLaneCoord(Mathf.Lerp(pts[i].x, pts[i + 1].x, seg));
+                }
+            }
+            return LaneLayout.GetXFromLaneCoord(pts[pts.Count - 1].x);
+        }
+
+        /// <summary>
         /// 每帧更新音符位置（基于时间）
         /// </summary>
         /// <param name="currentSongTime">当前歌曲时间（秒）</param>
@@ -221,13 +314,21 @@ namespace FallenAngel.Gameplay
 
             if (Data.type == NoteType.LongEnd)
             {
-                // LongEnd 依附于长按进度
-                if (IsHolding)
+                // LongEnd = 长按停止标记：依附头部，停在身体顶端（释放点），
+                // 随 HoldProgress 下移，按住到点时恰好落在判定线。
+                // 修复：此前判断自身 IsHolding（永远为 false），标记一直停在生成点
+                // 不可见——表现为"长按没有停止处"。
+                Note head = NoteSpawner.Instance != null
+                    ? NoteSpawner.Instance.GetLongNoteHead(Data.longNoteId)
+                    : null;
+                if (head != null && head.IsHolding && head.Data.type == NoteType.LongStart)
                 {
-                    float noteProgress = Mathf.Clamp01(progress);
-                    float y = Mathf.Lerp(spawnPosY, judgePosY, noteProgress);
+                    float fallDistance = Mathf.Abs(spawnPosY - judgePosY);
+                    float holdDistance = fallDistance * (head.Data.duration / fallTime); // 与身体长度同公式
+                    float y = judgePosY + holdDistance * (1f - Mathf.Clamp01(head.HoldProgress));
                     rectTransform.anchoredPosition = new Vector2(rectTransform.anchoredPosition.x, y);
                 }
+                // 未按住/已释放：停在生成点（离屏不可见），由 CleanupMissedNotes 静默回收
             }
             else
             {
@@ -243,6 +344,14 @@ namespace FallenAngel.Gameplay
                 // 帧数优化：收缩用 localScale.y（pivot 在底部）——不重建网格
                 bodyRect.localScale = new Vector3(1f, Mathf.Max(0f, 1f - HoldProgress), 1f);
                 bodyRect.anchoredPosition = Vector2.zero; // 底边始终贴住头部
+            }
+
+            // Slide 按住时：头部 x 沿路径采样（y 已被 progress 钳制在判定线），路径子节点随行
+            if (Data.type == NoteType.Slide && IsHolding)
+            {
+                HoldProgress = Mathf.Clamp01((currentSongTime - Data.time) / Mathf.Max(0.01f, Data.duration));
+                rectTransform.anchoredPosition =
+                    new Vector2(SampleSlidePathX(HoldProgress), rectTransform.anchoredPosition.y);
             }
 
             // 近大远小：越靠近判定线越大（与命中特效缩放分层叠加）
@@ -268,9 +377,9 @@ namespace FallenAngel.Gameplay
             IsJudged = true;
             JudgeResult = result;
 
-            if (Data.type == NoteType.LongStart)
+            if (Data.type == NoteType.LongStart || Data.type == NoteType.Slide)
             {
-                // 长按头部命中 -> 进入按住状态
+                // 长按/Slide 头部命中 -> 进入按住状态
                 IsHolding = true;
                 // 视觉效果：稍微亮一点
                 if (noteImage != null)
@@ -294,7 +403,7 @@ namespace FallenAngel.Gameplay
         /// </summary>
         public JudgeResultType JudgeLongRelease(float releaseTimeDiff)
         {
-            if (Data.type != NoteType.LongStart) return JudgeResultType.None;
+            if (Data.type != NoteType.LongStart && Data.type != NoteType.Slide) return JudgeResultType.None;
             IsHolding = false;
 
             JudgeResultType result = JudgeWindows.Default.Judge(releaseTimeDiff);
@@ -312,7 +421,7 @@ namespace FallenAngel.Gameplay
         /// </summary>
         public void JudgeMiss()
         {
-            if (IsJudged && Data.type != NoteType.LongStart) return;
+            if (IsJudged && Data.type != NoteType.LongStart && Data.type != NoteType.Slide) return;
             IsJudged = true;
             IsHolding = false;
             JudgeResult = JudgeResultType.Miss;
@@ -395,8 +504,14 @@ namespace FallenAngel.Gameplay
             gameObject.SetActive(false);
         }
 
-        /// <summary>是否为 kick（底鼓）：lane 0，任意键可判定（见 JudgeManager）</summary>
-        public bool IsKick => Data != null && Data.lane == 0;
+        /// <summary>
+        /// 是否为 kick（底鼓）：任意键可判定（见 JudgeManager 宽音符轮询）。
+        /// 4 键鼓谱 lane 0（历史语义）或 v2 wide 标记（任意轨道）。
+        /// </summary>
+        public bool IsKick => Data != null && (Data.wide ||
+                             (Data.lane == 0 && GameManager.Instance != null &&
+                              GameManager.Instance.CurrentChart != null &&
+                              GameManager.Instance.CurrentChart.LaneCount == 4));
 
         /// <summary>
         /// Kick（底鼓）视觉：横跨四键的全宽横条（任意键触发）。
@@ -419,9 +534,36 @@ namespace FallenAngel.Gameplay
         // 鼓件图标（与谱面编辑器鼓件语义对应，白色半透明叠加在头部色块上）
         // ============================================================
 
-        /// <summary>确保图标子节点存在并设为对应轨道形状</summary>
-        private void EnsureIcon(int lane)
+        /// <summary>
+        /// 确保头部图标子节点按音符类型就绪：
+        ///   Flick → 方向箭头（ArrowGraphic）；Slide → 无图标（路径即视觉）；
+        ///   4 键鼓谱其余类型 → 鼓件图标；5 键吉他谱其余类型 → 无图标。
+        /// </summary>
+        private void EnsureIcon(NoteData data)
         {
+            if (data.type == NoteType.Flick)
+            {
+                if (iconGraphic != null) iconGraphic.gameObject.SetActive(false);
+                EnsureArrowGraphic(data.direction);
+                return;
+            }
+
+            if (arrowGraphic != null) arrowGraphic.gameObject.SetActive(false);
+
+            if (data.type == NoteType.Slide)
+            {
+                if (iconGraphic != null) iconGraphic.gameObject.SetActive(false);
+                return;
+            }
+
+            bool isFiveKey = GameManager.Instance != null && GameManager.Instance.CurrentChart != null &&
+                             GameManager.Instance.CurrentChart.LaneCount == 5;
+            if (isFiveKey)
+            {
+                if (iconGraphic != null) iconGraphic.gameObject.SetActive(false);
+                return;
+            }
+
             if (iconGraphic == null)
             {
                 Transform existing = transform.Find("DrumIcon");
@@ -441,8 +583,33 @@ namespace FallenAngel.Gameplay
                 }
             }
 
-            iconGraphic.IconType = LaneIconTypes[Mathf.Clamp(lane, 0, LaneIconTypes.Length - 1)];
+            iconGraphic.IconType = LaneIconTypes[Mathf.Clamp(data.lane, 0, LaneIconTypes.Length - 1)];
             iconGraphic.gameObject.SetActive(true);
+        }
+
+        /// <summary>确保 flick 箭头子节点存在并设置方向（运行时自生成）</summary>
+        private void EnsureArrowGraphic(FlickDirection dir)
+        {
+            if (arrowGraphic == null)
+            {
+                GameObject go = new GameObject("FlickArrow",
+                    typeof(RectTransform), typeof(CanvasRenderer), typeof(ArrowGraphic));
+                go.transform.SetParent(transform, false);
+                go.transform.SetAsLastSibling(); // 画在头部色块之上
+                RectTransform rt = go.GetComponent<RectTransform>();
+                rt.sizeDelta = new Vector2(26f, 26f);
+                rt.anchoredPosition = Vector2.zero;
+                arrowGraphic = go.GetComponent<ArrowGraphic>();
+                arrowGraphic.raycastTarget = false;
+            }
+
+            arrowGraphic.Direction = dir;
+            arrowGraphic.gameObject.SetActive(true);
+
+            // 运行时自建的UI必须显式标记脏并强制Canvas立即重建，否则网格不会生成
+            // （此前漏了这一步，flick 箭头整体不显示——上下方向自然无区分）
+            arrowGraphic.SetAllDirty();
+            Canvas.ForceUpdateCanvases();
         }
 
         // ============================================================

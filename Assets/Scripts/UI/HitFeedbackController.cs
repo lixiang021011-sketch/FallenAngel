@@ -73,6 +73,8 @@ namespace FallenAngel.UI
         private void HandleLaneInput(object sender, LaneInputArgs e)
         {
             if (!e.isPressed) return;
+            // 设置页"按键特效"开关（占位：门控涟漪；美术资源到位后扩展其他特效）
+            if (!GameSettings.HitEffectEnabled) return;
 
             // 屏幕坐标 → Canvas 本地坐标（与输入判定同源）
             if (canvasForMapping == null)

@@ -51,11 +51,13 @@ namespace FallenAngel.Gameplay
         /// <summary>当前总分</summary>
         public int Score { get; private set; }
 
-        // 每音轨按下时的"最近音符"引用
-        private Note[] laneHitNote = new Note[4];
         // 长按按下时的开始时间（用于长按释放判定）
-        private float[] laneHoldStartTime = new float[4];
-        private int[] laneHoldLongId = new int[4] { -1, -1, -1, -1 };
+        private float[] laneHoldStartTime = new float[0];
+        private int[] laneHoldLongId = new int[0];
+        // 按住中的宽长按头（kick 语义：任意键维持、全松即释放；单槽位）
+        private Note activeWideHold;
+        // 按住中的 Slide 头部（任意键维持、全松即释放；跨轨拖动不中断，见 Update）
+        private readonly List<Note> activeSlides = new List<Note>();
 
         private void Awake()
         {
@@ -100,30 +102,77 @@ namespace FallenAngel.Gameplay
 
         private void Update()
         {
-            // Kick（lane 0）任意键判定：只要任意轨道处于按住状态、且 kick 音符落入
-            // 判定窗口内即触发——"按着任意键即可"语义。每帧轮询天然覆盖两种情况：
+            // 宽音符（kick 语义）轮询：4K 谱 lane 0 或 v2 谱 wide 标记的音符，
+            // 任意键触发——"按着任意键即可"语义。每帧轮询天然覆盖两种情况：
             // ① 按下瞬间恰好到线；② 按住期间才落到线（例如长按其他轨时 kick 到达）。
-            // 已判定（IsJudged）的音符会被 GetClosestJudgableNote 跳过，不重复计分。
+            // 宽长按头：按住任意键维持；全部键松开时按释放时刻判定。
+            // 已判定（IsJudged）的音符会被 GetClosestWideJudgableNote 跳过，不重复计分。
             if (GameManager.Instance == null ||
                 GameManager.Instance.CurrentState != GameState.Playing) return;
             if (NoteSpawner.Instance == null || InputManager.Instance == null) return;
+            if (GameManager.Instance.CurrentChart == null) return;
 
             bool anyHeld = false;
-            for (int i = 0; i < 4; i++)
+            bool[] pressStates = InputManager.Instance.LanePressStates;
+            for (int i = 0; i < pressStates.Length; i++)
             {
-                if (InputManager.Instance.LanePressStates[i]) { anyHeld = true; break; }
+                if (pressStates[i]) { anyHeld = true; break; }
             }
-            if (!anyHeld) return;
-
-            Note kick = NoteSpawner.Instance.GetClosestJudgableNote(0, false);
-            if (kick == null) return;
 
             float songTime = GameManager.Instance.SongTime;
-            float timeDiff = songTime - kick.Data.time;
-            JudgeResultType result = judgeWindows.Judge(timeDiff);
-            if (result == JudgeResultType.Miss) return; // 窗口外：交给 auto-miss，不误判
 
-            ApplyJudge(kick, result, 0);
+            // 宽音符按压判定
+            if (anyHeld)
+            {
+                Note wide = NoteSpawner.Instance.GetClosestWideJudgableNote();
+                if (wide != null)
+                {
+                    float timeDiff = songTime - wide.Data.time;
+                    JudgeResultType result = judgeWindows.Judge(timeDiff);
+                    if (result != JudgeResultType.Miss) // 窗口外：交给 auto-miss，不误判
+                    {
+                        if (wide.Data.type == NoteType.LongStart)
+                        {
+                            // 宽长按头：已有按住中的宽长按时不抢占（单槽位，防重叠宽长按互相覆盖）
+                            if (activeWideHold == null)
+                            {
+                                ApplyJudge(wide, result, wide.Data.lane);
+                                activeWideHold = wide;
+                            }
+                        }
+                        else // Normal 宽音符（kick 单击）
+                        {
+                            ApplyJudge(wide, result, wide.Data.lane);
+                        }
+                    }
+                }
+            }
+
+            // 宽长按 / Slide 释放：全部键松开即结束（释放时刻对结束时间判定）。
+            // Slide 与宽长按同语义：由任意键维持——触屏跨轨拖动（输入层
+            // 松旧轨+按新轨）时只要还有键按住就不会中断。
+            // 修复：此前 Slide 挂在单轨释放事件上（HandleRelease），跨行即被释放，slide 中途停止。
+            if (!anyHeld)
+            {
+                if (activeWideHold != null && activeWideHold.IsHolding)
+                {
+                    float endTime = activeWideHold.Data.time + activeWideHold.Data.duration;
+                    ApplyHoldRelease(activeWideHold, songTime - endTime, activeWideHold.Data.lane);
+                }
+                activeWideHold = null;
+
+                if (activeSlides.Count > 0)
+                {
+                    for (int i = 0; i < activeSlides.Count; i++)
+                    {
+                        Note slide = activeSlides[i];
+                        if (slide == null || !slide.IsHolding) continue; // 防双判（兜底清扫已判过）
+                        float endTime = slide.Data.time + slide.Data.duration;
+                        ApplyHoldRelease(slide, songTime - endTime, slide.Data.lane);
+                    }
+                    activeSlides.Clear();
+                }
+            }
         }
 
         private void ResetStats()
@@ -132,8 +181,14 @@ namespace FallenAngel.Gameplay
             Combo = 0;
             MaxCombo = 0;
             Score = 0;
-            laneHitNote = new Note[4];
-            laneHoldLongId = new int[4] { -1, -1, -1, -1 };
+
+            // 按当前活动键数分配轨道状态（4K/5K 切换时重建）
+            int count = Mathf.Max(1, LaneLayout.ActiveLaneCount);
+            laneHoldStartTime = new float[count];
+            laneHoldLongId = new int[count];
+            for (int i = 0; i < count; i++) laneHoldLongId[i] = -1;
+            activeWideHold = null;
+            activeSlides.Clear();
 
             OnScoreUpdate?.Invoke(0);
             OnComboUpdate?.Invoke(0, true);
@@ -183,13 +238,16 @@ namespace FallenAngel.Gameplay
 
             if (result == JudgeResultType.Miss)
             {
-                // 太远不判定（空按）
+                // 太远不判定（空按）；drag 音符保留等后续按（永不 MISS 语义）
                 return;
             }
 
+            // Drag：窗口内碰到即强制 Perfect（碰即 Perfect 语义）
+            if (note.Data.type == NoteType.Drag)
+                result = JudgeResultType.Perfect;
+
             // 命中
             ApplyJudge(note, result, lane);
-            laneHitNote[lane] = note;
 
             // 如果是长按，记录按住开始
             if (note.Data.type == NoteType.LongStart)
@@ -197,6 +255,11 @@ namespace FallenAngel.Gameplay
                 laneHoldStartTime[lane] = songTime;
                 laneHoldLongId[lane] = note.Data.longNoteId;
             }
+
+            // Slide 头部命中进入按住：登记到活动列表，由 Update 全松统一释放
+            // （跨轨拖动不中断，见 Update 释放块）
+            if (note.Data.type == NoteType.Slide && !activeSlides.Contains(note))
+                activeSlides.Add(note);
         }
 
         private void HandleRelease(int lane)
@@ -212,30 +275,40 @@ namespace FallenAngel.Gameplay
                 {
                     // 释放时间点 vs LongEnd的时间点
                     float longEndTime = longHead.Data.time + longHead.Data.duration;
-                    float releaseDiff = songTime - longEndTime;
-                    JudgeResultType releaseResult = longHead.JudgeLongRelease(releaseDiff);
-
-                    // 计数
-                    if (releaseResult == JudgeResultType.Miss)
-                    {
-                        ProcessMiss(lane);
-                    }
-                    else
-                    {
-                        if (JudgeWindows.BreaksCombo(releaseResult))
-                            BreakCombo();
-                        else
-                            AddScoreAndCombo(JudgeWindows.GetScore(releaseResult, true));
-                        AddJudgeCount(releaseResult);
-                        OnJudgeResult?.Invoke(releaseResult, lane);
-                        OnJudgeBias?.Invoke(-releaseDiff); // 正=早，负=晚
-                        PlayAudioJudge(releaseResult);
-                    }
+                    ApplyHoldRelease(longHead, songTime - longEndTime, lane);
                 }
                 laneHoldLongId[lane] = -1;
             }
+            // Slide 头部不在此释放：由任意键维持、全部松开时才结束（见 Update 释放块）。
+            // 修复：此前挂在单轨释放事件上——触屏跨轨拖动（输入层先松旧轨再按新轨）
+            // 会立即释放 Slide，跨行即中断。
+        }
 
-            laneHitNote[lane] = null;
+        /// <summary>
+        /// 长按/Slide 释放判定：尾部才计分（头部不计分，见 ApplyJudge 门控），
+        /// 计分/计数/事件与长按释放语义一致。
+        /// </summary>
+        private void ApplyHoldRelease(Note head, float releaseDiff, int lane)
+        {
+            JudgeResultType releaseResult = head.JudgeLongRelease(releaseDiff);
+            GameManager.Instance?.Portfolio?.ReportJudge(head.Data, releaseResult);
+
+            // 计数
+            if (releaseResult == JudgeResultType.Miss)
+            {
+                ProcessMiss(lane);
+            }
+            else
+            {
+                if (JudgeWindows.BreaksCombo(releaseResult))
+                    BreakCombo();
+                else
+                    AddScoreAndCombo(JudgeWindows.GetScore(releaseResult, true));
+                AddJudgeCount(releaseResult);
+                OnJudgeResult?.Invoke(releaseResult, lane);
+                OnJudgeBias?.Invoke(-releaseDiff); // 正=早，负=晚
+                PlayAudioJudge(releaseResult);
+            }
         }
 
         /// <summary>
@@ -243,6 +316,7 @@ namespace FallenAngel.Gameplay
         /// </summary>
         private void ApplyJudge(Note note, JudgeResultType result, int lane)
         {
+            GameManager.Instance?.Portfolio?.ReportJudge(note.Data, result);
             note.JudgeHit(result);
 
             if (result == JudgeResultType.Miss)
@@ -251,8 +325,9 @@ namespace FallenAngel.Gameplay
                 return;
             }
 
-            // 长按头部仅触发视觉；Good/Bad 断连击不给分（Phigros 语义）
-            if (note.Data.type != NoteType.LongStart)
+            // 长按/Slide 头部仅触发视觉；Good/Bad 断连击不给分（Phigros 语义）。
+            // Slide 尾部计分（见 ApplyHoldRelease），头部计分会导致双计分。
+            if (note.Data.type != NoteType.LongStart && note.Data.type != NoteType.Slide)
             {
                 if (JudgeWindows.BreaksCombo(result))
                     BreakCombo();
@@ -266,18 +341,17 @@ namespace FallenAngel.Gameplay
         }
 
         /// <summary>
-        /// 处理自动Miss（音符走过未击中）
+        /// 处理自动Miss（音符走过未击中）。
+        /// 所有类型（含漏按的 LongStart/Slide 头）都计 Miss 并触发 HUD 事件；
+        /// 此前 LongStart 永不自动 Miss，事件被刻意抑制——现已统一。
         /// </summary>
         public void HandleAutoMiss(Note note)
         {
             if (note == null) return;
-            // LongStart的Miss也应该触发
+            GameManager.Instance?.Portfolio?.ReportJudge(note.Data, JudgeResultType.Miss);
             ProcessMiss(note.Data.lane);
-            if (note.Data.type != NoteType.LongStart)
-            {
-                OnJudgeResult?.Invoke(JudgeResultType.Miss, note.Data.lane);
-                PlayAudioJudge(JudgeResultType.Miss);
-            }
+            OnJudgeResult?.Invoke(JudgeResultType.Miss, note.Data.lane);
+            PlayAudioJudge(JudgeResultType.Miss);
         }
 
         private void ProcessMiss(int lane)

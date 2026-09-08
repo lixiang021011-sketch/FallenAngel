@@ -14,19 +14,16 @@ namespace FallenAngel.UI
         [SerializeField] private GameObject menuPanel;
         [SerializeField] private GameObject gamePanel;
 
-        [Header("启动按钮（可选）")]
-        [SerializeField] private Button startDemoButton;
+        [Header("主菜单按钮")]
+        [SerializeField] private Button newGameButton;     // 新游戏 → 覆盖默认槽直接开局
+        [SerializeField] private Button saveSelectButton;  // 选择存档 → 存档选择面板（阶段4改接 EnterSaveSelect）
+        [SerializeField] private Button songSelectButton;  // 自选曲目 → 选歌面板
+        [SerializeField] private Button settingsButton;    // 选项设置 → 设置面板
+        [SerializeField] private SettingsPanelController settingsPanelController;
+        [SerializeField] private SaveSelectPanelController saveSelectPanelController;
+        [SerializeField] private TalentPanelController talentPanelController; // 交给 PortfolioPanelController（地图页天赋入口）
         [SerializeField] private Button pauseButton;
-        [SerializeField] private Button drumsButton;
-        [SerializeField] private Button easyDrumsButton;
-        [SerializeField] private Button bassButton;
-        [SerializeField] private Button synthButton;
-        [SerializeField] private Button calibrationButton;
-        [SerializeField] private CalibrationController calibrationController;
-        [SerializeField] private Button languageButton;
-        [SerializeField] private TextMeshProUGUI languageButtonLabel;   // 动态显示当前语言名
-        [SerializeField] private LanguagePanelController languagePanelController;
-        [SerializeField] private InputField chartNameInput;
+        [SerializeField] private SongSelectPanelController songSelectPanelController;
 
         [Header("自动启动Demo（无UI时使用）")]
         [SerializeField] private bool autoStartDemoOnAwake = false;
@@ -34,25 +31,41 @@ namespace FallenAngel.UI
 
         private void Awake()
         {
+            if (GetComponent<PortfolioSession>() == null) gameObject.AddComponent<PortfolioSession>();
+            if (GetComponent<PortfolioPanelController>() == null) gameObject.AddComponent<PortfolioPanelController>();
+            // 地图页"天赋"入口需要天赋面板引用（SceneBuilder 注入到本组件，运行时转交）
+            if (talentPanelController != null && GetComponent<PortfolioPanelController>() != null)
+                GetComponent<PortfolioPanelController>().TalentPanel = talentPanelController;
+            // 文案回退统一注册（幂等，JSON 优先），防其他组件注册时序问题
+            PortfolioText.Register();
+            PortfolioSession session = GetComponent<PortfolioSession>();
             // 按钮监听必须在 Play 模式接（编辑模式添加的监听会在进 Play 时被序列化清空）
-            if (startDemoButton != null) startDemoButton.onClick.AddListener(() => { AudioManager.Instance?.PlayButtonClick(); StartDemoChart(); });
+            if (newGameButton != null) newGameButton.onClick.AddListener(() =>
+            {
+                AudioManager.Instance?.PlayButtonClick();
+                if (session != null) session.StartNewGame();
+                else Debug.LogError("[GameStarter] 缺少 PortfolioSession，请重建场景（Tools > FallenAngel > Build Default Game Scene）");
+            });
+            if (saveSelectButton != null) saveSelectButton.onClick.AddListener(() =>
+            {
+                AudioManager.Instance?.PlayButtonClick();
+                // 面板初始非激活、自身未订阅任何事件——打开必须由这里直接调（同其他面板模式）
+                if (session != null) session.EnterSaveSelect();
+                if (saveSelectPanelController != null) saveSelectPanelController.Open();
+                else Debug.LogError("[GameStarter] 缺少 SaveSelectPanelController，请重建场景（Tools > FallenAngel > Build Default Game Scene）");
+            });
+            if (songSelectButton != null) songSelectButton.onClick.AddListener(() =>
+            {
+                AudioManager.Instance?.PlayButtonClick();
+                if (songSelectPanelController != null) songSelectPanelController.Open();
+            });
+            if (settingsButton != null) settingsButton.onClick.AddListener(() =>
+            {
+                AudioManager.Instance?.PlayButtonClick();
+                if (settingsPanelController != null) settingsPanelController.Open();
+                else Debug.LogError("[GameStarter] 缺少 SettingsPanelController，请重建场景（Tools > FallenAngel > Build Default Game Scene）");
+            });
             if (pauseButton != null) pauseButton.onClick.AddListener(() => { AudioManager.Instance?.PlayButtonClick(); GameManager.Instance?.TogglePause(); });
-            if (drumsButton != null) drumsButton.onClick.AddListener(() => { AudioManager.Instance?.PlayButtonClick(); StartChartFromResources("酸橙色信笺_双指版"); });
-            if (easyDrumsButton != null) easyDrumsButton.onClick.AddListener(() => { AudioManager.Instance?.PlayButtonClick(); StartChartFromResources("酸橙色信笺_Easy"); });
-            if (bassButton != null) bassButton.onClick.AddListener(() => { AudioManager.Instance?.PlayButtonClick(); StartChartFromResources("demo_bass"); });
-            if (synthButton != null) synthButton.onClick.AddListener(() => { AudioManager.Instance?.PlayButtonClick(); StartChartFromResources("demo_synth"); });
-            // 校准面板挂的 CalibrationController 初始非激活（其 Awake 不执行），入口按钮由这里接
-            if (calibrationButton != null) calibrationButton.onClick.AddListener(() =>
-            {
-                AudioManager.Instance?.PlayButtonClick();
-                if (calibrationController != null) calibrationController.Open();
-            });
-            // 语言面板入口：打开选择面板（面板内按钮由 LanguagePanelController 首次激活时接）
-            if (languageButton != null) languageButton.onClick.AddListener(() =>
-            {
-                AudioManager.Instance?.PlayButtonClick();
-                if (languagePanelController != null) languagePanelController.Open();
-            });
 
             if (autoStartDemoOnAwake)
             {
@@ -66,7 +79,6 @@ namespace FallenAngel.UI
             {
                 GameManager.Instance.OnStateChanged += OnGameStateChanged;
             }
-            Loc.OnLanguageChanged += RefreshLanguageLabel;
         }
 
         private void Start()
@@ -76,9 +88,6 @@ namespace FallenAngel.UI
                 GameManager.Instance.OnStateChanged -= OnGameStateChanged;
                 GameManager.Instance.OnStateChanged += OnGameStateChanged;
             }
-            Loc.OnLanguageChanged -= RefreshLanguageLabel;
-            Loc.OnLanguageChanged += RefreshLanguageLabel;
-            RefreshLanguageLabel();
         }
 
         private void OnDisable()
@@ -87,14 +96,6 @@ namespace FallenAngel.UI
             {
                 GameManager.Instance.OnStateChanged -= OnGameStateChanged;
             }
-            Loc.OnLanguageChanged -= RefreshLanguageLabel;
-        }
-
-        /// <summary>菜单语言按钮 label 显示当前语言（原生名称，如 中文/English）</summary>
-        private void RefreshLanguageLabel()
-        {
-            if (languageButtonLabel != null)
-                languageButtonLabel.text = Loc.T($"lang.{Loc.CurrentLanguage}");
         }
 
         private void OnGameStateChanged(GameState state)
@@ -103,6 +104,10 @@ namespace FallenAngel.UI
             {
                 case GameState.Menu:
                     ShowMenu(true);
+                    ShowGame(false);
+                    break;
+                case GameState.Map:
+                    ShowMenu(false);
                     ShowGame(false);
                     break;
                 case GameState.Loading:
@@ -135,6 +140,36 @@ namespace FallenAngel.UI
         {
             ChartData demo = ChartLoader.GenerateDemoChart();
             StartChart(demo);
+        }
+
+        /// <summary>
+        /// 核心玩法调试入口（Play 模式下 Inspector 右键本组件）：
+        /// 战斗格临时占位期间（RunManager.BattleNodeAsPlaceholder=true），
+        /// 用 ContextMenu 直接开谱测试游玩内容，与地图 UI 流程分开验证。
+        /// </summary>
+        [ContextMenu("Play Test Chart (5K)")]
+        public void PlayTestChart5K()
+        {
+            StartChartFromResources("test_chart_5k");
+        }
+
+        [ContextMenu("Play Silent Chart (All Types)")]
+        public void PlaySilentChart()
+        {
+            // 无声测试谱（5K 全类型，含宽音符/任意键判定）：无音频依赖，虚拟钟模式
+            StartChartFromResources("test_chart_silent");
+        }
+
+        [ContextMenu("Play Drums Chart (4K)")]
+        public void PlayDrumsChart()
+        {
+            StartChartFromResources("酸橙色信笺_双指版");
+        }
+
+        [ContextMenu("Play Drums Chart (Easy 4K)")]
+        public void PlayDrumsEasyChart()
+        {
+            StartChartFromResources("酸橙色信笺_Easy");
         }
 
         public void StartChartFromResources(string chartJsonName)
@@ -170,16 +205,6 @@ namespace FallenAngel.UI
 
             ShowMenu(false);
             ShowGame(true);
-        }
-
-        public void OnLoadChartByName()
-        {
-            if (chartNameInput == null || string.IsNullOrWhiteSpace(chartNameInput.text))
-            {
-                StartDemoChart();
-                return;
-            }
-            StartChartFromResources(chartNameInput.text.Trim());
         }
     }
 }

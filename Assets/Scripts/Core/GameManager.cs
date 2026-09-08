@@ -11,6 +11,7 @@ namespace FallenAngel.Core
     public enum GameState
     {
         Menu,       // 菜单界面
+        Map,        // Roguelite 地图（选格即选歌）
         Loading,    // 加载中
         Playing,    // 游戏进行中
         Paused,     // 暂停
@@ -24,6 +25,9 @@ namespace FallenAngel.Core
     public class GameManager : MonoBehaviour
     {
         public static GameManager Instance { get; private set; }
+        public PortfolioSession Portfolio { get; private set; }
+        /// <summary>场景拥有的成长入口，不增加全局单例。</summary>
+        public void SetPortfolioSession(PortfolioSession session) { Portfolio = session; }
 
         [Header("游戏设置")]
         [Tooltip("音符从生成到到达判定线所需的时间（秒）")]
@@ -87,6 +91,8 @@ namespace FallenAngel.Core
             }
 
             CurrentChart = chart;
+            // 键数驱动轨道布局（4K/5K 动态化唯一入口：LaneLayout/InputManager/NoteSpawner/JudgeManager 均读它）
+            LaneLayout.SetActiveLaneCount(chart.LaneCount);
             ChangeState(GameState.Loading);
             isInitialized = false;
             SongTime = 0f;
@@ -171,6 +177,7 @@ namespace FallenAngel.Core
                 return;
             }
 
+            if (Portfolio != null && !Portfolio.BeforeSongStart()) return;
             Time.timeScale = 1f;
             ChangeState(GameState.Playing);
             isInitialized = true;
@@ -225,6 +232,7 @@ namespace FallenAngel.Core
         /// </summary>
         public void TogglePause()
         {
+            if (Portfolio?.HasConfirmation == true) return;
             if (CurrentState == GameState.Playing)
                 PauseGame();
             else if (CurrentState == GameState.Paused)
@@ -263,6 +271,20 @@ namespace FallenAngel.Core
                 Time.timeScale = 1f;
                 LoadChart(CurrentChart);
             }
+        }
+
+        /// <summary>
+        /// 进入 Roguelite 地图（清当前谱面与歌曲状态，停止残留音频）
+        /// </summary>
+        public void GoToMap()
+        {
+            Time.timeScale = 1f;
+            if (AudioManager.Instance != null)
+                AudioManager.Instance.StopAll();
+            CurrentChart = null;
+            SongTime = 0f;
+            IsSongStarted = false;
+            ChangeState(GameState.Map);
         }
 
         /// <summary>

@@ -167,6 +167,7 @@ namespace FallenAngel.Core
             AudioManager am = managers.AddComponent<AudioManager>();
             InputManager im = managers.AddComponent<InputManager>();
             JudgeManager jm = managers.AddComponent<JudgeManager>();
+            managers.AddComponent<RunManager>();
 
             // ---- 3. Canvas ----
             GameObject canvasGO = new GameObject("Canvas");
@@ -243,9 +244,10 @@ namespace FallenAngel.Core
             CreatePausePanel(pausePanelGO.transform);
             // 关键：PauseController 挂在 HUDPanel（始终激活），不是 PauseRoot（SetActive(false)）
             PauseController hudPC = hudPanel.AddComponent<PauseController>();
-            // 下落速度调节控制器：同样挂 HUDPanel，注入 PauseRoot 引用
-            FallSpeedController fsc = hudPanel.AddComponent<FallSpeedController>();
             Transform pauseRootT = pausePanelGO.transform.Find("PauseRoot");
+            // 下落速度调节控制器：挂 Canvas 根（始终激活）。
+            // 此前挂 HUDPanel（GamePanel 子节点）时，Menu 状态 GamePanel 失活 → 设置页速度按钮监听不派发。
+            FallSpeedController fsc = canvasGO.AddComponent<FallSpeedController>();
             if (pauseRootT != null)
                 SetPrivateField(fsc, "pauseRoot", pauseRootT.gameObject);
             SetPrivateField(hudPC, "pauseButton", pauseBtnGO.GetComponent<Button>());
@@ -262,13 +264,29 @@ namespace FallenAngel.Core
             SetPrivateField(gamePanelRS, "gamePanel", gamePanel);
             SetPrivateField(gamePanelRS, "menuPanel", menuPanel);
 
-            GameStarter starter = CreateGameStarter(menuPanel.transform, gamePanel);
+            GameStarter starter = CreateGameStarter(canvasRect, menuPanel.transform, gamePanel);
 
-            // 节拍校准面板：入口按钮监听由 GameStarter.Awake 接（校准面板初始非激活，其自身 Awake 不执行）
-            CreateCalibrationPanel(canvasRect, menuPanel.transform, starter);
+            // 选项设置页：构建顺序在 CalibrationPanel 之前（校准面板后建，渲染盖在设置页上）
+            SettingsPanelController settingsController = CreateSettingsPanel(canvasRect, starter, fsc);
+
+            // 节拍校准面板：入口在设置页；反向注入控制器/面板引用给设置页（ESC 层叠与打开按钮）
+            CreateCalibrationPanel(canvasRect, menuPanel.transform, starter, settingsController);
+
+            // 正式存档选择面板（选中档后出现"进入游戏"/"天赋"按钮；盖在设置页之上）
+            SaveSelectPanelController saveSelectController = CreateSaveSelectPanel(canvasRect);
+            SetPrivateField(starter, "saveSelectPanelController", saveSelectController);
+
+            // 天赋面板（后建，盖在存档选择面板上；反向注入给存档选择面板的"天赋"按钮与 ESC 层叠）
+            CreateTalentPanel(canvasRect, saveSelectController, starter);
 
             // 语言选择面板（遍历 Language 枚举生成按钮，新增语言自动扩展）
             CreateLanguagePanel(canvasRect, menuPanel.transform, starter);
+
+            // 选歌界面（卷帘滚动列表；入口按钮与面板注入 starter）
+            CreateSongSelectPanel(canvasRect, menuPanel.transform, starter);
+
+            // Roguelite 地图面板（MapPanel 根始终激活，内容随 GameState.Map 显隐）
+            CreateMapPanel(canvasRect);
 
             // ---- 5. 链接引用 ----
             // (多数引用通过Inspector面板拖入，这里尽量给默认值)
@@ -309,9 +327,9 @@ namespace FallenAngel.Core
             lanesImg.color = new Color(0, 0, 0, 0.5f);
             lanesImg.raycastTarget = false; // 不拦截触摸
 
-            // 画四个竖条（轨道语义色统一取自 LaneColors，与谱面编辑器 Moonscraper 一致）
-            float[] laneX = LaneLayout.CentersX; // 轨道布局统一取自 LaneLayout（与输入判定同源）
-            float laneWidth = 140f;
+            // 恒建 5 轨（4K 谱运行时由 LanePanelController 隐藏第 5 轨并重定位）
+            float[] laneX = LaneLayout.GetCentersX(LaneLayout.MaxLaneCount); // 轨道布局统一取自 LaneLayout（与输入判定同源）
+            float laneWidth = LaneLayout.LaneWidth;
 
             // 按键区域容器（下半屏）
             GameObject keyContainer = new GameObject("KeyArea", typeof(RectTransform));
@@ -352,8 +370,9 @@ namespace FallenAngel.Core
             SetPrivateField(spawner, "judgeLineY", -400f);
             SetPrivateField(spawner, "spawnY", 1200f);
 
-            // 4个音轨条 + LaneKeyVisual
-            for (int i = 0; i < 4; i++)
+            // 5 个音轨条 + LaneKeyVisual（LanePanelController 按谱面键数启停/重定位）
+            lanes.AddComponent<LanePanelController>();
+            for (int i = 0; i < LaneLayout.MaxLaneCount; i++)
             {
                 // 音轨背景条
                 GameObject lane = new GameObject($"Lane{i}_BG", typeof(RectTransform), typeof(Image));
@@ -609,7 +628,7 @@ namespace FallenAngel.Core
             }
         }
 
-        private static GameStarter CreateGameStarter(Transform menuParent, GameObject gamePanel)
+        private static GameStarter CreateGameStarter(Transform canvasRoot, Transform menuParent, GameObject gamePanel)
         {
             // 菜单标题
             TextMeshProUGUI title = CreateText("GameTitle", menuParent,
@@ -624,44 +643,323 @@ namespace FallenAngel.Core
             subtitle.color = new Color(1, 1, 1, 0.8f);
 
             TextMeshProUGUI hint = CreateText("Hint", menuParent,
-                new Vector2(0.5f, 0.45f), new Vector2(0.5f, 0.45f), Vector2.zero, new Vector2(900, 200),
+                new Vector2(0.5f, 0.53f), new Vector2(0.5f, 0.53f), Vector2.zero, new Vector2(900, 160),
                 "menu.hint", 32, TextAlignmentOptions.Center);
             hint.color = new Color(1, 1, 1, 0.7f);
 
-            GameObject startBtn = CreateButton("StartDemoButton", menuParent,
-                new Vector2(0.5f, 0.3f), new Vector2(500, 160), "menu.startDemo", 56);
+            // 主菜单四按钮（依次：新游戏 / 选择存档 / 自选曲目 / 选项设置）
+            GameObject newGameBtn = CreateButton("NewGameButton", menuParent,
+                new Vector2(0.5f, 0.42f), new Vector2(500, 110), "menu.newGame", 48);
+            GameObject saveSelectBtn = CreateButton("SaveSelectButton", menuParent,
+                new Vector2(0.5f, 0.30f), new Vector2(500, 110), "menu.saveSelect", 48);
+            GameObject songSelectBtn = CreateButton("SongSelectButton", menuParent,
+                new Vector2(0.5f, 0.18f), new Vector2(500, 110), "menu.songSelect", 48);
+            GameObject settingsBtn = CreateButton("SettingsButton", menuParent,
+                new Vector2(0.5f, 0.06f), new Vector2(500, 110), "menu.settings", 48);
 
-            GameStarter starter = menuParent.gameObject.AddComponent<GameStarter>();
+            // GameStarter 挂 Canvas 根（始终激活）：局中 MenuPanel 失活后，
+            // Loading→倒计时与结算→菜单事件链仍有人接（修复：此前挂 MenuPanel 失活丢事件）。
+            // 菜单 UI 仍建在 menuParent（MenuPanel）下，仅注入引用。
+            GameStarter starter = canvasRoot.gameObject.AddComponent<GameStarter>();
             SetPrivateField(starter, "menuPanel", menuParent.gameObject);
             SetPrivateField(starter, "gamePanel", gamePanel);
-            SetPrivateField(starter, "startDemoButton", startBtn.GetComponent<Button>());
+            SetPrivateField(starter, "newGameButton", newGameBtn.GetComponent<Button>());
+            SetPrivateField(starter, "saveSelectButton", saveSelectBtn.GetComponent<Button>());
+            SetPrivateField(starter, "songSelectButton", songSelectBtn.GetComponent<Button>());
+            SetPrivateField(starter, "settingsButton", settingsBtn.GetComponent<Button>());
             SetPrivateField(starter, "autoStartDemoOnAwake", false);
-
-            // 自动生成谱的选择按钮：只创建按钮，监听在 GameStarter.Awake（Play 模式）统一接
-            // （编辑模式 AddListener 会在进入 Play 时被序列化清空）
-            GameObject drumsBtn = CreateButton("DemoDrumsButton", menuParent,
-                new Vector2(0.28f, 0.16f), new Vector2(340, 100), "menu.chartDrums", 40);
-            GameObject easyDrumsBtn = CreateButton("EasyDrumsButton", menuParent,
-                new Vector2(0.28f, 0.10f), new Vector2(340, 80), "menu.chartDrumsEasy", 32);
-            GameObject bassBtn = CreateButton("DemoBassButton", menuParent,
-                new Vector2(0.5f, 0.16f), new Vector2(340, 100), "menu.chartBass", 40);
-            GameObject synthBtn = CreateButton("DemoSynthButton", menuParent,
-                new Vector2(0.72f, 0.16f), new Vector2(340, 100), "menu.chartSynth", 40);
-            SetPrivateField(starter, "drumsButton", drumsBtn.GetComponent<Button>());
-            SetPrivateField(starter, "easyDrumsButton", easyDrumsBtn.GetComponent<Button>());
-            SetPrivateField(starter, "bassButton", bassBtn.GetComponent<Button>());
-            SetPrivateField(starter, "synthButton", synthBtn.GetComponent<Button>());
             return starter;
         }
 
         /// <summary>
-        /// 节拍校准：菜单入口按钮 + 校准面板（开始测试/应用推荐/±5ms/关闭）
+        /// 选项设置页：语言直切（遍历枚举，当前置灰）/ 打开校准 / 下落速度（FallSpeedController 双组绑定）/
+        /// 音效音量 ±0.1 / 按键特效占位开关。面板初始非激活；入口按钮（menu.settings）由
+        /// CreateGameStarter 创建，GameStarter 接线打开本页。
         /// </summary>
-        private static void CreateCalibrationPanel(RectTransform canvasRect, Transform menuParent, GameStarter starter)
+        private static SettingsPanelController CreateSettingsPanel(RectTransform canvasRect, GameStarter starter, FallSpeedController fsc)
         {
-            GameObject openBtn = CreateButton("CalibrationButton", menuParent,
-                new Vector2(0.5f, 0.055f), new Vector2(400, 90), "menu.calibration", 40);
+            GameObject panel = new GameObject("SettingsPanel", typeof(RectTransform), typeof(Image));
+            panel.transform.SetParent(canvasRect, false);
+            RectTransform rt = (RectTransform)panel.transform;
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            panel.GetComponent<Image>().color = new Color(0, 0, 0, 0.85f);
 
+            TextMeshProUGUI title = CreateText("SettingsTitle", panel.transform,
+                new Vector2(0.5f, 0.90f), new Vector2(0.5f, 0.90f), Vector2.zero, new Vector2(700, 100),
+                "settings.title", 56, TextAlignmentOptions.Center);
+            title.fontStyle = FontStyles.Bold;
+
+            // 语言行：小标签 + 枚举按钮横排（当前语言置灰不可选）
+            TextMeshProUGUI langLabel = CreateText("SettingsLangLabel", panel.transform,
+                new Vector2(0.5f, 0.80f), new Vector2(0.5f, 0.80f), Vector2.zero, new Vector2(600, 60),
+                "settings.language", 40, TextAlignmentOptions.Center);
+            langLabel.color = new Color(1, 1, 1, 0.8f);
+
+            string[] names = System.Enum.GetNames(typeof(Language));
+            System.Collections.Generic.List<Button> langButtons =
+                new System.Collections.Generic.List<Button>();
+            const float langGap = 0.24f;
+            for (int i = 0; i < names.Length; i++)
+            {
+                float x = 0.5f + (i - (names.Length - 1) * 0.5f) * langGap;
+                GameObject b = CreateButton($"SettingsLangButton_{names[i]}", panel.transform,
+                    new Vector2(x, 0.735f), new Vector2(200, 90), $"lang.{names[i]}", 38);
+                langButtons.Add(b.GetComponent<Button>());
+            }
+
+            // 校准行：打开校准按钮（校准面板本体在 CreateCalibrationPanel，后建盖在本页上）
+            GameObject calBtn = CreateButton("SettingsOpenCalibrationButton", panel.transform,
+                new Vector2(0.5f, 0.625f), new Vector2(500, 90), "settings.openCalibration", 40);
+
+            // 下落速度行：±按钮 + 动态数值（监听由 FallSpeedController 双组绑定）
+            TextMeshProUGUI speedLabel = CreateText("SettingsFallSpeedLabel", panel.transform,
+                new Vector2(0.5f, 0.53f), new Vector2(0.5f, 0.53f), Vector2.zero, new Vector2(600, 60),
+                "settings.fallSpeed", 40, TextAlignmentOptions.Center);
+            speedLabel.color = new Color(1, 1, 1, 0.8f);
+            GameObject speedMinus = CreateButton("SettingsFallSpeedMinusButton", panel.transform,
+                new Vector2(0.32f, 0.46f), new Vector2(160, 80), "−", 44);
+            GameObject speedPlus = CreateButton("SettingsFallSpeedPlusButton", panel.transform,
+                new Vector2(0.68f, 0.46f), new Vector2(160, 80), "＋", 44);
+            TextMeshProUGUI speedText = CreateText("SettingsFallSpeedText", panel.transform,
+                new Vector2(0.5f, 0.46f), new Vector2(0.5f, 0.46f), Vector2.zero, new Vector2(220, 80),
+                "", 40, TextAlignmentOptions.Center);
+
+            // 音效音量行：±按钮 + 百分比动态文本（监听由 SettingsPanelController 接）
+            TextMeshProUGUI sfxLabel = CreateText("SettingsSfxLabel", panel.transform,
+                new Vector2(0.5f, 0.37f), new Vector2(0.5f, 0.37f), Vector2.zero, new Vector2(600, 60),
+                "settings.sfxVolume", 40, TextAlignmentOptions.Center);
+            sfxLabel.color = new Color(1, 1, 1, 0.8f);
+            GameObject sfxMinus = CreateButton("SettingsSfxMinusButton", panel.transform,
+                new Vector2(0.32f, 0.30f), new Vector2(160, 80), "−", 44);
+            GameObject sfxPlus = CreateButton("SettingsSfxPlusButton", panel.transform,
+                new Vector2(0.68f, 0.30f), new Vector2(160, 80), "＋", 44);
+            TextMeshProUGUI sfxText = CreateText("SettingsSfxVolumeText", panel.transform,
+                new Vector2(0.5f, 0.30f), new Vector2(0.5f, 0.30f), Vector2.zero, new Vector2(220, 80),
+                "", 40, TextAlignmentOptions.Center);
+
+            // 按键特效行：占位开关（按钮 label 动态显示 开/关，美术资源到位后扩展）
+            TextMeshProUGUI effectLabel = CreateText("SettingsHitEffectLabel", panel.transform,
+                new Vector2(0.5f, 0.21f), new Vector2(0.5f, 0.21f), Vector2.zero, new Vector2(600, 60),
+                "settings.hitEffect", 40, TextAlignmentOptions.Center);
+            effectLabel.color = new Color(1, 1, 1, 0.8f);
+            GameObject effectBtn = CreateButton("SettingsHitEffectButton", panel.transform,
+                new Vector2(0.5f, 0.135f), new Vector2(400, 80), "", 38);
+            TextMeshProUGUI effectLabelTxt =
+                effectBtn.transform.Find("Label").GetComponent<TextMeshProUGUI>();
+
+            GameObject closeBtn = CreateButton("SettingsCloseButton", panel.transform,
+                new Vector2(0.5f, 0.045f), new Vector2(300, 70), "settings.close", 34);
+
+            SettingsPanelController controller = panel.AddComponent<SettingsPanelController>();
+            SetPrivateField(controller, "panelRoot", panel);
+            SetPrivateField(controller, "languageButtons", langButtons);
+            SetPrivateField(controller, "openCalibrationButton", calBtn.GetComponent<Button>());
+            SetPrivateField(controller, "sfxMinusButton", sfxMinus.GetComponent<Button>());
+            SetPrivateField(controller, "sfxPlusButton", sfxPlus.GetComponent<Button>());
+            SetPrivateField(controller, "sfxVolumeText", sfxText);
+            SetPrivateField(controller, "hitEffectButton", effectBtn.GetComponent<Button>());
+            SetPrivateField(controller, "hitEffectLabel", effectLabelTxt);
+            SetPrivateField(controller, "closeButton", closeBtn.GetComponent<Button>());
+            panel.SetActive(false);
+
+            // 设置页速度按钮组交给 FallSpeedController（Canvas 根，始终激活）双组绑定
+            SetPrivateField(fsc, "settingsMinusButton", speedMinus.GetComponent<Button>());
+            SetPrivateField(fsc, "settingsPlusButton", speedPlus.GetComponent<Button>());
+            SetPrivateField(fsc, "settingsSpeedText", speedText);
+
+            // 入口由 GameStarter（始终激活）接线
+            SetPrivateField(starter, "settingsPanelController", controller);
+            return controller;
+        }
+
+        /// <summary>
+        /// 正式存档选择面板：档案列表（ScrollRect 卷帘）+ 新建档输入框 +
+        /// 选中档后出现"进入游戏"与角落"天赋"按钮（天赋按钮接线 TalentPanel）。
+        /// 入口按钮（menu.saveSelect）由 CreateGameStarter 创建，GameStarter 接线 session.EnterSaveSelect。
+        /// </summary>
+        private static SaveSelectPanelController CreateSaveSelectPanel(RectTransform canvasRect)
+        {
+            GameObject panel = new GameObject("SaveSelectPanel", typeof(RectTransform), typeof(Image));
+            panel.transform.SetParent(canvasRect, false);
+            RectTransform rt = (RectTransform)panel.transform;
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            panel.GetComponent<Image>().color = new Color(0, 0, 0, 0.85f);
+
+            TextMeshProUGUI title = CreateText("SaveSelectTitle", panel.transform,
+                new Vector2(0.5f, 0.93f), new Vector2(0.5f, 0.93f), Vector2.zero, new Vector2(700, 100),
+                "saveSelect.title", 56, TextAlignmentOptions.Center);
+            title.fontStyle = FontStyles.Bold;
+
+            // 新建档：输入框 + 按钮
+            GameObject fieldGO = new GameObject("SaveNameField", typeof(RectTransform), typeof(Image), typeof(TMP_InputField));
+            fieldGO.transform.SetParent(panel.transform, false);
+            RectTransform frt = (RectTransform)fieldGO.transform;
+            frt.anchorMin = frt.anchorMax = new Vector2(0.26f, 0.84f);
+            frt.pivot = Vector2.zero;
+            frt.sizeDelta = new Vector2(560, 80);
+            fieldGO.GetComponent<Image>().color = new Color(0.075f, 0.095f, 0.14f, 1f);
+            TMP_InputField input = fieldGO.GetComponent<TMP_InputField>();
+            TextMeshProUGUI fieldText = CreateText("SaveNameFieldText", fieldGO.transform,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(540, 70),
+                "", 28, TextAlignmentOptions.Left);
+            TextMeshProUGUI fieldHint = CreateText("SaveNameFieldHint", fieldGO.transform,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(540, 70),
+                "saveSelect.name", 24, TextAlignmentOptions.Left);
+            fieldHint.color = new Color(0.5f, 0.57f, 0.66f);
+            input.textViewport = frt;
+            input.textComponent = fieldText;
+            input.placeholder = fieldHint;
+            input.characterLimit = 32;
+
+            GameObject createBtn = CreateButton("SaveCreateButton", panel.transform,
+                new Vector2(0.78f, 0.84f), new Vector2(300, 80), "saveSelect.create", 34);
+
+            // 档案列表：ScrollRect 卷帘（同选歌面板模式）
+            GameObject scrollGO = new GameObject("SaveScroll", typeof(RectTransform), typeof(Image), typeof(ScrollRect));
+            scrollGO.transform.SetParent(panel.transform, false);
+            RectTransform srt = (RectTransform)scrollGO.transform;
+            srt.anchorMin = srt.anchorMax = new Vector2(0.5f, 0.47f);
+            srt.pivot = new Vector2(0.5f, 0.5f);
+            srt.sizeDelta = new Vector2(920, 980);
+            Image simg = scrollGO.GetComponent<Image>();
+            simg.color = new Color(0, 0, 0, 0.35f);
+            simg.raycastTarget = true;
+
+            GameObject viewport = new GameObject("Viewport", typeof(RectTransform), typeof(Image), typeof(RectMask2D));
+            viewport.transform.SetParent(scrollGO.transform, false);
+            RectTransform vrt = (RectTransform)viewport.transform;
+            vrt.anchorMin = Vector2.zero;
+            vrt.anchorMax = Vector2.one;
+            vrt.offsetMin = Vector2.zero;
+            vrt.offsetMax = Vector2.zero;
+            Image vimg = viewport.GetComponent<Image>();
+            vimg.color = new Color(0, 0, 0, 0f);
+            vimg.raycastTarget = true;
+
+            GameObject content = new GameObject("Content",
+                typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
+            content.transform.SetParent(viewport.transform, false);
+            RectTransform crt = (RectTransform)content.transform;
+            crt.anchorMin = new Vector2(0.5f, 1f);
+            crt.anchorMax = new Vector2(0.5f, 1f);
+            crt.pivot = new Vector2(0.5f, 1f);
+            crt.anchoredPosition = Vector2.zero;
+            crt.sizeDelta = new Vector2(880, 0);
+            VerticalLayoutGroup vlg = content.GetComponent<VerticalLayoutGroup>();
+            vlg.spacing = 16;
+            vlg.padding = new RectOffset(0, 0, 16, 16);
+            vlg.childAlignment = TextAnchor.UpperCenter;
+            vlg.childControlWidth = true;
+            vlg.childControlHeight = false;
+            vlg.childForceExpandWidth = true;
+            vlg.childForceExpandHeight = false;
+            ContentSizeFitter csf = content.GetComponent<ContentSizeFitter>();
+            csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            ScrollRect sr = scrollGO.GetComponent<ScrollRect>();
+            sr.content = crt;
+            sr.viewport = vrt;
+            sr.horizontal = false;
+            sr.vertical = true;
+            sr.movementType = ScrollRect.MovementType.Elastic;
+            sr.scrollSensitivity = 30f;
+
+            // 条目模板（非激活克隆源；label 动态文本）
+            GameObject template = CreateButton("SaveEntryTemplate", panel.transform,
+                new Vector2(0.5f, 0.5f), new Vector2(860, 100), "", 30);
+            template.SetActive(false);
+
+            // 选中档后出现：进入游戏 + 角落天赋
+            GameObject enterBtn = CreateButton("SaveEnterGameButton", panel.transform,
+                new Vector2(0.5f, 0.055f), new Vector2(500, 90), "saveSelect.enterGame", 40);
+            enterBtn.SetActive(false);
+            GameObject talentBtn = CreateButton("SaveTalentButton", panel.transform,
+                new Vector2(0.93f, 0.93f), new Vector2(170, 80), "saveSelect.talents", 32);
+            talentBtn.SetActive(false);
+
+            GameObject closeBtn = CreateButton("SaveSelectCloseButton", panel.transform,
+                new Vector2(0.86f, 0.055f), new Vector2(200, 90), "saveSelect.close", 34);
+
+            SaveSelectPanelController controller = panel.AddComponent<SaveSelectPanelController>();
+            SetPrivateField(controller, "panelRoot", panel);
+            SetPrivateField(controller, "content", crt);
+            SetPrivateField(controller, "entryTemplate", template);
+            SetPrivateField(controller, "nameInput", input);
+            SetPrivateField(controller, "createButton", createBtn.GetComponent<Button>());
+            SetPrivateField(controller, "enterGameButton", enterBtn.GetComponent<Button>());
+            SetPrivateField(controller, "talentButton", talentBtn.GetComponent<Button>());
+            SetPrivateField(controller, "closeButton", closeBtn.GetComponent<Button>());
+            panel.SetActive(false);
+            return controller;
+        }
+
+        /// <summary>
+        /// 天赋面板：SceneBuilder 建骨架（全屏背景 + 标题 + 右上角 X + 空内容容器），
+        /// 树/详情/解锁确认由 TalentPanelController 运行时渲染（平移自旧 PortfolioCanvas 天赋页）。
+        /// 后建于 SaveSelectPanel（渲染盖在其上）；反向注入控制器给存档选择面板与 GameStarter。
+        /// 自带 Canvas 排序 251：地图页在独立 PortfolioCanvas（排序 250）上，天赋面板必须盖过它。
+        /// </summary>
+        private static void CreateTalentPanel(RectTransform canvasRect, SaveSelectPanelController saveSelectController, GameStarter starter)
+        {
+            GameObject panel = new GameObject("TalentPanel", typeof(RectTransform), typeof(Image));
+            panel.transform.SetParent(canvasRect, false);
+            RectTransform rt = (RectTransform)panel.transform;
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            panel.GetComponent<Image>().color = new Color(0, 0, 0, 0.85f);
+            // 嵌套 Canvas（继承父 Canvas 的参考分辨率缩放）+ 独立排序，盖在 PortfolioCanvas(250) 之上；
+            // 嵌套 Canvas 需要自己的 GraphicRaycaster 才能接收本子树射线
+            Canvas panelCanvas = panel.AddComponent<Canvas>();
+            panelCanvas.overrideSorting = true;
+            panelCanvas.sortingOrder = 251;
+            panel.AddComponent<GraphicRaycaster>();
+
+            TextMeshProUGUI title = CreateText("TalentTitle", panel.transform,
+                new Vector2(0.5f, 0.93f), new Vector2(0.5f, 0.93f), Vector2.zero, new Vector2(700, 100),
+                "talentPanel.title", 56, TextAlignmentOptions.Center);
+            title.fontStyle = FontStyles.Bold;
+
+            // 右上角 X 关闭
+            GameObject closeBtn = CreateButton("TalentCloseButton", panel.transform,
+                new Vector2(0.93f, 0.93f), new Vector2(170, 80), "talentPanel.close", 32);
+
+            // 空内容容器（控制器运行时重建其子树）
+            GameObject content = new GameObject("TalentContent", typeof(RectTransform));
+            content.transform.SetParent(panel.transform, false);
+            RectTransform crt = (RectTransform)content.transform;
+            crt.anchorMin = Vector2.zero;
+            crt.anchorMax = Vector2.one;
+            crt.offsetMin = Vector2.zero;
+            crt.offsetMax = Vector2.zero;
+
+            TalentPanelController controller = panel.AddComponent<TalentPanelController>();
+            SetPrivateField(controller, "panelRoot", panel);
+            SetPrivateField(controller, "contentRoot", crt);
+            SetPrivateField(controller, "closeButton", closeBtn.GetComponent<Button>());
+            panel.SetActive(false);
+
+            // 反向注入给存档选择面板（"天赋"按钮打开 + ESC 层叠判断）
+            if (saveSelectController != null)
+                SetPrivateField(saveSelectController, "talentPanel", controller);
+            // 注入 GameStarter：运行时转交给 PortfolioPanelController（地图页"天赋"入口）
+            SetPrivateField(starter, "talentPanelController", controller);
+        }
+
+        /// <summary>
+        /// 节拍校准：校准面板本体（开始测试/应用推荐/±5ms/关闭）。
+        /// 主菜单入口按钮已移除；由选项设置页的"打开校准"按钮进入。
+        /// 反向注入控制器/面板引用给设置页（ESC 层叠判断与打开按钮）。
+        /// </summary>
+        private static void CreateCalibrationPanel(RectTransform canvasRect, Transform menuParent, GameStarter starter, SettingsPanelController settingsController)
+        {
             GameObject panel = new GameObject("CalibrationPanel", typeof(RectTransform), typeof(Image));
             panel.transform.SetParent(canvasRect, false);
             RectTransform rt = (RectTransform)panel.transform;
@@ -731,22 +1029,21 @@ namespace FallenAngel.Core
             SetPrivateField(cal, "closeButton", closeBtn.GetComponent<Button>());
             panel.SetActive(false);
 
-            // 入口按钮与控制器交给 GameStarter（始终激活，Awake 时接线）
-            SetPrivateField(starter, "calibrationButton", openBtn.GetComponent<Button>());
-            SetPrivateField(starter, "calibrationController", cal);
+            // 反向注入给设置页（设置页先建、校准面板后建盖在其上）
+            if (settingsController != null)
+            {
+                SetPrivateField(settingsController, "calibrationController", cal);
+                SetPrivateField(settingsController, "calibrationPanel", panel);
+            }
         }
 
         /// <summary>
-        /// 语言选择面板：右上角入口按钮（label 动态显示当前语言）+ 面板内遍历
-        /// Language 枚举生成按钮（原生名称，key=lang.{枚举名}），当前语言置灰不可选。
+        /// 语言选择面板：面板内遍历 Language 枚举生成按钮（原生名称，key=lang.{枚举名}），
+        /// 当前语言置灰不可选。主菜单入口按钮已移除；设置页改为页内直切（阶段3接线），
+        /// 此面板保留但不再接入入口。
         /// </summary>
         private static void CreateLanguagePanel(RectTransform canvasRect, Transform menuParent, GameStarter starter)
         {
-            // 入口按钮：label 为动态文本（GameStarter 随语言切换刷新为当前语言名）
-            GameObject openBtn = CreateButton("LanguageButton", menuParent,
-                new Vector2(0.87f, 0.94f), new Vector2(180, 80), "", 34);
-            TextMeshProUGUI openLabel = openBtn.transform.Find("Label").GetComponent<TextMeshProUGUI>();
-
             GameObject panel = new GameObject("LanguagePanel", typeof(RectTransform), typeof(Image));
             panel.transform.SetParent(canvasRect, false);
             RectTransform rt = (RectTransform)panel.transform;
@@ -783,11 +1080,167 @@ namespace FallenAngel.Core
             SetPrivateField(lpc, "languageButtons", langButtons);
             SetPrivateField(lpc, "closeButton", closeBtn.GetComponent<Button>());
             panel.SetActive(false);
+        }
 
-            // 入口按钮交给 GameStarter（始终激活，Awake 接线并刷新语言名）
-            SetPrivateField(starter, "languageButton", openBtn.GetComponent<Button>());
-            SetPrivateField(starter, "languageButtonLabel", openLabel);
-            SetPrivateField(starter, "languagePanelController", lpc);
+        /// <summary>
+        /// 选歌界面（卷帘形态）：主菜单入口按钮 + 全屏面板（初始非激活）。
+        /// 列表为 ScrollRect（Viewport+RectMask2D 遮罩裁剪、Content+VerticalLayoutGroup
+        /// +ContentSizeFitter 自动堆叠），条目由控制器克隆模板生成，点击直接开谱。
+        /// </summary>
+        private static void CreateSongSelectPanel(RectTransform canvasRect, Transform menuParent, GameStarter starter)
+        {
+            // 主菜单入口按钮已由 CreateGameStarter 统一创建（四按钮纵排），此处只建面板本体
+            GameObject panel = new GameObject("SongSelectPanel", typeof(RectTransform), typeof(Image));
+            panel.transform.SetParent(canvasRect, false);
+            RectTransform prt = (RectTransform)panel.transform;
+            prt.anchorMin = Vector2.zero;
+            prt.anchorMax = Vector2.one;
+            prt.offsetMin = Vector2.zero;
+            prt.offsetMax = Vector2.zero;
+            Image pbg = panel.GetComponent<Image>();
+            pbg.color = new Color(0.05f, 0.06f, 0.10f, 1f);
+            pbg.raycastTarget = true;
+
+            TextMeshProUGUI title = CreateText("SongSelectTitle", panel.transform,
+                new Vector2(0.5f, 0.94f), new Vector2(0.5f, 0.94f), Vector2.zero, new Vector2(700, 90),
+                "songSelect.title", 56, TextAlignmentOptions.Center);
+            title.fontStyle = FontStyles.Bold;
+
+            // 卷帘滚动区：ScrollRect + 透明遮罩 Viewport + 顶部对齐 Content
+            GameObject scrollGO = new GameObject("SongScroll", typeof(RectTransform), typeof(Image), typeof(ScrollRect));
+            scrollGO.transform.SetParent(panel.transform, false);
+            RectTransform srt = (RectTransform)scrollGO.transform;
+            srt.anchorMin = new Vector2(0.5f, 0.5f);
+            srt.anchorMax = new Vector2(0.5f, 0.5f);
+            srt.pivot = new Vector2(0.5f, 0.5f);
+            srt.anchoredPosition = new Vector2(0, -40);
+            srt.sizeDelta = new Vector2(700, 1200);
+            Image simg = scrollGO.GetComponent<Image>();
+            simg.color = new Color(0, 0, 0, 0.35f);
+            simg.raycastTarget = true;
+
+            GameObject viewport = new GameObject("Viewport", typeof(RectTransform), typeof(Image), typeof(RectMask2D));
+            viewport.transform.SetParent(scrollGO.transform, false);
+            RectTransform vrt = (RectTransform)viewport.transform;
+            vrt.anchorMin = Vector2.zero;
+            vrt.anchorMax = Vector2.one;
+            vrt.offsetMin = Vector2.zero;
+            vrt.offsetMax = Vector2.zero;
+            Image vimg = viewport.GetComponent<Image>();
+            vimg.color = new Color(0, 0, 0, 0f); // 透明遮罩：不挡视觉，仅接收拖动
+            vimg.raycastTarget = true;
+
+            GameObject content = new GameObject("Content",
+                typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
+            content.transform.SetParent(viewport.transform, false);
+            RectTransform crt = (RectTransform)content.transform;
+            crt.anchorMin = new Vector2(0.5f, 1f);
+            crt.anchorMax = new Vector2(0.5f, 1f);
+            crt.pivot = new Vector2(0.5f, 1f);
+            crt.anchoredPosition = Vector2.zero;
+            crt.sizeDelta = new Vector2(660, 0);
+            VerticalLayoutGroup vlg = content.GetComponent<VerticalLayoutGroup>();
+            vlg.spacing = 24;
+            vlg.padding = new RectOffset(0, 0, 24, 24);
+            vlg.childAlignment = TextAnchor.UpperCenter;
+            vlg.childControlWidth = true;
+            vlg.childControlHeight = false; // 条目高度由自身 sizeDelta 决定（Image 无 preferredHeight）
+            vlg.childForceExpandWidth = true;
+            vlg.childForceExpandHeight = false;
+            ContentSizeFitter csf = content.GetComponent<ContentSizeFitter>();
+            csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            ScrollRect sr = scrollGO.GetComponent<ScrollRect>();
+            sr.content = crt;
+            sr.viewport = vrt;
+            sr.horizontal = false;
+            sr.vertical = true;
+            sr.movementType = ScrollRect.MovementType.Elastic;
+            sr.scrollSensitivity = 30f;
+
+            // 条目模板（非激活克隆源；label 为动态文本，key 空串）
+            GameObject template = CreateButton("SongEntryTemplate", panel.transform,
+                new Vector2(0.5f, 0.5f), new Vector2(600, 110), "", 34);
+            template.SetActive(false);
+
+            GameObject closeBtn = CreateButton("SongSelectCloseButton", panel.transform,
+                new Vector2(0.5f, 0.04f), new Vector2(300, 80), "lang.close", 34);
+
+            SongSelectPanelController controller = panel.AddComponent<SongSelectPanelController>();
+            SetPrivateField(controller, "panelRoot", panel);
+            SetPrivateField(controller, "content", crt);
+            SetPrivateField(controller, "entryTemplate", template);
+            SetPrivateField(controller, "closeButton", closeBtn.GetComponent<Button>());
+            SetPrivateField(controller, "gameStarter", starter);
+            panel.SetActive(false);
+
+            // 控制器交给 GameStarter（始终激活，Awake 时接线；入口按钮由 CreateGameStarter 统一创建）
+            SetPrivateField(starter, "songSelectPanelController", controller);
+        }
+
+        /// <summary>
+        /// Roguelite 地图面板：MapPanel 根（始终激活、无 Graphic，仅挂控制器）→
+        /// MapContent（非激活：不透明背景+标题+节点容器+按钮模板）→
+        /// MapInfoPopup（非激活说明弹窗）。不透明背景在 MapContent 内，
+        /// 随内容隐藏，否则会盖住主菜单。
+        /// </summary>
+        private static void CreateMapPanel(RectTransform canvasRect)
+        {
+            GameObject mapPanel = CreatePanel("MapPanel", canvasRect);
+            MapPanelController mpc = mapPanel.AddComponent<MapPanelController>();
+
+            GameObject content = CreatePanel("MapContent", mapPanel.transform);
+            Image bg = content.AddComponent<Image>();
+            bg.color = new Color(0.05f, 0.06f, 0.10f, 1f);
+            bg.raycastTarget = false;
+            content.SetActive(false);
+
+            TextMeshProUGUI title = CreateText("MapTitle", content.transform,
+                new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -120), new Vector2(700, 100),
+                "map.title", 64, TextAlignmentOptions.Center);
+            title.fontStyle = FontStyles.Bold;
+
+            // 节点容器（按钮由 MapPanelController 克隆模板手动堆叠定位，不用 LayoutGroup）
+            GameObject nodesContainer = new GameObject("NodesContainer", typeof(RectTransform));
+            nodesContainer.transform.SetParent(content.transform, false);
+            RectTransform ncRT = (RectTransform)nodesContainer.transform;
+            ncRT.anchorMin = new Vector2(0.5f, 0.5f);
+            ncRT.anchorMax = new Vector2(0.5f, 0.5f);
+            ncRT.pivot = new Vector2(0.5f, 0.5f);
+            ncRT.anchoredPosition = Vector2.zero;
+            ncRT.sizeDelta = new Vector2(800, 1500);
+
+            // 节点按钮模板（非激活，克隆源；label 为动态文本，key 空串）
+            GameObject template = CreateButton("NodeButtonTemplate", content.transform,
+                new Vector2(0.5f, 0.5f), new Vector2(400, 90), "", 30);
+            template.SetActive(false);
+
+            // 说明弹窗（非激活；占位格/终点点击后显示）
+            GameObject popup = CreatePanel("MapInfoPopup", mapPanel.transform);
+            Image popupImg = popup.AddComponent<Image>();
+            popupImg.color = new Color(0, 0, 0, 0.85f);
+            popupImg.raycastTarget = true; // 弹窗期间拦截下层节点按钮
+
+            TextMeshProUGUI popupTitle = CreateText("PopupTitle", popup.transform,
+                new Vector2(0.5f, 0.55f), new Vector2(0.5f, 0.55f), Vector2.zero, new Vector2(700, 100),
+                "", 52, TextAlignmentOptions.Center);
+            popupTitle.fontStyle = FontStyles.Bold;
+
+            TextMeshProUGUI popupDesc = CreateText("PopupDesc", popup.transform,
+                new Vector2(0.5f, 0.45f), new Vector2(0.5f, 0.45f), Vector2.zero, new Vector2(900, 300),
+                "", 36, TextAlignmentOptions.Center);
+
+            GameObject closeBtn = CreateButton("PopupCloseButton", popup.transform,
+                new Vector2(0.5f, 0.3f), new Vector2(300, 90), "lang.close", 34);
+            popup.SetActive(false);
+
+            SetPrivateField(mpc, "mapContent", content);
+            SetPrivateField(mpc, "nodesContainer", ncRT);
+            SetPrivateField(mpc, "nodeButtonTemplate", template);
+            SetPrivateField(mpc, "mapInfoPopup", popup);
+            SetPrivateField(mpc, "popupTitleText", popupTitle);
+            SetPrivateField(mpc, "popupDescText", popupDesc);
+            SetPrivateField(mpc, "popupCloseButton", closeBtn.GetComponent<Button>());
         }
 
         private static PauseController CreatePausePanel(Transform parent)

@@ -6,9 +6,10 @@ using FallenAngel.Core;
 namespace FallenAngel.UI
 {
     /// <summary>
-    /// 下落速度调节控制器（暂停面板内）：[−]/[＋] 调节 GameManager.speedMultiplier，
+    /// 下落速度调节控制器：[−]/[＋] 调节 GameManager.speedMultiplier，
     /// PlayerPrefs 持久化（下次开局保持）。速度实时生效（ActualFallTime 每帧读取）。
-    /// 挂载位置：HUDPanel（始终激活），pauseRoot 由 SceneBuilder 注入（同 PauseController 模式）。
+    /// 挂载位置：Canvas 根（始终激活——此前挂 HUDPanel 时 Menu 状态 GamePanel 失活会断设置页按钮监听）。
+    /// 双组绑定：暂停面板组（pauseRoot 内）+ 选项设置页组（SceneBuilder 注入），同源同步。
     /// </summary>
     public class FallSpeedController : MonoBehaviour
     {
@@ -18,6 +19,10 @@ namespace FallenAngel.UI
         private const float Step = 0.1f;
 
         [SerializeField] private GameObject pauseRoot; // PauseRoot（SceneBuilder 注入）
+        [Header("设置页按钮组（SceneBuilder 注入）")]
+        [SerializeField] private Button settingsMinusButton;
+        [SerializeField] private Button settingsPlusButton;
+        [SerializeField] private TextMeshProUGUI settingsSpeedText; // 动态文本
 
         private Button minusButton;
         private Button plusButton;
@@ -61,6 +66,16 @@ namespace FallenAngel.UI
                 plusButton.onClick.RemoveAllListeners();
                 plusButton.onClick.AddListener(() => Adjust(Step));
             }
+            if (settingsMinusButton != null)
+            {
+                settingsMinusButton.onClick.RemoveAllListeners();
+                settingsMinusButton.onClick.AddListener(() => Adjust(-Step));
+            }
+            if (settingsPlusButton != null)
+            {
+                settingsPlusButton.onClick.RemoveAllListeners();
+                settingsPlusButton.onClick.AddListener(() => Adjust(Step));
+            }
         }
 
         private void Adjust(float delta)
@@ -79,8 +94,9 @@ namespace FallenAngel.UI
 
         private void UpdateText()
         {
-            if (speedText != null)
-                speedText.text = speed.ToString("0.0") + "x";
+            string text = speed.ToString("0.0") + "x";
+            if (speedText != null) speedText.text = text;
+            if (settingsSpeedText != null) settingsSpeedText.text = text;
         }
     }
 }

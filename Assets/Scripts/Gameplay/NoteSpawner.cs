@@ -27,7 +27,7 @@ namespace FallenAngel.Gameplay
         [Tooltip("音符Prefab（需包含Note组件）")]
         [SerializeField] private Note notePrefab;
 
-        [Header("4个音轨的X位置（相对于notesContainer的anchoredPosition X）")]
+        [Header("轨道X位置（兜底/编辑器Gizmos用；音符坐标统一取 LaneLayout 动态布局）")]
         [SerializeField] private float[] lanePositionsX = new float[] { -225f, -75f, 75f, 225f };
 
         [Header("判定线和生成位置Y坐标（anchoredPosition Y）")]
@@ -243,16 +243,26 @@ namespace FallenAngel.Gameplay
             Note note = notePool.Get();
             if (note == null) return;
 
-            float x = lanePositionsX[Mathf.Clamp(data.lane, 0, 3)];
+            // 轨道 X 统一取自 LaneLayout（4K/5K 动态布局）；lanePositionsX 仅作 SceneBuilder 注入兜底。
+            // Slide 起点用连续坐标插值（path[0].x 可为小数，如 1.5）
+            float x;
+            if (data.type == NoteType.Slide && data.path != null && data.path.Count > 0)
+                x = LaneLayout.GetXFromLaneCoord(data.path[0].x);
+            else
+                x = LaneLayout.GetCenterXForActive(Mathf.Clamp(data.lane, 0, LaneLayout.ActiveLaneCount - 1));
             Vector2 spawnPos = new Vector2(x, spawnY);
             Vector2 judgePos = new Vector2(x, judgeLineY);
 
             note.Initialize(data, spawnPos, judgePos);
 
-            // Kick（lane 0）= 横跨四键的全宽横条（任意键触发，见 JudgeManager）
-            if (data.lane == 0)
+            // 宽音符视觉：横跨全键的全宽横条（任意键触发，见 JudgeManager 宽音符轮询）。
+            // 4 键鼓谱 lane 0（历史 kick 语义）或 v2 wide 标记（任意轨道）
+            bool isDrumChart = GameManager.Instance != null && GameManager.Instance.CurrentChart != null &&
+                               GameManager.Instance.CurrentChart.LaneCount == 4;
+            if (data.wide || (isDrumChart && data.lane == 0))
             {
-                float fullWidth = (lanePositionsX[3] - lanePositionsX[0]) + Note.DefaultNoteWidth;
+                float fullWidth = (LaneLayout.GetCenterXForActive(LaneLayout.ActiveLaneCount - 1) -
+                                   LaneLayout.GetCenterXForActive(0)) + Note.DefaultNoteWidth;
                 note.SetKickVisual(fullWidth);
             }
 
@@ -285,6 +295,10 @@ namespace FallenAngel.Gameplay
                 // 头部结束（释放判定完成）后静默回收，不产生任何判定事件。
                 // 修复：此前 LongEnd 会被自动Miss——正确完成的长按也会凭空蹦出 MISS、
                 // 断连击、计 Miss 数，曲终无音符时也会跳 MISS。
+                // 修复2：此前回收标记时会一并删除字典条目——标记在头部按下前就被
+                // 回收（headHolding=false 是按下前的常态），导致释放时
+                // GetLongNoteHead 查不到头、释放链断裂，命中头永久堆积在判定线。
+                // 字典条目只由头部自身的清理路径删除（自动Miss/动画结束两处）。
                 if (note.Data.type == NoteType.LongEnd || note.Data.type == NoteType.LongBody)
                 {
                     bool headHolding = note.Data.longNoteId >= 0
@@ -292,18 +306,55 @@ namespace FallenAngel.Gameplay
                         && head != null && head.IsHolding;
                     if (!headHolding)
                     {
-                        if (note.Data.longNoteId >= 0)
-                            activeLongNotesById.Remove(note.Data.longNoteId);
                         ReleaseNote(note);
                         activeNotes.RemoveAt(i);
                     }
                     continue;
                 }
 
-                // 对普通音符，超出判定窗口太久自动Miss
-                if (!note.IsJudged || (note.Data.type == NoteType.LongStart && note.IsHolding))
+                // Drag：过窗静默回收（碰即 Perfect、永不 MISS 语义——不计 Miss、不发事件、不断连击）
+                if (note.Data.type == NoteType.Drag)
                 {
-                    if (note.Data.type != NoteType.LongStart)
+                    if (!note.IsJudged && songTime - note.Data.time > missThreshold)
+                    {
+                        ReleaseNote(note);
+                        activeNotes.RemoveAt(i);
+                    }
+                    continue;
+                }
+
+                // 超窗自动 Miss：普通音符与"未按住的头部"（LongStart/Slide）。
+                // 修复：此前 LongStart 无论是否按住都永不自动 Miss——漏按/按晚的
+                // hold 头永久停在判定线堆积；现在仅"按住中"的头部才豁免
+                // （提前松手由输入事件判定），未按住的超窗走自动 Miss。
+                bool isHoldHead = note.Data.type == NoteType.LongStart || note.Data.type == NoteType.Slide;
+                if (!note.IsJudged || (isHoldHead && note.IsHolding))
+                {
+                    bool heldHoldHead = isHoldHead && note.IsHolding;
+
+                    // 兜底清扫：按住态但轨道早已松开、且已过结束时间+窗口
+                    // （判定链断开的残留头），按 Miss 释放防堆积。
+                    // 宽长按与 Slide 均由"任意键"维持（触屏跨轨拖动会切换轨道，
+                    // 按单轨判断会误断），按任意键状态判断是否仍按住。
+                    bool isWideNote = note.Data.wide ||
+                        (GameManager.Instance != null && GameManager.Instance.CurrentChart != null &&
+                         GameManager.Instance.CurrentChart.LaneCount == 4 && note.Data.lane == 0);
+                    bool isSlideNote = note.Data.type == NoteType.Slide;
+                    bool stillHeld = (isWideNote || isSlideNote) ? AnyLaneHeld() : IsLaneHeld(note.Data.lane);
+                    if (heldHoldHead && !stillHeld &&
+                        songTime > note.Data.time + note.Data.duration + missThreshold)
+                    {
+                        if (JudgeManager.Instance != null)
+                            JudgeManager.Instance.HandleAutoMiss(note);
+                        note.JudgeMiss();
+                        if (note.Data.longNoteId >= 0)
+                            activeLongNotesById.Remove(note.Data.longNoteId);
+                        ReleaseNote(note);
+                        activeNotes.RemoveAt(i);
+                        continue;
+                    }
+
+                    if (!heldHoldHead)
                     {
                         float timeDiff = songTime - note.Data.time;
                         if (timeDiff > missThreshold)
@@ -319,7 +370,7 @@ namespace FallenAngel.Gameplay
                             activeNotes.RemoveAt(i);
                         }
                     }
-                    // LongStart 保持中：提前松手由输入事件判定（兜底逻辑见技术债清单）
+                    // 按住中的头部（LongStart/Slide）：提前松手由输入事件判定
                 }
                 else if (!note.gameObject.activeSelf)
                 {
@@ -341,12 +392,23 @@ namespace FallenAngel.Gameplay
             return InputSystem.InputManager.Instance.LanePressStates[lane];
         }
 
+        /// <summary>任意轨道是否按住（宽音符 kick 语义用）</summary>
+        private bool AnyLaneHeld()
+        {
+            if (InputSystem.InputManager.Instance == null) return false;
+            bool[] states = InputSystem.InputManager.Instance.LanePressStates;
+            for (int i = 0; i < states.Length; i++)
+                if (states[i]) return true;
+            return false;
+        }
+
         /// <summary>
         /// 获取某音轨最靠近判定线、且未被判定的音符（用于命中判定）
         /// </summary>
         /// <param name="lane">音轨索引</param>
         /// <param name="includeLongEnds">是否包含长按尾部</param>
-        public Note GetClosestJudgableNote(int lane, bool includeLongEnds = true)
+        /// <param name="onlyType">限定类型（null=不限；kick 轮询传 Normal，避免抢判长按头）</param>
+        public Note GetClosestJudgableNote(int lane, bool includeLongEnds = true, NoteType? onlyType = null)
         {
             Note best = null;
             float songTime = GameManager.Instance != null ? GameManager.Instance.SongTime : 0f;
@@ -357,6 +419,7 @@ namespace FallenAngel.Gameplay
                 Note note = activeNotes[i];
                 if (note == null || note.Data == null) continue;
                 if (note.Data.lane != lane) continue;
+                if (onlyType.HasValue && note.Data.type != onlyType.Value) continue;
 
                 // 只处理可判定的类型
                 if (note.Data.type == NoteType.LongEnd)
@@ -392,6 +455,37 @@ namespace FallenAngel.Gameplay
         }
 
         /// <summary>
+        /// 获取最靠近判定线、未被判定的宽音符（kick 语义目标，JudgeManager 轮询用）：
+        /// 4K 谱 lane 0 的音符（历史 kick 语义）或 data.wide 标记的音符（v2 协议扩展）。
+        /// 仅 Normal/LongStart（长按尾/身体不独立判定；drag/flick/slide 无 kick 语义）。
+        /// </summary>
+        public Note GetClosestWideJudgableNote()
+        {
+            bool isDrumChart = GameManager.Instance != null && GameManager.Instance.CurrentChart != null &&
+                               GameManager.Instance.CurrentChart.LaneCount == 4;
+            float songTime = GameManager.Instance != null ? GameManager.Instance.SongTime : 0f;
+            Note best = null;
+            float minDiff = float.MaxValue;
+
+            for (int i = 0; i < activeNotes.Count; i++)
+            {
+                Note note = activeNotes[i];
+                if (note == null || note.Data == null || note.IsJudged) continue;
+                if (note.Data.type != NoteType.Normal && note.Data.type != NoteType.LongStart) continue;
+                bool isWide = note.Data.wide || (isDrumChart && note.Data.lane == 0);
+                if (!isWide) continue;
+
+                float diff = Mathf.Abs(songTime - note.Data.time);
+                if (diff < minDiff)
+                {
+                    minDiff = diff;
+                    best = note;
+                }
+            }
+            return best;
+        }
+
+        /// <summary>
         /// 获取指定longNoteId对应的头部音符
         /// </summary>
         public Note GetLongNoteHead(int longNoteId)
@@ -413,12 +507,11 @@ namespace FallenAngel.Gameplay
         }
 
         /// <summary>
-        /// 获取音轨X坐标（anchoredPosition）
+        /// 获取音轨X坐标（anchoredPosition，动态布局）
         /// </summary>
         public float GetLaneX(int lane)
         {
-            if (lane < 0 || lane >= lanePositionsX.Length) return 0f;
-            return lanePositionsX[lane];
+            return LaneLayout.GetCenterXForActive(lane);
         }
 
         private void OnDestroy()

@@ -15,6 +15,30 @@ namespace FallenAngel.Data
     }
 
     /// <summary>
+    /// 谱面各类型音符数量统计（v2 协议 noteCounts，加载侧校验用）
+    /// </summary>
+    [System.Serializable]
+    public class NoteCounts
+    {
+        public int tap;
+        public int hold;
+        public int drag;
+        public int flick;
+        public int slide;
+    }
+
+    /// <summary>
+    /// 谱面事件（v2 协议 events 通道；type 存字符串保前向兼容，如 "bpm"/"speed"）
+    /// </summary>
+    [System.Serializable]
+    public class ChartEvent
+    {
+        public float time;
+        public string type;
+        public float value;
+    }
+
+    /// <summary>
     /// 谱面元数据
     /// </summary>
     [System.Serializable]
@@ -30,6 +54,8 @@ namespace FallenAngel.Data
         public string audioFileName;    // 音频文件名（不含扩展名）
         public float previewStartTime;  // 试听开始时间
         public float previewDuration;   // 试听持续时间
+        public int formatVersion;       // 谱面格式版本（v1 缺失=0；v2=2）
+        public NoteCounts noteCounts;   // 各类型数量统计（v2，校验用）
     }
 
     /// <summary>
@@ -40,12 +66,19 @@ namespace FallenAngel.Data
     {
         public ChartMetadata metadata;
         public List<NoteData> notes;
+        public List<ChartEvent> events; // v2 events 通道（v1 谱为 null，读取处判空）
 
         public ChartData()
         {
             metadata = new ChartMetadata();
             notes = new List<NoteData>();
+            events = new List<ChartEvent>();
         }
+
+        /// <summary>
+        /// 键数（v2 协议为 5 键 lane 0-4；v1 谱 formatVersion 缺失=0 → 4 键）
+        /// </summary>
+        public int LaneCount => (metadata != null && metadata.formatVersion >= 2) ? 5 : 4;
 
         /// <summary>
         /// 按时间排序所有音符
@@ -73,7 +106,7 @@ namespace FallenAngel.Data
             foreach (var note in notes)
             {
                 float endTime = note.time;
-                if (note.type == NoteType.LongStart)
+                if (note.type == NoteType.LongStart || note.type == NoteType.Slide)
                     endTime += note.duration;
                 if (endTime > maxTime)
                     maxTime = endTime;

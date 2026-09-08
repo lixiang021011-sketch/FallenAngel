@@ -10,7 +10,7 @@ namespace FallenAngel.InputSystem
     /// </summary>
     public struct LaneInputArgs
     {
-        public int laneIndex;        // 音轨索引 0-3
+        public int laneIndex;        // 音轨索引 0-4（按当前活动键数）
         public bool isPressed;       // true=按下, false=抬起
         public Vector2 touchPos;     // 触屏位置（屏幕坐标）
     }
@@ -23,17 +23,27 @@ namespace FallenAngel.InputSystem
     {
         public static InputManager Instance { get; private set; }
 
-        [Header("音轨输入区域配置")]
-        [Tooltip("轨道判定使用 Canvas 坐标（LaneLayout），与按键视觉同源，不依赖屏幕比例")]
-
         [Header("键盘映射（PC调试用）")]
-        [SerializeField] private KeyCode[] laneKeys = new KeyCode[]
+        [Tooltip("4 键谱（v1/鼓谱）：D F J K；5 键谱（v2/吉他谱）：D F G J K（SPACE 仍为暂停）")]
+        [SerializeField] private KeyCode[] laneKeys4 = new KeyCode[]
         {
             KeyCode.D,      // 音轨0
             KeyCode.F,      // 音轨1
             KeyCode.J,      // 音轨2
             KeyCode.K        // 音轨3
         };
+
+        [SerializeField] private KeyCode[] laneKeys5 = new KeyCode[]
+        {
+            KeyCode.D,      // 音轨0
+            KeyCode.F,      // 音轨1
+            KeyCode.G,      // 音轨2
+            KeyCode.J,      // 音轨3
+            KeyCode.K        // 音轨4
+        };
+
+        /// <summary>当前生效键表（按 LaneLayout.ActiveLaneCount 切换）</summary>
+        private KeyCode[] ActiveKeys => LaneLayout.ActiveLaneCount == 5 ? laneKeys5 : laneKeys4;
 
         [Header("触屏判定区域底部高度（屏幕高度比例）")]
         [Tooltip("判定区为屏幕底部 touchBottomRatio 比例（0.6 = 底部60%），y=0 为屏幕底边")]
@@ -47,7 +57,7 @@ namespace FallenAngel.InputSystem
         public event System.EventHandler<LaneInputArgs> OnLaneInput;
 
         /// <summary>
-        /// 获取当前各音轨是否处于按下状态
+        /// 获取当前各音轨是否处于按下状态（长度 = 当前活动键数，由 EnsureLaneArrays 维护）
         /// </summary>
         public bool[] LanePressStates { get; private set; } = new bool[4];
 
@@ -55,6 +65,18 @@ namespace FallenAngel.InputSystem
         private Dictionary<int, int> touchIdToLane = new Dictionary<int, int>();
         // 上一帧的键盘按下状态
         private bool[] lastKeyStates = new bool[4];
+
+        /// <summary>
+        /// 确保轨道状态数组与当前活动键数一致（4K/5K 切换时重建）
+        /// </summary>
+        private void EnsureLaneArrays()
+        {
+            int count = LaneLayout.ActiveLaneCount;
+            if (LanePressStates == null || LanePressStates.Length != count)
+                LanePressStates = new bool[count];
+            if (lastKeyStates == null || lastKeyStates.Length != count)
+                lastKeyStates = new bool[count];
+        }
         // 编辑器鼠标模拟触摸：当前按下的轨道（-1 = 未按下）
         private int editorMouseLane = -1;
         // Canvas 引用（懒解析）：屏幕坐标 → Canvas 本地坐标的轨道映射用
@@ -96,6 +118,9 @@ namespace FallenAngel.InputSystem
 
         private void Update()
         {
+            // 轨道数可能随谱面切换（4K/5K），每帧对齐数组
+            EnsureLaneArrays();
+
             bool playing = GameManager.Instance != null &&
                            GameManager.Instance.CurrentState == GameState.Playing;
 
@@ -130,13 +155,15 @@ namespace FallenAngel.InputSystem
         {
             if (state != GameState.Playing) return;
 
-            for (int i = 0; i < 4; i++)
+            EnsureLaneArrays();
+            int count = ActiveKeys.Length;
+            for (int i = 0; i < count; i++)
             {
-                bool actual = UnityEngine.Input.GetKey(laneKeys[i]);
+                bool actual = UnityEngine.Input.GetKey(ActiveKeys[i]);
                 lastKeyStates[i] = actual;
                 if (LanePressStates[i] != actual)
                 {
-                    Vector2 pos = new Vector2(Screen.width * (i + 0.5f) / 4f, Screen.height * 0.3f);
+                    Vector2 pos = new Vector2(Screen.width * (i + 0.5f) / count, Screen.height * 0.3f);
                     SetLaneState(i, actual, pos);
                 }
             }
@@ -171,7 +198,7 @@ namespace FallenAngel.InputSystem
             }
 
             int lane = GetLaneFromScreenPos(mousePos);
-            if (lane < 0 || lane > 3)
+            if (lane < 0 || lane >= LaneLayout.ActiveLaneCount)
             {
                 ReleaseEditorMouseLane();
                 return;
@@ -220,7 +247,7 @@ namespace FallenAngel.InputSystem
                     continue;
 
                 int lane = GetLaneFromScreenPos(touchPos);
-                if (lane < 0 || lane > 3) continue;
+                if (lane < 0 || lane >= LaneLayout.ActiveLaneCount) continue;
 
                 switch (touch.phase)
                 {
@@ -273,9 +300,10 @@ namespace FallenAngel.InputSystem
         /// </summary>
         private void TrackKeyboardStates(bool emitEvents)
         {
-            for (int i = 0; i < 4; i++)
+            int count = ActiveKeys.Length;
+            for (int i = 0; i < count; i++)
             {
-                bool isKeyDown = UnityEngine.Input.GetKey(laneKeys[i]);
+                bool isKeyDown = UnityEngine.Input.GetKey(ActiveKeys[i]);
                 bool wasDown = lastKeyStates[i];
 
                 if (isKeyDown != wasDown)
@@ -285,9 +313,9 @@ namespace FallenAngel.InputSystem
                     {
 #if UNITY_EDITOR
                         if (isKeyDown)
-                            Debug.Log($"[InputManager] Key DOWN lane={i} key={laneKeys[i]}");
+                            Debug.Log($"[InputManager] Key DOWN lane={i} key={ActiveKeys[i]}");
 #endif
-                        Vector2 pos = new Vector2(Screen.width * (i + 0.5f) / 4f, Screen.height * 0.3f);
+                        Vector2 pos = new Vector2(Screen.width * (i + 0.5f) / count, Screen.height * 0.3f);
                         SetLaneState(i, isKeyDown, pos);
                     }
                 }
@@ -300,7 +328,7 @@ namespace FallenAngel.InputSystem
         /// </summary>
         private void SetLaneState(int lane, bool pressed, Vector2 touchPos)
         {
-            if (lane < 0 || lane > 3) return;
+            if (lane < 0 || lane >= LanePressStates.Length) return;
             LanePressStates[lane] = pressed;
 
             LaneInputArgs args = new LaneInputArgs
@@ -357,7 +385,8 @@ namespace FallenAngel.InputSystem
         /// </summary>
         public void SimulateLaneInput(int lane, bool pressed)
         {
-            Vector2 pos = new Vector2(Screen.width * (lane + 0.5f) / 4f, Screen.height * 0.3f);
+            int count = Mathf.Max(1, LanePressStates.Length);
+            Vector2 pos = new Vector2(Screen.width * (lane + 0.5f) / count, Screen.height * 0.3f);
             SetLaneState(lane, pressed, pos);
         }
 

@@ -103,6 +103,13 @@ namespace FallenAngel.Core
             return key;
         }
 
+        /// <summary>脚本构建的原型文本回退；已有语言表条目优先，避免修改语言资产。</summary>
+        public static void AddFallback(string key, string chinese, string english)
+        {
+            if (!zhTable.ContainsKey(key)) zhTable[key] = chinese;
+            if (!enTable.ContainsKey(key)) enTable[key] = english;
+        }
+
         /// <summary>切换语言并持久化，触发 OnLanguageChanged 让全 UI 刷新</summary>
         public static void SetLanguage(Language lang)
         {

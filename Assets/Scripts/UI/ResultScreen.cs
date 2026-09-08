@@ -170,6 +170,11 @@ namespace FallenAngel.UI
 
         private void ShowResult()
         {
+            if (GameManager.Instance?.Portfolio?.OwnsSong == true)
+            {
+                if (rootPanel != null) rootPanel.SetActive(false);
+                return;
+            }
             if (rootPanel != null) rootPanel.SetActive(true);
 
             // 歌曲信息
@@ -238,6 +243,7 @@ namespace FallenAngel.UI
 
         private void OnRetryClicked()
         {
+            if (GameManager.Instance?.Portfolio?.OwnsSong == true) return;
             AudioManager.Instance?.PlayButtonClick();
             if (rootPanel != null) rootPanel.SetActive(false);
 
@@ -258,10 +264,18 @@ namespace FallenAngel.UI
 
         private void OnBackClicked()
         {
+            if (GameManager.Instance?.Portfolio?.OwnsSong == true) return;
             AudioManager.Instance?.PlayButtonClick();
             if (rootPanel != null) rootPanel.SetActive(false);
 
-            // 直接切换面板（GameStarter在MenuPanel上，可能已被禁用）
+            // Roguelite 局内：结算返回地图下一节点（不走主菜单）
+            if (RunManager.Instance != null && RunManager.Instance.IsInRun)
+            {
+                RunManager.Instance.AdvanceFromResult();
+                return;
+            }
+
+            // 局外（旧调试路径）：返回主菜单（GameStarter 挂在 Canvas 根，始终激活）
             if (menuPanel != null) menuPanel.SetActive(true);
             if (gamePanel != null) gamePanel.SetActive(false);
 

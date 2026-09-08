@@ -6,31 +6,19 @@
     },
     {
       "key": "menu.subtitle",
-      "value": "4K Rhythm Game"
+      "value": "Rhythm Game Demo"
+    },
+    {
+      "key": "menu.startRun",
+      "value": "START RUN"
+    },
+    {
+      "key": "menu.songSelect",
+      "value": "SONG SELECT"
     },
     {
       "key": "menu.hint",
-      "value": "PC: D F J K to hit notes  |  SPACE to pause  |  ESC to exit\nMobile: Tap the 4 areas at bottom screen"
-    },
-    {
-      "key": "menu.startDemo",
-      "value": "START DEMO"
-    },
-    {
-      "key": "menu.chartDrums",
-      "value": "Drums"
-    },
-    {
-      "key": "menu.chartDrumsEasy",
-      "value": "Drums (Easy)"
-    },
-    {
-      "key": "menu.chartBass",
-      "value": "Bass"
-    },
-    {
-      "key": "menu.chartSynth",
-      "value": "Synth"
+      "value": "PC: D F J K (4-key) / D F G J K (5-key)  |  SPACE pause  |  ESC exit\nMobile: bottom key areas (4/5 zones)"
     },
     {
       "key": "menu.calibration",
@@ -139,6 +127,46 @@
     {
       "key": "cal.observing",
       "value": "Observing… adjust with ±5ms until aligned (ESC to exit)"
+    },
+    {
+      "key": "map.title",
+      "value": "ADVENTURE MAP"
+    },
+    {
+      "key": "map.battle",
+      "value": "BATTLE"
+    },
+    {
+      "key": "map.desc.battle",
+      "value": "Battle node: gameplay pending.\n(Placeholder - close to continue)"
+    },
+    {
+      "key": "map.buff",
+      "value": "BUFF (TBD)"
+    },
+    {
+      "key": "map.rest",
+      "value": "REST (TBD)"
+    },
+    {
+      "key": "map.end",
+      "value": "GOAL"
+    },
+    {
+      "key": "map.desc.buff",
+      "value": "Buff node: planned.\n(Placeholder - close to continue)"
+    },
+    {
+      "key": "map.desc.rest",
+      "value": "Rest node: planned.\n(Placeholder - close to continue)"
+    },
+    {
+      "key": "map.desc.end",
+      "value": "Goal reached! Run complete."
+    },
+    {
+      "key": "songSelect.title",
+      "value": "SONG SELECT"
     }
   ]
 }

@@ -31,8 +31,20 @@ namespace FallenAngel.Audio
 
         [Header("音量设置")]
         [Range(0f, 1f)] public float bgmVolume = 0.8f;
-        [Range(0f, 1f)] public float sfxVolume = 0.7f;
+        [SerializeField, Range(0f, 1f)] private float sfxVolume = 0.7f;   // 字段名不变，Inspector 序列化保留
         [Range(0f, 1f)] public float hitVolume = 0.6f;
+
+        /// <summary>音效音量 0~1：设置页调节入口（set 走 GameSettings 持久化并即时应用）</summary>
+        public float SfxVolume
+        {
+            get => sfxVolume;
+            set
+            {
+                sfxVolume = Mathf.Clamp01(value);
+                GameSettings.SfxVolume = sfxVolume;
+                ApplyVolumeSettings();
+            }
+        }
 
         [Header("曲终淡出")]
         [Tooltip("结算时BGM淡出时长（秒）")]
@@ -72,6 +84,8 @@ namespace FallenAngel.Audio
             bgmSource.loop = false;
             bgmSource.playOnAwake = false;
             EnsureDefaultSfx();
+            // 用持久化设置覆盖 Inspector 初值（首次运行即默认值）
+            sfxVolume = GameSettings.SfxVolume;
             ApplyVolumeSettings();
             isInitialized = true;
         }
@@ -213,16 +227,18 @@ namespace FallenAngel.Audio
         /// </summary>
         private void EnsureDefaultSfx()
         {
-            // 不同判定用不同音调：判定越准音调越高越清脆，Miss 最低最闷
-            if (perfectHitSfx == null) perfectHitSfx = SynthesizedSfx.CreateHitClip(880f, 0.08f);
-            if (greatHitSfx == null) greatHitSfx = SynthesizedSfx.CreateHitClip(660f, 0.09f);
-            if (goodHitSfx == null) goodHitSfx = SynthesizedSfx.CreateHitClip(440f, 0.11f);
-            if (missSfx == null) missSfx = SynthesizedSfx.CreateHitClip(220f, 0.13f, 14f);
+            // 需求 2026-09-01：命中反馈统一为无音调打击声（判定越准越短促清脆）；
+            // Bad/Miss 不再合成音效（PlayHitSfx 门控不出声），missSfx 字段保留给未来真实采样。
+            if (perfectHitSfx == null) perfectHitSfx = SynthesizedSfx.CreatePercussionClip(0.12f);
+            if (greatHitSfx == null) greatHitSfx = SynthesizedSfx.CreatePercussionClip(0.10f);
+            if (goodHitSfx == null) goodHitSfx = SynthesizedSfx.CreatePercussionClip(0.08f);
             if (buttonClickSfx == null) buttonClickSfx = SynthesizedSfx.CreateHitClip(1000f, 0.05f, 24f);
         }
 
         /// <summary>
-        /// 播放判定音效
+        /// 播放判定音效。需求 2026-09-01：
+        ///   命中（Perfect/Great/Good）→ 无音调打击声；
+        ///   Bad/Miss → 不出声（无音效）。
         /// </summary>
         public void PlayHitSfx(JudgeResultType result)
         {
@@ -231,8 +247,9 @@ namespace FallenAngel.Audio
                 JudgeResultType.Perfect => perfectHitSfx,
                 JudgeResultType.Great => greatHitSfx,
                 JudgeResultType.Good => goodHitSfx,
-                _ => missSfx
+                _ => null // Bad/Miss：无音效
             };
+            if (clip == null) return;
             PlaySfx(clip, hitVolume, hitSource);
         }
 

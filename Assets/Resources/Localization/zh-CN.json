@@ -6,31 +6,19 @@
     },
     {
       "key": "menu.subtitle",
-      "value": "4K 下落式节奏游戏"
+      "value": "下落式音游 Demo"
+    },
+    {
+      "key": "menu.startRun",
+      "value": "开始游戏"
+    },
+    {
+      "key": "menu.songSelect",
+      "value": "选歌"
     },
     {
       "key": "menu.hint",
-      "value": "PC: D F J K 击打音符 | 空格 暂停 | ESC 退出\n移动端: 点击屏幕下方四个按键区"
-    },
-    {
-      "key": "menu.startDemo",
-      "value": "开始 DEMO"
-    },
-    {
-      "key": "menu.chartDrums",
-      "value": "鼓谱"
-    },
-    {
-      "key": "menu.chartDrumsEasy",
-      "value": "鼓谱-简单"
-    },
-    {
-      "key": "menu.chartBass",
-      "value": "贝斯谱"
-    },
-    {
-      "key": "menu.chartSynth",
-      "value": "合成器谱"
+      "value": "PC: 4键 D F J K / 5键 D F G J K 击打 | 空格 暂停 | ESC 退出\n手机: 屏幕下部按键区域（4/5 分区）"
     },
     {
       "key": "menu.calibration",
@@ -139,6 +127,46 @@
     {
       "key": "cal.observing",
       "value": "观察中…用 ±5ms 调整，直到音画重合（ESC 退出）"
+    },
+    {
+      "key": "map.title",
+      "value": "冒险地图"
+    },
+    {
+      "key": "map.battle",
+      "value": "战斗"
+    },
+    {
+      "key": "map.desc.battle",
+      "value": "战斗节点：游玩内容暂缓接入。\n（占位说明，关闭后继续前进）"
+    },
+    {
+      "key": "map.buff",
+      "value": "增益（占位）"
+    },
+    {
+      "key": "map.rest",
+      "value": "休息（占位）"
+    },
+    {
+      "key": "map.end",
+      "value": "终点"
+    },
+    {
+      "key": "map.desc.buff",
+      "value": "增益节点：规划中。\n（占位说明，关闭后继续前进）"
+    },
+    {
+      "key": "map.desc.rest",
+      "value": "休息节点：规划中。\n（占位说明，关闭后继续前进）"
+    },
+    {
+      "key": "map.desc.end",
+      "value": "到达终点！本局完成。"
+    },
+    {
+      "key": "songSelect.title",
+      "value": "选歌"
     }
   ]
 }

@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using FallenAngel.Core;
 using FallenAngel.InputSystem;
 
 namespace FallenAngel.UI
@@ -76,6 +77,17 @@ namespace FallenAngel.UI
 
         private void Update()
         {
+            // 基准色与轨道配色单一来源（LaneColors）对齐，每帧刷新：
+            // 轨道换板（4K/5K 切换，LanePanelController 重着色）后基准色即更新。
+            // 修复：此前 Awake 一次性捕获构建期颜色——场景构建时按默认 4 键用鼓谱色板，
+            // 5K 谱加载后轨道重刷为吉他色板，按键反馈基准色仍是旧板，按压闪光颜色错乱。
+            if (keyAreaImage != null)
+            {
+                Color laneColor = LaneColors.GetLaneColor(laneIndex);
+                laneColor.a = 0.3f; // 与 LanePanelController 的按键区透明度一致
+                normalColor = laneColor;
+            }
+
             float curLerp = 0f;
             if (keyAreaImage != null) curLerp = GetCurrentLerp();
             float lerp = Mathf.MoveTowards(curLerp, targetColorLerp, transitionSpeed * Time.unscaledDeltaTime);
@@ -93,10 +105,12 @@ namespace FallenAngel.UI
                 keyVisual.localScale = normalScale * s;
             }
 
-            // 发光
+            // 发光（颜色通道同样取自 LaneColors；仅动画透明度）
             if (judgeLineGlow != null)
             {
+                Color laneColor = LaneColors.GetLaneColor(laneIndex);
                 Color c = judgeLineGlow.color;
+                c.r = laneColor.r; c.g = laneColor.g; c.b = laneColor.b;
                 c.a = Mathf.MoveTowards(c.a, targetGlowAlpha, transitionSpeed * Time.unscaledDeltaTime);
                 judgeLineGlow.color = c;
             }
