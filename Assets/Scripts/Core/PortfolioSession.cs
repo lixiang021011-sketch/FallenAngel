@@ -355,9 +355,19 @@ namespace FallenAngel.Core
         }
 
 #if UNITY_EDITOR
-        /// <summary>调试入口：无商店/掉落 UI 时验证持有链路（Inspector 右键 PortfolioSession）</summary>
-        [ContextMenu("Debug: Acquire Equipment E01")]
-        public void DebugAcquireE01() => AcquireEquipment("E01");
+        /// <summary>调试入口：无商店/掉落 UI 时验证持有链路——逐件获取下一件未持有的装备（E01→E02→…→E10）</summary>
+        [ContextMenu("Debug: Acquire Next Equipment")]
+        public void DebugAcquireNextEquipment()
+        {
+            var next = PortfolioConfig.EquipmentBase.FirstOrDefault(e =>
+                e.Enabled && !e.AllowDuplicate && (Run == null || !Run.heldEquipmentIds.Contains(e.EquipmentId)));
+            if (next == null)
+            {
+                Debug.LogWarning("[PortfolioSession] 没有更多可获取的装备");
+                return;
+            }
+            AcquireEquipment(next.EquipmentId);
+        }
 #endif
         public void Resume() { manager?.ResumeGame(); }
     }

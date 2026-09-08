@@ -22,6 +22,7 @@ namespace FallenAngel.UI
         [SerializeField] private SettingsPanelController settingsPanelController;
         [SerializeField] private SaveSelectPanelController saveSelectPanelController;
         [SerializeField] private TalentPanelController talentPanelController; // 交给 PortfolioPanelController（地图页天赋入口）
+        [SerializeField] private EquipmentPanelController equipmentPanelController; // 交给 PortfolioPanelController（地图页背包入口）
         [Header("新游戏覆盖确认弹窗")]
         [SerializeField] private GameObject newGameConfirmPanel;
         [SerializeField] private Button newGameConfirmButton;
@@ -37,9 +38,14 @@ namespace FallenAngel.UI
         {
             if (GetComponent<PortfolioSession>() == null) gameObject.AddComponent<PortfolioSession>();
             if (GetComponent<PortfolioPanelController>() == null) gameObject.AddComponent<PortfolioPanelController>();
-            // 地图页"天赋"入口需要天赋面板引用（SceneBuilder 注入到本组件，运行时转交）
-            if (talentPanelController != null && GetComponent<PortfolioPanelController>() != null)
-                GetComponent<PortfolioPanelController>().TalentPanel = talentPanelController;
+            // 地图页"天赋"/"装备"入口需要面板引用（SceneBuilder 注入到本组件，运行时转交）
+            if (GetComponent<PortfolioPanelController>() != null)
+            {
+                if (talentPanelController != null)
+                    GetComponent<PortfolioPanelController>().TalentPanel = talentPanelController;
+                if (equipmentPanelController != null)
+                    GetComponent<PortfolioPanelController>().EquipmentPanel = equipmentPanelController;
+            }
             // 文案回退统一注册（幂等，JSON 优先），防其他组件注册时序问题
             PortfolioText.Register();
             PortfolioSession session = GetComponent<PortfolioSession>();
@@ -186,11 +192,11 @@ namespace FallenAngel.UI
         }
 
         /// <summary>调试入口：无商店/掉落 UI 时验证装备持有链路（与 PortfolioSession 上同名入口等价，二选一）</summary>
-        [ContextMenu("Debug: Acquire Equipment E01")]
-        public void DebugAcquireE01()
+        [ContextMenu("Debug: Acquire Next Equipment")]
+        public void DebugAcquireNextEquipment()
         {
             PortfolioSession s = GetComponent<PortfolioSession>();
-            if (s != null) s.AcquireEquipment("E01");
+            if (s != null) s.DebugAcquireNextEquipment();
             else Debug.LogError("[GameStarter] 缺少 PortfolioSession，请重建场景（Tools > FallenAngel > Build Default Game Scene）");
         }
 

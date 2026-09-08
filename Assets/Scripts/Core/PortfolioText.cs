@@ -135,6 +135,13 @@
             // 天赋面板文案（talentPanel.* 域，回退注册）
             Loc.AddFallback("talentPanel.title", "永久天赋", "Permanent talents");
             Loc.AddFallback("talentPanel.close", "✕", "✕");
+
+            // 装备背包面板文案（equipmentPanel.* 域，回退注册）
+            Loc.AddFallback("equipmentPanel.title", "装备背包", "Equipment");
+            Loc.AddFallback("equipmentPanel.close", "✕", "✕");
+            Loc.AddFallback("equipmentPanel.empty", "尚未持有装备。\n可通过商店购买或在关卡中获得。", "No equipment yet.\nAcquire some via the shop or stage drops.");
+            Loc.AddFallback("equipmentPanel.hint", "点击装备图标查看效果说明", "Select equipment to view its effect.");
+            Loc.AddFallback("equipmentPanel.price", "价格 {0}", "Price {0}");
         }
         private static void Add(string key, string chinese, string english) => Loc.AddFallback("portfolio." + key, chinese, english);
     }
