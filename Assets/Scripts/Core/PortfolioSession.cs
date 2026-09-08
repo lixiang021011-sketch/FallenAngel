@@ -324,6 +324,41 @@ namespace FallenAngel.Core
             OwnsSong = false;
             Refresh();
         }
+
+        // ---- 装备持有 ----
+
+        /// <summary>本局已持有装备（局终清空；跨重启随局快照保留）</summary>
+        public IReadOnlyList<string> HeldEquipmentIds => Run?.heldEquipmentIds;
+
+        /// <summary>持有上限（equipment_base_v3 约定 20 件）</summary>
+        public int EquipmentCapacity => PortfolioDefaults.EquipmentCapacity;
+
+        /// <summary>是否可获得该装备（存在+启用+未持有+未满容量）。供商店/掉落流程先行判断，不产生副作用。</summary>
+        public bool CanAcquireEquipment(string equipmentId)
+        {
+            if (Profile == null || Run == null || Run.phase == "FINISHED") return false;
+            var item = PortfolioConfig.EquipmentBase.FirstOrDefault(e => e.EquipmentId == equipmentId && e.Enabled);
+            if (item == null || item.AllowDuplicate) return false;
+            if (Run.heldEquipmentIds.Contains(equipmentId)) return false;
+            return Run.heldEquipmentIds.Count < PortfolioDefaults.EquipmentCapacity;
+        }
+
+        /// <summary>获得装备（原子事务；重复/满容量/未知装备时失败，进度不被当作成功）</summary>
+        public void AcquireEquipment(string equipmentId)
+        {
+            if (Profile == null || Run == null || IsPerforming()) return;
+            Execute(() =>
+            {
+                growth.AcquireEquipment(Profile.profileId, Run.runId, equipmentId);
+                Refresh();
+            });
+        }
+
+#if UNITY_EDITOR
+        /// <summary>调试入口：无商店/掉落 UI 时验证持有链路（Inspector 右键 PortfolioSession）</summary>
+        [ContextMenu("Debug: Acquire Equipment E01")]
+        public void DebugAcquireE01() => AcquireEquipment("E01");
+#endif
         public void Resume() { manager?.ResumeGame(); }
     }
 }

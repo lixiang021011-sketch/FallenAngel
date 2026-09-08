@@ -185,6 +185,15 @@ namespace FallenAngel.UI
             StartChart(demo);
         }
 
+        /// <summary>调试入口：无商店/掉落 UI 时验证装备持有链路（与 PortfolioSession 上同名入口等价，二选一）</summary>
+        [ContextMenu("Debug: Acquire Equipment E01")]
+        public void DebugAcquireE01()
+        {
+            PortfolioSession s = GetComponent<PortfolioSession>();
+            if (s != null) s.AcquireEquipment("E01");
+            else Debug.LogError("[GameStarter] 缺少 PortfolioSession，请重建场景（Tools > FallenAngel > Build Default Game Scene）");
+        }
+
         /// <summary>
         /// 核心玩法调试入口（Play 模式下 Inspector 右键本组件）：
         /// 战斗格临时占位期间（RunManager.BattleNodeAsPlaceholder=true），

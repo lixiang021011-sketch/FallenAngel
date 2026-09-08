@@ -26,5 +26,7 @@ namespace FallenAngel.Data
         public List<string> visitedNodeIds = new List<string>();
         public int runCash;
         public int lastCashReward;
+        // 本局已持有装备（随局快照持久化；局终清空；同款不重复，容量上限见 PortfolioDefaults.EquipmentCapacity）
+        public List<string> heldEquipmentIds = new List<string>();
     }
 }

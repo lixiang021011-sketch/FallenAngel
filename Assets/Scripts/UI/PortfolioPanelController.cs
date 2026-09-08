@@ -157,6 +157,8 @@ namespace FallenAngel.UI
         {
             var p = session.Profile; var run = session.Run;
             Label(page, T("balance", p.displayName, p.growthPoints), 20, 155, 620, 65, 32);
+            // 装备持有计数（局内资源；商店/掉落接入后这里随持有变化刷新）
+            Label(page, T("equipment", run != null ? run.heldEquipmentIds.Count : 0, session.EquipmentCapacity), 20, 205, 620, 40, 26);
             // 右上角"天赋"入口：与存档选择面板同源（TalentPanel 自带 Canvas 排序 251，盖在地图页上）
             if (TalentPanel != null)
                 Button(page, "OpenTalentsFromMap", T("talentsPage"), 700, 155, 280, 65, () => TalentPanel.Open(), card);
@@ -181,6 +183,11 @@ namespace FallenAngel.UI
                 Label(page, run.phase == "MAP" ? T("mapCash", run.runCash) : run.phase == "ROOM" ? T("room." + PortfolioConfig.MapNodes.Single(n => n.NodeId == run.currentNodeId).NodeType) : run.phase == "RESULT" ? T("songResult", run.lastSongPoints)
                     : T(session.FailureLimitEnabled ? "nextReward" : "nextRewardUnlimited", run.growthRewards[run.completedSongs], run.failureLimit), 20, 380, 960, 56, 24);
             }
+#if UNITY_EDITOR
+            // 调试入口：商店/掉落接入前，用地图页可见按钮验证装备持有链路（打包不包含）
+            Button(page, "DebugAcquireE01", "装备调试 +E01", 20, 410, 300, 52,
+                () => session.AcquireEquipment("E01"), new Color(.25f, .2f, .4f));
+#endif
             RenderMap(page);
         }
 

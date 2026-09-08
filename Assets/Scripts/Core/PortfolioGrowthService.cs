@@ -49,6 +49,11 @@ namespace FallenAngel.Core
                 || run.visitedNodeIds.Distinct().Count() != run.visitedNodeIds.Count
                 || !PortfolioConfig.MapNodes.Any(n => n.NodeId == run.currentNodeId)))
                 throw new InvalidOperationException("Invalid map snapshot.");
+            if (run.heldEquipmentIds == null
+                || run.heldEquipmentIds.Distinct().Count() != run.heldEquipmentIds.Count
+                || run.heldEquipmentIds.Count > PortfolioDefaults.EquipmentCapacity
+                || run.heldEquipmentIds.Any(id => !PortfolioConfig.EquipmentBase.Any(e => e.EquipmentId == id)))
+                throw new InvalidOperationException("Invalid held equipment snapshot.");
             return run;
         }
 
@@ -169,6 +174,26 @@ namespace FallenAngel.Core
             Save(p, r);
         }
 
+        /// <summary>
+        /// 获得装备：存在+启用+非重复+容量一次校验后原子提交。
+        /// 任何失败都不改变资源状态——扣款/抽奖由调用方先判断再调本方法。
+        /// </summary>
+        public void AcquireEquipment(string profileId, string runId, string equipmentId)
+        {
+            var p = talents.ReadProfile(profileId);
+            var r = Require(p, runId);
+            if (r.phase == "FINISHED") throw new InvalidOperationException("Run already finished.");
+            var item = PortfolioConfig.EquipmentBase.SingleOrDefault(e => e.EquipmentId == equipmentId && e.Enabled);
+            if (item == null) throw new InvalidOperationException("Unknown or disabled equipment.");
+            if (item.AllowDuplicate) throw new InvalidOperationException("Duplicate equipment is not supported in this version.");
+            if (r.heldEquipmentIds.Contains(equipmentId)) throw new InvalidOperationException("Equipment already held.");
+            if (r.heldEquipmentIds.Count >= PortfolioDefaults.EquipmentCapacity)
+                throw new InvalidOperationException("Equipment capacity full.");
+            r.heldEquipmentIds.Add(equipmentId);
+            Save(p, r);
+            Debug.Log($"[PortfolioGrowthService] Acquired equipment {equipmentId} ({r.heldEquipmentIds.Count}/{PortfolioDefaults.EquipmentCapacity})");
+        }
+
         /// <summary>放弃本局时保留已完成关卡积分；结束后重复调用无收益。</summary>
         public PortfolioGrowthRunData Abandon(string profileId, string runId)
         {
@@ -208,6 +233,7 @@ namespace FallenAngel.Core
             p.growthPoints = checked(p.growthPoints + r.creditedPoints);
             p.activeRunId = null;
             r.runCash = 0;
+            r.heldEquipmentIds.Clear(); // 局终清空（装备是局内资源，不跨局）
         }
 
         private void Save(PortfolioProfileData p, PortfolioGrowthRunData r)

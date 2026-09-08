@@ -35,6 +35,7 @@
             Add("empty", "每个存档独立保存成长积分和永久天赋。", "Each profile has independent growth points and permanent talents.");
             Add("back", "返回主菜单", "Main menu");
             Add("balance", "{0}  ·  成长积分 {1}", "{0}  ·  Growth points {1}");
+            Add("equipment", "装备 {0}/{1}", "Equipment {0}/{1}");
             Add("begin", "开始一局", "Start run");
             Add("play", "开始第 {0} / {1} 次演奏", "Play song {0} / {1}");
             Add("continue", "继续游戏", "Continue run");
