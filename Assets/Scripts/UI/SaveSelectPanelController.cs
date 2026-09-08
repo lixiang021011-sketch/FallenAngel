@@ -40,7 +40,12 @@ namespace FallenAngel.UI
             if (createButton != null) createButton.onClick.AddListener(CreateProfile);
             if (enterGameButton != null) enterGameButton.onClick.AddListener(EnterGame);
             if (talentButton != null) talentButton.onClick.AddListener(OpenTalents);
-            if (nameInput != null) nameInput.onValueChanged.AddListener(value => pendingName = value);
+            if (nameInput != null) nameInput.onValueChanged.AddListener(value =>
+            {
+                pendingName = value;
+                RefreshCreateButton();
+            });
+            RefreshCreateButton();
         }
 
         private void OnEnable()
@@ -121,13 +126,28 @@ namespace FallenAngel.UI
             RefreshButtons();
         }
 
+        /// <summary>名字为空时新建按钮置灰（防止空名直入校验抛异常）</summary>
+        private void RefreshCreateButton()
+        {
+            if (createButton != null)
+                createButton.interactable = !string.IsNullOrWhiteSpace(pendingName);
+        }
+
         private void CreateProfile()
         {
             AudioManager.Instance?.PlayButtonClick();
             if (session == null) return;
-            session.CreateProfile(pendingName);
+            string name = (pendingName ?? "").Trim();
+            // 守卫兜底：即使按钮未被置灰（如未来其他入口），空名也不进入校验
+            if (name.Length == 0)
+            {
+                Debug.LogWarning("[SaveSelectPanelController] 存档名称为空，未创建");
+                return;
+            }
+            session.CreateProfile(name);
             pendingName = "";
             if (nameInput != null) nameInput.text = "";
+            RefreshCreateButton();
             selectedId = null;
             RefreshList();
             RefreshButtons();

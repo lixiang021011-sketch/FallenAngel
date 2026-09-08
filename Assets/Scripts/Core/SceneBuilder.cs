@@ -279,6 +279,9 @@ namespace FallenAngel.Core
             // 天赋面板（后建，盖在存档选择面板上；反向注入给存档选择面板的"天赋"按钮与 ESC 层叠）
             CreateTalentPanel(canvasRect, saveSelectController, starter);
 
+            // 新游戏覆盖确认弹窗（最后建，盖在最上层；按钮接线在 GameStarter）
+            CreateNewGameConfirmPanel(canvasRect, starter);
+
             // 语言选择面板（遍历 Language 枚举生成按钮，新增语言自动扩展）
             CreateLanguagePanel(canvasRect, menuPanel.transform, starter);
 
@@ -951,6 +954,46 @@ namespace FallenAngel.Core
                 SetPrivateField(saveSelectController, "talentPanel", controller);
             // 注入 GameStarter：运行时转交给 PortfolioPanelController（地图页"天赋"入口）
             SetPrivateField(starter, "talentPanelController", controller);
+        }
+
+        /// <summary>
+        /// 新游戏覆盖确认弹窗：全屏半透明遮罩 + 居中卡片（说明 + 确认/取消）。
+        /// 初始非激活；显隐与按钮接线在 GameStarter（始终激活）。空白默认槽不弹（GameStarter 判定）。
+        /// </summary>
+        private static void CreateNewGameConfirmPanel(RectTransform canvasRect, GameStarter starter)
+        {
+            GameObject panel = new GameObject("NewGameConfirmPanel", typeof(RectTransform), typeof(Image));
+            panel.transform.SetParent(canvasRect, false);
+            RectTransform rt = (RectTransform)panel.transform;
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            panel.GetComponent<Image>().color = new Color(0, 0, 0, 0.85f);
+
+            // 居中卡片
+            GameObject card = new GameObject("ConfirmCard", typeof(RectTransform), typeof(Image));
+            card.transform.SetParent(panel.transform, false);
+            RectTransform crt = (RectTransform)card.transform;
+            crt.anchorMin = crt.anchorMax = new Vector2(0.5f, 0.5f);
+            crt.pivot = new Vector2(0.5f, 0.5f);
+            crt.anchoredPosition = Vector2.zero;
+            crt.sizeDelta = new Vector2(760, 560);
+            card.GetComponent<Image>().color = new Color(0.075f, 0.095f, 0.14f, 1f);
+
+            TextMeshProUGUI message = CreateText("NewGameConfirmMessage", card.transform,
+                new Vector2(0.5f, 0.72f), new Vector2(0.5f, 0.72f), Vector2.zero, new Vector2(680, 280),
+                "menu.newGameConfirm", 36, TextAlignmentOptions.Center);
+
+            GameObject confirmBtn = CreateButton("NewGameConfirmButton", card.transform,
+                new Vector2(0.3f, 0.2f), new Vector2(280, 100), "portfolio.confirm", 40);
+            GameObject cancelBtn = CreateButton("NewGameCancelButton", card.transform,
+                new Vector2(0.7f, 0.2f), new Vector2(280, 100), "portfolio.cancel", 40);
+            panel.SetActive(false);
+
+            SetPrivateField(starter, "newGameConfirmPanel", panel);
+            SetPrivateField(starter, "newGameConfirmButton", confirmBtn.GetComponent<Button>());
+            SetPrivateField(starter, "newGameCancelButton", cancelBtn.GetComponent<Button>());
         }
 
         /// <summary>

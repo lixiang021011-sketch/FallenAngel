@@ -108,6 +108,9 @@
             Loc.AddFallback("menu.newGame", "新游戏", "New game");
             Loc.AddFallback("menu.saveSelect", "选择存档", "Select profile");
             Loc.AddFallback("menu.settings", "选项设置", "Settings");
+            Loc.AddFallback("menu.newGameConfirm",
+                "确认开始新游戏？\n将覆盖默认档案的进度：\n成长积分、已解锁天赋与局内进度\n都会被清空，且无法恢复。",
+                "Start a new game?\nThis overwrites the default profile:\ngrowth points, unlocked talents and run progress\nwill be cleared and cannot be recovered.");
 
             // 选项设置页文案（settings.* 域，回退注册）
             Loc.AddFallback("settings.title", "选项设置", "Settings");

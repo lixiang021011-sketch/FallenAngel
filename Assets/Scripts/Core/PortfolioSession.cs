@@ -124,6 +124,21 @@ namespace FallenAngel.Core
                 Debug.Log("[PortfolioSession] 新游戏：默认槽已重置并开新局");
             });
         }
+
+        /// <summary>默认槽是否存在有价值进度（积分/天赋/局内快照）。用于"新游戏"覆盖前决定是否弹确认——空白档无可损失，不弹。</summary>
+        public bool DefaultProfileHasProgress()
+        {
+            try
+            {
+                var p = Talents.ReadProfile(PortfolioDefaults.DefaultProfileId);
+                return p.growthPoints > 0 || p.unlockedNodeIds.Count > 0
+                    || !string.IsNullOrEmpty(p.activeRunId) || !string.IsNullOrEmpty(p.growthRunJson);
+            }
+            catch (Exception)
+            {
+                return false; // 不存在或损坏 → 重置无损失 → 不弹
+            }
+        }
         public void SelectProfile(string id)
         {
             if (IsPerforming()) return;

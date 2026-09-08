@@ -22,6 +22,10 @@ namespace FallenAngel.UI
         [SerializeField] private SettingsPanelController settingsPanelController;
         [SerializeField] private SaveSelectPanelController saveSelectPanelController;
         [SerializeField] private TalentPanelController talentPanelController; // 交给 PortfolioPanelController（地图页天赋入口）
+        [Header("新游戏覆盖确认弹窗")]
+        [SerializeField] private GameObject newGameConfirmPanel;
+        [SerializeField] private Button newGameConfirmButton;
+        [SerializeField] private Button newGameCancelButton;
         [SerializeField] private Button pauseButton;
         [SerializeField] private SongSelectPanelController songSelectPanelController;
 
@@ -43,8 +47,26 @@ namespace FallenAngel.UI
             if (newGameButton != null) newGameButton.onClick.AddListener(() =>
             {
                 AudioManager.Instance?.PlayButtonClick();
+                if (session == null)
+                {
+                    Debug.LogError("[GameStarter] 缺少 PortfolioSession，请重建场景（Tools > FallenAngel > Build Default Game Scene）");
+                    return;
+                }
+                // 覆盖默认槽是破坏性操作：有进度先弹确认，空白档直接开始
+                if (session.DefaultProfileHasProgress()) ShowNewGameConfirm();
+                else session.StartNewGame();
+            });
+            if (newGameConfirmButton != null) newGameConfirmButton.onClick.AddListener(() =>
+            {
+                AudioManager.Instance?.PlayButtonClick();
+                HideNewGameConfirm();
                 if (session != null) session.StartNewGame();
-                else Debug.LogError("[GameStarter] 缺少 PortfolioSession，请重建场景（Tools > FallenAngel > Build Default Game Scene）");
+                else Debug.LogError("[GameStarter] 缺少 PortfolioSession");
+            });
+            if (newGameCancelButton != null) newGameCancelButton.onClick.AddListener(() =>
+            {
+                AudioManager.Instance?.PlayButtonClick();
+                HideNewGameConfirm();
             });
             if (saveSelectButton != null) saveSelectButton.onClick.AddListener(() =>
             {
@@ -98,8 +120,18 @@ namespace FallenAngel.UI
             }
         }
 
+        private void Update()
+        {
+            // ESC 关闭新游戏确认弹窗
+            if (Input.GetKeyDown(KeyCode.Escape) && newGameConfirmPanel != null && newGameConfirmPanel.activeSelf)
+                HideNewGameConfirm();
+        }
+
         private void OnGameStateChanged(GameState state)
         {
+            // 离开主菜单时收起确认弹窗（如超时进入其他状态）
+            if (state != GameState.Menu && newGameConfirmPanel != null && newGameConfirmPanel.activeSelf)
+                HideNewGameConfirm();
             switch (state)
             {
                 case GameState.Menu:
@@ -123,6 +155,17 @@ namespace FallenAngel.UI
                 case GameState.Result:
                     break;
             }
+        }
+
+        private void ShowNewGameConfirm()
+        {
+            if (newGameConfirmPanel != null) newGameConfirmPanel.SetActive(true);
+            Debug.Log("[GameStarter] 新游戏覆盖确认弹窗已打开（默认槽有进度）");
+        }
+
+        private void HideNewGameConfirm()
+        {
+            if (newGameConfirmPanel != null) newGameConfirmPanel.SetActive(false);
         }
 
         private void ShowMenu(bool show)
