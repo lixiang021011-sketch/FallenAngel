@@ -149,7 +149,10 @@ namespace FallenAngel.UI
                     var link = Box(page, "EquipTagLink", iconX + 100 - 1.5f, iconY + 160, 3, 15, accent);
                     link.GetComponent<Image>().raycastTarget = false;
                     var tag = Box(page, "EquipTag", tagX, tagY, tagW, tagH, card);
-                    var label = Label(tag, selectedId + "  ·  " + item.Description, 15, 15, tagW - 30, tagH - 30, 23);
+                    string body = selectedId + "  ·  " + item.Description;
+                    if (!PortfolioEffectStatus.IsEquipmentLive(item.EffectId))
+                        body += "\n" + Loc.T("portfolio.effectNotLive");
+                    var label = Label(tag, body, 15, 15, tagW - 30, tagH - 30, 23);
                     label.alignment = TextAlignmentOptions.TopLeft;
                 }
             }

@@ -11,9 +11,12 @@ namespace FallenAngel.Core
     {
         private readonly IPortfolioProfileStore store;
         private readonly PortfolioTalentService talents;
-        public PortfolioGrowthService(IPortfolioProfileStore store)
+        private readonly Func<double> randomSource;
+        public PortfolioGrowthService(IPortfolioProfileStore store) : this(store, () => (double)UnityEngine.Random.value) { }
+        internal PortfolioGrowthService(IPortfolioProfileStore store, Func<double> randomSource)
         {
             this.store = store;
+            this.randomSource = randomSource;
             talents = new PortfolioTalentService(store);
         }
 
@@ -61,10 +64,19 @@ namespace FallenAngel.Core
                 throw new InvalidOperationException("Invalid shop candidate snapshot.");
             if (run.shopRefreshBudget < 0 || run.shopRefreshBudget > 2)
                 throw new InvalidOperationException("Invalid shop refresh budget snapshot.");
+            if (run.optionalPurchaseDiscountUsed < 0 || run.optionalRouteDiscountUsed < 0)
+                throw new InvalidOperationException("Invalid optional discount snapshot.");
             if (run.openingCash < 0 || run.incomeBreakdown == null
                 || run.incomeBreakdown.Any(l => l == null || string.IsNullOrEmpty(l.key)
                     || l.amount < 0 || !new[] { "DIRECT", "BONUS", "FLOOR", "CAP", "ECONOMY" }.Contains(l.kind)))
                 throw new InvalidOperationException("Invalid income breakdown snapshot.");
+            if (run.lastDropQuantity < 0
+                || (run.lastDropGranted && (string.IsNullOrEmpty(run.lastDropEntryId)
+                    || string.IsNullOrEmpty(run.lastDropRewardType) || string.IsNullOrEmpty(run.lastDropRewardId)))
+                || (run.lastDropRewardType == "EQUIPMENT"
+                    && !PortfolioConfig.EquipmentBase.Any(e => e.EquipmentId == run.lastDropRewardId))
+                || (run.lastDropRewardType == "CURRENCY" && run.lastDropRewardId != "RUN_CASH"))
+                throw new InvalidOperationException("Invalid stage drop snapshot.");
             return run;
         }
 
@@ -151,6 +163,8 @@ namespace FallenAngel.Core
                         ? (int)Math.Floor(income.Total)
                         : stage.BaseIncome;
                     r.runCash = checked(r.runCash + r.lastCashReward);
+                    // 掉落先结算现金后再抽：新掉落装备不追溯修改本曲收益；掉落与结算同一次事务保存。
+                    RollStageDrop(r, stage);
                 }
                 r.completedSongs++;
             }
@@ -171,7 +185,7 @@ namespace FallenAngel.Core
         }
 
         /// <summary>进入当前房间的直接后继；支付、到达位置和访问记录一次性提交。</summary>
-        public void EnterRoom(string profileId, string runId, string nodeId)
+        public void EnterRoom(string profileId, string runId, string nodeId, bool useOptionalDiscount = false)
         {
             var p = talents.ReadProfile(profileId);
             var r = Require(p, runId);
@@ -179,9 +193,14 @@ namespace FallenAngel.Core
                 throw new InvalidOperationException("Room is not available.");
             var edge = PortfolioConfig.MapEdges.SingleOrDefault(e => e.FromNodeId == r.currentNodeId && e.ToNodeId == nodeId);
             if (edge == null) throw new InvalidOperationException("Room is not adjacent.");
-            if (r.runCash < edge.RoutePrice) throw new InvalidOperationException(Loc.T("portfolio.cashShort"));
+            float standing = StandingRouteDiscount(p);
+            float optional = OptionalRouteDiscount(r);
+            int price = QuoteRouteFee(p, r, edge.RoutePrice, useOptionalDiscount);
+            if (r.runCash < price) throw new InvalidOperationException(Loc.T("portfolio.cashShort"));
             var node = PortfolioConfig.MapNodes.Single(n => n.NodeId == nodeId);
-            r.runCash -= edge.RoutePrice;
+            r.runCash -= price;
+            if (useOptionalDiscount && optional > standing)
+                r.optionalRouteDiscountUsed++;
             r.currentNodeId = nodeId;
             r.visitedNodeIds.Add(nodeId);
             if (node.NodeType == "STAGE" || node.NodeType == "FINAL")
@@ -194,6 +213,7 @@ namespace FallenAngel.Core
             else r.phase = "ROOM";
             if (node.NodeType == "SHOP") r.shopCandidates = DrawShopCandidates(r); // 首次进店生成候选
             Save(p, r);
+            Debug.Log($"[PortfolioGrowthService] Enter {nodeId} fee {price}; cash {r.runCash}");
         }
 
         /// <summary>商店候选抽取：ShopCandidates 权重无放回、排除已持有，目标数=基础候选数+有效 ADD_COUNT 之和（E10）；合法池不足时少量展示，不复制商品。</summary>
@@ -268,18 +288,24 @@ namespace FallenAngel.Core
         }
 
         /// <summary>
-        /// 购买报价：常驻折扣取最大值——天赋 D1(10%)与持有装备 E07(15%)；
-        /// 买入 E07 自身不享受其折扣（交易前状态报价）。K1 为玩家可选优惠，不在自动报价内。
+        /// 购买报价：常驻折扣取最大值——天赋 D1 与持有装备 E07；
+        /// 买入 E07 自身不享受其折扣。useOptional 时再与 K1 取最大，成功购买才扣次数。
         /// </summary>
-        public int QuotePrice(PortfolioProfileData p, PortfolioGrowthRunData r, string equipmentId)
+        public int QuotePrice(PortfolioProfileData p, PortfolioGrowthRunData r, string equipmentId, bool useOptional = false)
         {
             var item = PortfolioConfig.EquipmentBase.Single(e => e.EquipmentId == equipmentId);
+            float discount = StandingPurchaseDiscount(p, r, equipmentId);
+            if (useOptional)
+                discount = Mathf.Max(discount, OptionalPurchaseDiscount(p, r));
+            return Mathf.FloorToInt(item.BasePrice * (1f - discount));
+        }
+
+        private float StandingPurchaseDiscount(PortfolioProfileData p, PortfolioGrowthRunData r, string equipmentId)
+        {
             float discount = 0f;
-            // 天赋常驻折扣（FX_D1）
             foreach (var fx in talents.GetRegisteredEffects(p.profileId))
                 if (fx.Handler == "purchase_discount")
                     discount = Mathf.Max(discount, (float)fx.Coefficient);
-            // 持有装备常驻折扣（EQ_E07）；买入 E07 自身时排除
             foreach (string held in r.heldEquipmentIds)
             {
                 var eq = PortfolioConfig.EquipmentBase.SingleOrDefault(e => e.EquipmentId == held);
@@ -288,14 +314,78 @@ namespace FallenAngel.Core
                 if (eff != null && eff.Enabled && eff.Handler == "purchase_discount" && held != equipmentId)
                     discount = Mathf.Max(discount, (float)eff.Coefficient);
             }
-            return Mathf.FloorToInt(item.BasePrice * (1f - discount));
+            return discount;
+        }
+
+        private float OptionalPurchaseDiscount(PortfolioProfileData p, PortfolioGrowthRunData r)
+        {
+            var k1 = talents.GetRegisteredEffects(p.profileId)
+                .FirstOrDefault(e => e.Handler == "optional_purchase_discount");
+            if (k1 == null) return 0f;
+            int limit = k1.LimitCount ?? 1;
+            if (r.optionalPurchaseDiscountUsed >= limit) return 0f;
+            return (float)k1.Coefficient;
+        }
+
+        /// <summary>路费报价：常驻 F0/F1；useOptional 时再与持有 E08 取最大。</summary>
+        public int QuoteRoutePrice(PortfolioProfileData p, PortfolioGrowthRunData r, string nodeId, bool useOptional = false)
+        {
+            var edge = PortfolioConfig.MapEdges.SingleOrDefault(e => e.FromNodeId == r.currentNodeId && e.ToNodeId == nodeId);
+            if (edge == null) throw new InvalidOperationException("Room is not adjacent.");
+            return QuoteRouteFee(p, r, edge.RoutePrice, useOptional);
+        }
+
+        /// <summary>按表内路费计算折后价（不要求邻接，供地图边标签）。</summary>
+        public int QuoteRouteFee(PortfolioProfileData p, PortfolioGrowthRunData r, int tablePrice, bool useOptional = false)
+        {
+            if (tablePrice <= 0) return 0;
+            float discount = StandingRouteDiscount(p);
+            if (useOptional)
+                discount = Mathf.Max(discount, OptionalRouteDiscount(r));
+            return Mathf.FloorToInt(tablePrice * (1f - discount));
+        }
+
+        private float StandingRouteDiscount(PortfolioProfileData p)
+        {
+            var effects = talents.GetRegisteredEffects(p.profileId);
+            var f0 = effects.FirstOrDefault(e => e.Handler == "route_discount");
+            if (f0 == null) return 0f;
+            var modifier = effects.FirstOrDefault(e => e.Handler == "modify_coefficient" && e.TargetEffectId == f0.EffectId);
+            return (float)(modifier != null ? modifier.Coefficient : f0.Coefficient);
+        }
+
+        private static float OptionalRouteDiscount(PortfolioGrowthRunData r)
+        {
+            int limit = OptionalRouteLimit(r);
+            if (limit <= 0 || r.optionalRouteDiscountUsed >= limit) return 0f;
+            foreach (string held in r.heldEquipmentIds)
+            {
+                var eq = PortfolioConfig.EquipmentBase.SingleOrDefault(e => e.EquipmentId == held);
+                if (eq == null) continue;
+                var eff = PortfolioConfig.EquipmentEffects.SingleOrDefault(e => e.EffectId == eq.EffectId);
+                if (eff != null && eff.Enabled && eff.Handler == "optional_route_discount")
+                    return (float)eff.Coefficient;
+            }
+            return 0f;
+        }
+
+        private static int OptionalRouteLimit(PortfolioGrowthRunData r)
+        {
+            foreach (string held in r.heldEquipmentIds)
+            {
+                var eq = PortfolioConfig.EquipmentBase.SingleOrDefault(e => e.EquipmentId == held);
+                if (eq == null) continue;
+                var eff = PortfolioConfig.EquipmentEffects.SingleOrDefault(e => e.EffectId == eq.EffectId);
+                if (eff != null && eff.Enabled && eff.Handler == "optional_route_discount")
+                    return eff.LimitCount ?? 2;
+            }
+            return 0;
         }
 
         /// <summary>
         /// 商店购买：ROOM+商店节点+候选内+非重复+容量+现金一次校验后，扣款、获得、候选售罄一次提交。
-        /// 满容量/现金不足不扣款（guide：禁止购买不扣款）。
         /// </summary>
-        public void PurchaseEquipment(string profileId, string runId, string equipmentId)
+        public void PurchaseEquipment(string profileId, string runId, string equipmentId, bool useOptional = false)
         {
             var p = talents.ReadProfile(profileId);
             var r = Require(p, runId);
@@ -309,11 +399,15 @@ namespace FallenAngel.Core
             if (r.heldEquipmentIds.Contains(equipmentId)) throw new InvalidOperationException("Equipment already held.");
             if (r.heldEquipmentIds.Count >= PortfolioDefaults.EquipmentCapacity)
                 throw new InvalidOperationException(Loc.T("portfolio.equipFull"));
-            int price = QuotePrice(p, r, equipmentId);
+            float standing = StandingPurchaseDiscount(p, r, equipmentId);
+            float optional = OptionalPurchaseDiscount(p, r);
+            int price = QuotePrice(p, r, equipmentId, useOptional);
             if (r.runCash < price) throw new InvalidOperationException(Loc.T("portfolio.cashShort"));
             r.runCash -= price;
             r.heldEquipmentIds.Add(equipmentId);
-            r.shopCandidates.Remove(equipmentId); // 售罄
+            r.shopCandidates.Remove(equipmentId);
+            if (useOptional && optional > standing)
+                r.optionalPurchaseDiscountUsed++;
             Save(p, r);
             Debug.Log($"[PortfolioGrowthService] Purchased {equipmentId} at {price}; cash {r.runCash}");
         }
@@ -344,6 +438,101 @@ namespace FallenAngel.Core
             Debug.Log($"[PortfolioGrowthService] Shop refreshed; budget {r.shopRefreshBudget}");
         }
 
+        /// <summary>
+        /// 关卡掉落：STAGE_COMPLETED 单次抽取（配置按 stage.DropRuleId 显式绑定）。
+        /// 执行顺序——读取启用规则 → 候选过滤（启用装备/效果/排除持有/容量）→ 整组概率门 → 权重选一 → 自动入账。
+        /// 空池不补抽、不补货币；结果与当前歌曲结算同事务保存，重放界面不重复抽取。
+        /// </summary>
+        private void RollStageDrop(PortfolioGrowthRunData r, StagesRow stage)
+        {
+            ResetLastDrop(r);
+            if (string.IsNullOrEmpty(stage.DropRuleId)) return;
+            var rule = PortfolioConfig.DropRules.SingleOrDefault(x => x.RuleId == stage.DropRuleId);
+            if (rule == null || !rule.Enabled || rule.TriggerEvent != "STAGE_COMPLETED") return;
+            var legal = LegalStageEntries(rule, r);
+            if (legal.Count == 0 || rule.DropChance <= 0d) return;
+            if (randomSource() >= rule.DropChance) return; // 整组概率门：u < drop_chance 才成功
+            int total = legal.Sum(e => e.Weight);
+            if (total <= 0) return;
+            int roll = (int)(randomSource() * total);
+            if (roll >= total) roll = total - 1;
+            var picked = PickWeighted(legal, roll);
+            if (picked == null) return;
+            if (rule.MaxRewards > 1)
+                Debug.LogWarning("[PortfolioGrowthService] 掉落配置 max_rewards=" + rule.MaxRewards
+                    + "，当前版本只支持单奖励，取第一条（配置 v3 首版固定 1）。");
+            GrantDrop(r, picked);
+        }
+
+        private static void ResetLastDrop(PortfolioGrowthRunData r)
+        {
+            r.lastDropGranted = false;
+            r.lastDropEntryId = null;
+            r.lastDropRewardType = null;
+            r.lastDropRewardId = null;
+            r.lastDropQuantity = 0;
+        }
+
+        /// <summary>候选过滤：装备需基础启用且效果启用；装备满容量时整类排除；现金仅支持 RUN_CASH。</summary>
+        private static List<DropEntriesRow> LegalStageEntries(DropRulesRow rule, PortfolioGrowthRunData r)
+        {
+            bool equipmentBlocked = r.heldEquipmentIds.Count >= PortfolioDefaults.EquipmentCapacity;
+            var result = new List<DropEntriesRow>();
+            foreach (var entry in PortfolioConfig.DropEntries)
+            {
+                if (!entry.Enabled || entry.PoolId != rule.PoolId || entry.Weight <= 0 || entry.Quantity <= 0) continue;
+                if (entry.RewardType == "EQUIPMENT")
+                {
+                    if (equipmentBlocked) continue;
+                    var item = PortfolioConfig.EquipmentBase.SingleOrDefault(e => e.EquipmentId == entry.RewardId && e.Enabled);
+                    if (item == null || item.AllowDuplicate) continue;
+                    var effect = PortfolioConfig.EquipmentEffects.SingleOrDefault(e => e.EffectId == item.EffectId);
+                    if (effect == null || !effect.Enabled) continue; // 基础/效果停用的装备不发
+                    if (entry.ExcludeOwned && r.heldEquipmentIds.Contains(entry.RewardId)) continue;
+                    result.Add(entry);
+                }
+                else if (entry.RewardType == "CURRENCY" && entry.RewardId == "RUN_CASH")
+                {
+                    result.Add(entry);
+                }
+            }
+            return result;
+        }
+
+        private static DropEntriesRow PickWeighted(IReadOnlyList<DropEntriesRow> entries, int roll)
+        {
+            int remaining = roll;
+            foreach (var entry in entries)
+            {
+                remaining -= entry.Weight;
+                if (remaining < 0) return entry;
+            }
+            return entries[entries.Count - 1];
+        }
+
+        private static void GrantDrop(PortfolioGrowthRunData r, DropEntriesRow entry)
+        {
+            if (entry.RewardType == "EQUIPMENT")
+            {
+                if (r.heldEquipmentIds.Contains(entry.RewardId)
+                    || r.heldEquipmentIds.Count >= PortfolioDefaults.EquipmentCapacity) return; // 过滤后防御
+                r.heldEquipmentIds.Add(entry.RewardId);
+            }
+            else if (entry.RewardType == "CURRENCY" && entry.RewardId == "RUN_CASH")
+            {
+                r.runCash = checked(r.runCash + entry.Quantity);
+            }
+            else return;
+            r.lastDropGranted = true;
+            r.lastDropEntryId = entry.EntryId;
+            r.lastDropRewardType = entry.RewardType;
+            r.lastDropRewardId = entry.RewardId;
+            r.lastDropQuantity = entry.Quantity;
+            Debug.Log("[PortfolioGrowthService] Stage drop " + entry.EntryId + " → "
+                + entry.RewardType + " " + entry.RewardId + " ×" + entry.Quantity
+                + "（held " + r.heldEquipmentIds.Count + "/" + PortfolioDefaults.EquipmentCapacity + "）");
+        }
+
 #if UNITY_EDITOR
         /// <summary>调试入口：验证刷新链路时临时发放刷新预算（打包不包含；上限 2 与正式一致）</summary>
         public void DebugGrantRefreshBudget(string profileId, string runId, int amount)
@@ -366,7 +555,7 @@ namespace FallenAngel.Core
             return r;
         }
 
-        /// <summary>仅在重新选择存档时恢复；PLAYING表示上次在演奏或暂停中强退。</summary>
+        /// <summary>PLAYING 表示上次演奏中强退；进入游戏时调用，浏览存档不改档。</summary>
         public PortfolioGrowthRunData Recover(string profileId)
         {
             var p = talents.ReadProfile(profileId);

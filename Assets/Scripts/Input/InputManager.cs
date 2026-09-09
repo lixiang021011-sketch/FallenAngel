@@ -140,7 +140,8 @@ namespace FallenAngel.InputSystem
             }
             else
             {
-                touchIdToLane.Clear();
+                // 暂停/离曲：先按 fingerId 释放轨道，再清映射。只 Clear 字典会让 LanePressStates 卡住。
+                ReleaseTrackedTouches(Vector2.zero);
 #if UNITY_EDITOR
                 ReleaseEditorMouseLane();
 #endif
@@ -167,7 +168,7 @@ namespace FallenAngel.InputSystem
                     SetLaneState(i, actual, pos);
                 }
             }
-            touchIdToLane.Clear();
+            ReleaseTrackedTouches(Vector2.zero);
 #if UNITY_EDITOR
             ReleaseEditorMouseLane();
 #endif
@@ -226,7 +227,9 @@ namespace FallenAngel.InputSystem
 #endif
 
         /// <summary>
-        /// 处理移动端触屏输入
+        /// 处理移动端触屏输入。
+        /// 抬起/取消必须按 fingerId 释放，即使手指已经滑出判定区或落到 UI 上；
+        /// 已跟踪的手指滑出判定区也要释放（与编辑器鼠标离开底部一致）。
         /// </summary>
         private void HandleTouchInput()
         {
@@ -237,17 +240,23 @@ namespace FallenAngel.InputSystem
                 Touch touch = UnityEngine.Input.GetTouch(i);
                 Vector2 touchPos = touch.position;
                 int touchId = touch.fingerId;
+                bool ended = touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled;
 
-                // 只处理底部判定区的触摸（y=0 在屏幕底部；超过底部区域高度比例的一律忽略）
-                if (touch.position.y > Screen.height * touchBottomRatio)
+                if (ended)
+                {
+                    ReleaseTouchId(touchId, touchPos);
                     continue;
+                }
 
-                // 跳过UI上的触摸
-                if (IsPointerOverUI(touchPos))
+                bool inHitZone = touchPos.y <= Screen.height * touchBottomRatio
+                    && !IsPointerOverUI(touchPos);
+                int lane = inHitZone ? GetLaneFromScreenPos(touchPos) : -1;
+                if (lane < 0 || lane >= LaneLayout.ActiveLaneCount)
+                {
+                    if (touchIdToLane.ContainsKey(touchId))
+                        ReleaseTouchId(touchId, touchPos);
                     continue;
-
-                int lane = GetLaneFromScreenPos(touchPos);
-                if (lane < 0 || lane >= LaneLayout.ActiveLaneCount) continue;
+                }
 
                 switch (touch.phase)
                 {
@@ -260,39 +269,50 @@ namespace FallenAngel.InputSystem
                         break;
 
                     case TouchPhase.Moved:
-                        // 触摸移动时，若跨音轨则切换
+                    case TouchPhase.Stationary:
                         if (touchIdToLane.TryGetValue(touchId, out int oldLane) && oldLane != lane)
                         {
                             touchIdToLane[touchId] = lane;
                             // 旧轨道仅当没有其他手指按住时才释放（支持同轨多指交替）
-                            bool oldStillHeld = false;
-                            foreach (var kv in touchIdToLane)
-                            {
-                                if (kv.Value == oldLane) { oldStillHeld = true; break; }
-                            }
-                            if (!oldStillHeld)
+                            if (!IsLaneHeldByAnyTouch(oldLane))
                                 SetLaneState(oldLane, false, touchPos);
                             SetLaneState(lane, true, touchPos);
                         }
                         break;
-
-                    case TouchPhase.Ended:
-                    case TouchPhase.Canceled:
-                        if (touchIdToLane.TryGetValue(touchId, out int releaseLane))
-                        {
-                            touchIdToLane.Remove(touchId);
-                            // 仅当该轨道没有其他手指按住时才置为松开（支持同轨双指交替）
-                            bool stillHeld = false;
-                            foreach (var kv in touchIdToLane)
-                            {
-                                if (kv.Value == releaseLane) { stillHeld = true; break; }
-                            }
-                            if (!stillHeld)
-                                SetLaneState(releaseLane, false, touchPos);
-                        }
-                        break;
                 }
             }
+        }
+
+        /// <summary>按 fingerId 释放一条触摸；同轨仍有其他手指时不抬起该轨。</summary>
+        private void ReleaseTouchId(int touchId, Vector2 touchPos)
+        {
+            if (!touchIdToLane.TryGetValue(touchId, out int releaseLane)) return;
+            touchIdToLane.Remove(touchId);
+            if (!IsLaneHeldByAnyTouch(releaseLane))
+                SetLaneState(releaseLane, false, touchPos);
+        }
+
+        /// <summary>暂停/离曲时释放全部已跟踪触摸。键盘仍按住的轨道不强制抬起。</summary>
+        private void ReleaseTrackedTouches(Vector2 touchPos)
+        {
+            if (touchIdToLane.Count == 0) return;
+            var lanes = new HashSet<int>(touchIdToLane.Values);
+            touchIdToLane.Clear();
+            foreach (int lane in lanes)
+            {
+                bool keyHeld = lane >= 0 && lane < lastKeyStates.Length && lastKeyStates[lane];
+                if (!keyHeld)
+                    SetLaneState(lane, false, touchPos);
+            }
+        }
+
+        private bool IsLaneHeldByAnyTouch(int lane)
+        {
+            foreach (var kv in touchIdToLane)
+            {
+                if (kv.Value == lane) return true;
+            }
+            return false;
         }
 
         /// <summary>

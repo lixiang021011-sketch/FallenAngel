@@ -209,8 +209,10 @@ namespace FallenAngel.UI
                     (effect.ValueCapB ?? 0).ToString("0.##%"), effect.LimitCount ?? 0,
                     effect.Coefficient.ToString("0.##"), (effect.Threshold ?? 0).ToString("0.##"));
                 Label(details, T("effect", description), 20, 300, 285, 270, 24);
+                if (effect != null && !PortfolioEffectStatus.IsTalentLive(effect.EffectId))
+                    Label(details, T("effectNotLive"), 20, 575, 285, 90, 22);
                 var status = session.Talents.CheckUnlock(p, n.NodeId);
-                Label(details, T("status." + status), 20, 600, 285, 120, 27);
+                Label(details, T("status." + status), 20, 660, 285, 100, 27);
                 Button(details, "UnlockTalent", T("unlock"), 20, 770, 285, 78, () =>
                 {
                     int revision = p.revision;
@@ -221,7 +223,6 @@ namespace FallenAngel.UI
             if (run != null && (run.phase == "RESULT" || run.phase == "FINISHED"))
                 Label(page, T("score", run.lastScore, run.lastAccuracy), 20, 1480, 960, 48, 24);
             Label(page, T("bankNote"), 20, 1550, 960, 70, 25);
-            Label(page, T("effectPending"), 20, 1630, 960, 90, 24);
             if (confirmAction != null) RenderConfirmation(page);
         }
 

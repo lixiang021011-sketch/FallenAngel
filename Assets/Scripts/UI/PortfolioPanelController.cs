@@ -27,6 +27,7 @@ namespace FallenAngel.UI
         private bool dirty = true;
         private string confirmText;
         private string routeNodeId;
+        private bool useOptionalRoute;
         private string scrollRunId;
         private Action confirmAction;
         private ScrollRect mapScroll;
@@ -233,6 +234,15 @@ namespace FallenAngel.UI
                     ly += 42;
                 }
                 Label(cardBox, T("income.total", run.lastCashReward), 40, ly + 10, 910, 50, 28);
+                // 关卡掉落结果与收益同屏展示（掉落现金/装备在本次结算后入账，不参与收益倍率/保底/封顶）
+                if (run.lastDropGranted)
+                {
+                    var dropBox = Box(page, "DropGranted", 20, 890, 960, 84, card);
+                    string dropText = run.lastDropRewardType == "CURRENCY"
+                        ? T("drop.cash", run.lastDropQuantity)
+                        : T("drop.equipment", run.lastDropRewardId);
+                    Label(dropBox, dropText, 25, 22, 910, 44, 26);
+                }
             }
             else RenderMap(page);
         }
@@ -273,7 +283,8 @@ namespace FallenAngel.UI
                 else path.SetPath(new Vector2(a.x, -a.y), new Vector2(b.x, -b.y), color);
                 if (edge.RoutePrice > 0)
                 {
-                    var price = Label(board, T("routeFee", edge.RoutePrice), (a.x+b.x)/2 + 22, (a.y+b.y)/2-18, 180, 50, 23);
+                    int fee = r != null && r.useMap ? session.QuoteRouteFee(edge.RoutePrice, false) : edge.RoutePrice;
+                    var price = Label(board, T("routeFee", fee), (a.x+b.x)/2 + 22, (a.y+b.y)/2-18, 180, 50, 23);
                     price.color = color;
                 }
             }
@@ -293,7 +304,8 @@ namespace FallenAngel.UI
                 {
                     if (reachable)
                     {
-                        Ask(null, () => session.EnterRoom(n.NodeId));
+                        useOptionalRoute = false;
+                        Ask(null, () => session.EnterRoom(n.NodeId, useOptionalRoute));
                         routeNodeId = n.NodeId;
                         return;
                     }
@@ -376,30 +388,47 @@ namespace FallenAngel.UI
             var run = session.Run;
             var node = PortfolioConfig.MapNodes.FirstOrDefault(n => n.NodeId == routeNodeId);
             var edge = PortfolioConfig.MapEdges.FirstOrDefault(e => e.FromNodeId == run.currentNodeId && e.ToNodeId == routeNodeId);
-            if (node == null || edge == null) { confirmAction = null; routeNodeId = null; session.SetConfirmation(false); return; }
+            if (node == null || edge == null) { confirmAction = null; routeNodeId = null; useOptionalRoute = false; session.SetConfirmation(false); return; }
             var shade = Box(page, "RouteShade", 0, 0, 0, 0, new Color(0,0,0,.68f));
             shade.anchorMin = Vector2.zero; shade.anchorMax = Vector2.one; shade.offsetMin = new Vector2(-500,-500); shade.offsetMax = new Vector2(500,500);
             var drawer = Box(page, "RouteDetails", 0, 1030, 1000, 730, new Color(.094f,.16f,.204f,1));
             var drawerGroup = drawer.gameObject.AddComponent<CanvasGroup>();
-            Action close = () => { confirmAction = null; routeNodeId = null; session.SetConfirmation(false); dirty = true; };
+            Action close = () => { confirmAction = null; routeNodeId = null; useOptionalRoute = false; session.SetConfirmation(false); dirty = true; };
             var closeButton = Button(drawer, "CloseRoute", "", 900, 15, 80, 70, close, card);
             Action dismiss = () => { if (!drawerGroup.interactable) return; drawerGroup.interactable = false; StartCoroutine(CloseDrawer(drawer, close)); };
             closeButton.onClick.RemoveAllListeners(); closeButton.onClick.AddListener(() => dismiss());
             DeepSeaTheme.Graphic(closeButton.transform, "CloseIcon", DeepSeaGraphic.Shape.Close).color = ink;
             Label(drawer, node.NodeType == "STAGE" ? T(edge.RoutePrice > 0 ? "mapChallenge" : "mapPerformance") : T("node." + node.NodeType), 40, 35, 790, 45, 26);
             Label(drawer, ChartNameForNode(node) ?? T("node." + node.NodeType), 40, 110, 900, 120, 42);
-            Label(drawer, T("routeFee", edge.RoutePrice), 40, 290, 900, 55, 30);
-            Label(drawer, T("mapBalanceAfter", run.runCash, run.runCash - edge.RoutePrice), 40, 370, 900, 55, 30);
-            var submit = Button(drawer, "ConfirmRoute", run.runCash < edge.RoutePrice ? T("mapNoCash") : edge.RoutePrice > 0 ? T("mapPayEnter", edge.RoutePrice) : T("mapEnter"), 40, 475, 920, 100, () =>
+            int quote = session.QuoteRouteFee(edge.RoutePrice, useOptionalRoute);
+            Label(drawer, T("routeFee", quote), 40, 250, 900, 50, 30);
+            Label(drawer, T("mapBalanceAfter", run.runCash, run.runCash - quote), 40, 310, 900, 50, 30);
+
+            bool showOptional = edge.RoutePrice > 0 && session.CanUseOptionalRouteDiscount();
+            if (showOptional)
             {
-                var action = confirmAction;
-                if (action == null) return;
-                confirmAction = null; routeNodeId = null; session.SetConfirmation(false); dirty = true;
-                action();
+                int remain = session.OptionalRouteRemaining();
+                int withOpt = session.QuoteRouteFee(edge.RoutePrice, true);
+                string mark = useOptionalRoute ? "☑" : "☐";
+                Button(drawer, "OptionalRoute", mark + "  " + T("optionalRoute", remain, withOpt), 40, 370, 920, 70, () =>
+                {
+                    useOptionalRoute = !useOptionalRoute;
+                    dirty = true;
+                }, card);
+            }
+
+            float submitY = showOptional ? 460 : 430;
+            var submit = Button(drawer, "ConfirmRoute", run.runCash < quote ? T("mapNoCash") : quote > 0 ? T("mapPayEnter", quote) : T("mapEnter"), 40, submitY, 920, 100, () =>
+            {
+                string nodeId = routeNodeId;
+                bool opt = useOptionalRoute;
+                confirmAction = null; routeNodeId = null; useOptionalRoute = false;
+                session.SetConfirmation(false); dirty = true;
+                if (!string.IsNullOrEmpty(nodeId)) session.EnterRoom(nodeId, opt);
             }, ink);
             submit.GetComponentInChildren<TextMeshProUGUI>().color = background;
-            submit.interactable = run.runCash >= edge.RoutePrice;
-            var cancel = Button(drawer, "CancelRoute", T("cancel"), 340, 620, 320, 70, close, card);
+            submit.interactable = run.runCash >= quote;
+            var cancel = Button(drawer, "CancelRoute", T("cancel"), 340, showOptional ? 580 : 620, 320, 70, close, card);
             cancel.onClick.RemoveAllListeners(); cancel.onClick.AddListener(() => dismiss());
             StartCoroutine(SlideDrawer(drawer));
         }

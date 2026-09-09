@@ -50,6 +50,11 @@ namespace FallenAngel.UI
         private Coroutine judgeFadeCoroutine;
         private Coroutine biasFadeCoroutine;
 
+        private void OnEnable()
+        {
+            SubscribeEvents();
+        }
+
         private void Start()
         {
             if (comboText != null)
@@ -57,13 +62,9 @@ namespace FallenAngel.UI
             if (judgeResultText != null)
                 judgeOriginalScale = judgeResultText.transform.localScale;
 
+            // 先退订再订阅：OnEnable 已订过一次，防 Awake 顺序导致漏订/重订（架构约定 §3）
             SubscribeEvents();
             ClearUI();
-        }
-
-        private void OnEnable()
-        {
-            SubscribeEvents();
         }
 
         private void OnDisable()
@@ -73,6 +74,7 @@ namespace FallenAngel.UI
 
         private void SubscribeEvents()
         {
+            UnsubscribeEvents();
             if (JudgeManager.Instance != null)
             {
                 JudgeManager.Instance.OnScoreUpdate += HandleScoreUpdate;
@@ -103,7 +105,7 @@ namespace FallenAngel.UI
 
         private void HandleGameStart()
         {
-            // 设置歌曲名
+            ClearUI();
             if (GameManager.Instance?.CurrentChart?.metadata != null && songTitleText != null)
             {
                 var meta = GameManager.Instance.CurrentChart.metadata;
@@ -117,6 +119,7 @@ namespace FallenAngel.UI
             if (comboText != null) comboText.text = "0";
             if (comboLabelText != null) comboLabelText.color = comboBrokenColor;
             if (judgeResultText != null) judgeResultText.text = "";
+            if (judgeBiasText != null) judgeBiasText.text = "";
             if (progressFillImage != null) progressFillImage.fillAmount = 0f;
             if (progressText != null) progressText.text = "00:00 / 00:00";
         }

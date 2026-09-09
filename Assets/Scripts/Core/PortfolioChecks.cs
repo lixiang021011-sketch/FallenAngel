@@ -40,8 +40,10 @@ namespace FallenAngel.Core
                 ValidateRules();
                 ValidateDisk(temporary);
                 ValidateGrowth();
+                ValidateDrop();
                 ValidateLegacy(temporary);
                 ValidateMap();
+                ValidateIncomeAndDiscounts();
                 WriteReport("PASS");
                 Debug.Log("[PortfolioChecks] PASS: " + checks + " checks. Temporary profiles only; gameplay not tested.");
             }
@@ -258,6 +260,62 @@ namespace FallenAngel.Core
             Check(talents.ReadProfile(other.profileId).activeRunId != r.runId, "Two profiles can each retain one independent run");
         }
 
+        /// <summary>掉落规则用注入随机源做确定性校验：0 恒过概率门并取首条合法候选。</summary>
+        private static void ValidateDrop()
+        {
+            var store = new MemoryStore();
+            var talents = new PortfolioTalentService(store);
+            var growth = new PortfolioGrowthService(store, () => 0d);
+            var p = talents.CreateProfile("Drop");
+            var r = growth.Begin(p.profileId, 30, 100, true);
+
+            // 普通战斗房（S01 / DP_NORMAL）：首条合法候选 E01
+            growth.EnterRoom(p.profileId, r.runId, "N01");
+            growth.MarkPlaying(p.profileId, r.runId);
+            r = growth.CompleteSong(p.profileId, r.runId, 0, true);
+            Check(r.lastDropGranted && r.heldEquipmentIds.Contains("E01")
+                && r.lastDropRewardId == "E01" && r.lastDropRewardType == "EQUIPMENT",
+                "Normal stage grants first weighted equipment on deterministic roll");
+            Check(growth.CompleteSong(p.profileId, r.runId, 0, true).heldEquipmentIds.Count(id => id == "E01") == 1,
+                "Repeated completion does not duplicate a stage drop");
+
+            // 付费挑战房（S02 / DP_CHALLENGE）：持有 E01 后首条合法候选为 E02
+            growth.Continue(p.profileId, r.runId);
+            growth.EnterRoom(p.profileId, r.runId, "N02");
+            growth.LeaveRoom(p.profileId, r.runId);
+            growth.EnterRoom(p.profileId, r.runId, "N04");
+            growth.MarkPlaying(p.profileId, r.runId);
+            r = growth.CompleteSong(p.profileId, r.runId, 1, true);
+            Check(r.lastDropGranted && r.heldEquipmentIds.Contains("E02")
+                && r.heldEquipmentIds.Count(id => id == "E01") == 1,
+                "Challenge stage excludes owned equipment and drops next first candidate");
+
+            // 走到终点前集齐全部 10 件：合法装备池为空 → 不再掉落（DE011 现金停用，不得补抽补货币）
+            growth.Continue(p.profileId, r.runId);
+            foreach (var id in PortfolioConfig.EquipmentBase.Select(e => e.EquipmentId))
+                if (!r.heldEquipmentIds.Contains(id)) growth.AcquireEquipment(p.profileId, r.runId, id);
+            growth.EnterRoom(p.profileId, r.runId, "N08");
+            growth.LeaveRoom(p.profileId, r.runId);
+            growth.EnterRoom(p.profileId, r.runId, "N05");
+            growth.LeaveRoom(p.profileId, r.runId);
+            growth.EnterRoom(p.profileId, r.runId, "N06");
+            growth.MarkPlaying(p.profileId, r.runId);
+            r = growth.CompleteSong(p.profileId, r.runId, 2, true);
+            Check(r.outcome == "CLEARED" && !r.lastDropGranted, "Full equipment pool grants nothing; final run still settles");
+
+            // 失败不触发掉落（失败按局结算并清空局内资源）
+            var failureStore = new MemoryStore();
+            var failureTalents = new PortfolioTalentService(failureStore);
+            var failureGrowth = new PortfolioGrowthService(failureStore, () => 0d);
+            var fp = failureTalents.CreateProfile("DropFail");
+            var fr = failureGrowth.Begin(fp.profileId, 30, 100, true);
+            failureGrowth.EnterRoom(fp.profileId, fr.runId, "N01");
+            failureGrowth.MarkPlaying(fp.profileId, fr.runId);
+            fr = failureGrowth.CompleteSong(fp.profileId, fr.runId, 0, false);
+            Check(fr.outcome == "FAILED" && !fr.lastDropGranted && fr.heldEquipmentIds.Count == 0,
+                "Failed performance never rolls a stage drop");
+        }
+
         private static void ValidateLegacy(string directory)
         {
             var profile = new LegacyCheckProfile { profileId = Guid.NewGuid().ToString("N"), displayName = "Legacy", growthPoints = 100 };
@@ -305,15 +363,15 @@ namespace FallenAngel.Core
             Check(r.runCash == 100 && r.currentNodeId == "N02", "Failed payment changes neither cash nor room");
             growth.EnterRoom(p.profileId, r.runId, "N04");
             r = growth.ReadRun(talents.ReadProfile(p.profileId));
-            Check(r.runCash == 40 && r.stageIds[1] == "S02", "Paid route deducts 60 and selects challenge stage");
+            Check(r.runCash == 60 && r.stageIds[1] == "S02", "Paid route deducts 40 and selects challenge stage");
             Reject(() => growth.EnterRoom(p.profileId, r.runId, "N04"), "Room entry cannot repeat payment");
             growth.MarkPlaying(p.profileId, r.runId);
             r = growth.CompleteSong(p.profileId, r.runId, 1, true);
-            Check(r.runCash == 190 && r.earnedPoints == 250, "Challenge uses own cash and growth rewards");
+            Check(r.runCash == 210 && r.earnedPoints == 250, "Challenge uses own cash and growth rewards");
             growth.Continue(p.profileId, r.runId);
             growth.EnterRoom(p.profileId, r.runId, "N08");
             r = growth.ReadRun(talents.ReadProfile(p.profileId));
-            Check(r.phase == "ROOM" && r.runCash == 190, "Empty room grants no extra reward");
+            Check(r.phase == "ROOM" && r.runCash == 210, "Empty room grants no extra reward");
             growth.LeaveRoom(p.profileId, r.runId);
             Reject(() => growth.EnterRoom(p.profileId, r.runId, "N04"), "Cannot backtrack to visited room");
             growth.EnterRoom(p.profileId, r.runId, "N05"); growth.LeaveRoom(p.profileId, r.runId);
@@ -321,6 +379,56 @@ namespace FallenAngel.Core
             r = growth.CompleteSong(p.profileId, r.runId, 2, true);
             Check(r.outcome == "CLEARED" && r.creditedPoints == 550 && r.runCash == 0, "Paid branch converges at final and settles 550 growth");
         }
+
+        private static void ValidateIncomeAndDiscounts()
+        {
+            var income = new PortfolioIncomeService();
+            var c1 = PortfolioConfig.TalentEffects.Single(e => e.EffectId == "FX_C1");
+            var e09 = PortfolioConfig.EquipmentEffects.Single(e => e.EffectId == "EQ_E09");
+            var stage = PortfolioConfig.Stages.Single(s => s.StageId == "S01");
+            var settled = income.Compute(new[] { c1 }, new[] { e09 }, stage, 0, 1, 100);
+            double c1Amt = Math.Min(100 * c1.Coefficient, stage.BaseIncome * (c1.ValueCapB ?? 0));
+            double e09Amt = Math.Min(100 * e09.Coefficient, stage.BaseIncome * (e09.ValueCapB ?? 0));
+            Check(Math.Abs(settled.EconomyTotal - (c1Amt + e09Amt)) < 0.001, "C1 and E09 interest add independently");
+            Check(settled.Lines.Any(l => l.key == "income.C1") && settled.Lines.Any(l => l.key == "income.E09"),
+                "Interest lines both present");
+
+            var store = new MemoryStore();
+            var talents = new PortfolioTalentService(store);
+            var growth = new PortfolioGrowthService(store);
+            var p = Seed(store, 4000);
+            Check(talents.Unlock(p.profileId, "A0", p.revision) == TalentUnlockStatus.Available, "Discount seed A0");
+            p = talents.ReadProfile(p.profileId);
+            Check(talents.Unlock(p.profileId, "A1", p.revision) == TalentUnlockStatus.Available, "Discount seed A1");
+            p = talents.ReadProfile(p.profileId);
+            Check(talents.Unlock(p.profileId, "H1", p.revision) == TalentUnlockStatus.Available, "Discount seed H1");
+            p = talents.ReadProfile(p.profileId);
+            Check(talents.Unlock(p.profileId, "F0", p.revision) == TalentUnlockStatus.Available, "Discount seed F0");
+            p = talents.ReadProfile(p.profileId);
+            var r = growth.Begin(p.profileId, 30, 100, true);
+            growth.EnterRoom(p.profileId, r.runId, "N01");
+            growth.MarkPlaying(p.profileId, r.runId);
+            r = growth.CompleteSong(p.profileId, r.runId, 0, true);
+            growth.Continue(p.profileId, r.runId);
+            growth.EnterRoom(p.profileId, r.runId, "N02");
+            growth.LeaveRoom(p.profileId, r.runId);
+            p = talents.ReadProfile(p.profileId);
+            r = growth.ReadRun(p);
+            Check(growth.QuoteRoutePrice(p, r, "N04") == 38, "F0 standing route discount is 5%");
+            Check(growth.QuoteRoutePrice(p, r, "N04", true) == 38, "Optional route flag without E08 keeps F0 price");
+            growth.AcquireEquipment(p.profileId, r.runId, "E08");
+            p = talents.ReadProfile(p.profileId);
+            r = growth.ReadRun(p);
+            Check(growth.QuoteRoutePrice(p, r, "N04", false) == 38, "E08 does not change standing map fee");
+            Check(growth.QuoteRoutePrice(p, r, "N04", true) == 32, "E08 optional route discount is 20%");
+            r.runCash = 100;
+            p.growthRunJson = JsonUtility.ToJson(r); p.revision++; store.Commit(p, p.revision - 1);
+            r = growth.ReadRun(talents.ReadProfile(p.profileId));
+            growth.EnterRoom(p.profileId, r.runId, "N04", true);
+            r = growth.ReadRun(talents.ReadProfile(p.profileId));
+            Check(r.runCash == 68 && r.optionalRouteDiscountUsed == 1, "E08 optional entry deducts 32 and consumes one use");
+        }
+
         [Serializable] private sealed class LegacyCheckProfile
         {
             public int version = 1;

@@ -45,5 +45,15 @@ namespace FallenAngel.Data
         public double openingCash;
         // 最近一次成功演奏的收益明细（RESULT 界面展示；随局快照持久化）
         public List<IncomeLineData> incomeBreakdown = new List<IncomeLineData>();
+        // 最近一次成功演奏的关卡掉落（RESULT 界面展示；无掉落保持 false）
+        public bool lastDropGranted;
+        public string lastDropEntryId;   // drop_entries.entry_id
+        public string lastDropRewardType; // EQUIPMENT / CURRENCY
+        public string lastDropRewardId;   // E01…E10 / RUN_CASH
+        public int lastDropQuantity;
+        /// <summary>K1 可选购买减免已使用次数（成功购买才 +1）</summary>
+        public int optionalPurchaseDiscountUsed;
+        /// <summary>E08 可选路费减免已使用次数（成功进房才 +1）</summary>
+        public int optionalRouteDiscountUsed;
     }
 }

@@ -155,7 +155,6 @@ namespace FallenAngel.Core
         public void SelectProfile(string id)
         {
             if (IsPerforming()) return;
-            growth.Recover(id);
             Profile = Talents.ReadProfile(id);
             Run = growth.ReadRun(Profile);
             OwnsSong = false;
@@ -192,6 +191,13 @@ namespace FallenAngel.Core
             if (Profile == null || IsPerforming()) return;
             Execute(() =>
             {
+                // PLAYING 表示上次演奏中强退：只在真正进入游戏时按失败结算，浏览存档不改档。
+                if (Run != null && Run.phase == "PLAYING")
+                {
+                    growth.Recover(Profile.profileId);
+                    Refresh();
+                    Debug.Log("[PortfolioSession] 进入游戏：PLAYING 局按中断结算");
+                }
                 if (Run == null || Run.phase == "FINISHED")
                 {
                     Begin();
@@ -204,8 +210,11 @@ namespace FallenAngel.Core
                 }
                 else if (Run.phase == "READY")
                 {
+                    // 战斗房待开曲：开谱的同时必须关掉存档页并打开地图上下文。
+                    // 此前此处 return，SaveSelectOpen 仍为 true、IsOpen 仍为 false——
+                    // 曲终 Continue 回菜单时存档页会再弹出来，行程地图被藏住。
                     StartSong();
-                    return;
+                    IsOpen = true;
                 }
                 else
                 {
@@ -399,10 +408,10 @@ namespace FallenAngel.Core
             manager.BackToMenu();
             Refresh();
         }
-        public void EnterRoom(string nodeId)
+        public void EnterRoom(string nodeId, bool useOptionalDiscount = false)
         {
             if (IsPerforming()) return;
-            growth.EnterRoom(Profile.profileId, Run.runId, nodeId);
+            growth.EnterRoom(Profile.profileId, Run.runId, nodeId, useOptionalDiscount);
             Refresh();
         }
         public void LeaveRoom()
@@ -458,21 +467,69 @@ namespace FallenAngel.Core
         public bool InShop => Run != null && Run.useMap && Run.phase == "ROOM"
             && PortfolioConfig.MapNodes.Any(n => n.NodeId == Run.currentNodeId && n.NodeType == "SHOP");
 
-        /// <summary>购买报价（常驻折扣已含；K1 可选优惠另行处理）。无局或不在商店返回 -1。</summary>
-        public int QuoteEquipmentPrice(string equipmentId)
+        /// <summary>购买报价。useOptional 为 true 时叠 K1（有剩余次数才生效）。</summary>
+        public int QuoteEquipmentPrice(string equipmentId, bool useOptional = false)
         {
             if (Profile == null || Run == null || !InShop) return -1;
-            try { return growth.QuotePrice(Profile, Run, equipmentId); }
+            try { return growth.QuotePrice(Profile, Run, equipmentId, useOptional); }
             catch (Exception) { return -1; }
         }
 
+        public bool CanUseOptionalPurchaseDiscount() => OptionalPurchaseRemaining() > 0;
+
+        public int OptionalPurchaseRemaining()
+        {
+            if (Profile == null || Run == null) return 0;
+            var k1 = Talents.GetRegisteredEffects(Profile.profileId)
+                .FirstOrDefault(e => e.Handler == "optional_purchase_discount");
+            if (k1 == null) return 0;
+            int limit = k1.LimitCount ?? 1;
+            return Math.Max(0, limit - Run.optionalPurchaseDiscountUsed);
+        }
+
+        /// <summary>路费报价。useOptional 为 true 时叠 E08（有剩余次数才生效）。</summary>
+        public int QuoteRoutePrice(string nodeId, bool useOptional = false)
+        {
+            if (Profile == null || Run == null) return -1;
+            try { return growth.QuoteRoutePrice(Profile, Run, nodeId, useOptional); }
+            catch (Exception) { return -1; }
+        }
+
+        /// <summary>表内路费的折后价（含常驻 F0；useOptional 叠 E08）。无局时返回原价。</summary>
+        public int QuoteRouteFee(int tablePrice, bool useOptional = false)
+        {
+            if (Profile == null || Run == null) return tablePrice;
+            return growth.QuoteRouteFee(Profile, Run, tablePrice, useOptional);
+        }
+
+        public bool CanUseOptionalRouteDiscount() => OptionalRouteRemaining() > 0;
+
+        public int OptionalRouteRemaining()
+        {
+            if (Run == null) return 0;
+            return Math.Max(0, OptionalRouteLimit(Run) - Run.optionalRouteDiscountUsed);
+        }
+
+        private static int OptionalRouteLimit(PortfolioGrowthRunData r)
+        {
+            foreach (string id in r.heldEquipmentIds)
+            {
+                var eq = PortfolioConfig.EquipmentBase.FirstOrDefault(e => e.EquipmentId == id);
+                if (eq == null) continue;
+                var eff = PortfolioConfig.EquipmentEffects.FirstOrDefault(e => e.EffectId == eq.EffectId);
+                if (eff != null && eff.Enabled && eff.Handler == "optional_route_discount")
+                    return eff.LimitCount ?? 2;
+            }
+            return 0;
+        }
+
         /// <summary>商店购买（原子事务：扣款+获得+售罄；失败时现金与持有不变）</summary>
-        public void PurchaseEquipment(string equipmentId)
+        public void PurchaseEquipment(string equipmentId, bool useOptional = false)
         {
             if (Profile == null || Run == null || IsPerforming()) return;
             Execute(() =>
             {
-                growth.PurchaseEquipment(Profile.profileId, Run.runId, equipmentId);
+                growth.PurchaseEquipment(Profile.profileId, Run.runId, equipmentId, useOptional);
                 Refresh();
             });
         }

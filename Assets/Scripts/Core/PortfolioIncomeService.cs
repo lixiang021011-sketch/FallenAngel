@@ -18,7 +18,7 @@ namespace FallenAngel.Core
     /// <summary>
     /// 收益核心闭环 Lite（纯计算，不读写存档）：整曲结算级效果——
     /// I0/I1 整曲Perfect达标奖励、J0/J1 付费挑战奖励、D0 演奏增幅、E05 无Miss增幅（装备）、
-    /// G0/G1 收益保底、C1 开曲现金利息、统一封顶。
+    /// G0/G1 收益保底、C1/E09 开曲现金利息、统一封顶。
     /// 乐句级效果（A0/B0/C0 等）与补偿（E06）设计已定，乐句统计接入后扩展；K0 需 A/B/C 原始奖励，暂不启用。
     /// </summary>
     public sealed class PortfolioIncomeService
@@ -104,13 +104,27 @@ namespace FallenAngel.Core
             s.PerformanceTotal = performance;
 
             // ---- 独立经济收益（ECONOMY）----
-            // C1：开曲现金利息 5%，单次原始上限 3%B
+            // C1：开曲现金利息 5%，单次原始上限 3%B；E09：装备利息 10%，上限 5%B。各自封顶后加算。
+            s.EconomyTotal = 0;
             var c1 = talents.FirstOrDefault(e => e.Handler == "opening_balance_interest");
             if (c1 != null && openingCash > 0)
             {
                 double interest = Math.Min(openingCash * c1.Coefficient, b * (c1.ValueCapB ?? 0));
-                if (interest > 0) AddLine(s, "income.C1", interest, "ECONOMY");
-                s.EconomyTotal = interest;
+                if (interest > 0)
+                {
+                    AddLine(s, "income.C1", interest, "ECONOMY");
+                    s.EconomyTotal += interest;
+                }
+            }
+            var e09 = equipment.FirstOrDefault(e => e.Handler == "opening_balance_interest");
+            if (e09 != null && openingCash > 0)
+            {
+                double interest = Math.Min(openingCash * e09.Coefficient, b * (e09.ValueCapB ?? 0));
+                if (interest > 0)
+                {
+                    AddLine(s, "income.E09", interest, "ECONOMY");
+                    s.EconomyTotal += interest;
+                }
             }
             return s;
         }

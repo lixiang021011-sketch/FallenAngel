@@ -53,8 +53,19 @@ namespace FallenAngel.Audio
         /// <summary>真实音频是否正在播放</summary>
         public bool IsPlaying => audioStarted && bgmSource.isPlaying;
 
-        /// <summary>真实音频已开始且已停止（曲终信号，暂停期间勿用）</summary>
-        public bool HasAudioFinished => audioStarted && !bgmSource.isPlaying;
+        /// <summary>
+        /// 真实音频自然播完。必须靠近 clip 末尾：切后台/拔耳机时 isPlaying 也会变 false，
+        /// 不能把「没在播」当成曲终。Play() 后首帧 time=0 也不会误判。
+        /// </summary>
+        public bool HasAudioFinished
+        {
+            get
+            {
+                if (!audioStarted || bgmSource == null || bgmSource.clip == null) return false;
+                if (bgmSource.isPlaying) return false;
+                return bgmSource.time >= bgmSource.clip.length - 0.05f;
+            }
+        }
 
         /// <summary>
         /// 当前权威游戏时间（秒）：

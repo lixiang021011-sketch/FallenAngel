@@ -249,11 +249,19 @@ namespace FallenAngel.Gameplay
             // 命中
             ApplyJudge(note, result, lane);
 
-            // 如果是长按，记录按住开始
+            // 长按：普通轨跟单轨松开；宽键/kick 跟 Slide 一样由任意键维持
             if (note.Data.type == NoteType.LongStart)
             {
-                laneHoldStartTime[lane] = songTime;
-                laneHoldLongId[lane] = note.Data.longNoteId;
+                if (IsWideNote(note))
+                {
+                    if (activeWideHold == null)
+                        activeWideHold = note;
+                }
+                else
+                {
+                    laneHoldStartTime[lane] = songTime;
+                    laneHoldLongId[lane] = note.Data.longNoteId;
+                }
             }
 
             // Slide 头部命中进入按住：登记到活动列表，由 Update 全松统一释放
@@ -325,16 +333,22 @@ namespace FallenAngel.Gameplay
                 return;
             }
 
-            // 长按/Slide 头部仅触发视觉；Good/Bad 断连击不给分（Phigros 语义）。
-            // Slide 尾部计分（见 ApplyHoldRelease），头部计分会导致双计分。
-            if (note.Data.type != NoteType.LongStart && note.Data.type != NoteType.Slide)
+            // 长按/Slide 头部仅触发视觉：不计分、不进判定计数（尾部才算一首）。
+            // Good/Bad 头部仍断连击（Phigros 语义）。
+            bool isHoldHead = note.Data.type == NoteType.LongStart || note.Data.type == NoteType.Slide;
+            if (isHoldHead)
+            {
+                if (JudgeWindows.BreaksCombo(result))
+                    BreakCombo();
+            }
+            else
             {
                 if (JudgeWindows.BreaksCombo(result))
                     BreakCombo();
                 else
                     AddScoreAndCombo(JudgeWindows.GetScore(result));
+                AddJudgeCount(result);
             }
-            AddJudgeCount(result);
             OnJudgeResult?.Invoke(result, lane);
             OnJudgeBias?.Invoke(-(GameManager.Instance.SongTime - note.Data.time)); // 正=早，负=晚
             PlayAudioJudge(result);
@@ -352,6 +366,14 @@ namespace FallenAngel.Gameplay
             ProcessMiss(note.Data.lane);
             OnJudgeResult?.Invoke(JudgeResultType.Miss, note.Data.lane);
             PlayAudioJudge(JudgeResultType.Miss);
+        }
+
+        private static bool IsWideNote(Note note)
+        {
+            if (note?.Data == null) return false;
+            if (note.Data.wide) return true;
+            var chart = GameManager.Instance != null ? GameManager.Instance.CurrentChart : null;
+            return chart != null && chart.LaneCount == 4 && note.Data.lane == 0;
         }
 
         private void ProcessMiss(int lane)

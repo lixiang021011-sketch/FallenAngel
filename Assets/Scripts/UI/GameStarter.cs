@@ -201,7 +201,8 @@ namespace FallenAngel.UI
             StartChart(demo);
         }
 
-        /// <summary>调试入口：无商店/掉落 UI 时验证装备持有链路（与 PortfolioSession 上同名入口等价，二选一）</summary>
+#if UNITY_EDITOR
+        /// <summary>调试入口：无商店/掉落 UI 时验证装备持有链路（与 PortfolioSession 上同名入口等价，二选一）。打包不含。</summary>
         [ContextMenu("Debug: Acquire Next Equipment")]
         public void DebugAcquireNextEquipment()
         {
@@ -209,6 +210,7 @@ namespace FallenAngel.UI
             if (s != null) s.DebugAcquireNextEquipment();
             else Debug.LogError("[GameStarter] 缺少 PortfolioSession，请重建场景（Tools > FallenAngel > Build Default Game Scene）");
         }
+#endif
 
         /// <summary>
         /// 核心玩法调试入口（Play 模式下 Inspector 右键本组件）：

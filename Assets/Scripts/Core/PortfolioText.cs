@@ -67,7 +67,13 @@
             Add("income.G0", "保底补足", "Floor top-up");
             Add("income.cap", "封顶裁剪", "Cap trim");
             Add("income.C1", "利息", "Interest");
+            Add("income.E09", "装备利息", "Equipment interest");
             Add("income.total", "本关收入合计  +{0}", "Stage income total  +{0}");
+            Add("optionalPurchase", "使用 K1 折扣（剩 {0} 次）· 价 {1}", "Use K1 discount ({0} left) · {1}");
+            Add("optionalRoute", "使用 E08 减免（剩 {0} 次）· 路费 {1}", "Use E08 discount ({0} left) · fee {1}");
+            Add("effectNotLive", "本效果尚未接入结算，仅作设计展示。", "This effect is not applied in this build; display only.");
+            Add("drop.equipment", "关卡掉落：装备 {0}", "Stage drop: equipment {0}");
+            Add("drop.cash", "关卡掉落：现金 +{0}", "Stage drop: cash +{0}");
             Add("bankNote", "积分将在整局结束时入账；现在放弃也保留已完成关卡的积分。", "Points are credited at run end. Abandoning keeps points from completed songs.");
             Add("CLEARED", "路线完成", "Route cleared");
             Add("FAILED", "演出失败", "Performance failed");
@@ -80,7 +86,7 @@
             Add("none", "无", "None");
             Add("effect", "设计效果\n{0}", "Designed effect\n{0}");
             Add("score", "本次分数 {0} · 准确率 {1:0.00}%", "Score {0} · Accuracy {1:0.00}%");
-            Add("effectPending", "当前验证永久成长流程；天赋收益效果尚未接入演奏。", "This build tests permanent growth. Talent reward effects are not yet applied to performances.");
+            Add("effectPending", "已接入的天赋会在商店、路费与曲终结算中生效；详情页对未接线效果另有标注。", "Wired talents apply in shop, route fees and song settlement. Unwired effects are marked in the detail pane.");
             Add("unlock", "永久解锁", "Unlock permanently");
             Add("confirmUnlock", "确认解锁 {0}？\n消耗 {1} 积分，余额 {2} → {3}。\n永久解锁，无退款。", "Unlock {0}?\nSpend {1} points. Balance {2} → {3}.\nPermanent unlock; no refund.");
             Add("confirmAbandon", "确认放弃本局？\n保留已完成关卡的积分，当前未完成演奏不计分。", "Abandon this run?\nKeep points from completed songs; the unfinished song gives no points.");

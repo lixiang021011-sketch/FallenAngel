@@ -206,8 +206,10 @@ namespace FallenAngel.Core
             SongTime = Mathf.Max(0f, AudioManager.Instance.CurrentTime -
                 ((CurrentChart?.metadata.offset ?? 0f) + CalibrationSettings.OffsetSeconds));
 
-            // 曲终检测：真实音频播完，或时间超过谱面总时长（虚拟钟模式兜底）
-            if (AudioManager.Instance.HasAudioFinished ||
+            // 曲终检测：真实音频自然播完，或时间超过谱面总时长（虚拟钟模式兜底）。
+            // 切后台时不要把暂停的 BGM 当成曲终。
+            bool audioFinished = Application.isFocused && AudioManager.Instance.HasAudioFinished;
+            if (audioFinished ||
                 (CurrentChart != null && SongTime >= CurrentChart.GetTotalDuration()))
             {
                 EndGame();

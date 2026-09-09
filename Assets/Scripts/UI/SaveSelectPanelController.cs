@@ -213,7 +213,7 @@ namespace FallenAngel.UI
                 {
                     AudioManager.Instance?.PlayButtonClick();
                     selectedId = capturedId;
-                    session.SelectProfile(capturedId); // 含 growth.Recover（中断局按失败结算）
+                    session.SelectProfile(capturedId); // 只读档；PLAYING 中断结算改在进入游戏时
                     RefreshList();
                     RefreshButtons();
                 });

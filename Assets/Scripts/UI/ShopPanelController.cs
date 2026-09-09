@@ -27,6 +27,8 @@ namespace FallenAngel.UI
         private string confirmText;
         private Action confirmAction;
         private string promptText;           // 单按钮提示（资金不足等），不改变确认态
+        private string pendingBuyId;          // 购买确认中的装备；确认时读勾选状态
+        private bool useOptionalPurchase;
         private readonly Color card = DeepSeaTheme.Card;
         private readonly Color ink = DeepSeaTheme.Ink;
         private readonly Color accent = DeepSeaTheme.Accent;
@@ -84,6 +86,8 @@ namespace FallenAngel.UI
             {
                 panelRoot.SetActive(false);
                 confirmAction = null;
+                pendingBuyId = null;
+                useOptionalPurchase = false;
                 session.SetConfirmation(false);
                 return;
             }
@@ -115,14 +119,28 @@ namespace FallenAngel.UI
             AudioManager.Instance?.PlayButtonClick();
             if (panelRoot != null) panelRoot.SetActive(false);
             confirmAction = null;
+            pendingBuyId = null;
+            useOptionalPurchase = false;
             promptText = null;
             session?.SetConfirmation(false);
         }
 
         private void Ask(string text, Action action)
         {
+            pendingBuyId = null;
+            useOptionalPurchase = false;
             session.SetConfirmation(true);
             confirmText = text; confirmAction = action; dirty = true;
+        }
+
+        private void AskPurchase(string id)
+        {
+            pendingBuyId = id;
+            useOptionalPurchase = false;
+            session.SetConfirmation(true);
+            confirmText = null;
+            confirmAction = () => { };
+            dirty = true;
         }
 
         private void Render()
@@ -162,26 +180,18 @@ namespace FallenAngel.UI
                     bool affordable = session.Run != null && session.Run.runCash >= price;
                     Button(page, "ShopBuy_" + id, id + "\n" + price, x, y, 400, 170, () =>
                     {
-                        int quote = session.QuoteEquipmentPrice(id);
+                        int standing = session.QuoteEquipmentPrice(id, false);
+                        int optional = session.CanUseOptionalPurchaseDiscount()
+                            ? session.QuoteEquipmentPrice(id, true) : standing;
                         if (session.Run == null) return;
-                        // 先查现金：不足弹提示（单按钮），不进购买确认，留在商店页
-                        if (session.Run.runCash < quote)
+                        // 先查现金：常驻价与可选折扣都买不起才提示，不进购买确认
+                        if (session.Run.runCash < standing && session.Run.runCash < optional)
                         {
                             promptText = T("shopInsufficient");
                             dirty = true;
                             return;
                         }
-                        Ask(T("confirmPurchase", id, quote, session.Run.runCash, session.Run.runCash - quote), () =>
-                        {
-                            session.PurchaseEquipment(id);
-                            // 确认后仍可能失败（状态变化）：在面板内提示并清错，不跳错误页
-                            if (session.Error != null)
-                            {
-                                promptText = T("shopFailed");
-                                session.ClearError();
-                                dirty = true;
-                            }
-                        });
+                        AskPurchase(id);
                     }, affordable ? card : new Color(.14f, .17f, .22f));
                 }
             }
@@ -211,14 +221,68 @@ namespace FallenAngel.UI
 
         private void RenderConfirmation(RectTransform page)
         {
+            bool buying = !string.IsNullOrEmpty(pendingBuyId);
+            bool showOptional = buying && session.CanUseOptionalPurchaseDiscount();
             var modal = Box(page, "ConfirmationShade", 0, 0, 1000, 1760, new Color(0, 0, 0, .88f));
-            var box = Box(modal, "Confirmation", 75, 530, 850, 500, card);
-            Label(box, confirmText, 35, 40, 780, 260, 32);
-            Button(box, "Confirm", T("confirm"), 35, 350, 365, 90, () =>
+            var box = Box(modal, "Confirmation", 75, showOptional ? 460 : 530, 850, showOptional ? 620 : 500, card);
+
+            string text = confirmText;
+            if (buying && session.Run != null)
             {
+                int quote = session.QuoteEquipmentPrice(pendingBuyId, useOptionalPurchase);
+                int cash = session.Run.runCash;
+                text = T("confirmPurchase", pendingBuyId, quote, cash, cash - quote);
+            }
+            Label(box, text, 35, 40, 780, showOptional ? 220 : 260, 32);
+
+            if (showOptional)
+            {
+                int remain = session.OptionalPurchaseRemaining();
+                int withOpt = session.QuoteEquipmentPrice(pendingBuyId, true);
+                string mark = useOptionalPurchase ? "☑" : "☐";
+                Button(box, "OptionalPurchase", mark + "  " + T("optionalPurchase", remain, withOpt), 35, 280, 780, 80, () =>
+                {
+                    useOptionalPurchase = !useOptionalPurchase;
+                    dirty = true;
+                }, card);
+            }
+
+            float btnY = showOptional ? 400 : 350;
+            var confirmBtn = Button(box, "Confirm", T("confirm"), 35, btnY, 365, 90, () =>
+            {
+                if (buying)
+                {
+                    string id = pendingBuyId;
+                    bool opt = useOptionalPurchase;
+                    pendingBuyId = null;
+                    confirmAction = null;
+                    useOptionalPurchase = false;
+                    session.SetConfirmation(false);
+                    dirty = true;
+                    session.PurchaseEquipment(id, opt);
+                    if (session.Error != null)
+                    {
+                        promptText = T("shopFailed");
+                        session.ClearError();
+                        dirty = true;
+                    }
+                    return;
+                }
                 var action = confirmAction; confirmAction = null; session.SetConfirmation(false); dirty = true; action?.Invoke();
             });
-            Button(box, "Cancel", T("cancel"), 450, 350, 365, 90, () => { confirmAction = null; session.SetConfirmation(false); dirty = true; });
+            if (buying && session.Run != null)
+            {
+                int quote = session.QuoteEquipmentPrice(pendingBuyId, useOptionalPurchase);
+                confirmBtn.interactable = session.Run.runCash >= quote;
+            }
+            Button(box, "Cancel", T("cancel"), 450, btnY, 365, 90, () =>
+            {
+                confirmAction = null;
+                pendingBuyId = null;
+                useOptionalPurchase = false;
+                session.SetConfirmation(false);
+                dirty = true;
+            });
         }
 
         // ---- 渲染辅助 ----
