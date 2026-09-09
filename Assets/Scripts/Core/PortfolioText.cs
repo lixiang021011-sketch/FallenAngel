@@ -40,6 +40,8 @@
             Add("shopTitle", "商店 · 现金 {0}", "Shop · Cash {0}");
             Add("shopOpen", "商店", "Shop");
             Add("shopLeave", "不买了，走了", "Done shopping, leave");
+            Add("shopRefresh", "整批刷新（{0}）", "Refresh all ({0})");
+            Add("confirmRefresh", "确认整批刷新？\n剩余次数 {0} → {1}\n按商店权重重新抽取商品。", "Refresh all?\nUses {0} → {1}.\nRe-roll goods by shop weights.");
             Add("shopSoldOut", "商店商品已售罄", "Shop sold out");
             Add("confirmPurchase", "确认购买 {0}？\n价格 {1} · 余额 {2} → {3}\n购买后立即生效，本局不可退回。", "Buy {0}?\nPrice {1} · Cash {2} → {3}\nTakes effect immediately; no refund this run.");
             Add("begin", "开始一局", "Start run");

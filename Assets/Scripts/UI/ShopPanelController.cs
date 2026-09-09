@@ -132,7 +132,16 @@ namespace FallenAngel.UI
             page.anchorMin = page.anchorMax = new Vector2(.5f, .5f);
             page.pivot = new Vector2(.5f, .5f); page.anchoredPosition = Vector2.zero;
 
-            Label(page, T("shopTitle", session.Run.runCash), 20, 140, 960, 60, 34);
+            Label(page, T("shopTitle", session.Run.runCash), 20, 140, 600, 60, 34);
+
+            // 整批刷新：剩余预算 >0 才显示（E0/E1 开局发放；无变化不扣次数）
+            int budget = session.ShopRefreshBudget;
+            if (budget > 0)
+                Button(page, "ShopRefreshButton", T("shopRefresh", budget), 650, 140, 310, 60, () =>
+                {
+                    int b = session.ShopRefreshBudget;
+                    Ask(T("confirmRefresh", b, Math.Max(0, b - 1)), () => session.RefreshShop());
+                }, accent);
 
             var cands = session.Run.shopCandidates;
             if (cands == null || cands.Count == 0)

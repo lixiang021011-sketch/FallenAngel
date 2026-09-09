@@ -199,6 +199,12 @@ namespace FallenAngel.UI
             // 调试入口：商店/掉落接入前，用地图页可见按钮验证装备持有链路（逐件获取，打包不包含）
             Button(page, "DebugAcquireNext", "装备调试 +1件", 20, 410, 300, 52,
                 () => session.DebugAcquireNextEquipment(), new Color(.25f, .2f, .4f));
+            Button(page, "DebugRefreshBudget", "商店调试 +2刷新", 340, 410, 300, 52,
+                () => session.DebugGrantRefreshBudget(), new Color(.25f, .2f, .4f));
+            // 测试加速：跳过战斗按成功结算（仅在战斗房 READY 时出现）
+            if (run.phase == "READY")
+                Button(page, "DebugSkipBattle", "跳过战斗(计成功)", 660, 410, 320, 52,
+                    () => session.DebugSkipBattle(), new Color(.45f, .25f, .15f));
 #endif
             RenderMap(page);
         }

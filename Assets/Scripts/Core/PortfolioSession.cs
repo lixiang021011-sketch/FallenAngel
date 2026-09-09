@@ -302,6 +302,12 @@ namespace FallenAngel.Core
             });
             // 成功后自动回到地图（展示结算信息 2 秒 → 自动继续 → 路线延展动画）。
             // 失败/整局结束（FINISHED）不自动。
+            StartAutoContinueIfResult();
+        }
+
+        /// <summary>结算完成后启动自动继续协程（成功进 RESULT 才触发；失败/FINISHED 不触发）</summary>
+        private void StartAutoContinueIfResult()
+        {
             if (Error == null && Run != null && Run.phase == "RESULT")
             {
                 if (autoContinueCoroutine != null) StopCoroutine(autoContinueCoroutine);
@@ -313,9 +319,11 @@ namespace FallenAngel.Core
         private System.Collections.IEnumerator AutoContinueAfterDelay()
         {
             yield return new WaitForSecondsRealtime(AutoContinueDelay); // 演出时间用 unscaled（架构约定 §7）
-            // 期间玩家可能已手动继续/放弃/回菜单：仅当仍停在结算状态才自动
-            if (Run != null && Run.phase == "RESULT" && manager != null
-                && manager.CurrentState == GameState.Result)
+            // 期间玩家可能已手动继续/放弃/回菜单：仅当不处于演奏中才自动。
+            // 注意：跳过战斗的测试链路不经过游戏状态机（状态保持 Menu），不能要求必须是 Result。
+            bool busy = manager != null && (manager.CurrentState == GameState.Playing
+                || manager.CurrentState == GameState.Loading || manager.CurrentState == GameState.Paused);
+            if (Run != null && Run.phase == "RESULT" && !busy)
             {
                 Debug.Log("[PortfolioSession] 自动继续：回到地图");
                 Continue();
@@ -418,7 +426,58 @@ namespace FallenAngel.Core
             });
         }
 
+        /// <summary>本局整批刷新剩余次数（开局由 E0/E1 冻结发放）</summary>
+        public int ShopRefreshBudget => Run?.shopRefreshBudget ?? 0;
+
+        /// <summary>整批刷新（原子事务；无变化不扣次数）</summary>
+        public void RefreshShop()
+        {
+            if (Profile == null || Run == null || IsPerforming()) return;
+            Execute(() =>
+            {
+                growth.RefreshShop(Profile.profileId, Run.runId);
+                Refresh();
+            });
+        }
+
 #if UNITY_EDITOR
+        /// <summary>调试入口：验证刷新链路（正式发放需解锁 E0/E1 后开局冻结）</summary>
+        public void DebugGrantRefreshBudget()
+        {
+            if (Profile == null || Run == null) return;
+            Execute(() =>
+            {
+                growth.DebugGrantRefreshBudget(Profile.profileId, Run.runId, 2);
+                Refresh();
+            });
+        }
+#endif
+
+#if UNITY_EDITOR
+        /// <summary>测试用：跳过当前战斗——按成功结算（积分/现金照常），不实际播放。加快验收链路，打包不包含。</summary>
+        public void DebugSkipBattle()
+        {
+            if (Profile == null || Run == null || IsPerforming()) return;
+            Execute(() =>
+            {
+                if (Run.phase == "READY")
+                {
+                    growth.MarkPlaying(Profile.profileId, Run.runId);
+                    Refresh();
+                }
+                if (Run != null && Run.phase == "PLAYING")
+                {
+                    growth.CompleteSong(Profile.profileId, Run.runId, Run.completedSongs, true, 1000000, 1f);
+                    Refresh();
+                    StartAutoContinueIfResult(); // 与真实演奏同一条自动继续链路
+                }
+                else
+                {
+                    Debug.LogWarning("[PortfolioSession] 当前不可跳过战斗：phase=" + (Run?.phase ?? "null"));
+                }
+            });
+        }
+
         /// <summary>调试入口：无商店/掉落 UI 时验证持有链路——逐件获取下一件未持有的装备（E01→E02→…→E10）</summary>
         [ContextMenu("Debug: Acquire Next Equipment")]
         public void DebugAcquireNextEquipment()

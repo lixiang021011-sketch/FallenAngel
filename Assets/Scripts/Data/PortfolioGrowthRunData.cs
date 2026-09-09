@@ -30,5 +30,7 @@ namespace FallenAngel.Data
         public List<string> heldEquipmentIds = new List<string>();
         // 当前商店展示的候选装备（进店/刷新时生成；购买即售罄移除；随局快照持久化）
         public List<string> shopCandidates = new List<string>();
+        // 本局整批刷新预算（开局由 E0/E1 冻结发放；刷新无变化不扣；局终清空）
+        public int shopRefreshBudget;
     }
 }

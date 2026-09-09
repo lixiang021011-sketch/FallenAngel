@@ -56,9 +56,11 @@ namespace FallenAngel.Core
                 throw new InvalidOperationException("Invalid held equipment snapshot.");
             if (run.shopCandidates == null
                 || run.shopCandidates.Distinct().Count() != run.shopCandidates.Count
-                || run.shopCandidates.Count > PortfolioDefaults.ShopBaseCandidateCount
+                || run.shopCandidates.Count > PortfolioDefaults.ShopBaseCandidateCount + 1 // +1 = E10 候选加成
                 || run.shopCandidates.Any(id => !PortfolioConfig.EquipmentBase.Any(e => e.EquipmentId == id)))
                 throw new InvalidOperationException("Invalid shop candidate snapshot.");
+            if (run.shopRefreshBudget < 0 || run.shopRefreshBudget > 2)
+                throw new InvalidOperationException("Invalid shop refresh budget snapshot.");
             return run;
         }
 
@@ -91,9 +93,24 @@ namespace FallenAngel.Core
                 run.currentNodeId = PortfolioConfig.MapNodes.Single(n => n.NodeType == "START").NodeId;
                 run.visitedNodeIds.Add(run.currentNodeId);
             }
+            // 开局冻结：先应用 E1（加 E0 系数）再按 E0 发放刷新预算（guide：不能依行序执行）
+            run.shopRefreshBudget = ComputeRefreshBudget(p);
             p.activeRunId = run.runId;
             Save(p, run);
             return run;
+        }
+
+        /// <summary>开局刷新预算：E0 发放（coefficient 次）+ E1 给 E0 系数加算。无 E0 则为 0。</summary>
+        private int ComputeRefreshBudget(PortfolioProfileData p)
+        {
+            var effects = talents.GetRegisteredEffects(p.profileId);
+            var e0 = effects.FirstOrDefault(e => e.Handler == "grant_refresh_budget");
+            if (e0 == null) return 0;
+            int budget = Math.Max(0, (int)Math.Round(e0.Coefficient));
+            var e1 = effects.FirstOrDefault(e => e.Handler == "modify_coefficient"
+                && e.TargetEffectId == e0.EffectId);
+            if (e1 != null) budget += Math.Max(0, (int)Math.Round(e1.Coefficient)); // ADD_PARAMETER：只加系数
+            return budget;
         }
 
         /// <summary>GO之前先持久化演奏标记；写入失败时调用方不得播放。</summary>
@@ -170,14 +187,14 @@ namespace FallenAngel.Core
             Save(p, r);
         }
 
-        /// <summary>商店候选抽取：ShopCandidates 权重无放回、排除已持有，至多基础候选数；合法池不足时少量展示，不复制商品。</summary>
+        /// <summary>商店候选抽取：ShopCandidates 权重无放回、排除已持有，目标数=基础候选数+有效 ADD_COUNT 之和（E10）；合法池不足时少量展示，不复制商品。</summary>
         private static List<string> DrawShopCandidates(PortfolioGrowthRunData r)
         {
             var pool = PortfolioConfig.ShopCandidates
                 .Where(c => c.Enabled && !r.heldEquipmentIds.Contains(c.EquipmentId))
                 .ToList();
             var result = new List<string>();
-            int target = Math.Min(PortfolioDefaults.ShopBaseCandidateCount, pool.Count);
+            int target = Math.Min(ShopCandidateTarget(r), pool.Count);
             for (int i = 0; i < target; i++)
             {
                 int total = pool.Sum(c => c.Weight);
@@ -194,6 +211,21 @@ namespace FallenAngel.Core
                 pool.Remove(picked);
             }
             return result;
+        }
+
+        /// <summary>候选目标数 = 基础候选数 + 已持有装备的 ADD_COUNT 效果之和（E10 每次生成时+1，买到后下次生成生效）</summary>
+        private static int ShopCandidateTarget(PortfolioGrowthRunData r)
+        {
+            int extra = 0;
+            foreach (string held in r.heldEquipmentIds)
+            {
+                var eq = PortfolioConfig.EquipmentBase.SingleOrDefault(e => e.EquipmentId == held);
+                if (eq == null) continue;
+                var eff = PortfolioConfig.EquipmentEffects.SingleOrDefault(e => e.EffectId == eq.EffectId);
+                if (eff != null && eff.Enabled && eff.Handler == "extra_shop_candidate" && eff.StackRule == "ADD_COUNT")
+                    extra += Math.Max(0, (int)Math.Round(eff.Coefficient));
+            }
+            return PortfolioDefaults.ShopBaseCandidateCount + extra;
         }
 
         /// <summary>离开商店或空占位房；暂无交易时不额外发放资源。</summary>
@@ -277,6 +309,43 @@ namespace FallenAngel.Core
             Debug.Log($"[PortfolioGrowthService] Purchased {equipmentId} at {price}; cash {r.runCash}");
         }
 
+        /// <summary>
+        /// 整批刷新：按商店权重无放回重抽（排除持有、优先换新）。
+        /// 完全不能变化且不能补货时不扣次数（guide 约定），也不改变任何状态。
+        /// </summary>
+        public void RefreshShop(string profileId, string runId)
+        {
+            var p = talents.ReadProfile(profileId);
+            var r = Require(p, runId);
+            if (!r.useMap || r.phase != "ROOM") throw new InvalidOperationException("Not in a room.");
+            var node = PortfolioConfig.MapNodes.Single(n => n.NodeId == r.currentNodeId);
+            if (node.NodeType != "SHOP") throw new InvalidOperationException("Not in a shop.");
+            if (r.shopRefreshBudget <= 0) throw new InvalidOperationException("No refresh budget.");
+            var fresh = DrawShopCandidates(r);
+            bool unchanged = fresh.Count == r.shopCandidates.Count
+                && fresh.All(id => r.shopCandidates.Contains(id));
+            if (unchanged)
+            {
+                Debug.Log("[PortfolioGrowthService] 刷新无变化，不扣次数");
+                return;
+            }
+            r.shopRefreshBudget--;
+            r.shopCandidates = fresh;
+            Save(p, r);
+            Debug.Log($"[PortfolioGrowthService] Shop refreshed; budget {r.shopRefreshBudget}");
+        }
+
+#if UNITY_EDITOR
+        /// <summary>调试入口：验证刷新链路时临时发放刷新预算（打包不包含；上限 2 与正式一致）</summary>
+        public void DebugGrantRefreshBudget(string profileId, string runId, int amount)
+        {
+            var p = talents.ReadProfile(profileId);
+            var r = Require(p, runId);
+            r.shopRefreshBudget = Mathf.Clamp(r.shopRefreshBudget + amount, 0, 2);
+            Save(p, r);
+        }
+#endif
+
         /// <summary>放弃本局时保留已完成关卡积分；结束后重复调用无收益。</summary>
         public PortfolioGrowthRunData Abandon(string profileId, string runId)
         {
@@ -318,6 +387,7 @@ namespace FallenAngel.Core
             r.runCash = 0;
             r.heldEquipmentIds.Clear(); // 局终清空（装备是局内资源，不跨局）
             r.shopCandidates.Clear();   // 商店状态同局内资源
+            r.shopRefreshBudget = 0;
         }
 
         private void Save(PortfolioProfileData p, PortfolioGrowthRunData r)
