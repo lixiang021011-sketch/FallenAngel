@@ -23,6 +23,7 @@ namespace FallenAngel.UI
         [SerializeField] private SaveSelectPanelController saveSelectPanelController;
         [SerializeField] private TalentPanelController talentPanelController; // 交给 PortfolioPanelController（地图页天赋入口）
         [SerializeField] private EquipmentPanelController equipmentPanelController; // 交给 PortfolioPanelController（地图页背包入口）
+        [SerializeField] private ShopPanelController shopPanelController; // 交给 PortfolioPanelController（地图页商店重开按钮）
         [Header("新游戏覆盖确认弹窗")]
         [SerializeField] private GameObject newGameConfirmPanel;
         [SerializeField] private Button newGameConfirmButton;
@@ -38,13 +39,15 @@ namespace FallenAngel.UI
         {
             if (GetComponent<PortfolioSession>() == null) gameObject.AddComponent<PortfolioSession>();
             if (GetComponent<PortfolioPanelController>() == null) gameObject.AddComponent<PortfolioPanelController>();
-            // 地图页"天赋"/"装备"入口需要面板引用（SceneBuilder 注入到本组件，运行时转交）
+            // 地图页"天赋"/"装备"/"商店"入口需要面板引用（SceneBuilder 注入到本组件，运行时转交）
             if (GetComponent<PortfolioPanelController>() != null)
             {
                 if (talentPanelController != null)
                     GetComponent<PortfolioPanelController>().TalentPanel = talentPanelController;
                 if (equipmentPanelController != null)
                     GetComponent<PortfolioPanelController>().EquipmentPanel = equipmentPanelController;
+                if (shopPanelController != null)
+                    GetComponent<PortfolioPanelController>().ShopPanel = shopPanelController;
             }
             // 文案回退统一注册（幂等，JSON 优先），防其他组件注册时序问题
             PortfolioText.Register();

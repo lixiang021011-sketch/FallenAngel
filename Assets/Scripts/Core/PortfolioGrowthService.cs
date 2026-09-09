@@ -54,6 +54,11 @@ namespace FallenAngel.Core
                 || run.heldEquipmentIds.Count > PortfolioDefaults.EquipmentCapacity
                 || run.heldEquipmentIds.Any(id => !PortfolioConfig.EquipmentBase.Any(e => e.EquipmentId == id)))
                 throw new InvalidOperationException("Invalid held equipment snapshot.");
+            if (run.shopCandidates == null
+                || run.shopCandidates.Distinct().Count() != run.shopCandidates.Count
+                || run.shopCandidates.Count > PortfolioDefaults.ShopBaseCandidateCount
+                || run.shopCandidates.Any(id => !PortfolioConfig.EquipmentBase.Any(e => e.EquipmentId == id)))
+                throw new InvalidOperationException("Invalid shop candidate snapshot.");
             return run;
         }
 
@@ -161,7 +166,34 @@ namespace FallenAngel.Core
                 r.phase = "READY";
             }
             else r.phase = "ROOM";
+            if (node.NodeType == "SHOP") r.shopCandidates = DrawShopCandidates(r); // 首次进店生成候选
             Save(p, r);
+        }
+
+        /// <summary>商店候选抽取：ShopCandidates 权重无放回、排除已持有，至多基础候选数；合法池不足时少量展示，不复制商品。</summary>
+        private static List<string> DrawShopCandidates(PortfolioGrowthRunData r)
+        {
+            var pool = PortfolioConfig.ShopCandidates
+                .Where(c => c.Enabled && !r.heldEquipmentIds.Contains(c.EquipmentId))
+                .ToList();
+            var result = new List<string>();
+            int target = Math.Min(PortfolioDefaults.ShopBaseCandidateCount, pool.Count);
+            for (int i = 0; i < target; i++)
+            {
+                int total = pool.Sum(c => c.Weight);
+                if (total <= 0) break;
+                int roll = UnityEngine.Random.Range(0, total);
+                ShopCandidatesRow picked = null;
+                foreach (var c in pool)
+                {
+                    roll -= c.Weight;
+                    if (roll < 0) { picked = c; break; }
+                }
+                if (picked == null) break;
+                result.Add(picked.EquipmentId);
+                pool.Remove(picked);
+            }
+            return result;
         }
 
         /// <summary>离开商店或空占位房；暂无交易时不额外发放资源。</summary>
@@ -192,6 +224,57 @@ namespace FallenAngel.Core
             r.heldEquipmentIds.Add(equipmentId);
             Save(p, r);
             Debug.Log($"[PortfolioGrowthService] Acquired equipment {equipmentId} ({r.heldEquipmentIds.Count}/{PortfolioDefaults.EquipmentCapacity})");
+        }
+
+        /// <summary>
+        /// 购买报价：常驻折扣取最大值——天赋 D1(10%)与持有装备 E07(15%)；
+        /// 买入 E07 自身不享受其折扣（交易前状态报价）。K1 为玩家可选优惠，不在自动报价内。
+        /// </summary>
+        public int QuotePrice(PortfolioProfileData p, PortfolioGrowthRunData r, string equipmentId)
+        {
+            var item = PortfolioConfig.EquipmentBase.Single(e => e.EquipmentId == equipmentId);
+            float discount = 0f;
+            // 天赋常驻折扣（FX_D1）
+            foreach (var fx in talents.GetRegisteredEffects(p.profileId))
+                if (fx.Handler == "purchase_discount")
+                    discount = Mathf.Max(discount, (float)fx.Coefficient);
+            // 持有装备常驻折扣（EQ_E07）；买入 E07 自身时排除
+            foreach (string held in r.heldEquipmentIds)
+            {
+                var eq = PortfolioConfig.EquipmentBase.SingleOrDefault(e => e.EquipmentId == held);
+                if (eq == null) continue;
+                var eff = PortfolioConfig.EquipmentEffects.SingleOrDefault(e => e.EffectId == eq.EffectId);
+                if (eff != null && eff.Enabled && eff.Handler == "purchase_discount" && held != equipmentId)
+                    discount = Mathf.Max(discount, (float)eff.Coefficient);
+            }
+            return Mathf.FloorToInt(item.BasePrice * (1f - discount));
+        }
+
+        /// <summary>
+        /// 商店购买：ROOM+商店节点+候选内+非重复+容量+现金一次校验后，扣款、获得、候选售罄一次提交。
+        /// 满容量/现金不足不扣款（guide：禁止购买不扣款）。
+        /// </summary>
+        public void PurchaseEquipment(string profileId, string runId, string equipmentId)
+        {
+            var p = talents.ReadProfile(profileId);
+            var r = Require(p, runId);
+            if (!r.useMap || r.phase != "ROOM") throw new InvalidOperationException("Not in a room.");
+            var node = PortfolioConfig.MapNodes.Single(n => n.NodeId == r.currentNodeId);
+            if (node.NodeType != "SHOP") throw new InvalidOperationException("Not in a shop.");
+            if (!r.shopCandidates.Contains(equipmentId)) throw new InvalidOperationException("Item not in shop.");
+            var item = PortfolioConfig.EquipmentBase.SingleOrDefault(e => e.EquipmentId == equipmentId && e.Enabled);
+            if (item == null) throw new InvalidOperationException("Unknown or disabled equipment.");
+            if (item.AllowDuplicate) throw new InvalidOperationException("Duplicate equipment is not supported in this version.");
+            if (r.heldEquipmentIds.Contains(equipmentId)) throw new InvalidOperationException("Equipment already held.");
+            if (r.heldEquipmentIds.Count >= PortfolioDefaults.EquipmentCapacity)
+                throw new InvalidOperationException(Loc.T("portfolio.equipFull"));
+            int price = QuotePrice(p, r, equipmentId);
+            if (r.runCash < price) throw new InvalidOperationException(Loc.T("portfolio.cashShort"));
+            r.runCash -= price;
+            r.heldEquipmentIds.Add(equipmentId);
+            r.shopCandidates.Remove(equipmentId); // 售罄
+            Save(p, r);
+            Debug.Log($"[PortfolioGrowthService] Purchased {equipmentId} at {price}; cash {r.runCash}");
         }
 
         /// <summary>放弃本局时保留已完成关卡积分；结束后重复调用无收益。</summary>
@@ -234,6 +317,7 @@ namespace FallenAngel.Core
             p.activeRunId = null;
             r.runCash = 0;
             r.heldEquipmentIds.Clear(); // 局终清空（装备是局内资源，不跨局）
+            r.shopCandidates.Clear();   // 商店状态同局内资源
         }
 
         private void Save(PortfolioProfileData p, PortfolioGrowthRunData r)

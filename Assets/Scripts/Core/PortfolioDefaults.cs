@@ -8,5 +8,8 @@ namespace FallenAngel.Core
 
         /// <summary>局内装备持有上限（equipment_base_v3 约定：最多 20 件，满容量停掉落禁购买）</summary>
         public const int EquipmentCapacity = 20;
+
+        /// <summary>商店每次生成候选的基础数量（E10 每件+1；合法池不足时少量展示，不复制商品）</summary>
+        public const int ShopBaseCandidateCount = 4;
     }
 }

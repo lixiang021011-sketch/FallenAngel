@@ -28,5 +28,7 @@ namespace FallenAngel.Data
         public int lastCashReward;
         // 本局已持有装备（随局快照持久化；局终清空；同款不重复，容量上限见 PortfolioDefaults.EquipmentCapacity）
         public List<string> heldEquipmentIds = new List<string>();
+        // 当前商店展示的候选装备（进店/刷新时生成；购买即售罄移除；随局快照持久化）
+        public List<string> shopCandidates = new List<string>();
     }
 }

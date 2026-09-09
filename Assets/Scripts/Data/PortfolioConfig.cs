@@ -258,7 +258,7 @@ namespace FallenAngel.Data
     /// <summary>全部12张表的只读构建快照；空值与0/false保持不同。</summary>
     public static class PortfolioConfig
     {
-        public const string ManifestSha256 = "c8c3f8a0dfa62a3c931e5c3dd30da6a3b4e158a651383c96ccb966a635096313";
+        public const string ManifestSha256 = "385f2df497805e62073fe54a6c75bb34ac5da470450c5ba34b4559bde8719378";
         public const string SchemaVersion = "3.0";
         public static ReadOnlyCollection<EquipmentBaseRow> EquipmentBase { get; } =
             System.Array.AsReadOnly(new EquipmentBaseRow[]
@@ -338,7 +338,7 @@ namespace FallenAngel.Data
         public static ReadOnlyCollection<ChartBindingsRow> ChartBindings { get; } =
             System.Array.AsReadOnly(new ChartBindingsRow[]
         {
-            new ChartBindingsRow("CHART_DRUMS_PLACEHOLDER", "demo_drums", true)
+            new ChartBindingsRow("CHART_DRUMS_PLACEHOLDER", "\u9178\u6a59\u8272\u4fe1\u7b3a_Easy", true)
         });
         public static ReadOnlyCollection<DropRulesRow> DropRules { get; } =
             System.Array.AsReadOnly(new DropRulesRow[]

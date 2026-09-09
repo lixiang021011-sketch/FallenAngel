@@ -282,6 +282,9 @@ namespace FallenAngel.Core
             // 装备背包面板（嵌套 Canvas 排序 252，盖过天赋面板/地图页；入口是地图页"装备 n/20"按钮）
             CreateEquipmentPanel(canvasRect, starter);
 
+            // 商店弹窗（嵌套 Canvas 排序 253；进店自动弹出，地图页"商店"按钮重开）
+            CreateShopPanel(canvasRect, starter);
+
             // 新游戏覆盖确认弹窗（最后建，盖在最上层；按钮接线在 GameStarter）
             CreateNewGameConfirmPanel(canvasRect, starter);
 
@@ -1003,6 +1006,51 @@ namespace FallenAngel.Core
 
             // 注入 GameStarter：运行时转交给 PortfolioPanelController（地图页"装备 n/20"按钮）
             SetPrivateField(starter, "equipmentPanelController", controller);
+        }
+
+        /// <summary>
+        /// 商店弹窗：SceneBuilder 建骨架（全屏背景 + 标题 + 右上角 X + 空内容容器），
+        /// 候选网格/购买确认由 ShopPanelController 运行时渲染。嵌套 Canvas 排序 253（盖过背包 252）。
+        /// </summary>
+        private static void CreateShopPanel(RectTransform canvasRect, GameStarter starter)
+        {
+            GameObject panel = new GameObject("ShopPanel", typeof(RectTransform), typeof(Image));
+            panel.transform.SetParent(canvasRect, false);
+            RectTransform rt = (RectTransform)panel.transform;
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            panel.GetComponent<Image>().color = new Color(0, 0, 0, 0.85f);
+            Canvas panelCanvas = panel.AddComponent<Canvas>();
+            panelCanvas.overrideSorting = true;
+            panelCanvas.sortingOrder = 253;
+            panel.AddComponent<GraphicRaycaster>();
+
+            TextMeshProUGUI title = CreateText("ShopTitle", panel.transform,
+                new Vector2(0.5f, 0.93f), new Vector2(0.5f, 0.93f), Vector2.zero, new Vector2(700, 100),
+                "shopPanel.title", 56, TextAlignmentOptions.Center);
+            title.fontStyle = FontStyles.Bold;
+
+            GameObject closeBtn = CreateButton("ShopCloseButton", panel.transform,
+                new Vector2(0.93f, 0.93f), new Vector2(170, 80), "shopPanel.close", 32);
+
+            GameObject content = new GameObject("ShopContent", typeof(RectTransform));
+            content.transform.SetParent(panel.transform, false);
+            RectTransform crt = (RectTransform)content.transform;
+            crt.anchorMin = Vector2.zero;
+            crt.anchorMax = Vector2.one;
+            crt.offsetMin = Vector2.zero;
+            crt.offsetMax = Vector2.zero;
+
+            ShopPanelController controller = panel.AddComponent<ShopPanelController>();
+            SetPrivateField(controller, "panelRoot", panel);
+            SetPrivateField(controller, "contentRoot", crt);
+            SetPrivateField(controller, "closeButton", closeBtn.GetComponent<Button>());
+            panel.SetActive(false);
+
+            // 注入 GameStarter：运行时转交给 PortfolioPanelController（地图页"商店"重开按钮）
+            SetPrivateField(starter, "shopPanelController", controller);
         }
 
         /// <summary>

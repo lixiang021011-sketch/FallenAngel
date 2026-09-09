@@ -17,6 +17,9 @@ namespace FallenAngel.UI
         /// <summary>装备背包面板引用（GameStarter.Awake 注入；地图页"装备 n/20"按钮打开它）</summary>
         public EquipmentPanelController EquipmentPanel { get; set; }
 
+        /// <summary>商店弹窗引用（GameStarter.Awake 注入；地图页"商店"按钮重开它）</summary>
+        public ShopPanelController ShopPanel { get; set; }
+
         private PortfolioSession session;
         private GameObject canvasObject;
         private RectTransform root;
@@ -168,7 +171,7 @@ namespace FallenAngel.UI
             if (TalentPanel != null)
                 Button(page, "OpenTalentsFromMap", T("talentsPage"), 700, 155, 280, 65, () => TalentPanel.Open(), card);
             // 返回主菜单：局进度保留（含 growth.Run 快照），下次经"选择存档"进入继续
-            Button(page, "BackToMenuFromMap", T("back"), 720, 236, 260, 68, session.Close, card);
+            Button(page, "BackToMenuFromMap", T("back"), session.InShop ? 830 : 720, 236, session.InShop ? 150 : 260, 68, session.Close, card);
             if (run == null || run.phase == "FINISHED")
             {
                 Button(page, "BeginGrowthRun", T("begin"), 20, 236, 640, 68, session.Begin);
@@ -180,10 +183,14 @@ namespace FallenAngel.UI
             }
             else
             {
-                var next = Button(page, "ContinueGrowth", T(run.phase == "MAP" ? "chooseRoom" : run.phase == "ROOM" ? "leaveRoom" : run.phase == "READY" ? "startSong" : "continue"), 20, 236, 300, 68,
+                // 商店房间：主操作行额外放"商店"重开按钮（弹窗由 ShopPanelController 管理）
+                bool inShop = session.InShop;
+                var next = Button(page, "ContinueGrowth", T(run.phase == "MAP" ? "chooseRoom" : run.phase == "ROOM" ? "leaveRoom" : run.phase == "READY" ? "startSong" : "continue"), 20, 236, inShop ? 250 : 300, 68,
                     run.phase == "RESULT" ? (Action)session.Continue : run.phase == "ROOM" ? session.LeaveRoom : session.StartSong);
                 next.interactable = run.phase != "MAP";
-                Button(page, "AbandonGrowth", T("abandon"), 350, 236, 310, 68, Abandon, card);
+                if (inShop && ShopPanel != null)
+                    Button(page, "OpenShopPanel", T("shopOpen"), 290, 236, 250, 68, () => ShopPanel.Open(), card);
+                Button(page, "AbandonGrowth", T("abandon"), inShop ? 560 : 350, 236, inShop ? 250 : 310, 68, Abandon, card);
                 Label(page, T("pending", run.completedSongs, run.stageIds.Count, run.earnedPoints), 20, 330, 960, 48, 27);
                 Label(page, run.phase == "MAP" ? T("mapCash", run.runCash) : run.phase == "ROOM" ? T("room." + PortfolioConfig.MapNodes.Single(n => n.NodeId == run.currentNodeId).NodeType) : run.phase == "RESULT" ? T("songResult", run.lastSongPoints)
                     : T(session.FailureLimitEnabled ? "nextReward" : "nextRewardUnlimited", run.growthRewards[run.completedSongs], run.failureLimit), 20, 380, 960, 56, 24);
@@ -201,6 +208,9 @@ namespace FallenAngel.UI
             var r = session.Run;
             const float viewportHeight = 1020;
             float contentHeight = 300 + PortfolioConfig.MapNodes.Max(n => n.LayoutY) * 360;
+            // 上下文含 phase：回到 MAP（战斗结算/离开房间）即视为"新抵达"，触发路线延展动画与节点点亮
+            string context = session.Profile.profileId + "/" + (r == null ? "preview" : r.runId + "/" + r.currentNodeId + "/" + r.phase);
+            bool freshArrival = r != null && r.useMap && r.phase == "MAP" && mapScrollContext != context;
             var viewport = Box(page, "RunMap", 20, 470, 960, viewportHeight, card);
             viewport.gameObject.AddComponent<RectMask2D>();
             var board = Box(viewport, "MapContent", 0, 0, 960, contentHeight);
@@ -217,12 +227,15 @@ namespace FallenAngel.UI
             {
                 var from = PortfolioConfig.MapNodes.Single(n => n.NodeId == edge.FromNodeId);
                 var to = PortfolioConfig.MapNodes.Single(n => n.NodeId == edge.ToNodeId);
-                Vector2 a = position(from) + new Vector2(120, 96), b = position(to) + new Vector2(120, 0);
+                Vector2 a = position(from) + new Vector2(120, 130), b = position(to) + new Vector2(120, 0);
                 bool travelled = r != null && r.useMap && r.visitedNodeIds.Contains(from.NodeId) && r.visitedNodeIds.Contains(to.NodeId);
+                bool newlyReachable = freshArrival && r != null && r.useMap && edge.FromNodeId == r.currentNodeId && !travelled;
                 var color = edge.RoutePrice > 0 ? new Color(.95f, .64f, .27f) : travelled ? new Color(.35f, .8f, .68f) : new Color(.49f, .57f, .65f);
                 var line = Box(board, "MapEdge_" + edge.EdgeId, 0, 0, 960, contentHeight);
                 var path = line.gameObject.AddComponent<PortfolioMapPathGraphic>();
-                path.SetPath(new Vector2(a.x, -a.y), new Vector2(b.x, -b.y), color);
+                // 新抵达时，从当前房间向下一步房间的连线做延展动画（箭头在画完时出现）
+                if (newlyReachable) path.AnimatePath(new Vector2(a.x, -a.y), new Vector2(b.x, -b.y), color, 0.45f);
+                else path.SetPath(new Vector2(a.x, -a.y), new Vector2(b.x, -b.y), color);
                 if (edge.RoutePrice > 0)
                 {
                     var price = Label(board, T("routeFee", edge.RoutePrice), (a.x+b.x)/2 + 22, (a.y+b.y)/2-18, 180, 50, 23);
@@ -236,17 +249,44 @@ namespace FallenAngel.UI
                 bool visited = r != null && r.useMap && r.visitedNodeIds.Contains(n.NodeId);
                 bool reachable = edge != null && r.phase == "MAP" && !visited;
                 bool current = r != null && r.useMap && r.currentNodeId == n.NodeId;
+                // 当前房间可直接行动：READY 点击开曲 / 商店点击开商店 / 空房点击离开
+                bool actionable = current && r != null && r.useMap && r.phase != "MAP";
+                // 事件已结束（商店/空房离开后、起点）：房间置灰，显示"已通过"
+                bool consumed = current && r != null && r.useMap && r.phase == "MAP";
                 string label = T("node." + n.NodeType) + "  " + n.NodeId;
-                if (current) label += "\n" + T("currentRoom");
+                string chartName = ChartNameForNode(n);
+                if (!string.IsNullOrEmpty(chartName)) label += "\n" + chartName;
+                if (consumed) label += "\n" + T("mapVisited");
+                else if (current)
+                {
+                    label += "\n" + T("currentRoom");
+                    if (r.phase == "READY") label += "\n" + T("tapToStart");
+                    else if (r.phase == "ROOM" && n.NodeType == "SHOP") label += "\n" + T("tapToShop");
+                    else if (r.phase == "ROOM" && n.NodeType == "EMPTY") label += "\n" + T("tapToLeave");
+                }
                 else if (visited) label += "\n" + T("mapVisited");
                 else if (reachable) label += "\n" + T(r.runCash >= edge.RoutePrice ? "mapAvailable" : "cashShort");
-                var button = Button(board, "Room_" + n.NodeId, label, pos.x, pos.y, 240, 96, () =>
+                var button = Button(board, "Room_" + n.NodeId, label, pos.x, pos.y, 240, 130, () =>
                 {
-                    if (!reachable) return;
-                    if (edge.RoutePrice > 0) Ask(T("confirmRoute", n.NodeId, edge.RoutePrice, r.runCash, r.runCash-edge.RoutePrice), () => session.EnterRoom(n.NodeId));
-                    else session.EnterRoom(n.NodeId);
-                }, current ? owned : reachable ? accent : new Color(.14f, .17f, .22f));
-                button.interactable = reachable && r.runCash >= edge.RoutePrice;
+                    if (reachable)
+                    {
+                        if (edge.RoutePrice > 0) Ask(T("confirmRoute", n.NodeId, edge.RoutePrice, r.runCash, r.runCash-edge.RoutePrice), () => session.EnterRoom(n.NodeId));
+                        else session.EnterRoom(n.NodeId);
+                        return;
+                    }
+                    if (current && r != null && r.useMap)
+                    {
+                        if (r.phase == "READY") session.StartSong();
+                        else if (r.phase == "ROOM")
+                        {
+                            if (n.NodeType == "SHOP" && ShopPanel != null) ShopPanel.Open();
+                            else if (n.NodeType == "EMPTY") session.LeaveRoom();
+                        }
+                    }
+                }, consumed ? new Color(.14f, .17f, .22f) : current ? (actionable ? accent : owned) : reachable ? accent : new Color(.14f, .17f, .22f));
+                button.interactable = (reachable && r.runCash >= edge.RoutePrice) || actionable;
+                button.GetComponentInChildren<TextMeshProUGUI>().fontSize = 20; // 谱面名+行动提示，缩小字号防裁剪
+                if (reachable && freshArrival) StartCoroutine(PulseNode(button.gameObject)); // 点亮下一步房间
             }
             string hint = r != null && !r.useMap && r.phase != "FINISHED" ? T("legacyRun") : T("mapLegend");
             Label(page, T("mapScrollHint"), 20, 1505, 610, 45, 24);
@@ -259,9 +299,34 @@ namespace FallenAngel.UI
                 board.anchoredPosition = new Vector2(0, Mathf.Clamp(position(node).y - 180, 0, contentHeight - viewportHeight));
             };
             Button(page, "FocusCurrentRoom", T("mapFocus"), 660, 1500, 320, 55, focus, card);
-            string context = session.Profile.profileId + "/" + (r == null ? "preview" : r.runId + "/" + r.currentNodeId);
             if (mapScrollContext != context) { mapScrollContext = context; focus(); }
             else board.anchoredPosition = new Vector2(0, Mathf.Clamp(mapScrollY, 0, contentHeight - viewportHeight));
+        }
+
+        /// <summary>节点点亮脉动：新抵达时下一步房间缩放呼吸一次（重绘销毁时协程随之终止）</summary>
+        private System.Collections.IEnumerator PulseNode(GameObject go)
+        {
+            RectTransform rt = go.GetComponent<RectTransform>();
+            const float duration = 0.5f;
+            float t = 0f;
+            while (t < duration && rt != null)
+            {
+                t += Time.unscaledDeltaTime;
+                float s = 1f + 0.12f * Mathf.Sin(Mathf.Clamp01(t / duration) * Mathf.PI);
+                rt.localScale = new Vector3(s, s, 1f);
+                yield return null;
+            }
+            if (rt != null) rt.localScale = Vector3.one;
+        }
+
+        /// <summary>节点 → 关卡 → 谱面资源名（非关卡节点返回 null）</summary>
+        private static string ChartNameForNode(MapNodesRow n)
+        {
+            if (string.IsNullOrEmpty(n.StageId)) return null;
+            var stage = PortfolioConfig.Stages.FirstOrDefault(s => s.StageId == n.StageId);
+            if (stage == null) return null;
+            var binding = PortfolioConfig.ChartBindings.FirstOrDefault(b => b.ChartId == stage.ChartId);
+            return binding == null ? stage.ChartId : binding.ResourceName;
         }
 
         private void RenderConfirmation(RectTransform page)

@@ -21,7 +21,7 @@
             Add("node.FINAL", "终点战斗", "Final battle");
             Add("node.SHOP", "商店", "Shop");
             Add("node.EMPTY", "空占位房", "Empty room");
-            Add("room.SHOP", "已进入商店。交易尚未接入，可离开继续前进。", "Shop reached. Trading is not connected yet; leave to continue.");
+            Add("room.SHOP", "已进入商店。点击「商店」按钮查看商品。", "Shop reached. Use the Shop button to browse.");
             Add("room.EMPTY", "这是一间空房，目前没有事件。", "An empty room. No event here yet.");
             Add("mapLegend", "亮色：可进入 · 绿色：当前位置 · 橙色连线：付费\n每个分叉都有免费出口。战斗仍共用占位鼓谱。", "Bright: reachable · Green: current · Orange edge: paid\nEvery fork has a free exit. Battles share the placeholder chart.");
             Add("legacyRun", "此存档仍在旧版线性局中；结束本局后，新一局使用分叉地图。", "This profile has a legacy linear run. The next run uses the branching map.");
@@ -36,6 +36,12 @@
             Add("back", "返回主菜单", "Main menu");
             Add("balance", "{0}  ·  成长积分 {1}", "{0}  ·  Growth points {1}");
             Add("equipment", "装备 {0}/{1}", "Equipment {0}/{1}");
+            Add("equipFull", "装备已满，无法购买。", "Equipment is full; cannot purchase.");
+            Add("shopTitle", "商店 · 现金 {0}", "Shop · Cash {0}");
+            Add("shopOpen", "商店", "Shop");
+            Add("shopLeave", "不买了，走了", "Done shopping, leave");
+            Add("shopSoldOut", "商店商品已售罄", "Shop sold out");
+            Add("confirmPurchase", "确认购买 {0}？\n价格 {1} · 余额 {2} → {3}\n购买后立即生效，本局不可退回。", "Buy {0}?\nPrice {1} · Cash {2} → {3}\nTakes effect immediately; no refund this run.");
             Add("begin", "开始一局", "Start run");
             Add("play", "开始第 {0} / {1} 次演奏", "Play song {0} / {1}");
             Add("continue", "继续游戏", "Continue run");
@@ -101,6 +107,9 @@
             Add("effect.FX_K1", "每局可选{3}次购买减免{0}；成功购买才消耗，与其他折扣取最大值。", "Optionally use a {0} purchase discount {3} time(s) per run. Consume only on successful purchase; best discount wins.");
             Add("mapScrollHint", "上下拖动 / 滚轮浏览 · 路线向下推进", "Drag or scroll vertically · Progress downward");
             Add("mapFocus", "回到当前位置", "Find current room");
+            Add("tapToStart", "点击开始演奏", "Tap to start");
+            Add("tapToShop", "点击进入商店", "Tap to open shop");
+            Add("tapToLeave", "点击离开", "Tap to leave");
             Add("mapVisited", "已通过", "Visited");
             Add("mapAvailable", "可前往", "Available");
             Add("effect.FX_K2", "成功完成付费挑战后，返还实际支付路费的{0}。", "After a successful paid challenge, refund {0} of the route fee actually paid.");
@@ -135,6 +144,10 @@
             // 天赋面板文案（talentPanel.* 域，回退注册）
             Loc.AddFallback("talentPanel.title", "永久天赋", "Permanent talents");
             Loc.AddFallback("talentPanel.close", "✕", "✕");
+
+            // 商店弹窗文案（shopPanel.* 域，回退注册）
+            Loc.AddFallback("shopPanel.title", "商店", "Shop");
+            Loc.AddFallback("shopPanel.close", "✕", "✕");
 
             // 装备背包面板文案（equipmentPanel.* 域，回退注册）
             Loc.AddFallback("equipmentPanel.title", "装备背包", "Equipment");

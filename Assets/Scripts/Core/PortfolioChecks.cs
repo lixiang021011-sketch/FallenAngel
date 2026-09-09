@@ -15,6 +15,19 @@ namespace FallenAngel.Core
         private static int checks;
         private static readonly List<string> results = new List<string>();
 
+        [MenuItem("Tools/FallenAngel/Print Stage-Chart Bindings")]
+        public static void PrintStageChartBindings()
+        {
+            // 编辑器直查：把"关卡→谱面"对照打进 Console（含资源存在性检查，无需进 Play）
+            foreach (var s in PortfolioConfig.Stages)
+            {
+                var b = PortfolioConfig.ChartBindings.FirstOrDefault(x => x.ChartId == s.ChartId);
+                string resource = b == null ? "?" : b.ResourceName;
+                bool exists = b != null && Resources.Load<TextAsset>("Charts/" + resource) != null;
+                Debug.Log($"[PortfolioChecks] {s.StageId} | {s.Name} | chart={s.ChartId} | resource={resource} | {(exists ? "OK" : "MISSING")}");
+            }
+        }
+
         [MenuItem("Tools/FallenAngel/Validate Portfolio Config and Talents")]
         public static void Run()
         {

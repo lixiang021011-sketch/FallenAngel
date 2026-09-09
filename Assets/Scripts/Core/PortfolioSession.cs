@@ -42,6 +42,8 @@ namespace FallenAngel.Core
         private ChartData loadedChart;
         private readonly HashSet<NoteData> failedNotes = new HashSet<NoteData>();
         private readonly HashSet<int> failedHolds = new HashSet<int>();
+        private Coroutine autoContinueCoroutine;   // 结算自动继续（游玩中只点路线按钮，无需手动点"继续"）
+        private const float AutoContinueDelay = 2f; // 结算信息展示时长（秒，unscaled）
 
         private void Awake()
         {
@@ -212,6 +214,7 @@ namespace FallenAngel.Core
         public void Close()
         {
             if (IsPerforming()) return;
+            CancelAutoContinue();
             IsOpen = false;
             Profiles();
         }
@@ -297,9 +300,41 @@ namespace FallenAngel.Core
                 growth.CompleteSong(Profile.profileId, Run.runId, playingIndex, !failed, LastScore, LastAccuracy);
                 Refresh();
             });
+            // 成功后自动回到地图（展示结算信息 2 秒 → 自动继续 → 路线延展动画）。
+            // 失败/整局结束（FINISHED）不自动。
+            if (Error == null && Run != null && Run.phase == "RESULT")
+            {
+                if (autoContinueCoroutine != null) StopCoroutine(autoContinueCoroutine);
+                autoContinueCoroutine = StartCoroutine(AutoContinueAfterDelay());
+                Debug.Log("[PortfolioSession] 演奏完成，2 秒后自动回到地图");
+            }
         }
+
+        private System.Collections.IEnumerator AutoContinueAfterDelay()
+        {
+            yield return new WaitForSecondsRealtime(AutoContinueDelay); // 演出时间用 unscaled（架构约定 §7）
+            // 期间玩家可能已手动继续/放弃/回菜单：仅当仍停在结算状态才自动
+            if (Run != null && Run.phase == "RESULT" && manager != null
+                && manager.CurrentState == GameState.Result)
+            {
+                Debug.Log("[PortfolioSession] 自动继续：回到地图");
+                Continue();
+            }
+            autoContinueCoroutine = null;
+        }
+
+        private void CancelAutoContinue()
+        {
+            if (autoContinueCoroutine != null)
+            {
+                StopCoroutine(autoContinueCoroutine);
+                autoContinueCoroutine = null;
+            }
+        }
+
         public void Continue()
         {
+            CancelAutoContinue(); // 手动继续优先，取消自动
             growth.Continue(Profile.profileId, Run.runId);
             OwnsSong = false;
             manager.BackToMenu();
@@ -318,6 +353,7 @@ namespace FallenAngel.Core
         }
         public void Abandon()
         {
+            CancelAutoContinue();
             growth.Abandon(Profile.profileId, Run.runId);
             manager.CancelCountdown();
             manager.BackToMenu();
@@ -350,6 +386,34 @@ namespace FallenAngel.Core
             Execute(() =>
             {
                 growth.AcquireEquipment(Profile.profileId, Run.runId, equipmentId);
+                Refresh();
+            });
+        }
+
+        // ---- 商店 ----
+
+        /// <summary>当前商店展示的候选装备（进店/刷新时生成；购买即售罄移除）</summary>
+        public IReadOnlyList<string> ShopCandidates => Run?.shopCandidates;
+
+        /// <summary>是否正处于商店房间（供 UI 判断显示商店行）</summary>
+        public bool InShop => Run != null && Run.useMap && Run.phase == "ROOM"
+            && PortfolioConfig.MapNodes.Any(n => n.NodeId == Run.currentNodeId && n.NodeType == "SHOP");
+
+        /// <summary>购买报价（常驻折扣已含；K1 可选优惠另行处理）。无局或不在商店返回 -1。</summary>
+        public int QuoteEquipmentPrice(string equipmentId)
+        {
+            if (Profile == null || Run == null || !InShop) return -1;
+            try { return growth.QuotePrice(Profile, Run, equipmentId); }
+            catch (Exception) { return -1; }
+        }
+
+        /// <summary>商店购买（原子事务：扣款+获得+售罄；失败时现金与持有不变）</summary>
+        public void PurchaseEquipment(string equipmentId)
+        {
+            if (Profile == null || Run == null || IsPerforming()) return;
+            Execute(() =>
+            {
+                growth.PurchaseEquipment(Profile.profileId, Run.runId, equipmentId);
                 Refresh();
             });
         }
