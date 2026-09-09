@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using FallenAngel.Audio;
 using FallenAngel.Core;
@@ -25,10 +25,10 @@ namespace FallenAngel.UI
         private TMP_FontAsset font;
         private bool dirty = true;
         private string selectedId;
-        private readonly Color card = new Color(.075f, .095f, .14f, 1);
-        private readonly Color ink = new Color(.89f, .93f, .98f, 1);
-        private readonly Color accent = new Color(.12f, .48f, .60f, 1);
-        private readonly Color selectedColor = new Color(.10f, .37f, .28f, 1);
+        private readonly Color card = DeepSeaTheme.Card;
+        private readonly Color ink = DeepSeaTheme.Ink;
+        private readonly Color accent = DeepSeaTheme.Accent;
+        private readonly Color selectedColor = DeepSeaTheme.Owned;
 
         public bool IsOpen => panelRoot != null && panelRoot.activeSelf;
 
@@ -187,6 +187,7 @@ namespace FallenAngel.UI
                 AudioManager.Instance?.PlayButtonClick();
                 action();
             });
+            DeepSeaTheme.StyleButton(button);
             return button;
         }
     }

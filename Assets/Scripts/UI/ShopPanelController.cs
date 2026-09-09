@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using FallenAngel.Audio;
 using FallenAngel.Core;
@@ -27,9 +27,9 @@ namespace FallenAngel.UI
         private string confirmText;
         private Action confirmAction;
         private string promptText;           // 单按钮提示（资金不足等），不改变确认态
-        private readonly Color card = new Color(.075f, .095f, .14f, 1);
-        private readonly Color ink = new Color(.89f, .93f, .98f, 1);
-        private readonly Color accent = new Color(.12f, .48f, .60f, 1);
+        private readonly Color card = DeepSeaTheme.Card;
+        private readonly Color ink = DeepSeaTheme.Ink;
+        private readonly Color accent = DeepSeaTheme.Accent;
 
         public bool IsOpen => panelRoot != null && panelRoot.activeSelf;
 
@@ -253,6 +253,7 @@ namespace FallenAngel.UI
                 AudioManager.Instance?.PlayButtonClick();
                 session.Execute(action);
             });
+            DeepSeaTheme.StyleButton(button);
             return button;
         }
     }

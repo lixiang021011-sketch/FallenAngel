@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using FallenAngel.Audio;
 using FallenAngel.Core;
@@ -30,10 +30,10 @@ namespace FallenAngel.UI
         private ScrollRect talentScroll;
         private float talentScrollY;
         private string talentScrollContext;
-        private readonly Color card = new Color(.075f, .095f, .14f, 1);
-        private readonly Color ink = new Color(.89f, .93f, .98f, 1);
-        private readonly Color accent = new Color(.12f, .48f, .60f, 1);
-        private readonly Color owned = new Color(.10f, .37f, .28f, 1);
+        private readonly Color card = DeepSeaTheme.Card;
+        private readonly Color ink = DeepSeaTheme.Ink;
+        private readonly Color accent = DeepSeaTheme.Accent;
+        private readonly Color owned = DeepSeaTheme.Owned;
 
         public bool IsOpen => panelRoot != null && panelRoot.activeSelf;
 
@@ -130,6 +130,7 @@ namespace FallenAngel.UI
             var label = Label(rect, text, 8, 5, w - 16, h - 10, 24);
             label.alignment = TextAlignmentOptions.Center;
             button.onClick.AddListener(() => session.Execute(action));
+            DeepSeaTheme.StyleButton(button);
             return button;
         }
         private void Ask(string text, Action action)

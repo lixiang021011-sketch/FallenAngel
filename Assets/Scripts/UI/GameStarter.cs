@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using FallenAngel.Core;
@@ -114,6 +114,7 @@ namespace FallenAngel.UI
 
         private void Start()
         {
+            if (GetComponent<DeepSeaPresentation>() == null) gameObject.AddComponent<DeepSeaPresentation>();
             if (GameManager.Instance != null)
             {
                 GameManager.Instance.OnStateChanged -= OnGameStateChanged;

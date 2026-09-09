@@ -25,21 +25,32 @@ namespace FallenAngel.UI
         private RectTransform root;
         private TMP_FontAsset font;
         private bool dirty = true;
+        private bool showDebugControls;
         private string confirmText;
+        private string routeNodeId;
+        private string scrollRunId;
         private Action confirmAction;
         private ScrollRect mapScroll;
         private string mapScrollContext;
         private float mapScrollY;
-        private readonly Color background = new Color(.035f, .045f, .075f, 1);
-        private readonly Color card = new Color(.075f, .095f, .14f, 1);
-        private readonly Color ink = new Color(.89f, .93f, .98f, 1);
-        private readonly Color accent = new Color(.12f, .48f, .60f, 1);
-        private readonly Color owned = new Color(.10f, .37f, .28f, 1);
+        private readonly Color background = DeepSeaTheme.Background;
+        private readonly Color card = DeepSeaTheme.Card;
+        private readonly Color ink = DeepSeaTheme.Ink;
+        private readonly Color accent = DeepSeaTheme.Accent;
+        private readonly Color owned = DeepSeaTheme.Owned;
 
         private void OnEnable() { Subscribe(); }
         private void Start()
         {
             PortfolioText.Register();
+            Loc.AddFallback("portfolio.mapCashClean", "现金  {0}", "Cash  {0}");
+            Loc.AddFallback("portfolio.mapBalanceAfter", "余额  {0} → {1}", "Balance  {0} → {1}");
+            Loc.AddFallback("portfolio.mapPayEnter", "支付 {0} 并进入", "Pay {0} and enter");
+            Loc.AddFallback("portfolio.mapEnter", "进入", "Enter");
+            Loc.AddFallback("portfolio.mapNoCash", "现金不足", "Insufficient cash");
+            Loc.AddFallback("portfolio.mapEmpty", "空房", "Empty room");
+            Loc.AddFallback("portfolio.mapChallenge", "挑战", "Challenge");
+            Loc.AddFallback("portfolio.mapPerformance", "普通演奏", "Performance");
             Subscribe();
             font = GetComponentsInChildren<TextMeshProUGUI>(true).Select(t => t.font).FirstOrDefault(f => f != null);
             if (font == null) font = TMP_Settings.defaultFontAsset;
@@ -106,10 +117,12 @@ namespace FallenAngel.UI
             var label = Label(rect, text, 8, 5, w - 16, h - 10, 24);
             label.alignment = TextAlignmentOptions.Center;
             button.onClick.AddListener(() => session.Execute(action));
+            DeepSeaTheme.StyleButton(button);
             return button;
         }
         private void Ask(string text, Action action)
         {
+            routeNodeId = null;
             session.SetConfirmation(true);
             confirmText = text; confirmAction = action; dirty = true;
         }
@@ -134,11 +147,12 @@ namespace FallenAngel.UI
             }
             var shade = Box(root, "GrowthBackground", 0, 0, 0, 0, background);
             shade.anchorMin = Vector2.zero; shade.anchorMax = Vector2.one; shade.sizeDelta = Vector2.zero;
+            DeepSeaTheme.Backdrop(shade);
             var page = Box(shade, "GrowthPage", 0, 0, 1000, 1760);
             page.anchorMin = page.anchorMax = new Vector2(.5f, .5f);
             page.pivot = new Vector2(.5f, .5f); page.anchoredPosition = Vector2.zero;
             Label(page, T("mapTitle"), 20, 20, 960, 62, 36);
-            Label(page, T("mapIntro"), 20, 92, 960, 50, 25);
+            // Map navigation is conveyed by paths and node states.
             if (session.Error != null)
             {
                 Label(page, T("error"), 30, 250, 940, 150, 32);
@@ -162,14 +176,24 @@ namespace FallenAngel.UI
         private void RenderProfile(RectTransform page)
         {
             var p = session.Profile; var run = session.Run;
+            if (run != null && run.useMap && (run.phase == "MAP" || run.phase == "ROOM" || run.phase == "READY"))
+            {
+                Label(page, T("mapCashClean", run.runCash), 720, 25, 260, 60, 30);
+                RenderMap(page);
+                if (EquipmentPanel != null) Button(page, "OpenEquipmentPanel", T("equipment", run.heldEquipmentIds.Count, session.EquipmentCapacity), 20, 1570, 465, 90, () => EquipmentPanel.Open(), card);
+                if (TalentPanel != null) Button(page, "OpenTalentsFromMap", T("talentsPage"), 515, 1570, 465, 90, () => TalentPanel.Open(), card);
+                Button(page, "BackToMenuFromMap", T("back"), 20, 1690, 180, 60, session.Close, card);
+                if (run.phase == "ROOM") Button(page, "LeaveMapRoom", T("leaveRoom"), 730, 1690, 250, 60, session.LeaveRoom, card);
+                return;
+            }
             Label(page, T("balance", p.displayName, p.growthPoints), 20, 155, 620, 65, 32);
             // 装备持有计数（按钮：点击打开背包审阅；局内资源，局终清空）
             if (EquipmentPanel != null)
                 Button(page, "OpenEquipmentPanel", T("equipment", run != null ? run.heldEquipmentIds.Count : 0, session.EquipmentCapacity),
-                    20, 200, 300, 52, () => EquipmentPanel.Open(), card);
+                    20, 1640, 300, 65, () => EquipmentPanel.Open(), card);
             // 右上角"天赋"入口：与存档选择面板同源（TalentPanel 自带 Canvas 排序 251，盖在地图页上）
             if (TalentPanel != null)
-                Button(page, "OpenTalentsFromMap", T("talentsPage"), 700, 155, 280, 65, () => TalentPanel.Open(), card);
+                Button(page, "OpenTalentsFromMap", T("talentsPage"), 350, 1640, 300, 65, () => TalentPanel.Open(), card);
             // 返回主菜单：局进度保留（含 growth.Run 快照），下次经"选择存档"进入继续
             Button(page, "BackToMenuFromMap", T("back"), session.InShop ? 830 : 720, 236, session.InShop ? 150 : 260, 68, session.Close, card);
             if (run == null || run.phase == "FINISHED")
@@ -196,15 +220,20 @@ namespace FallenAngel.UI
                     : T(session.FailureLimitEnabled ? "nextReward" : "nextRewardUnlimited", run.growthRewards[run.completedSongs], run.failureLimit), 20, 380, 960, 56, 24);
             }
 #if UNITY_EDITOR
+            Loc.AddFallback("portfolio.artDebug", "测试工具", "Test tools");
+            Button(page, "ToggleArtDebug", T("artDebug"), 720, 1640, 260, 65, () => { showDebugControls = !showDebugControls; dirty = true; }, card);
+            if (showDebugControls)
+            {
             // 调试入口：商店/掉落接入前，用地图页可见按钮验证装备持有链路（逐件获取，打包不包含）
             Button(page, "DebugAcquireNext", "装备调试 +1件", 20, 410, 300, 52,
                 () => session.DebugAcquireNextEquipment(), new Color(.25f, .2f, .4f));
             Button(page, "DebugRefreshBudget", "商店调试 +2刷新", 340, 410, 300, 52,
                 () => session.DebugGrantRefreshBudget(), new Color(.25f, .2f, .4f));
             // 测试加速：跳过战斗按成功结算（仅在战斗房 READY 时出现）
-            if (run.phase == "READY")
+            if (run != null && run.phase == "READY")
                 Button(page, "DebugSkipBattle", "跳过战斗(计成功)", 660, 410, 320, 52,
                     () => session.DebugSkipBattle(), new Color(.45f, .25f, .15f));
+            }
 #endif
             // 结算详情：RESULT 阶段隐藏地图，展示收益明细（2 秒后自动继续回地图）；
             // 无效果时也显示合计（收入永远有基础部分）
@@ -227,12 +256,12 @@ namespace FallenAngel.UI
         private void RenderMap(RectTransform page)
         {
             var r = session.Run;
-            const float viewportHeight = 1020;
-            float contentHeight = 300 + PortfolioConfig.MapNodes.Max(n => n.LayoutY) * 360;
+            const float viewportHeight = 1400;
+            float contentHeight = 380 + PortfolioConfig.MapNodes.Max(n => n.LayoutY) * 440;
             // 上下文含 phase：回到 MAP（战斗结算/离开房间）即视为"新抵达"，触发路线延展动画与节点点亮
             string context = session.Profile.profileId + "/" + (r == null ? "preview" : r.runId + "/" + r.currentNodeId + "/" + r.phase);
             bool freshArrival = r != null && r.useMap && r.phase == "MAP" && mapScrollContext != context;
-            var viewport = Box(page, "RunMap", 20, 470, 960, viewportHeight, card);
+            var viewport = Box(page, "RunMap", 20, 125, 960, viewportHeight, new Color(.025f,.07f,.095f,.65f));
             viewport.gameObject.AddComponent<RectMask2D>();
             var board = Box(viewport, "MapContent", 0, 0, 960, contentHeight);
             mapScroll = viewport.gameObject.AddComponent<ScrollRect>();
@@ -243,15 +272,16 @@ namespace FallenAngel.UI
             mapScroll.movementType = ScrollRect.MovementType.Clamped;
             mapScroll.scrollSensitivity = 65;
             mapScroll.decelerationRate = .12f;
-            Func<MapNodesRow, Vector2> position = n => new Vector2(60 + (n.LayoutX + 1) * 290, 100 + n.LayoutY * 360);
+            Func<MapNodesRow, Vector2> position = n => new Vector2(60 + (n.LayoutX + 1) * 290, 120 + n.LayoutY * 440);
             foreach (var edge in PortfolioConfig.MapEdges)
             {
                 var from = PortfolioConfig.MapNodes.Single(n => n.NodeId == edge.FromNodeId);
                 var to = PortfolioConfig.MapNodes.Single(n => n.NodeId == edge.ToNodeId);
-                Vector2 a = position(from) + new Vector2(120, 130), b = position(to) + new Vector2(120, 0);
+                Vector2 a = position(from) + new Vector2(120, 200), b = position(to) + new Vector2(120, 0);
                 bool travelled = r != null && r.useMap && r.visitedNodeIds.Contains(from.NodeId) && r.visitedNodeIds.Contains(to.NodeId);
                 bool newlyReachable = freshArrival && r != null && r.useMap && edge.FromNodeId == r.currentNodeId && !travelled;
-                var color = edge.RoutePrice > 0 ? new Color(.95f, .64f, .27f) : travelled ? new Color(.35f, .8f, .68f) : new Color(.49f, .57f, .65f);
+                bool availablePath = r != null && r.useMap && edge.FromNodeId == r.currentNodeId;
+                var color = availablePath ? (edge.RoutePrice > 0 ? new Color(.85f, .71f, .5f) : ink) : new Color(.28f, .36f, .4f);
                 var line = Box(board, "MapEdge_" + edge.EdgeId, 0, 0, 960, contentHeight);
                 var path = line.gameObject.AddComponent<PortfolioMapPathGraphic>();
                 // 新抵达时，从当前房间向下一步房间的连线做延展动画（箭头在画完时出现）
@@ -273,26 +303,14 @@ namespace FallenAngel.UI
                 // 当前房间可直接行动：READY 点击开曲 / 商店点击开商店 / 空房点击离开
                 bool actionable = current && r != null && r.useMap && r.phase != "MAP";
                 // 事件已结束（商店/空房离开后、起点）：房间置灰，显示"已通过"
-                bool consumed = current && r != null && r.useMap && r.phase == "MAP";
-                string label = T("node." + n.NodeType) + "  " + n.NodeId;
-                string chartName = ChartNameForNode(n);
-                if (!string.IsNullOrEmpty(chartName)) label += "\n" + chartName;
-                if (consumed) label += "\n" + T("mapVisited");
-                else if (current)
-                {
-                    label += "\n" + T("currentRoom");
-                    if (r.phase == "READY") label += "\n" + T("tapToStart");
-                    else if (r.phase == "ROOM" && n.NodeType == "SHOP") label += "\n" + T("tapToShop");
-                    else if (r.phase == "ROOM" && n.NodeType == "EMPTY") label += "\n" + T("tapToLeave");
-                }
-                else if (visited) label += "\n" + T("mapVisited");
-                else if (reachable) label += "\n" + T(r.runCash >= edge.RoutePrice ? "mapAvailable" : "cashShort");
-                var button = Button(board, "Room_" + n.NodeId, label, pos.x, pos.y, 240, 130, () =>
+                bool paidNode = PortfolioConfig.MapEdges.Any(e => e.ToNodeId == n.NodeId && e.RoutePrice > 0);
+                string label = n.NodeType == "EMPTY" ? T("mapEmpty") : n.NodeType == "STAGE" ? T(paidNode ? "mapChallenge" : "mapPerformance") : T("node." + n.NodeType);
+                var button = Button(board, "Room_" + n.NodeId, label, pos.x, pos.y, 240, 150, () =>
                 {
                     if (reachable)
                     {
-                        if (edge.RoutePrice > 0) Ask(T("confirmRoute", n.NodeId, edge.RoutePrice, r.runCash, r.runCash-edge.RoutePrice), () => session.EnterRoom(n.NodeId));
-                        else session.EnterRoom(n.NodeId);
+                        Ask(null, () => session.EnterRoom(n.NodeId));
+                        routeNodeId = n.NodeId;
                         return;
                     }
                     if (current && r != null && r.useMap)
@@ -304,24 +322,37 @@ namespace FallenAngel.UI
                             else if (n.NodeType == "EMPTY") session.LeaveRoom();
                         }
                     }
-                }, consumed ? new Color(.14f, .17f, .22f) : current ? (actionable ? accent : owned) : reachable ? accent : new Color(.14f, .17f, .22f));
-                button.interactable = (reachable && r.runCash >= edge.RoutePrice) || actionable;
-                button.GetComponentInChildren<TextMeshProUGUI>().fontSize = 20; // 谱面名+行动提示，缩小字号防裁剪
-                if (reachable && freshArrival) StartCoroutine(PulseNode(button.gameObject)); // 点亮下一步房间
+                }, current ? new Color(.13f,.2f,.25f) : card);
+                button.interactable = reachable || actionable;
+                // Current position stays visually prominent even after its room event is consumed.
+                var colors = button.colors; colors.disabledColor = Color.white; button.colors = colors;
+                var tint = current ? ink : reachable ? (edge.RoutePrice > 0 ? new Color(.85f,.71f,.5f) : ink) : new Color(.36f,.44f,.49f);
+                DeepSeaTheme.RoomIcon(button, n.NodeType);
+                var icon = button.transform.Find("RoomSymbol").GetComponent<DeepSeaGraphic>();
+                var iconRect = (RectTransform)icon.transform;
+                iconRect.anchorMin = iconRect.anchorMax = new Vector2(.5f,.5f);
+                iconRect.pivot = new Vector2(.5f,.5f); iconRect.anchoredPosition = Vector2.zero; iconRect.sizeDelta = new Vector2(82,82); icon.color = tint;
+                button.GetComponentInChildren<TextMeshProUGUI>().text = "";
+                button.transform.Find("SeaFrame").GetComponent<DeepSeaGraphic>().color = tint;
+                var strip = Box(button.transform, "NodeTitle", 0, 160, 240, 48, current ? ink : background);
+                strip.GetComponent<Image>().raycastTarget = false;
+                var title = Label(strip, label, 5, 4, 230, 40, 25); title.alignment = TextAlignmentOptions.Center; title.color = current ? background : tint;
+                if (current)
+                {
+                    var marker = Box(board, "CurrentPosition", pos.x + 103, pos.y - 45, 34, 25);
+                    DeepSeaTheme.Graphic(marker, "CurrentBeacon", DeepSeaGraphic.Shape.Position).color = new Color(.6f,.8f,.83f);
+                    StartCoroutine(PulseNode(marker.gameObject));
+                }
+                else if (!reachable && !visited)
+                {
+                    var locked = Box(button.transform, "Locked", 208, 8, 22, 26);
+                    DeepSeaTheme.Graphic(locked, "Lock", DeepSeaGraphic.Shape.Lock).color = tint;
+                }
             }
-            string hint = r != null && !r.useMap && r.phase != "FINISHED" ? T("legacyRun") : T("mapLegend");
-            Label(page, T("mapScrollHint"), 20, 1505, 610, 45, 24);
-            Label(page, hint, 20, 1550, 960, 75, 22);
-            Action focus = () =>
-            {
-                var node = PortfolioConfig.MapNodes.FirstOrDefault(n => r != null && r.useMap && n.NodeId == r.currentNodeId)
-                    ?? PortfolioConfig.MapNodes.First(n => n.NodeType == "START");
-                mapScroll.StopMovement();
-                board.anchoredPosition = new Vector2(0, Mathf.Clamp(position(node).y - 180, 0, contentHeight - viewportHeight));
-            };
-            Button(page, "FocusCurrentRoom", T("mapFocus"), 660, 1500, 320, 55, focus, card);
-            if (mapScrollContext != context) { mapScrollContext = context; focus(); }
-            else board.anchoredPosition = new Vector2(0, Mathf.Clamp(mapScrollY, 0, contentHeight - viewportHeight));
+            string runKey = session.Profile.profileId + "/" + (r == null ? "preview" : r.runId);
+            if (scrollRunId != runKey) { scrollRunId = runKey; mapScrollY = 0; }
+            mapScrollContext = context;
+            board.anchoredPosition = new Vector2(0, Mathf.Clamp(mapScrollY, 0, contentHeight - viewportHeight));
         }
 
         /// <summary>节点点亮脉动：新抵达时下一步房间缩放呼吸一次（重绘销毁时协程随之终止）</summary>
@@ -350,8 +381,67 @@ namespace FallenAngel.UI
             return binding == null ? stage.ChartId : binding.ResourceName;
         }
 
+        private void RenderRouteDetails(RectTransform page)
+        {
+            var run = session.Run;
+            var node = PortfolioConfig.MapNodes.FirstOrDefault(n => n.NodeId == routeNodeId);
+            var edge = PortfolioConfig.MapEdges.FirstOrDefault(e => e.FromNodeId == run.currentNodeId && e.ToNodeId == routeNodeId);
+            if (node == null || edge == null) { confirmAction = null; routeNodeId = null; session.SetConfirmation(false); return; }
+            var shade = Box(page, "RouteShade", 0, 0, 0, 0, new Color(0,0,0,.68f));
+            shade.anchorMin = Vector2.zero; shade.anchorMax = Vector2.one; shade.offsetMin = new Vector2(-500,-500); shade.offsetMax = new Vector2(500,500);
+            var drawer = Box(page, "RouteDetails", 0, 1030, 1000, 730, new Color(.094f,.16f,.204f,1));
+            var drawerGroup = drawer.gameObject.AddComponent<CanvasGroup>();
+            Action close = () => { confirmAction = null; routeNodeId = null; session.SetConfirmation(false); dirty = true; };
+            var closeButton = Button(drawer, "CloseRoute", "", 900, 15, 80, 70, close, card);
+            Action dismiss = () => { if (!drawerGroup.interactable) return; drawerGroup.interactable = false; StartCoroutine(CloseDrawer(drawer, close)); };
+            closeButton.onClick.RemoveAllListeners(); closeButton.onClick.AddListener(() => dismiss());
+            DeepSeaTheme.Graphic(closeButton.transform, "CloseIcon", DeepSeaGraphic.Shape.Close).color = ink;
+            Label(drawer, node.NodeType == "STAGE" ? T(edge.RoutePrice > 0 ? "mapChallenge" : "mapPerformance") : T("node." + node.NodeType), 40, 35, 790, 45, 26);
+            Label(drawer, ChartNameForNode(node) ?? T("node." + node.NodeType), 40, 110, 900, 120, 42);
+            Label(drawer, T("routeFee", edge.RoutePrice), 40, 290, 900, 55, 30);
+            Label(drawer, T("mapBalanceAfter", run.runCash, run.runCash - edge.RoutePrice), 40, 370, 900, 55, 30);
+            var submit = Button(drawer, "ConfirmRoute", run.runCash < edge.RoutePrice ? T("mapNoCash") : edge.RoutePrice > 0 ? T("mapPayEnter", edge.RoutePrice) : T("mapEnter"), 40, 475, 920, 100, () =>
+            {
+                var action = confirmAction;
+                if (action == null) return;
+                confirmAction = null; routeNodeId = null; session.SetConfirmation(false); dirty = true;
+                action();
+            }, ink);
+            submit.GetComponentInChildren<TextMeshProUGUI>().color = background;
+            submit.interactable = run.runCash >= edge.RoutePrice;
+            var cancel = Button(drawer, "CancelRoute", T("cancel"), 340, 620, 320, 70, close, card);
+            cancel.onClick.RemoveAllListeners(); cancel.onClick.AddListener(() => dismiss());
+            StartCoroutine(SlideDrawer(drawer));
+        }
+        private System.Collections.IEnumerator CloseDrawer(RectTransform drawer, Action closed)
+        {
+            var start = drawer.anchoredPosition;
+            float time = 0;
+            while (drawer != null && time < .18f)
+            {
+                time += Time.unscaledDeltaTime;
+                drawer.anchoredPosition = start + Vector2.down * Mathf.Clamp01(time / .18f) * 730;
+                yield return null;
+            }
+            closed();
+        }
+        private System.Collections.IEnumerator SlideDrawer(RectTransform drawer)
+        {
+            var end = drawer.anchoredPosition;
+            float time = 0;
+            while (drawer != null && drawer.GetComponent<CanvasGroup>().interactable && time < .22f)
+            {
+                time += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(time / .22f);
+                drawer.anchoredPosition = end + Vector2.down * (1-t)*(1-t)*180;
+                yield return null;
+            }
+            if (drawer != null && drawer.GetComponent<CanvasGroup>().interactable) drawer.anchoredPosition = end;
+        }
+
         private void RenderConfirmation(RectTransform page)
         {
+            if (routeNodeId != null) { RenderRouteDetails(page); return; }
             var modal = Box(page, "ConfirmationShade", 0, 0, 1000, 1760, new Color(0, 0, 0, .88f));
             var box = Box(modal, "Confirmation", 75, 530, 850, 500, card);
             Label(box, confirmText, 35, 40, 780, 260, 32);

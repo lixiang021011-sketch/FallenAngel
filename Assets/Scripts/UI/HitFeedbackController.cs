@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using FallenAngel.Core;
 using FallenAngel.InputSystem;
@@ -15,9 +15,9 @@ namespace FallenAngel.UI
         private const int PoolSize = 16;
 
         [Header("涟漪外观")]
-        [SerializeField] private Color rippleColor = new Color(1f, 1f, 1f, 0.55f);
+        [SerializeField] private Color rippleColor = new Color(.57f, .91f, .86f, .45f);
         [SerializeField] private float rippleStartSize = 80f;
-        [SerializeField] private float rippleEndSize = 380f;
+        [SerializeField] private float rippleEndSize = 260f;
         [SerializeField] private float rippleDuration = 0.3f;
 
         private class RippleEntry
