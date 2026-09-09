@@ -25,7 +25,6 @@ namespace FallenAngel.UI
         private RectTransform root;
         private TMP_FontAsset font;
         private bool dirty = true;
-        private bool showDebugControls;
         private string confirmText;
         private string routeNodeId;
         private string scrollRunId;
@@ -152,7 +151,7 @@ namespace FallenAngel.UI
             var page = Box(shade, "GrowthPage", 0, 0, 1000, 1760);
             page.anchorMin = page.anchorMax = new Vector2(.5f, .5f);
             page.pivot = new Vector2(.5f, .5f); page.anchoredPosition = Vector2.zero;
-            Label(page, T("mapTitle"), 20, 20, 960, 62, 36);
+            DeepSeaTheme.TitleRule(Label(page, T("mapTitle"), 20, 20, 960, 62, 36));
             // Map navigation is conveyed by paths and node states.
             if (session.Error != null)
             {
@@ -179,7 +178,7 @@ namespace FallenAngel.UI
             var p = session.Profile; var run = session.Run;
             if (run != null && run.useMap && (run.phase == "MAP" || run.phase == "ROOM" || run.phase == "READY"))
             {
-                Label(page, T("mapCashClean", run.runCash), 720, 25, 260, 60, 30);
+                DeepSeaTheme.CashBar(page, 700, 18, run.runCash, font).text = T("mapCashClean", run.runCash);
                 RenderMap(page);
                 if (EquipmentPanel != null) Button(page, "OpenEquipmentPanel", T("equipment", run.heldEquipmentIds.Count, session.EquipmentCapacity), 20, 1570, 465, 90, () => EquipmentPanel.Open(), card);
                 if (TalentPanel != null) Button(page, "OpenTalentsFromMap", T("talentsPage"), 515, 1570, 465, 90, () => TalentPanel.Open(), card);
@@ -220,22 +219,6 @@ namespace FallenAngel.UI
                 Label(page, run.phase == "MAP" ? T("mapCash", run.runCash) : run.phase == "ROOM" ? T("room." + PortfolioConfig.MapNodes.Single(n => n.NodeId == run.currentNodeId).NodeType) : run.phase == "RESULT" ? T("songResult", run.lastSongPoints)
                     : T(session.FailureLimitEnabled ? "nextReward" : "nextRewardUnlimited", run.growthRewards[run.completedSongs], run.failureLimit), 20, 380, 960, 56, 24);
             }
-#if UNITY_EDITOR
-            Loc.AddFallback("portfolio.artDebug", "测试工具", "Test tools");
-            Button(page, "ToggleArtDebug", T("artDebug"), 720, 1640, 260, 65, () => { showDebugControls = !showDebugControls; dirty = true; }, card);
-            if (showDebugControls)
-            {
-            // 调试入口：商店/掉落接入前，用地图页可见按钮验证装备持有链路（逐件获取，打包不包含）
-            Button(page, "DebugAcquireNext", "装备调试 +1件", 20, 410, 300, 52,
-                () => session.DebugAcquireNextEquipment(), new Color(.25f, .2f, .4f));
-            Button(page, "DebugRefreshBudget", "商店调试 +2刷新", 340, 410, 300, 52,
-                () => session.DebugGrantRefreshBudget(), new Color(.25f, .2f, .4f));
-            // 测试加速：跳过战斗按成功结算（仅在战斗房 READY 时出现）
-            if (run != null && run.phase == "READY")
-                Button(page, "DebugSkipBattle", "跳过战斗(计成功)", 660, 410, 320, 52,
-                    () => session.DebugSkipBattle(), new Color(.45f, .25f, .15f));
-            }
-#endif
             // 结算详情：RESULT 阶段隐藏地图，展示收益明细（2 秒后自动继续回地图）；
             // 无效果时也显示合计（收入永远有基础部分）
             if (run != null && run.phase == "RESULT")

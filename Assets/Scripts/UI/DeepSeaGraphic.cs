@@ -7,7 +7,7 @@ namespace FallenAngel.UI
     [RequireComponent(typeof(CanvasRenderer))]
     public sealed class DeepSeaGraphic : MaskableGraphic
     {
-        public enum Shape { Ocean, Frame, Beacon, Battle, Shop, Empty, Final, Equipment, Close, Pause, Position, Lock, CutFrame, Surface, Check, Chevron, Talent }
+        public enum Shape { Ocean, Frame, Beacon, Battle, Shop, Empty, Final, Equipment, Close, Pause, Position, Lock, CutFrame, Surface, Check, Chevron, Talent, Coin, Rule }
         public Shape shape;
         public int variant;
         protected override void Awake() { base.Awake(); raycastTarget = false; }
@@ -74,6 +74,22 @@ namespace FallenAngel.UI
                 Line(vh,P(.5f,.17f),P(.5f,.54f),2.5f,c);
                 Line(vh,P(.5f,.54f),P(.2f,.8f),2.5f,c);Line(vh,P(.5f,.54f),P(.8f,.8f),2.5f,c);
                 Line(vh,P(.5f,.54f),P(.5f,.88f),2.5f,c);return;
+            }
+            if(shape==Shape.Coin)
+            {
+                Vector2 coinCenter=P(.5f,.5f);float rad=Mathf.Min(r.width,r.height)*.36f;
+                for(int i=0;i<24;i++)
+                {
+                    float a=i*360f/24*Mathf.Deg2Rad,b=(i+1)*360f/24*Mathf.Deg2Rad;
+                    Line(vh,coinCenter+new Vector2(Mathf.Cos(a),Mathf.Sin(a))*rad,coinCenter+new Vector2(Mathf.Cos(b),Mathf.Sin(b))*rad,1.6f,c);
+                }
+                Line(vh,P(.32f,.4f),P(.46f,.56f),1.5f,c);return;
+            }
+            if(shape==Shape.Rule)
+            {
+                Line(vh,P(.04f,.5f),P(.42f,.5f),1.4f,c);
+                Line(vh,P(.58f,.5f),P(.96f,.5f),1.4f,c);
+                Line(vh,P(.5f,.3f),P(.5f,.7f),1.4f,c);return;
             }
             if(shape==Shape.Position)
             {

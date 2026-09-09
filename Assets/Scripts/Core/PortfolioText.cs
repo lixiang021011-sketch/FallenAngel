@@ -37,7 +37,8 @@
             Add("balance", "{0}  ·  成长积分 {1}", "{0}  ·  Growth points {1}");
             Add("equipment", "装备 {0}/{1}", "Equipment {0}/{1}");
             Add("equipFull", "装备已满，无法购买。", "Equipment is full; cannot purchase.");
-            Add("shopTitle", "商店 · 现金 {0}", "Shop · Cash {0}");
+            // 商店页现金胶囊：面板标题已由 shopPanel.title 单独显示，这里只放简短金额，避免 240 宽胶囊内换行。
+            Add("shopTitle", "现金 {0}", "Cash {0}");
             Add("shopOpen", "商店", "Shop");
             Add("shopLeave", "不买了，走了", "Done shopping, leave");
             Add("shopRefresh", "整批刷新（{0}）", "Refresh all ({0})");

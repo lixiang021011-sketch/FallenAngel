@@ -131,6 +131,7 @@ namespace FallenAngel.UI
             label.alignment = TextAlignmentOptions.Center;
             button.onClick.AddListener(() => session.Execute(action));
             DeepSeaTheme.StyleButton(button);
+            DeepSeaTheme.RefineButton(button);
             return button;
         }
         private void Ask(string text, Action action)

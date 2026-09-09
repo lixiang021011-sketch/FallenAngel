@@ -188,6 +188,7 @@ namespace FallenAngel.UI
                 action();
             });
             DeepSeaTheme.StyleButton(button);
+            DeepSeaTheme.RefineButton(button);
             return button;
         }
     }

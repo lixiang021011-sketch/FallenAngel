@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -25,6 +26,11 @@ namespace FallenAngel.UI
             {
                 var panel=transform.Find(name);
                 if(panel!=null)DeepSeaTheme.Backdrop(panel);
+            }
+            // 标题条装饰：所有面板标题下方加主题规则线（同锚点，不改变布局）
+            foreach(var text in GetComponentsInChildren<TextMeshProUGUI>(true))
+            {
+                if(text.name.EndsWith("Title"))DeepSeaTheme.TitleRule(text);
             }
             // 演奏区域沿用4K/5K颜色语义，环境只放在轨道后面。
             var game=transform.Find("GamePanel");

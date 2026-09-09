@@ -83,5 +83,40 @@ namespace FallenAngel.UI
             var label=button.GetComponentInChildren<TextMeshProUGUI>();
             if(label!=null){label.rectTransform.anchoredPosition=new Vector2(56,-5);label.rectTransform.sizeDelta=new Vector2(176,120);label.fontSize=18;}
         }
+
+        /// <summary>现金栏芯片：硬币图标 + 文本。返回文本组件供调用方写入金额。</summary>
+        public static TextMeshProUGUI CashBar(Transform parent,float x,float y,int cash,TMP_FontAsset font)
+        {
+            var go=new GameObject("CashBar",typeof(RectTransform),typeof(Image));
+            var rect=(RectTransform)go.transform;rect.SetParent(parent,false);
+            rect.anchorMin=rect.anchorMax=new Vector2(0,1);rect.pivot=new Vector2(0,1);
+            rect.anchoredPosition=new Vector2(x,-y);rect.sizeDelta=new Vector2(240,56);
+            go.GetComponent<Image>().color=Card;
+            var coin=Graphic(rect,"Coin",DeepSeaGraphic.Shape.Coin);
+            var coinRect=(RectTransform)coin.transform;coinRect.anchorMin=coinRect.anchorMax=new Vector2(0,.5f);
+            coinRect.pivot=new Vector2(0,.5f);coinRect.anchoredPosition=new Vector2(16,0);coinRect.sizeDelta=new Vector2(30,30);
+            coin.color=Paid;
+            var label=new GameObject("CashText",typeof(RectTransform),typeof(TextMeshProUGUI)).GetComponent<TextMeshProUGUI>();
+            var labelRect=(RectTransform)label.transform;labelRect.SetParent(rect,false);
+            labelRect.anchorMin=Vector2.zero;labelRect.anchorMax=Vector2.one;
+            labelRect.offsetMin=new Vector2(58,4);labelRect.offsetMax=new Vector2(-10,-4);
+            label.font=font;label.fontSize=26;label.alignment=TextAlignmentOptions.Left;
+            label.raycastTarget=false;label.text=cash.ToString();
+            return label;
+        }
+
+        /// <summary>标题条装饰线：与标题同锚点、置于其正下方（两端横线 + 中央竖刻）。</summary>
+        public static void TitleRule(TextMeshProUGUI title)
+        {
+            var parent=title.rectTransform.parent as RectTransform;
+            if(parent==null)return;
+            var rule=Graphic(parent,"TitleRule",DeepSeaGraphic.Shape.Rule);
+            var rect=(RectTransform)rule.transform;
+            rect.anchorMin=rect.anchorMax=title.rectTransform.anchorMin;
+            rect.pivot=title.rectTransform.pivot;
+            rect.anchoredPosition=title.rectTransform.anchoredPosition-new Vector2(0,title.rectTransform.sizeDelta.y*.5f+14);
+            rect.sizeDelta=new Vector2(title.rectTransform.sizeDelta.x,12);
+            rule.color=Line;
+        }
     }
 }

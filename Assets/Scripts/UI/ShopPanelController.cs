@@ -134,7 +134,7 @@ namespace FallenAngel.UI
             page.anchorMin = page.anchorMax = new Vector2(.5f, .5f);
             page.pivot = new Vector2(.5f, .5f); page.anchoredPosition = Vector2.zero;
 
-            Label(page, T("shopTitle", session.Run.runCash), 20, 140, 600, 60, 34);
+            DeepSeaTheme.CashBar(page, 20, 135, session.Run.runCash, font).text = T("shopTitle", session.Run.runCash);
 
             // 整批刷新：剩余预算 >0 才显示（E0/E1 开局发放；无变化不扣次数）
             int budget = session.ShopRefreshBudget;
@@ -254,6 +254,7 @@ namespace FallenAngel.UI
                 session.Execute(action);
             });
             DeepSeaTheme.StyleButton(button);
+            DeepSeaTheme.RefineButton(button);
             return button;
         }
     }

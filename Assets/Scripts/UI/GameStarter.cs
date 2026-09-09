@@ -115,6 +115,9 @@ namespace FallenAngel.UI
         private void Start()
         {
             if (GetComponent<DeepSeaPresentation>() == null) gameObject.AddComponent<DeepSeaPresentation>();
+#if UNITY_EDITOR
+            CreateTemporaryArtDebugOverlay();
+#endif
             if (GameManager.Instance != null)
             {
                 GameManager.Instance.OnStateChanged -= OnGameStateChanged;
@@ -135,6 +138,9 @@ namespace FallenAngel.UI
             // ESC 关闭新游戏确认弹窗
             if (Input.GetKeyDown(KeyCode.Escape) && newGameConfirmPanel != null && newGameConfirmPanel.activeSelf)
                 HideNewGameConfirm();
+#if UNITY_EDITOR
+            RefreshArtDebugButtons();
+#endif
         }
 
         private void OnGameStateChanged(GameState state)
@@ -268,5 +274,97 @@ namespace FallenAngel.UI
             ShowMenu(false);
             ShowGame(true);
         }
+
+#if UNITY_EDITOR
+        private Button artDebugEquipButton;
+        private Button artDebugRefreshButton;
+        private Button artDebugSkipButton;
+
+        /// <summary>
+        /// 临时验收悬浮条（后续与美术精修收尾一起删除）：
+        /// 独立嵌套 Canvas 排序 300，悬浮于商店/背包/天赋/地图等全部 UI 之上，
+        /// 只转发现有调试方法，不包含任何业务逻辑。
+        /// </summary>
+        private void CreateTemporaryArtDebugOverlay()
+        {
+            if (transform.Find("ArtDebugOverlay") != null) return;
+            var session = GetComponent<PortfolioSession>();
+            var font = TMP_Settings.defaultFontAsset;
+            foreach (var text in GetComponentsInChildren<TextMeshProUGUI>(true))
+            {
+                if (text.font != null) { font = text.font; break; }
+            }
+
+            var overlay = new GameObject("ArtDebugOverlay", typeof(RectTransform));
+            overlay.transform.SetParent(transform, false);
+            var rect = overlay.GetComponent<RectTransform>();
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = rect.offsetMax = Vector2.zero;
+            var canvas = overlay.AddComponent<Canvas>();
+            canvas.overrideSorting = true;
+            canvas.sortingOrder = 300;
+            overlay.AddComponent<GraphicRaycaster>();
+
+            // 三个竖排按钮放在屏幕左上角：不遮挡中央路线/轨道与下半屏触区。
+            artDebugEquipButton = TemporaryDebugButton(overlay.transform, "DebugAcquireEquipment", "获取装备", 12, 12, 250, 54,
+                font, new Color(.18f, .32f, .36f), () => session?.DebugAcquireNextEquipment());
+            artDebugRefreshButton = TemporaryDebugButton(overlay.transform, "DebugGrantRefresh", "获取刷新次数", 12, 74, 250, 54,
+                font, new Color(.18f, .32f, .36f), () => session?.DebugGrantRefreshBudget());
+            artDebugSkipButton = TemporaryDebugButton(overlay.transform, "DebugSkipBattle", "自动通关", 12, 136, 250, 54,
+                font, new Color(.45f, .24f, .16f), () => session?.DebugSkipBattle());
+            RefreshArtDebugButtons();
+        }
+
+        private void RefreshArtDebugButtons()
+        {
+            var session = GetComponent<PortfolioSession>();
+            var run = session?.Run;
+            bool hasRun = run != null;
+            if (artDebugEquipButton != null) artDebugEquipButton.interactable = hasRun;
+            if (artDebugRefreshButton != null) artDebugRefreshButton.interactable = hasRun;
+            // 跳过战斗只对“待开始演奏”的战斗房有效；FINISHED/结算等阶段置灰，避免无效点击。
+            if (artDebugSkipButton != null) artDebugSkipButton.interactable = run != null && run.phase == "READY";
+        }
+
+        private Button TemporaryDebugButton(Transform parent, string name, string text, float x, float y,
+            float w, float h, TMP_FontAsset font, Color color, System.Action action)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(Image));
+            go.transform.SetParent(parent, false);
+            var rect = go.GetComponent<RectTransform>();
+            rect.anchorMin = rect.anchorMax = new Vector2(0, 1);
+            rect.pivot = new Vector2(0, 1);
+            rect.anchoredPosition = new Vector2(x, -y);
+            rect.sizeDelta = new Vector2(w, h);
+            var image = go.GetComponent<Image>();
+            image.color = color;
+            var button = go.AddComponent<Button>();
+            button.targetGraphic = image;
+
+            var label = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI))
+                .GetComponent<TextMeshProUGUI>();
+            var labelRect = (RectTransform)label.transform;
+            labelRect.SetParent(rect, false);
+            labelRect.anchorMin = Vector2.zero;
+            labelRect.anchorMax = Vector2.one;
+            labelRect.offsetMin = labelRect.offsetMax = Vector2.zero;
+            label.font = font;
+            label.text = text;
+            label.fontSize = 26;
+            label.alignment = TextAlignmentOptions.Center;
+            label.color = DeepSeaTheme.Ink;
+            label.raycastTarget = false;
+
+            button.onClick.AddListener(() =>
+            {
+                AudioManager.Instance?.PlayButtonClick();
+                action?.Invoke();
+            });
+            DeepSeaTheme.StyleButton(button);
+            DeepSeaTheme.RefineButton(button);
+            return button;
+        }
+#endif
     }
 }
