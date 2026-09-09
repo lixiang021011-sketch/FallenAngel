@@ -42,6 +42,8 @@
             Add("shopLeave", "不买了，走了", "Done shopping, leave");
             Add("shopRefresh", "整批刷新（{0}）", "Refresh all ({0})");
             Add("confirmRefresh", "确认整批刷新？\n剩余次数 {0} → {1}\n按商店权重重新抽取商品。", "Refresh all?\nUses {0} → {1}.\nRe-roll goods by shop weights.");
+            Add("shopInsufficient", "资金不足，无法购买。", "Not enough cash to buy.");
+            Add("shopFailed", "购买未完成，请重试。", "Purchase failed; retry.");
             Add("shopSoldOut", "商店商品已售罄", "Shop sold out");
             Add("confirmPurchase", "确认购买 {0}？\n价格 {1} · 余额 {2} → {3}\n购买后立即生效，本局不可退回。", "Buy {0}?\nPrice {1} · Cash {2} → {3}\nTakes effect immediately; no refund this run.");
             Add("begin", "开始一局", "Start run");
@@ -56,6 +58,15 @@
             Add("nextReward", "本关完成：+{0} 积分 · 失误上限：{1}", "On completion: +{0} points · Failure limit: {1}");
             Add("nextRewardUnlimited", "本关完成：+{0} 积分 · 失误失败限制已关闭", "On completion: +{0} points · Failure limit disabled");
             Add("songResult", "本次演奏完成  +{0}", "Performance complete  +{0}");
+            Add("income.title", "本关收益明细", "Stage income breakdown");
+            Add("income.I0", "整曲Perfect达标奖励", "Whole-song Perfect goal");
+            Add("income.J0", "付费挑战奖励", "Paid challenge bonus");
+            Add("income.D0", "演奏增幅", "Performance bonus");
+            Add("income.E05", "无Miss增幅", "No-miss bonus");
+            Add("income.G0", "保底补足", "Floor top-up");
+            Add("income.cap", "封顶裁剪", "Cap trim");
+            Add("income.C1", "利息", "Interest");
+            Add("income.total", "本关收入合计  +{0}", "Stage income total  +{0}");
             Add("bankNote", "积分将在整局结束时入账；现在放弃也保留已完成关卡的积分。", "Points are credited at run end. Abandoning keeps points from completed songs.");
             Add("CLEARED", "路线完成", "Route cleared");
             Add("FAILED", "演出失败", "Performance failed");

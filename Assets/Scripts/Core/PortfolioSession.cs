@@ -35,6 +35,7 @@ namespace FallenAngel.Core
         public float LastAccuracy { get; private set; }
         public PortfolioTalentService Talents { get; private set; }
         private PortfolioGrowthService growth;
+        private PortfolioIncomeService incomeService;
         private GameManager manager;
         private Action retry;
         private bool failed;
@@ -50,6 +51,7 @@ namespace FallenAngel.Core
             var store = PortfolioProfileStore.CreateDefault();
             Talents = new PortfolioTalentService(store);
             growth = new PortfolioGrowthService(store);
+            incomeService = new PortfolioIncomeService();
         }
 
         private void OnEnable() { Subscribe(); }
@@ -94,6 +96,15 @@ namespace FallenAngel.Core
         }
 
         public void RetryOperation() { if (retry != null) Execute(retry); }
+
+        /// <summary>清除瞬时错误状态（不离开当前视图）；供面板内提示流复用（如商店资金不足提示）。</summary>
+        public void ClearError()
+        {
+            if (IsPerforming()) return;
+            Error = null;
+            retry = null;
+            OnChanged?.Invoke();
+        }
         public void DismissError()
         {
             if (IsPerforming()) return;
@@ -295,14 +306,54 @@ namespace FallenAngel.Core
             if (!OwnsSong || loadedChart != manager.CurrentChart) return;
             LastScore = JudgeManager.Instance?.Score ?? 0;
             LastAccuracy = JudgeManager.Instance?.CalculateAccuracy() ?? 0;
+            double perfectRate = 0;
+            int missCount = 0;
+            var judge = JudgeManager.Instance;
+            if (judge != null)
+            {
+                int total = judge.PerfectCount + judge.GreatCount + judge.GoodCount + judge.BadCount + judge.MissCount;
+                perfectRate = total > 0 ? (double)judge.PerfectCount / total : 0;
+                missCount = judge.MissCount;
+            }
             Execute(() =>
             {
-                growth.CompleteSong(Profile.profileId, Run.runId, playingIndex, !failed, LastScore, LastAccuracy);
+                CompleteCurrentSong(!failed, perfectRate, missCount, LastScore, LastAccuracy);
                 Refresh();
             });
             // 成功后自动回到地图（展示结算信息 2 秒 → 自动继续 → 路线延展动画）。
             // 失败/整局结束（FINISHED）不自动。
             StartAutoContinueIfResult();
+        }
+
+        /// <summary>统一结算入口：收益引擎计算明细后提交（真实演奏与跳过战斗共用同一条链路）</summary>
+        private void CompleteCurrentSong(bool success, double perfectRate, int missCount, int score, float accuracy)
+        {
+            IncomeSettlement income = null;
+            if (success && Run != null && Run.useMap)
+            {
+                var stage = PortfolioConfig.Stages.Single(s => s.StageId == Run.stageIds[Run.completedSongs] && s.Enabled);
+                income = incomeService.Compute(
+                    Talents.GetRegisteredEffects(Profile.profileId),
+                    HeldEquipmentEffects(),
+                    stage, perfectRate, missCount, Run.openingCash);
+                Debug.Log($"[PortfolioSession] 收益结算：基础 {income.BaseIncome} + 额外 {income.PerformanceTotal - income.BaseIncome:0.#} + 经济 {income.EconomyTotal:0.#} = {income.Total:0.#}");
+            }
+            growth.CompleteSong(Profile.profileId, Run.runId, Run.completedSongs, success, score, accuracy, income);
+        }
+
+        /// <summary>已持有装备对应的启用效果行（收益引擎输入）</summary>
+        private IReadOnlyList<EquipmentEffectsRow> HeldEquipmentEffects()
+        {
+            var list = new List<EquipmentEffectsRow>();
+            if (Run == null) return list;
+            foreach (string id in Run.heldEquipmentIds)
+            {
+                var eq = PortfolioConfig.EquipmentBase.SingleOrDefault(e => e.EquipmentId == id);
+                if (eq == null) continue;
+                var eff = PortfolioConfig.EquipmentEffects.SingleOrDefault(e => e.EffectId == eq.EffectId);
+                if (eff != null && eff.Enabled) list.Add(eff);
+            }
+            return list;
         }
 
         /// <summary>结算完成后启动自动继续协程（成功进 RESULT 才触发；失败/FINISHED 不触发）</summary>
@@ -467,9 +518,10 @@ namespace FallenAngel.Core
                 }
                 if (Run != null && Run.phase == "PLAYING")
                 {
-                    growth.CompleteSong(Profile.profileId, Run.runId, Run.completedSongs, true, 1000000, 1f);
+                    // 占位统计：全 Perfect、无 Miss → 达标/增幅全部触发（与真实演奏同一条结算+自动继续链路）
+                    CompleteCurrentSong(true, 1f, 0, 1000000, 1f);
                     Refresh();
-                    StartAutoContinueIfResult(); // 与真实演奏同一条自动继续链路
+                    StartAutoContinueIfResult();
                 }
                 else
                 {

@@ -206,7 +206,22 @@ namespace FallenAngel.UI
                 Button(page, "DebugSkipBattle", "跳过战斗(计成功)", 660, 410, 320, 52,
                     () => session.DebugSkipBattle(), new Color(.45f, .25f, .15f));
 #endif
-            RenderMap(page);
+            // 结算详情：RESULT 阶段隐藏地图，展示收益明细（2 秒后自动继续回地图）；
+            // 无效果时也显示合计（收入永远有基础部分）
+            if (run != null && run.phase == "RESULT")
+            {
+                var cardBox = Box(page, "IncomeBreakdown", 20, 440, 960, 430, card);
+                Label(cardBox, T("income.title"), 25, 20, 910, 50, 30);
+                float ly = 90;
+                foreach (var l in run.incomeBreakdown)
+                {
+                    Label(cardBox, Loc.T("portfolio." + l.key), 40, ly, 600, 40, 24);
+                    Label(cardBox, "+" + l.amount.ToString("0.#"), 700, ly, 240, 40, 24);
+                    ly += 42;
+                }
+                Label(cardBox, T("income.total", run.lastCashReward), 40, ly + 10, 910, 50, 28);
+            }
+            else RenderMap(page);
         }
 
         private void RenderMap(RectTransform page)

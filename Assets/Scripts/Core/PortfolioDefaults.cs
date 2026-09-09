@@ -11,5 +11,8 @@ namespace FallenAngel.Core
 
         /// <summary>商店每次生成候选的基础数量（E10 每件+1；合法池不足时少量展示，不复制商品）</summary>
         public const int ShopBaseCandidateCount = 4;
+
+        /// <summary>演奏收益封顶比例（原型值：总演奏收益 ≤ B × (1 + 此值)，与导出器 --income-cap-ratio 一致）</summary>
+        public const float IncomeCapRatio = 0.5f;
     }
 }

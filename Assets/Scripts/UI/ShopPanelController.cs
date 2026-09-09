@@ -26,6 +26,7 @@ namespace FallenAngel.UI
         private string autoOpenedNode;       // 已自动弹出过的商店节点
         private string confirmText;
         private Action confirmAction;
+        private string promptText;           // 单按钮提示（资金不足等），不改变确认态
         private readonly Color card = new Color(.075f, .095f, .14f, 1);
         private readonly Color ink = new Color(.89f, .93f, .98f, 1);
         private readonly Color accent = new Color(.12f, .48f, .60f, 1);
@@ -114,6 +115,7 @@ namespace FallenAngel.UI
             AudioManager.Instance?.PlayButtonClick();
             if (panelRoot != null) panelRoot.SetActive(false);
             confirmAction = null;
+            promptText = null;
             session?.SetConfirmation(false);
         }
 
@@ -150,19 +152,37 @@ namespace FallenAngel.UI
             }
             else
             {
-                // 2 列网格（至多 4 件）：ID + 报价
+                // 2 列网格（至多 4 件）：ID + 报价；现金不足的格子置灰
                 for (int i = 0; i < cands.Count; i++)
                 {
                     string id = cands[i];
                     int price = session.QuoteEquipmentPrice(id);
                     float x = 90 + (i % 2) * 430;
                     float y = 300 + (i / 2) * 200;
+                    bool affordable = session.Run != null && session.Run.runCash >= price;
                     Button(page, "ShopBuy_" + id, id + "\n" + price, x, y, 400, 170, () =>
                     {
                         int quote = session.QuoteEquipmentPrice(id);
-                        Ask(T("confirmPurchase", id, quote, session.Run.runCash, session.Run.runCash - quote),
-                            () => session.PurchaseEquipment(id));
-                    }, card);
+                        if (session.Run == null) return;
+                        // 先查现金：不足弹提示（单按钮），不进购买确认，留在商店页
+                        if (session.Run.runCash < quote)
+                        {
+                            promptText = T("shopInsufficient");
+                            dirty = true;
+                            return;
+                        }
+                        Ask(T("confirmPurchase", id, quote, session.Run.runCash, session.Run.runCash - quote), () =>
+                        {
+                            session.PurchaseEquipment(id);
+                            // 确认后仍可能失败（状态变化）：在面板内提示并清错，不跳错误页
+                            if (session.Error != null)
+                            {
+                                promptText = T("shopFailed");
+                                session.ClearError();
+                                dirty = true;
+                            }
+                        });
+                    }, affordable ? card : new Color(.14f, .17f, .22f));
                 }
             }
 
@@ -172,6 +192,21 @@ namespace FallenAngel.UI
                 400, 170, () => session.LeaveRoom(), new Color(.35f, .16f, .16f));
 
             if (confirmAction != null) RenderConfirmation(page);
+            else if (promptText != null) RenderPrompt(page);
+        }
+
+        /// <summary>单按钮提示（资金不足/购买失败）：不改变确认态，确定后清错并留在商店页</summary>
+        private void RenderPrompt(RectTransform page)
+        {
+            var modal = Box(page, "PromptShade", 0, 0, 1000, 1760, new Color(0, 0, 0, .88f));
+            var box = Box(modal, "Prompt", 200, 700, 600, 340, card);
+            Label(box, promptText, 30, 30, 540, 180, 30);
+            Button(box, "PromptOK", T("confirm"), 170, 240, 260, 70, () =>
+            {
+                promptText = null;
+                session.ClearError();
+                dirty = true;
+            });
         }
 
         private void RenderConfirmation(RectTransform page)

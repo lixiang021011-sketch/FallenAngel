@@ -3,6 +3,15 @@ using System.Collections.Generic;
 
 namespace FallenAngel.Data
 {
+    /// <summary>收益结算明细行（随局快照序列化，RESULT 界面展示）</summary>
+    [Serializable]
+    public sealed class IncomeLineData
+    {
+        public string key;    // 文案 key（income.* 后缀）
+        public double amount; // 金额
+        public string kind;   // DIRECT / BONUS / FLOOR / CAP / ECONOMY
+    }
+
     /// <summary>成长验证路线的局内快照；奖励/失败阈值在开局冻结，防止中途改表影响已开始的一局。</summary>
     [Serializable]
     public sealed class PortfolioGrowthRunData
@@ -32,5 +41,9 @@ namespace FallenAngel.Data
         public List<string> shopCandidates = new List<string>();
         // 本局整批刷新预算（开局由 E0/E1 冻结发放；刷新无变化不扣；局终清空）
         public int shopRefreshBudget;
+        // 开曲时现金快照（C1 利息基数；不包含本曲尚未到账奖励）
+        public double openingCash;
+        // 最近一次成功演奏的收益明细（RESULT 界面展示；随局快照持久化）
+        public List<IncomeLineData> incomeBreakdown = new List<IncomeLineData>();
     }
 }

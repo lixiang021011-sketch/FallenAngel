@@ -61,6 +61,10 @@ namespace FallenAngel.Core
                 throw new InvalidOperationException("Invalid shop candidate snapshot.");
             if (run.shopRefreshBudget < 0 || run.shopRefreshBudget > 2)
                 throw new InvalidOperationException("Invalid shop refresh budget snapshot.");
+            if (run.openingCash < 0 || run.incomeBreakdown == null
+                || run.incomeBreakdown.Any(l => l == null || string.IsNullOrEmpty(l.key)
+                    || l.amount < 0 || !new[] { "DIRECT", "BONUS", "FLOOR", "CAP", "ECONOMY" }.Contains(l.kind)))
+                throw new InvalidOperationException("Invalid income breakdown snapshot.");
             return run;
         }
 
@@ -113,18 +117,19 @@ namespace FallenAngel.Core
             return budget;
         }
 
-        /// <summary>GO之前先持久化演奏标记；写入失败时调用方不得播放。</summary>
+        /// <summary>GO之前先持久化演奏标记；写入失败时调用方不得播放。开曲现金快照在此冻结（C1 利息基数）。</summary>
         public void MarkPlaying(string profileId, string runId)
         {
             var p = talents.ReadProfile(profileId);
             var r = Require(p, runId);
             if (r.phase != "READY") throw new InvalidOperationException("Song cannot start now.");
             r.phase = "PLAYING";
+            r.openingCash = r.runCash;
             Save(p, r);
         }
 
-        /// <summary>成功只结算当前歌曲一次；失败不计入当前未完成歌曲。</summary>
-        public PortfolioGrowthRunData CompleteSong(string profileId, string runId, int songIndex, bool success, int score = 0, float accuracy = 0)
+        /// <summary>成功只结算当前歌曲一次；失败不计入当前未完成歌曲。income 为收益引擎结算（Lite），缺省回退基础收入。</summary>
+        public PortfolioGrowthRunData CompleteSong(string profileId, string runId, int songIndex, bool success, int score = 0, float accuracy = 0, IncomeSettlement income = null)
         {
             var p = talents.ReadProfile(profileId);
             var r = Require(p, runId);
@@ -134,13 +139,17 @@ namespace FallenAngel.Core
             r.lastAccuracy = accuracy;
             r.lastSongPoints = 0;
             r.lastCashReward = 0;
+            r.incomeBreakdown = income != null ? income.Lines : new List<IncomeLineData>();
             if (success)
             {
                 r.lastSongPoints = r.growthRewards[r.completedSongs];
                 r.earnedPoints = checked(r.earnedPoints + r.lastSongPoints);
                 if (r.useMap)
                 {
-                    r.lastCashReward = PortfolioConfig.Stages.Single(s => s.StageId == r.stageIds[r.completedSongs]).BaseIncome;
+                    var stage = PortfolioConfig.Stages.Single(s => s.StageId == r.stageIds[r.completedSongs]);
+                    r.lastCashReward = income != null
+                        ? (int)Math.Floor(income.Total)
+                        : stage.BaseIncome;
                     r.runCash = checked(r.runCash + r.lastCashReward);
                 }
                 r.completedSongs++;
