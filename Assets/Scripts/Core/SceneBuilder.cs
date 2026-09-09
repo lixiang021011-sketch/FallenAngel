@@ -25,95 +25,98 @@ namespace FallenAngel.Core
     public static class SceneBuilder
     {
 #if UNITY_EDITOR
+        const string OflFontPath = "Assets/Fonts/SourceHanSansCN-Regular.otf";
+        const string CjkFontAssetPath = "Assets/Fonts/CJK_Font SDF.asset";
+
         [MenuItem("Tools/FallenAngel/Create Chinese TMP Font")]
         public static void CreateChineseTmpFont()
         {
-            // TMP 默认字体（Liberation Sans）不含中文字形，中文 UI 会显示为方块。
-            // 从系统字体生成 TMP 字体资产；优先纯 TTF（simhei），TTC 集合字体（msyh/simsun）
-            // 在部分环境下 CreateFontAsset 会生成空图集（m_AtlasTextures 为空），
-            // 因此生成后必须校验图集，坏资产自动删除并尝试下一个候选。
-            // 注意：系统字体仅限本机开发使用，正式发布前替换为可商用授权字体（如思源黑体）。
-            string[] candidates =
-            {
-                "C:/Windows/Fonts/simhei.ttf",   // 黑体（纯 TTF，优先）
-                "C:/Windows/Fonts/msyh.ttc",     // 微软雅黑（TTC 集合）
-                "C:/Windows/Fonts/simsun.ttc",   // 宋体（TTC 集合）
-            };
+            EnsureCjkFont(true);
+        }
 
+        /// <summary>
+        /// 用工程内 OFL 思源黑体生成 TMP 动态图集。不拷贝 Windows 微软字体。
+        /// confirm=false 时不弹窗（供重建场景 / batchmode）。
+        /// </summary>
+        public static bool EnsureCjkFont(bool confirm)
+        {
+            // TMP 默认 Liberation Sans 无中文。图集必须校验：空 atlasTextures 赋值即抛异常。
+            // CreateAsset 只存壳文件——材质与图集纹理必须 AddObjectToAsset。
             if (!AssetDatabase.IsValidFolder("Assets/Fonts"))
                 AssetDatabase.CreateFolder("Assets", "Fonts");
 
-            const string assetPath = "Assets/Fonts/CJK_Font SDF.asset";
-
-            // 已有可用资产则直接用；损坏资产删除重建
-            TMP_FontAsset existing = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(assetPath);
-            if (existing != null && !IsFontAssetUsable(existing))
+            if (!File.Exists(OflFontPath))
             {
-                Debug.LogWarning("[SceneBuilder] 检测到损坏的中文字体资产，删除重建");
-                AssetDatabase.DeleteAsset(assetPath);
+                Debug.LogError("[SceneBuilder] 缺少 OFL 字体: " + OflFontPath);
+                if (confirm)
+                    EditorUtility.DisplayDialog("FallenAngel",
+                        "缺少可商用字体。\n\n请将 SourceHanSansCN-Regular.otf（思源黑体 CN，SIL OFL）放到 Assets/Fonts。", "OK");
+                return false;
+            }
+
+            AssetDatabase.ImportAsset(OflFontPath);
+            Font oflFont = AssetDatabase.LoadAssetAtPath<Font>(OflFontPath);
+            if (oflFont == null)
+            {
+                Debug.LogError("[SceneBuilder] OFL 字体导入失败: " + OflFontPath);
+                if (confirm)
+                    EditorUtility.DisplayDialog("FallenAngel",
+                        "思源黑体导入失败，Unity 未能识别 Assets/Fonts/SourceHanSansCN-Regular.otf。", "OK");
+                return false;
+            }
+
+            TMP_FontAsset existing = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(CjkFontAssetPath);
+            bool wrongSource = existing != null && existing.sourceFontFile != oflFont;
+            if (existing != null && (!IsFontAssetUsable(existing) || wrongSource))
+            {
+                Debug.LogWarning(wrongSource
+                    ? "[SceneBuilder] 中文字体资产来源不是思源黑体，删除重建"
+                    : "[SceneBuilder] 检测到损坏的中文字体资产，删除重建");
+                AssetDatabase.DeleteAsset(CjkFontAssetPath);
                 existing = null;
             }
 
             TMP_FontAsset fa = existing;
             if (fa == null)
             {
-                foreach (string src in candidates)
+                TMP_FontAsset candidate = TMP_FontAsset.CreateFontAsset(
+                    oflFont, 90, 9, GlyphRenderMode.SDFAA, 1024, 1024,
+                    AtlasPopulationMode.Dynamic, true);
+                if (!IsFontAssetUsable(candidate))
                 {
-                    if (!File.Exists(src)) continue;
-
-                    string fontPath = "Assets/Fonts/" + Path.GetFileName(src);
-                    if (!File.Exists(fontPath))
-                    {
-                        File.Copy(src, fontPath);
-                        AssetDatabase.ImportAsset(fontPath);
-                    }
-                    Font font = AssetDatabase.LoadAssetAtPath<Font>(fontPath);
-                    if (font == null) continue;
-
-                    TMP_FontAsset candidate = TMP_FontAsset.CreateFontAsset(
-                        font, 90, 9, GlyphRenderMode.SDFAA, 1024, 1024,
-                        AtlasPopulationMode.Dynamic, true);
-                    if (!IsFontAssetUsable(candidate))
-                    {
-                        Debug.LogWarning($"[SceneBuilder] {src} 生成图集失败（TTC 字体常见），尝试下一个候选");
-                        Object.DestroyImmediate(candidate);
-                        continue;
-                    }
-                    AssetDatabase.CreateAsset(candidate, assetPath);
-                    // 关键：图集纹理与材质必须存为资产子对象，否则只保存壳文件（约3KB），
-                    // 重新加载后 atlasTextures 为空 → 回退默认字体 → 中文方块
-                    if (candidate.material != null)
-                        AssetDatabase.AddObjectToAsset(candidate.material, candidate);
-                    if (candidate.atlasTextures != null)
-                        foreach (Texture2D tex in candidate.atlasTextures)
-                            if (tex != null) AssetDatabase.AddObjectToAsset(tex, candidate);
-                    AssetDatabase.SaveAssets();
-                    // 从磁盘重新加载，校验持久化结果（内存校验通过不等于落盘成功）
-                    fa = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(assetPath);
-                    if (!IsFontAssetUsable(fa))
-                    {
-                        Debug.LogWarning($"[SceneBuilder] {src} 持久化后图集丢失，尝试下一个候选");
-                        AssetDatabase.DeleteAsset(assetPath);
-                        fa = null;
-                        continue;
-                    }
-                    Debug.Log($"[SceneBuilder] 中文字体资产生成成功: {src} -> {assetPath}");
-                    break;
+                    Debug.LogError("[SceneBuilder] 思源黑体生成图集失败");
+                    Object.DestroyImmediate(candidate);
+                    if (confirm)
+                        EditorUtility.DisplayDialog("FallenAngel",
+                            "思源黑体未能生成有效 TMP 图集。", "OK");
+                    return false;
                 }
-            }
-
-            if (fa == null)
-            {
-                Debug.LogError("[SceneBuilder] 所有候选系统字体均生成失败，中文 UI 将无法显示");
-                EditorUtility.DisplayDialog("FallenAngel",
-                    "中文字体生成失败。\n\n候选字体（simhei/msyh/simsun）均未能生成有效图集。", "OK");
-                return;
+                AssetDatabase.CreateAsset(candidate, CjkFontAssetPath);
+                if (candidate.material != null)
+                    AssetDatabase.AddObjectToAsset(candidate.material, candidate);
+                if (candidate.atlasTextures != null)
+                    foreach (Texture2D tex in candidate.atlasTextures)
+                        if (tex != null) AssetDatabase.AddObjectToAsset(tex, candidate);
+                AssetDatabase.SaveAssets();
+                fa = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(CjkFontAssetPath);
+                if (!IsFontAssetUsable(fa))
+                {
+                    Debug.LogError("[SceneBuilder] 思源黑体持久化后图集丢失");
+                    AssetDatabase.DeleteAsset(CjkFontAssetPath);
+                    if (confirm)
+                        EditorUtility.DisplayDialog("FallenAngel",
+                            "思源黑体图集写入磁盘后丢失，请重试 Create Chinese TMP Font。", "OK");
+                    return false;
+                }
+                Debug.Log("[SceneBuilder] 中文字体资产生成成功: " + OflFontPath + " -> " + CjkFontAssetPath);
             }
 
             cjkFontLoaded = false;
             AssetDatabase.SaveAssets();
-            EditorUtility.DisplayDialog("FallenAngel",
-                "中文字体已就绪。\n\n请重新执行 Tools > FallenAngel > Build Default Game Scene 重建场景，中文 UI 即可正常显示。", "OK");
+            if (confirm)
+                EditorUtility.DisplayDialog("FallenAngel",
+                    "中文字体已就绪（思源黑体 CN，SIL OFL）。\n\n请重新执行 Tools > FallenAngel > Build Default Game Scene 重建场景。", "OK");
+            return true;
         }
 
         /// <summary>字体资产是否可用（图集必须有效，否则 TMP 赋值即抛异常）</summary>
@@ -137,6 +140,14 @@ namespace FallenAngel.Core
             {
                 EditorUtility.DisplayDialog("FallenAngel",
                     "请先退出播放模式（点播放按钮停止运行），再重建场景。", "OK");
+                return;
+            }
+
+            if (!EnsureCjkFont(false))
+            {
+                if (confirm)
+                    EditorUtility.DisplayDialog("FallenAngel",
+                        "中文字体未就绪。请将 SourceHanSansCN-Regular.otf 放到 Assets/Fonts 后重试。", "OK");
                 return;
             }
 
@@ -1388,7 +1399,7 @@ namespace FallenAngel.Core
             if (!cjkFontLoaded)
             {
                 cjkFontLoaded = true;
-                cjkFontAsset = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/Fonts/CJK_Font SDF.asset");
+                cjkFontAsset = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(CjkFontAssetPath);
                 if (cjkFontAsset != null && !IsFontAssetUsable(cjkFontAsset))
                 {
                     Debug.LogWarning("[SceneBuilder] 中文字体资产图集损坏，回退 TMP 默认字体（请重跑 Create Chinese TMP Font）");
