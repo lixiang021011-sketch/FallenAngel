@@ -12,6 +12,7 @@ namespace FallenAngel.UI
             DeepSeaTheme.Backdrop(transform);
             foreach (var button in GetComponentsInChildren<Button>(true))
             {
+                if (button.GetComponentInParent<SaveSelectPanelController>(true) != null) continue;
                 if (TryApplyChromeRole(button))
                     continue;
 
@@ -34,6 +35,7 @@ namespace FallenAngel.UI
             }
             foreach (var text in GetComponentsInChildren<TextMeshProUGUI>(true))
             {
+                if (text.GetComponentInParent<SaveSelectPanelController>(true) != null) continue;
                 if (text.name.EndsWith("Title")) DeepSeaTheme.TitleRule(text);
             }
             var game = transform.Find("GamePanel");
