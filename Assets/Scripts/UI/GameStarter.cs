@@ -213,9 +213,7 @@ namespace FallenAngel.UI
 #endif
 
         /// <summary>
-        /// 核心玩法调试入口（Play 模式下 Inspector 右键本组件）：
-        /// 战斗格临时占位期间（RunManager.BattleNodeAsPlaceholder=true），
-        /// 用 ContextMenu 直接开谱测试游玩内容，与地图 UI 流程分开验证。
+        /// 核心玩法调试入口（Play 模式下 Inspector 右键本组件）：直接开谱，不经行程地图。
         /// </summary>
         [ContextMenu("Play Test Chart (5K)")]
         public void PlayTestChart5K()

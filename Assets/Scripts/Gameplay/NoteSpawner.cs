@@ -439,7 +439,7 @@ namespace FallenAngel.Gameplay
                 {
                     continue; // LongBody不可直接判定
                 }
-                else // Normal 或 LongStart
+                else // Normal / LongStart / Drag / Flick / Slide 等可点判定类型
                 {
                     if (note.IsJudged) continue;
                 }

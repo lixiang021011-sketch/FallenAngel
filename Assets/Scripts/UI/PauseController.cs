@@ -190,9 +190,6 @@ namespace FallenAngel.UI
             try { AudioManager.Instance?.PlayButtonClick(); } catch { }
             if (pausePanel != null) pausePanel.SetActive(false);
 
-            // 弃局清局（Roguelite 局状态清理；无局时为空操作）
-            RunManager.Instance?.AbandonRun();
-
             if (menuPanel != null) menuPanel.SetActive(true);
             if (gamePanel != null) gamePanel.SetActive(false);
 

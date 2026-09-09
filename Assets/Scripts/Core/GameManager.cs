@@ -11,7 +11,7 @@ namespace FallenAngel.Core
     public enum GameState
     {
         Menu,       // 菜单界面
-        Map,        // Roguelite 地图（选格即选歌）
+        Map,        // 未使用。旧随机格地图入口；行程地图是 Portfolio 覆盖层，不切此状态。
         Loading,    // 加载中
         Playing,    // 游戏进行中
         Paused,     // 暂停
@@ -273,20 +273,6 @@ namespace FallenAngel.Core
                 Time.timeScale = 1f;
                 LoadChart(CurrentChart);
             }
-        }
-
-        /// <summary>
-        /// 进入 Roguelite 地图（清当前谱面与歌曲状态，停止残留音频）
-        /// </summary>
-        public void GoToMap()
-        {
-            Time.timeScale = 1f;
-            if (AudioManager.Instance != null)
-                AudioManager.Instance.StopAll();
-            CurrentChart = null;
-            SongTime = 0f;
-            IsSongStarted = false;
-            ChangeState(GameState.Map);
         }
 
         /// <summary>

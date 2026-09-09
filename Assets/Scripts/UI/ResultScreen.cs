@@ -268,14 +268,7 @@ namespace FallenAngel.UI
             AudioManager.Instance?.PlayButtonClick();
             if (rootPanel != null) rootPanel.SetActive(false);
 
-            // Roguelite 局内：结算返回地图下一节点（不走主菜单）
-            if (RunManager.Instance != null && RunManager.Instance.IsInRun)
-            {
-                RunManager.Instance.AdvanceFromResult();
-                return;
-            }
-
-            // 局外（旧调试路径）：返回主菜单（GameStarter 挂在 Canvas 根，始终激活）
+            // 局外调试路径：返回主菜单。Portfolio 演奏中 OwnsSong 已在上方提前 return。
             if (menuPanel != null) menuPanel.SetActive(true);
             if (gamePanel != null) gamePanel.SetActive(false);
 

@@ -148,6 +148,18 @@ namespace FallenAngel.Gameplay
                 }
             }
 
+            // Drag：按住该轨穿过判定窗即 Perfect（碰即 Perfect）。
+            // 只认按下边沿时，「按住等 Drag 经过」会被 NoteSpawner 静默回收，0 分。
+            for (int lane = 0; lane < pressStates.Length; lane++)
+            {
+                if (!pressStates[lane]) continue;
+                Note drag = NoteSpawner.Instance.GetClosestJudgableNote(lane, false, NoteType.Drag);
+                if (drag == null) continue;
+                float dragDiff = songTime - drag.Data.time;
+                if (judgeWindows.Judge(dragDiff) == JudgeResultType.Miss) continue;
+                ApplyJudge(drag, JudgeResultType.Perfect, lane);
+            }
+
             // 宽长按 / Slide 释放：全部键松开即结束（释放时刻对结束时间判定）。
             // Slide 与宽长按同语义：由任意键维持——触屏跨轨拖动（输入层
             // 松旧轨+按新轨）时只要还有键按住就不会中断。

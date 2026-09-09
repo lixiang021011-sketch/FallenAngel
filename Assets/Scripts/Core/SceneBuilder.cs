@@ -167,7 +167,6 @@ namespace FallenAngel.Core
             AudioManager am = managers.AddComponent<AudioManager>();
             InputManager im = managers.AddComponent<InputManager>();
             JudgeManager jm = managers.AddComponent<JudgeManager>();
-            managers.AddComponent<RunManager>();
 
             // ---- 3. Canvas ----
             GameObject canvasGO = new GameObject("Canvas");
@@ -294,9 +293,6 @@ namespace FallenAngel.Core
             // 选歌界面（卷帘滚动列表；入口按钮与面板注入 starter）
             CreateSongSelectPanel(canvasRect, menuPanel.transform, starter);
 
-            // Roguelite 地图面板（MapPanel 根始终激活，内容随 GameState.Map 显隐）
-            CreateMapPanel(canvasRect);
-
             // ---- 5. 链接引用 ----
             // (多数引用通过Inspector面板拖入，这里尽量给默认值)
             Debug.Log("[SceneBuilder] 场景基本结构已创建。请在Inspector中补充:");
@@ -312,7 +308,7 @@ namespace FallenAngel.Core
                 "2. 把 Note Prefab 拖到 NoteSpawner 上\n" +
                 "3. 拖拽 HUD / ResultScreen 中的 UI 文本引用\n" +
                 "4. 在 Resources/Charts 放入谱面JSON，Resources/Audio放入音乐\n" +
-                "5. 给 GameStarter 勾上 Auto Start Demo On Awake 可立即运行测试",
+                "5. Play 后从主菜单「新游戏」或「选择存档」进入行程地图",
                 "OK");
         }
 
@@ -1316,71 +1312,6 @@ namespace FallenAngel.Core
 
             // 控制器交给 GameStarter（始终激活，Awake 时接线；入口按钮由 CreateGameStarter 统一创建）
             SetPrivateField(starter, "songSelectPanelController", controller);
-        }
-
-        /// <summary>
-        /// Roguelite 地图面板：MapPanel 根（始终激活、无 Graphic，仅挂控制器）→
-        /// MapContent（非激活：不透明背景+标题+节点容器+按钮模板）→
-        /// MapInfoPopup（非激活说明弹窗）。不透明背景在 MapContent 内，
-        /// 随内容隐藏，否则会盖住主菜单。
-        /// </summary>
-        private static void CreateMapPanel(RectTransform canvasRect)
-        {
-            GameObject mapPanel = CreatePanel("MapPanel", canvasRect);
-            MapPanelController mpc = mapPanel.AddComponent<MapPanelController>();
-
-            GameObject content = CreatePanel("MapContent", mapPanel.transform);
-            Image bg = content.AddComponent<Image>();
-            bg.color = new Color(0.05f, 0.06f, 0.10f, 1f);
-            bg.raycastTarget = false;
-            content.SetActive(false);
-
-            TextMeshProUGUI title = CreateText("MapTitle", content.transform,
-                new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -120), new Vector2(700, 100),
-                "map.title", 64, TextAlignmentOptions.Center);
-            title.fontStyle = FontStyles.Bold;
-
-            // 节点容器（按钮由 MapPanelController 克隆模板手动堆叠定位，不用 LayoutGroup）
-            GameObject nodesContainer = new GameObject("NodesContainer", typeof(RectTransform));
-            nodesContainer.transform.SetParent(content.transform, false);
-            RectTransform ncRT = (RectTransform)nodesContainer.transform;
-            ncRT.anchorMin = new Vector2(0.5f, 0.5f);
-            ncRT.anchorMax = new Vector2(0.5f, 0.5f);
-            ncRT.pivot = new Vector2(0.5f, 0.5f);
-            ncRT.anchoredPosition = Vector2.zero;
-            ncRT.sizeDelta = new Vector2(800, 1500);
-
-            // 节点按钮模板（非激活，克隆源；label 为动态文本，key 空串）
-            GameObject template = CreateButton("NodeButtonTemplate", content.transform,
-                new Vector2(0.5f, 0.5f), new Vector2(400, 90), "", 30);
-            template.SetActive(false);
-
-            // 说明弹窗（非激活；占位格/终点点击后显示）
-            GameObject popup = CreatePanel("MapInfoPopup", mapPanel.transform);
-            Image popupImg = popup.AddComponent<Image>();
-            popupImg.color = new Color(0, 0, 0, 0.85f);
-            popupImg.raycastTarget = true; // 弹窗期间拦截下层节点按钮
-
-            TextMeshProUGUI popupTitle = CreateText("PopupTitle", popup.transform,
-                new Vector2(0.5f, 0.55f), new Vector2(0.5f, 0.55f), Vector2.zero, new Vector2(700, 100),
-                "", 52, TextAlignmentOptions.Center);
-            popupTitle.fontStyle = FontStyles.Bold;
-
-            TextMeshProUGUI popupDesc = CreateText("PopupDesc", popup.transform,
-                new Vector2(0.5f, 0.45f), new Vector2(0.5f, 0.45f), Vector2.zero, new Vector2(900, 300),
-                "", 36, TextAlignmentOptions.Center);
-
-            GameObject closeBtn = CreateButton("PopupCloseButton", popup.transform,
-                new Vector2(0.5f, 0.3f), new Vector2(300, 90), "lang.close", 34);
-            popup.SetActive(false);
-
-            SetPrivateField(mpc, "mapContent", content);
-            SetPrivateField(mpc, "nodesContainer", ncRT);
-            SetPrivateField(mpc, "nodeButtonTemplate", template);
-            SetPrivateField(mpc, "mapInfoPopup", popup);
-            SetPrivateField(mpc, "popupTitleText", popupTitle);
-            SetPrivateField(mpc, "popupDescText", popupDesc);
-            SetPrivateField(mpc, "popupCloseButton", closeBtn.GetComponent<Button>());
         }
 
         private static PauseController CreatePausePanel(Transform parent)
