@@ -14,5 +14,8 @@ namespace FallenAngel.Core
 
         /// <summary>演奏收益封顶比例（原型值：总演奏收益 ≤ B × (1 + 此值)，与导出器 --income-cap-ratio 一致）</summary>
         public const float IncomeCapRatio = 0.5f;
+
+        /// <summary>整曲Perfect目标奖励的上层达标线：≥此线给满额；表内 threshold（0.7）为下层线给半额。原型规则，见 talent_effects guide。</summary>
+        public const double PerfectFullThreshold = 0.9;
     }
 }

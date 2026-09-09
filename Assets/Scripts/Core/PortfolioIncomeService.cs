@@ -40,11 +40,16 @@ namespace FallenAngel.Core
             double direct = b; // 原始直接奖励 = 基础 B + 达标/挑战奖励
 
             // ---- 直接奖励（DIRECT）----
-            // I0/I1：整曲 Perfect 率达标（覆盖升级：I1 用自身系数）
+            // I0/I1：整曲 Perfect 分级达标（2026-09-09 数值模拟后新规则）——
+            // ≥上层线（PerfectFullThreshold）给满额；≥表内下层线（threshold=0.7）给半额。覆盖升级用 I1 系数。
             var i0 = talents.FirstOrDefault(e => e.Handler == "perfect_goal_reward");
             if (i0 != null && i0.Threshold.HasValue && perfectRate >= i0.Threshold.Value)
             {
-                double amount = b * EffectiveCoefficient(i0, talents);
+                double coef = EffectiveCoefficient(i0, talents);
+                if (i0.Threshold.Value < PortfolioDefaults.PerfectFullThreshold
+                    && perfectRate < PortfolioDefaults.PerfectFullThreshold)
+                    coef *= 0.5;
+                double amount = b * coef;
                 AddLine(s, "income.I0", amount, "DIRECT");
                 direct += amount;
             }

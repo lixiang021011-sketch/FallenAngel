@@ -258,7 +258,7 @@ namespace FallenAngel.Data
     /// <summary>全部12张表的只读构建快照；空值与0/false保持不同。</summary>
     public static class PortfolioConfig
     {
-        public const string ManifestSha256 = "385f2df497805e62073fe54a6c75bb34ac5da470450c5ba34b4559bde8719378";
+        public const string ManifestSha256 = "db106970d5e09e1cc242e4d863553abaae5a65865390087cdea83bc163b22452";
         public const string SchemaVersion = "3.0";
         public static ReadOnlyCollection<EquipmentBaseRow> EquipmentBase { get; } =
             System.Array.AsReadOnly(new EquipmentBaseRow[]
@@ -267,7 +267,7 @@ namespace FallenAngel.Data
             new EquipmentBaseRow("E02", "EQ_E02", 60, false, true, "\u6b63\u5e38\u5b8c\u6210\u6b4c\u66f2\u540e\u7ed3\u7b97\uff1a\u6bcf\u4e2a\u5b8c\u6574\u4e14\u4e0d\u65ad\u8fde\u7684\u6709\u6548\u4e50\u53e5\u83b7\u5f970.03B\u6f14\u594f\u989d\u5916\u6536\u76ca\u3002"),
             new EquipmentBaseRow("E03", "EQ_E03", 40, false, true, "\u672c\u66f2\u9996\u6b21\u65ad\u8fde\u540e\uff0c\u4e4b\u540e\u9996\u4e2a\u5b8c\u6574\u4e14\u4e0d\u65ad\u8fde\u7684\u6709\u6548\u4e50\u53e5\u5956\u52b10.02B\uff0c\u6bcf\u66f2\u4e00\u6b21\uff1b\u6b63\u5e38\u5b8c\u6210\u6b4c\u66f2\u540e\u7ed3\u7b97\u3002"),
             new EquipmentBaseRow("E04", "EQ_E04", 50, false, true, "\u6709\u6548\u4e50\u53e5\u4e2d\u6240\u6709\u5e94\u7ed3\u675f\u7684\u957f\u6309\u5c3e\u8fbe\u5230Great\u53ca\u4ee5\u4e0a\uff0c\u5956\u52b10.04B\uff1b\u65e0\u957f\u6309\u5c3e\u4e0d\u89e6\u53d1\uff0c\u6b63\u5e38\u5b8c\u6210\u6b4c\u66f2\u540e\u7ed3\u7b97\u3002"),
-            new EquipmentBaseRow("E05", "EQ_E05", 80, false, true, "\u6b63\u5e38\u5b8c\u6210\u6b4c\u66f2\u4e14\u65e0Miss\uff0c\u6f14\u594f\u76f4\u63a5\u5956\u52b1\u53ca\u8865\u507f\u589e\u52a025%\uff0c\u4e0e\u9002\u7528\u589e\u5e45\u52a0\u7b97\uff1b\u4e0d\u5305\u542b\u5229\u606f\u3001\u6311\u6218\u5956\u91d1\u3001\u8def\u8d39\u8fd4\u8fd8\u53ca\u4fdd\u5e95\u3002"),
+            new EquipmentBaseRow("E05", "EQ_E05", 60, false, true, "\u6b63\u5e38\u5b8c\u6210\u6b4c\u66f2\u4e14\u65e0Miss\uff0c\u6f14\u594f\u76f4\u63a5\u5956\u52b1\u53ca\u8865\u507f\u589e\u52a025%\uff0c\u4e0e\u9002\u7528\u589e\u5e45\u52a0\u7b97\uff1b\u4e0d\u5305\u542b\u5229\u606f\u3001\u6311\u6218\u5956\u91d1\u3001\u8def\u8d39\u8fd4\u8fd8\u53ca\u4fdd\u5e95\u3002"),
             new EquipmentBaseRow("E06", "EQ_E06", 50, false, true, "\u6bcf\u66f2\u9996\u6b21\u5408\u683c\u7684\u6f14\u594f\u5956\u52b1\u5931\u8d25\u6279\u6b21\uff0c\u8865\u507f\u5176\u4e2d\u539f\u59cb\u91d1\u989d\u6700\u9ad8\u4e00\u9879\u768450%\uff0c\u539f\u59cb\u8865\u507f\u6700\u591a0.03B\uff0c\u6bcf\u66f2\u4e00\u6b21\uff1b\u6b63\u5e38\u5b8c\u6210\u6b4c\u66f2\u540e\u7ed3\u7b97\u3002"),
             new EquipmentBaseRow("E07", "EQ_E07", 60, false, true, "\u88c5\u5907\u8d2d\u4e70\u4ef7\u683c\u964d\u4f4e15%\uff0c\u4e0e\u5176\u4ed6\u8d2d\u4e70\u6298\u6263\u53d6\u6700\u5927\u503c\uff1b\u4e0d\u5bf9\u4e70\u5165\u672c\u88c5\u5907\u7684\u5f53\u6b21\u4ea4\u6613\u751f\u6548\u3002"),
             new EquipmentBaseRow("E08", "EQ_E08", 60, false, true, "\u53ef\u4e3b\u52a8\u9009\u62e9\u51cf\u514d20%\u8def\u8d39\uff0c\u83b7\u5f97\u65f6\u63d0\u4f9b\u672c\u5c402\u6b21\u673a\u4f1a\uff1b\u6210\u529f\u652f\u4ed8\u5e76\u8fdb\u5165\u624d\u6d88\u8017\uff0c\u4e0e\u5929\u8d4b\u6298\u6263\u53d6\u6700\u5927\u503c\u3002"),
@@ -307,7 +307,7 @@ namespace FallenAngel.Data
             new MapEdgesRow("ME01", "N00", "N01", 0),
             new MapEdgesRow("ME02", "N01", "N02", 0),
             new MapEdgesRow("ME03", "N02", "N03", 0),
-            new MapEdgesRow("ME04", "N02", "N04", 60),
+            new MapEdgesRow("ME04", "N02", "N04", 40),
             new MapEdgesRow("ME05", "N03", "N07", 0),
             new MapEdgesRow("ME06", "N04", "N08", 0),
             new MapEdgesRow("ME07", "N05", "N06", 0),
@@ -378,7 +378,7 @@ namespace FallenAngel.Data
             new TalentEffectsRow("FX_F1", "modify_coefficient", "RUN_START", null, null, null, "TARGET_COEFFICIENT", 0.1d, null, null, "NONE", "OVERRIDE_PARAMETER", "TARGET_EFFECT", "FX_F0", "NONE", true),
             new TalentEffectsRow("FX_G0", "income_floor", "SONG_SETTLE", null, null, null, "SONG_BASE_INCOME", 0.08d, null, 1, "SONG", "FLOOR", "PERFORMANCE_WITH_COMPENSATION", null, "PERFORMANCE_FLOOR", true),
             new TalentEffectsRow("FX_G1", "modify_coefficient", "RUN_START", null, null, null, "TARGET_COEFFICIENT", 0.12d, null, null, "NONE", "OVERRIDE_PARAMETER", "TARGET_EFFECT", "FX_G0", "NONE", true),
-            new TalentEffectsRow("FX_I0", "perfect_goal_reward", "SONG_SETTLE", "PERFECT_RATE", "GE", 0.9d, "SONG_BASE_INCOME", 0.04d, null, 1, "SONG", "ADD", "SELF", null, "PERFORMANCE_DIRECT", true),
+            new TalentEffectsRow("FX_I0", "perfect_goal_reward", "SONG_SETTLE", "PERFECT_RATE", "GE", 0.7d, "SONG_BASE_INCOME", 0.04d, null, 1, "SONG", "ADD", "SELF", null, "PERFORMANCE_DIRECT", true),
             new TalentEffectsRow("FX_I1", "modify_coefficient", "RUN_START", null, null, null, "TARGET_COEFFICIENT", 0.06d, null, null, "NONE", "OVERRIDE_PARAMETER", "TARGET_EFFECT", "FX_I0", "NONE", true),
             new TalentEffectsRow("FX_J0", "challenge_reward", "ROUTE_COMPLETE", "IS_PAID_CHALLENGE", "EQ", 1.0d, "SONG_BASE_INCOME", 0.04d, null, 1, "SONG", "ADD", "SELF", null, "CHALLENGE", true),
             new TalentEffectsRow("FX_J1", "modify_coefficient", "RUN_START", null, null, null, "TARGET_COEFFICIENT", 0.06d, null, null, "NONE", "OVERRIDE_PARAMETER", "TARGET_EFFECT", "FX_J0", "NONE", true),
