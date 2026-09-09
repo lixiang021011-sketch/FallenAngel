@@ -10,39 +10,68 @@ namespace FallenAngel.UI
         private void Start()
         {
             DeepSeaTheme.Backdrop(transform);
-            foreach(var button in GetComponentsInChildren<Button>(true))
+            foreach (var button in GetComponentsInChildren<Button>(true))
             {
-                var image=button.targetGraphic as Image;
-                if(image!=null)image.color=DeepSeaTheme.Accent;
+                if (TryApplyChromeRole(button))
+                    continue;
+
+                var image = button.targetGraphic as Image;
+                if (image != null) image.color = DeepSeaTheme.Card;
                 DeepSeaTheme.StyleButton(button);
-                if(button.name.EndsWith("CloseButton") || button.name=="PauseButton")
+                if (button.name.EndsWith("CloseButton") || button.name == "PauseButton")
                 {
-                    foreach(var label in button.GetComponentsInChildren<TMPro.TextMeshProUGUI>()) label.enabled=false;
-                    var symbol=DeepSeaTheme.Graphic(button.transform,"ControlSymbol",button.name=="PauseButton"?DeepSeaGraphic.Shape.Pause:DeepSeaGraphic.Shape.Close);
-                    symbol.color=DeepSeaTheme.Ink;
+                    foreach (var label in button.GetComponentsInChildren<TextMeshProUGUI>())
+                        label.enabled = false;
+                    var symbol = DeepSeaTheme.Graphic(button.transform, "ControlSymbol",
+                        button.name == "PauseButton" ? DeepSeaGraphic.Shape.Pause : DeepSeaGraphic.Shape.Close);
+                    symbol.color = DeepSeaTheme.Ink;
                 }
             }
-            foreach(string name in new[]{"MenuPanel","TalentPanel","EquipmentPanel","ShopPanel","SaveSelectPanel","SettingsPanel"})
+            foreach (string name in new[] { "MenuPanel", "TalentPanel", "EquipmentPanel", "ShopPanel", "SaveSelectPanel", "SettingsPanel" })
             {
-                var panel=transform.Find(name);
-                if(panel!=null)DeepSeaTheme.Backdrop(panel);
+                var panel = transform.Find(name);
+                if (panel != null) DeepSeaTheme.Backdrop(panel);
             }
-            // 标题条装饰：所有面板标题下方加主题规则线（同锚点，不改变布局）
-            foreach(var text in GetComponentsInChildren<TextMeshProUGUI>(true))
+            foreach (var text in GetComponentsInChildren<TextMeshProUGUI>(true))
             {
-                if(text.name.EndsWith("Title"))DeepSeaTheme.TitleRule(text);
+                if (text.name.EndsWith("Title")) DeepSeaTheme.TitleRule(text);
             }
-            // 演奏区域沿用4K/5K颜色语义，环境只放在轨道后面。
-            var game=transform.Find("GamePanel");
-            if(game!=null)DeepSeaTheme.Backdrop(game);
-            var menu=transform.Find("MenuPanel");
-            if(menu!=null)
+            var game = transform.Find("GamePanel");
+            if (game != null) DeepSeaTheme.Backdrop(game);
+            var menu = transform.Find("MenuPanel");
+            if (menu != null)
             {
-                var emblem=DeepSeaTheme.Graphic(menu,"NavigationEmblem",DeepSeaGraphic.Shape.Beacon);
-                var rt=(RectTransform)emblem.transform;rt.anchorMin=rt.anchorMax=new Vector2(.5f,.92f);
-                rt.pivot=new Vector2(.5f,.5f);rt.anchoredPosition=Vector2.zero;rt.sizeDelta=new Vector2(120,120);
+                var emblem = DeepSeaTheme.Graphic(menu, "NavigationEmblem", DeepSeaGraphic.Shape.Beacon);
+                var rt = (RectTransform)emblem.transform;
+                rt.anchorMin = rt.anchorMax = new Vector2(.5f, .92f);
+                rt.pivot = new Vector2(.5f, .5f);
+                rt.anchoredPosition = Vector2.zero;
+                rt.sizeDelta = new Vector2(120, 120);
+                emblem.color = DeepSeaTheme.Ink;
             }
             Debug.Log("[DeepSeaPresentation] Marine UI theme initialized.");
+        }
+
+        /// <summary>主菜单与覆盖确认按规范角色上色，避免统一 Accent 抹平主/次/危险。</summary>
+        private static bool TryApplyChromeRole(Button button)
+        {
+            switch (button.name)
+            {
+                case "NewGameButton":
+                    DeepSeaTheme.ApplyRole(button, DeepSeaTheme.ButtonRole.Primary);
+                    return true;
+                case "NewGameConfirmButton":
+                    DeepSeaTheme.ApplyRole(button, DeepSeaTheme.ButtonRole.Danger);
+                    return true;
+                case "SaveSelectButton":
+                case "SongSelectButton":
+                case "SettingsButton":
+                case "NewGameCancelButton":
+                    DeepSeaTheme.ApplyRole(button, DeepSeaTheme.ButtonRole.Secondary);
+                    return true;
+                default:
+                    return false;
+            }
         }
     }
 }

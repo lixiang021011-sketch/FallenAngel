@@ -7,13 +7,92 @@ namespace FallenAngel.UI
     /// <summary>显示样式入口；不改按钮行为、音符颜色或玩法数据。</summary>
     public static class DeepSeaTheme
     {
-        public static readonly Color Background=new Color(.018f,.049f,.075f,1);
-        public static readonly Color Card=new Color(.037f,.09f,.12f,.94f);
-        public static readonly Color Ink=new Color(.87f,.94f,.91f,1);
-        public static readonly Color Accent=new Color(.09f,.32f,.36f,1);
-        public static readonly Color Owned=new Color(.13f,.36f,.29f,1);
-        public static readonly Color Line=new Color(.38f,.68f,.67f,.55f);
-        public static readonly Color Paid=new Color(.85f,.71f,.5f,1);
+        // UI001：page_redesign_0909 统一规范
+        public static readonly Color Background = Hex(0x101A22);
+        public static readonly Color Card = new Color(0.082f, 0.141f, 0.180f, 0.94f);
+        public static readonly Color Ink = Hex(0xE5E9E4);
+        public static readonly Color Muted = Hex(0x9BABAF);
+        public static readonly Color Accent = Hex(0x8DC6D0);
+        public static readonly Color Owned = new Color(0.13f, 0.36f, 0.29f, 1);
+        public static readonly Color Line = new Color(0.553f, 0.776f, 0.816f, 0.55f);
+        public static readonly Color Paid = Hex(0xCFB47B);
+        public static readonly Color Danger = Hex(0xC38680);
+
+        public const int TitleSize = 60;
+        public const int ActionSize = 36;
+        public const int BodySize = 32;
+        public const int CaptionSize = 28;
+        public const float SafeMargin = 60f;
+        public const float MinHit = 96f;
+
+        public enum ButtonRole { Default, Primary, Secondary, Danger }
+
+        static Color Hex(int rgb)
+        {
+            return new Color(((rgb >> 16) & 255) / 255f, ((rgb >> 8) & 255) / 255f, (rgb & 255) / 255f, 1f);
+        }
+
+        /// <summary>主/次/危险按钮角色。命中区仍是透明 Image，视觉走切角面。</summary>
+        public static void ApplyRole(Button button, ButtonRole role)
+        {
+            if (button == null) return;
+            StyleButton(button);
+
+            Color fill = Card;
+            Color label = Ink;
+            Color frame = Line;
+            if (role == ButtonRole.Primary)
+            {
+                fill = Ink;
+                label = Background;
+                frame = Ink;
+            }
+            else if (role == ButtonRole.Secondary)
+            {
+                fill = Card;
+                label = Ink;
+                frame = Accent;
+            }
+            else if (role == ButtonRole.Danger)
+            {
+                fill = Danger;
+                label = Ink;
+                frame = Danger;
+            }
+            else
+            {
+                fill = Accent;
+                label = Ink;
+                frame = Line;
+            }
+
+            var hit = button.GetComponent<Image>();
+            if (hit != null) hit.color = fill;
+            RefineButton(button);
+
+            var surface = button.transform.Find("SeaSurface");
+            if (surface != null)
+            {
+                var graphic = surface.GetComponent<DeepSeaGraphic>();
+                if (graphic != null) graphic.color = fill;
+            }
+            var frameTf = button.transform.Find("SeaFrame");
+            if (frameTf != null)
+            {
+                var graphic = frameTf.GetComponent<DeepSeaGraphic>();
+                if (graphic != null)
+                {
+                    graphic.color = role == ButtonRole.Primary ? new Color(0, 0, 0, 0) : frame;
+                    graphic.SetVerticesDirty();
+                }
+            }
+
+            foreach (var text in button.GetComponentsInChildren<TextMeshProUGUI>(true))
+            {
+                text.color = label;
+                text.fontSize = ActionSize;
+            }
+        }
 
         /// <summary>Opt-in production controls; existing pages can migrate independently.</summary>
         public static void RefineButton(Button button)

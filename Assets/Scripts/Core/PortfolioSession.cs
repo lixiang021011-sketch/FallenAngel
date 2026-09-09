@@ -138,19 +138,45 @@ namespace FallenAngel.Core
             });
         }
 
-        /// <summary>默认槽是否存在有价值进度（积分/天赋/局内快照）。用于"新游戏"覆盖前决定是否弹确认——空白档无可损失，不弹。</summary>
+        /// <summary>
+        /// 默认槽是否有可损失进度。空白档（无档、损坏、或仅停在起点且零积分/无天赋/未开曲）不弹确认。
+        /// 仅有 Begin 写入的起点快照不算进度——否则点一次新游戏后永远弹窗。
+        /// </summary>
         public bool DefaultProfileHasProgress()
         {
             try
             {
                 var p = Talents.ReadProfile(PortfolioDefaults.DefaultProfileId);
-                return p.growthPoints > 0 || p.unlockedNodeIds.Count > 0
-                    || !string.IsNullOrEmpty(p.activeRunId) || !string.IsNullOrEmpty(p.growthRunJson);
+                bool has = p.growthPoints > 0
+                    || (p.unlockedNodeIds != null && p.unlockedNodeIds.Count > 0)
+                    || RunHasValuableProgress(p);
+                Debug.Log("[PortfolioSession] 默认槽有进度=" + has
+                    + " growth=" + p.growthPoints
+                    + " talents=" + (p.unlockedNodeIds == null ? 0 : p.unlockedNodeIds.Count));
+                return has;
             }
             catch (Exception)
             {
-                return false; // 不存在或损坏 → 重置无损失 → 不弹
+                Debug.Log("[PortfolioSession] 默认槽不存在或损坏，视为空白档");
+                return false;
             }
+        }
+
+        /// <summary>局内快照是否已离开「刚开局」：开过曲、拿过装备、离开起点、进过店、或已结算。</summary>
+        static bool RunHasValuableProgress(PortfolioProfileData p)
+        {
+            if (string.IsNullOrEmpty(p.growthRunJson))
+                return !string.IsNullOrEmpty(p.activeRunId);
+            var run = JsonUtility.FromJson<PortfolioGrowthRunData>(p.growthRunJson);
+            if (run == null) return true;
+            if (run.completedSongs > 0 || run.earnedPoints > 0 || run.creditedPoints > 0) return true;
+            if (run.heldEquipmentIds != null && run.heldEquipmentIds.Count > 0) return true;
+            if (run.visitedNodeIds != null && run.visitedNodeIds.Count > 1) return true;
+            if (run.runCash > 0 || run.lastCashReward > 0) return true;
+            if (run.shopCandidates != null && run.shopCandidates.Count > 0) return true;
+            if (run.optionalPurchaseDiscountUsed > 0 || run.optionalRouteDiscountUsed > 0) return true;
+            if (run.phase == "PLAYING" || run.phase == "RESULT" || run.phase == "FINISHED") return true;
+            return false;
         }
         public void SelectProfile(string id)
         {

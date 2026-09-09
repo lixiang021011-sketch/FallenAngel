@@ -18,7 +18,7 @@ namespace FallenAngel.UI
             Vector2 P(float x, float y) => new Vector2(r.xMin + x*r.width, r.yMin + y*r.height);
             if (shape == Shape.Ocean)
             {
-                Quad(vh, P(0,0), P(0,1), P(1,1), P(1,0), new Color(.018f,.049f,.075f), new Color(.055f,.16f,.19f));
+                Quad(vh, P(0,0), P(0,1), P(1,1), P(1,0), new Color(0.063f, 0.102f, 0.133f), new Color(0.082f, 0.176f, 0.204f));
                 // 斜射光仅用于环境，不覆盖任何交互命中区。
                 for(int i=0;i<5;i++)
                     Quad(vh,P(.05f+i*.19f,1),P(.12f+i*.19f,1),P(.52f+i*.14f,0),P(.42f+i*.14f,0),new Color(.35f,.8f,.79f,.035f),new Color(.2f,.6f,.7f,0));

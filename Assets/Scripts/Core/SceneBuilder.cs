@@ -646,32 +646,40 @@ namespace FallenAngel.Core
 
         private static GameStarter CreateGameStarter(Transform canvasRoot, Transform menuParent, GameObject gamePanel)
         {
-            // 菜单标题
+            // 上半屏：航标（DeepSeaPresentation）+ 冷白大标题；说明沉底，不挡主行动
             TextMeshProUGUI title = CreateText("GameTitle", menuParent,
-                new Vector2(0.5f, 0.8f), new Vector2(0.5f, 0.8f), Vector2.zero, new Vector2(900, 200),
+                new Vector2(0.5f, 0.78f), new Vector2(0.5f, 0.78f), Vector2.zero, new Vector2(960, 180),
                 "menu.title", 120, TextAlignmentOptions.Center);
             title.fontStyle = FontStyles.Bold;
-            title.color = new Color(0.7f, 0.85f, 1f);
+            title.color = DeepSeaTheme.Ink;
 
             TextMeshProUGUI subtitle = CreateText("Subtitle", menuParent,
-                new Vector2(0.5f, 0.7f), new Vector2(0.5f, 0.7f), Vector2.zero, new Vector2(600, 60),
-                "menu.subtitle", 40, TextAlignmentOptions.Center);
-            subtitle.color = new Color(1, 1, 1, 0.8f);
+                new Vector2(0.5f, 0.68f), new Vector2(0.5f, 0.68f), Vector2.zero, new Vector2(960, 48),
+                "menu.subtitle", DeepSeaTheme.CaptionSize, TextAlignmentOptions.Center);
+            subtitle.color = DeepSeaTheme.Muted;
+
+            const float barW = 1080f - DeepSeaTheme.SafeMargin * 2f;
+            const float primaryH = 116f;
+            const float rowH = 104f;
+            const float gap = 24f;
+            float halfW = (barW - gap) * 0.5f;
+
+            // 通栏主行动 + 通栏存档 + 底行双次行动（对齐设计稿 01 热点）
+            GameObject newGameBtn = CreateButton("NewGameButton", menuParent,
+                new Vector2(0.5f, 0.307f), new Vector2(barW, primaryH), "menu.newGame", DeepSeaTheme.ActionSize);
+            GameObject saveSelectBtn = CreateButton("SaveSelectButton", menuParent,
+                new Vector2(0.5f, 0.230f), new Vector2(barW, primaryH), "menu.saveSelect", DeepSeaTheme.ActionSize);
+            GameObject songSelectBtn = CreateButton("SongSelectButton", menuParent,
+                new Vector2(0.5f, 0.137f), new Vector2(halfW, rowH), "menu.songSelect", DeepSeaTheme.ActionSize);
+            ((RectTransform)songSelectBtn.transform).anchoredPosition = new Vector2(-(halfW + gap) * 0.5f, 0f);
+            GameObject settingsBtn = CreateButton("SettingsButton", menuParent,
+                new Vector2(0.5f, 0.137f), new Vector2(halfW, rowH), "menu.settings", DeepSeaTheme.ActionSize);
+            ((RectTransform)settingsBtn.transform).anchoredPosition = new Vector2((halfW + gap) * 0.5f, 0f);
 
             TextMeshProUGUI hint = CreateText("Hint", menuParent,
-                new Vector2(0.5f, 0.53f), new Vector2(0.5f, 0.53f), Vector2.zero, new Vector2(900, 160),
-                "menu.hint", 32, TextAlignmentOptions.Center);
-            hint.color = new Color(1, 1, 1, 0.7f);
-
-            // 主菜单四按钮（依次：新游戏 / 选择存档 / 自选曲目 / 选项设置）
-            GameObject newGameBtn = CreateButton("NewGameButton", menuParent,
-                new Vector2(0.5f, 0.42f), new Vector2(500, 110), "menu.newGame", 48);
-            GameObject saveSelectBtn = CreateButton("SaveSelectButton", menuParent,
-                new Vector2(0.5f, 0.30f), new Vector2(500, 110), "menu.saveSelect", 48);
-            GameObject songSelectBtn = CreateButton("SongSelectButton", menuParent,
-                new Vector2(0.5f, 0.18f), new Vector2(500, 110), "menu.songSelect", 48);
-            GameObject settingsBtn = CreateButton("SettingsButton", menuParent,
-                new Vector2(0.5f, 0.06f), new Vector2(500, 110), "menu.settings", 48);
+                new Vector2(0.5f, 0.048f), new Vector2(0.5f, 0.048f), Vector2.zero, new Vector2(barW, 40),
+                "menu.hint", DeepSeaTheme.CaptionSize, TextAlignmentOptions.Center);
+            hint.color = DeepSeaTheme.Muted;
 
             // GameStarter 挂 Canvas 根（始终激活）：局中 MenuPanel 失活后，
             // Loading→倒计时与结算→菜单事件链仍有人接（修复：此前挂 MenuPanel 失活丢事件）。
@@ -1073,7 +1081,7 @@ namespace FallenAngel.Core
             rt.anchorMax = Vector2.one;
             rt.offsetMin = Vector2.zero;
             rt.offsetMax = Vector2.zero;
-            panel.GetComponent<Image>().color = new Color(0, 0, 0, 0.85f);
+            panel.GetComponent<Image>().color = new Color(0, 0, 0, 0.72f);
 
             // 居中卡片
             GameObject card = new GameObject("ConfirmCard", typeof(RectTransform), typeof(Image));
@@ -1083,16 +1091,17 @@ namespace FallenAngel.Core
             crt.pivot = new Vector2(0.5f, 0.5f);
             crt.anchoredPosition = Vector2.zero;
             crt.sizeDelta = new Vector2(760, 560);
-            card.GetComponent<Image>().color = new Color(0.075f, 0.095f, 0.14f, 1f);
+            card.GetComponent<Image>().color = DeepSeaTheme.Card;
 
             TextMeshProUGUI message = CreateText("NewGameConfirmMessage", card.transform,
                 new Vector2(0.5f, 0.72f), new Vector2(0.5f, 0.72f), Vector2.zero, new Vector2(680, 280),
-                "menu.newGameConfirm", 36, TextAlignmentOptions.Center);
+                "menu.newGameConfirm", DeepSeaTheme.BodySize, TextAlignmentOptions.Center);
+            message.color = DeepSeaTheme.Ink;
 
             GameObject confirmBtn = CreateButton("NewGameConfirmButton", card.transform,
-                new Vector2(0.3f, 0.2f), new Vector2(280, 100), "portfolio.confirm", 40);
+                new Vector2(0.3f, 0.2f), new Vector2(280, 100), "portfolio.confirm", DeepSeaTheme.ActionSize);
             GameObject cancelBtn = CreateButton("NewGameCancelButton", card.transform,
-                new Vector2(0.7f, 0.2f), new Vector2(280, 100), "portfolio.cancel", 40);
+                new Vector2(0.7f, 0.2f), new Vector2(280, 100), "portfolio.cancel", DeepSeaTheme.ActionSize);
             panel.SetActive(false);
 
             SetPrivateField(starter, "newGameConfirmPanel", panel);
