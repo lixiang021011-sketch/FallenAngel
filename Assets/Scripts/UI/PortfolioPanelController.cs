@@ -118,6 +118,7 @@ namespace FallenAngel.UI
             label.alignment = TextAlignmentOptions.Center;
             button.onClick.AddListener(() => session.Execute(action));
             DeepSeaTheme.StyleButton(button);
+            DeepSeaTheme.RefineButton(button);
             return button;
         }
         private void Ask(string text, Action action)
@@ -302,7 +303,7 @@ namespace FallenAngel.UI
                 bool current = r != null && r.useMap && r.currentNodeId == n.NodeId;
                 // 当前房间可直接行动：READY 点击开曲 / 商店点击开商店 / 空房点击离开
                 bool actionable = current && r != null && r.useMap && r.phase != "MAP";
-                // 事件已结束（商店/空房离开后、起点）：房间置灰，显示"已通过"
+                // Current position remains distinct after the room event is complete.
                 bool paidNode = PortfolioConfig.MapEdges.Any(e => e.ToNodeId == n.NodeId && e.RoutePrice > 0);
                 string label = n.NodeType == "EMPTY" ? T("mapEmpty") : n.NodeType == "STAGE" ? T(paidNode ? "mapChallenge" : "mapPerformance") : T("node." + n.NodeType);
                 var button = Button(board, "Room_" + n.NodeId, label, pos.x, pos.y, 240, 150, () =>
@@ -333,7 +334,8 @@ namespace FallenAngel.UI
                 iconRect.anchorMin = iconRect.anchorMax = new Vector2(.5f,.5f);
                 iconRect.pivot = new Vector2(.5f,.5f); iconRect.anchoredPosition = Vector2.zero; iconRect.sizeDelta = new Vector2(82,82); icon.color = tint;
                 button.GetComponentInChildren<TextMeshProUGUI>().text = "";
-                button.transform.Find("SeaFrame").GetComponent<DeepSeaGraphic>().color = tint;
+                var nodeFrame = button.transform.Find("SeaFrame").GetComponent<DeepSeaGraphic>();
+                nodeFrame.color = tint; nodeFrame.variant = current ? 1 : 0;
                 var strip = Box(button.transform, "NodeTitle", 0, 160, 240, 48, current ? ink : background);
                 strip.GetComponent<Image>().raycastTarget = false;
                 var title = Label(strip, label, 5, 4, 230, 40, 25); title.alignment = TextAlignmentOptions.Center; title.color = current ? background : tint;
@@ -341,7 +343,12 @@ namespace FallenAngel.UI
                 {
                     var marker = Box(board, "CurrentPosition", pos.x + 103, pos.y - 45, 34, 25);
                     DeepSeaTheme.Graphic(marker, "CurrentBeacon", DeepSeaGraphic.Shape.Position).color = new Color(.6f,.8f,.83f);
-                    StartCoroutine(PulseNode(marker.gameObject));
+                    marker.gameObject.AddComponent<DeepSeaBeaconPulse>();
+                }
+                else if (visited)
+                {
+                    var passed = Box(button.transform, "Visited", 208, 8, 22, 26);
+                    DeepSeaTheme.Graphic(passed, "Check", DeepSeaGraphic.Shape.Check).color = tint;
                 }
                 else if (!reachable && !visited)
                 {

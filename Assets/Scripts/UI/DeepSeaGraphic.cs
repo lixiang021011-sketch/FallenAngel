@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 
 namespace FallenAngel.UI
@@ -7,7 +7,7 @@ namespace FallenAngel.UI
     [RequireComponent(typeof(CanvasRenderer))]
     public sealed class DeepSeaGraphic : MaskableGraphic
     {
-        public enum Shape { Ocean, Frame, Beacon, Battle, Shop, Empty, Final, Equipment, Close, Pause, Position, Lock }
+        public enum Shape { Ocean, Frame, Beacon, Battle, Shop, Empty, Final, Equipment, Close, Pause, Position, Lock, CutFrame, Surface, Check, Chevron, Talent }
         public Shape shape;
         public int variant;
         protected override void Awake() { base.Awake(); raycastTarget = false; }
@@ -45,6 +45,36 @@ namespace FallenAngel.UI
                 return;
             }
             Color c=color;
+            if(shape==Shape.Surface || shape==Shape.CutFrame)
+            {
+                const float inset=2;
+                float cut=Mathf.Min(14,Mathf.Min(r.width,r.height)*.16f);
+                var points=new [] {new Vector2(r.xMin+inset,r.yMin+inset),new Vector2(r.xMin+inset,r.yMax-cut),
+                    new Vector2(r.xMin+cut,r.yMax-inset),new Vector2(r.xMax-inset,r.yMax-inset),
+                    new Vector2(r.xMax-inset,r.yMin+cut),new Vector2(r.xMax-cut,r.yMin+inset)};
+                if(shape==Shape.Surface)
+                {
+                    vh.AddVert(r.center,c,Vector2.zero);
+                    foreach(var point in points)vh.AddVert(point,c,Vector2.zero);
+                    for(int i=0;i<points.Length;i++)vh.AddTriangle(0,i+1,(i+1)%points.Length+1);
+                }
+                else for(int i=0;i<points.Length;i++)Line(vh,points[i],points[(i+1)%points.Length],variant==1?2.6f:1.2f,c);
+                return;
+            }
+            if(shape==Shape.Check)
+            {
+                Line(vh,P(.17f,.48f),P(.4f,.25f),2.8f,c);Line(vh,P(.4f,.25f),P(.84f,.78f),2.8f,c);return;
+            }
+            if(shape==Shape.Chevron)
+            {
+                Line(vh,P(.33f,.2f),P(.67f,.5f),2.6f,c);Line(vh,P(.67f,.5f),P(.33f,.8f),2.6f,c);return;
+            }
+            if(shape==Shape.Talent)
+            {
+                Line(vh,P(.5f,.17f),P(.5f,.54f),2.5f,c);
+                Line(vh,P(.5f,.54f),P(.2f,.8f),2.5f,c);Line(vh,P(.5f,.54f),P(.8f,.8f),2.5f,c);
+                Line(vh,P(.5f,.54f),P(.5f,.88f),2.5f,c);return;
+            }
             if(shape==Shape.Position)
             {
                 vh.AddVert(P(.5f,0),c,Vector2.zero); vh.AddVert(P(0,1),c,Vector2.zero); vh.AddVert(P(1,1),c,Vector2.zero);
@@ -70,33 +100,41 @@ namespace FallenAngel.UI
                 Line(vh,P(0,0),P(0,1),1,c); Line(vh,P(1,0),P(1,1),1,c);
                 return;
             }
+            if(shape==Shape.Battle || shape==Shape.Final)
+            {
+                for(int side=-1;side<=1;side+=2)
+                {
+                    Vector2 S(float x,float y)=>P(.5f+side*x,y);
+                    Line(vh,S(-.28f,.18f),S(.28f,.83f),3,c);
+                    Line(vh,S(.28f,.83f),S(.09f,.76f),2,c);
+                    Line(vh,S(-.31f,.37f),S(-.13f,.2f),3,c);
+                }
+                if(shape==Shape.Final){Line(vh,P(.2f,.95f),P(.8f,.95f),2.5f,c);Line(vh,P(.5f,.91f),P(.5f,1),3,c);}
+                return;
+            }
+            if(shape==Shape.Shop)
+            {
+                Line(vh,P(.15f,.6f),P(.85f,.6f),3,c);
+                Line(vh,P(.15f,.6f),P(.28f,.8f),2.5f,c);Line(vh,P(.28f,.8f),P(.72f,.8f),2.5f,c);Line(vh,P(.72f,.8f),P(.85f,.6f),2.5f,c);
+                for(int i=0;i<3;i++)Line(vh,P(.34f+i*.16f,.8f),P(.34f+i*.16f,.6f),2,c);
+                Line(vh,P(.25f,.6f),P(.25f,.18f),2.5f,c);Line(vh,P(.75f,.6f),P(.75f,.18f),2.5f,c);Line(vh,P(.25f,.18f),P(.75f,.18f),2.5f,c);return;
+            }
+            if(shape==Shape.Empty)
+            {
+                Line(vh,P(.25f,.2f),P(.25f,.8f),2.5f,c);Line(vh,P(.25f,.8f),P(.75f,.8f),2.5f,c);
+                Line(vh,P(.75f,.8f),P(.75f,.2f),2.5f,c);Line(vh,P(.42f,.2f),P(.58f,.2f),2.5f,c);return;
+            }
             Vector2 center=P(.5f,.5f); float radius=Mathf.Min(r.width,r.height)*.4f;
             for(int i=0;i<4;i++)
             {
                 float a=(45+i*90)*Mathf.Deg2Rad,b=(45+(i+1)*90)*Mathf.Deg2Rad;
                 Line(vh,center+new Vector2(Mathf.Cos(a),Mathf.Sin(a))*radius,center+new Vector2(Mathf.Cos(b),Mathf.Sin(b))*radius,1.6f,c);
             }
-            if(shape==Shape.Battle || shape==Shape.Final)
+            int spokes=shape==Shape.Equipment?3+variant%5:3;
+            for(int i=0;i<spokes;i++)
             {
-                Line(vh,P(.3f,.27f),P(.7f,.73f),3,c); Line(vh,P(.7f,.27f),P(.3f,.73f),3,c);
-                if(shape==Shape.Final) Line(vh,P(.3f,.85f),P(.7f,.85f),3,c);
-            }
-            else if(shape==Shape.Shop)
-            {
-                Line(vh,P(.28f,.58f),P(.72f,.58f),3,c);
-                Line(vh,P(.35f,.58f),P(.35f,.3f),2,c); Line(vh,P(.65f,.58f),P(.65f,.3f),2,c);
-                Line(vh,P(.35f,.3f),P(.65f,.3f),2,c);
-            }
-            else if(shape==Shape.Empty)
-                Line(vh,P(.38f,.5f),P(.62f,.5f),2,c);
-            else
-            {
-                int spokes=shape==Shape.Equipment?3+variant%5:3;
-                for(int i=0;i<spokes;i++)
-                {
-                    float a=(i*360f/spokes+90)*Mathf.Deg2Rad;
-                    Line(vh,center,center+new Vector2(Mathf.Cos(a),Mathf.Sin(a))*radius*.65f,2,c);
-                }
+                float a=(i*360f/spokes+90)*Mathf.Deg2Rad;
+                Line(vh,center,center+new Vector2(Mathf.Cos(a),Mathf.Sin(a))*radius*.65f,2,c);
             }
         }
         private static void Line(VertexHelper vh,Vector2 a,Vector2 b,float width,Color c)

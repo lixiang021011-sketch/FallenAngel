@@ -13,6 +13,23 @@ namespace FallenAngel.UI
         public static readonly Color Accent=new Color(.09f,.32f,.36f,1);
         public static readonly Color Owned=new Color(.13f,.36f,.29f,1);
         public static readonly Color Line=new Color(.38f,.68f,.67f,.55f);
+        public static readonly Color Paid=new Color(.85f,.71f,.5f,1);
+
+        /// <summary>Opt-in production controls; existing pages can migrate independently.</summary>
+        public static void RefineButton(Button button)
+        {
+            if(button.transform.Find("SeaSurface")!=null)return;
+            var hitArea=button.GetComponent<Image>();
+            if(hitArea==null)return;
+            var surface=Graphic(button.transform,"SeaSurface",DeepSeaGraphic.Shape.Surface);
+            surface.color=hitArea.color;surface.transform.SetAsFirstSibling();
+            hitArea.color=Color.clear; // The rectangular Image remains the generous input target.
+            button.targetGraphic=surface;
+            var frame=button.transform.Find("SeaFrame");
+            if(frame!=null){var graphic=frame.GetComponent<DeepSeaGraphic>();graphic.shape=DeepSeaGraphic.Shape.CutFrame;graphic.SetVerticesDirty();}
+            var state=button.colors;state.highlightedColor=new Color(1.12f,1.12f,1.12f);state.pressedColor=new Color(.68f,.78f,.8f);
+            state.selectedColor=new Color(1.08f,1.12f,1.12f);state.disabledColor=new Color(.4f,.46f,.49f);state.fadeDuration=.1f;button.colors=state;
+        }
 
         public static void Backdrop(Transform parent)
         {
