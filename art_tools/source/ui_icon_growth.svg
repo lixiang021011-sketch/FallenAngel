@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+<path d="M49.86 38.14 L53.39 35.05 L56.93 32.84 L60.46 31.51 L64.00 31.07 L67.54 31.51 L71.07 32.84 L74.61 35.05 L78.14 38.14 L89.86 49.86 L92.95 53.39 L95.16 56.93 L96.49 60.46 L96.93 64.00 L96.49 67.54 L95.16 71.07 L92.95 74.61 L89.86 78.14 L78.14 89.86 L74.61 92.95 L71.07 95.16 L67.54 96.49 L64.00 96.93 L60.46 96.49 L56.93 95.16 L53.39 92.95 L49.86 89.86 L38.14 78.14 L35.05 74.61 L32.84 71.07 L31.51 67.54 L31.07 64.00 L31.51 60.46 L32.84 56.93 L35.05 53.39 L38.14 49.86 L49.86 38.14" fill="none" stroke="#E5E9E4" stroke-width="6.50" stroke-linecap="round"/>
+<rect x="56.00" y="56.00" width="16.00" height="16.00" rx="5.00" fill="#E5E9E4" stroke="none" stroke-width="6.50"/>
+<path d="M64.00 22.00 L64.00 12.00" fill="none" stroke="#E5E9E4" stroke-width="6.00" stroke-linecap="round"/>
+<path d="M64.00 106.00 L64.00 116.00" fill="none" stroke="#E5E9E4" stroke-width="6.00" stroke-linecap="round"/>
+<path d="M22.00 64.00 L12.00 64.00" fill="none" stroke="#E5E9E4" stroke-width="6.00" stroke-linecap="round"/>
+<path d="M106.00 64.00 L116.00 64.00" fill="none" stroke="#E5E9E4" stroke-width="6.00" stroke-linecap="round"/>
+</svg>

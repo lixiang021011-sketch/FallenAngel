@@ -109,7 +109,7 @@ namespace FallenAngel.UI
             label.raycastTarget = false; label.enableWordWrapping = true;
             return label;
         }
-        private Button Button(Transform parent, string name, string text, float x, float y, float w, float h, Action action, Color? color = null)
+        private Button Button(Transform parent, string name, string text, float x, float y, float w, float h, Action action, Color? color = null, DeepSeaGraphic.Shape? icon = null)
         {
             var rect = Box(parent, name, x, y, w, h, color ?? accent);
             var button = rect.gameObject.AddComponent<Button>();
@@ -119,6 +119,12 @@ namespace FallenAngel.UI
             button.onClick.AddListener(() => session.Execute(action));
             DeepSeaTheme.StyleButton(button);
             DeepSeaTheme.RefineButton(button);
+            if (icon.HasValue)
+            {
+                // UI005 图标与文案成组居中（宽按钮下不再出现图标贴左、文字居中的错位）
+                DeepSeaTheme.Icon(rect, "ButtonIcon", icon.Value, 20, (h - 36) * .5f, 36, 36, ink);
+                DeepSeaTheme.CenterIconGroup(rect, label, "ButtonIcon", 36f, 36f, 20f);
+            }
             return button;
         }
         private void Ask(string text, Action action)
@@ -181,8 +187,8 @@ namespace FallenAngel.UI
             {
                 DeepSeaTheme.CashBar(page, 700, 18, run.runCash, font).text = T("mapCashClean", run.runCash);
                 RenderMap(page);
-                if (EquipmentPanel != null) Button(page, "OpenEquipmentPanel", T("equipment", run.heldEquipmentIds.Count, session.EquipmentCapacity), 20, 1570, 465, 90, () => EquipmentPanel.Open(), card);
-                if (TalentPanel != null) Button(page, "OpenTalentsFromMap", T("talentsPage"), 515, 1570, 465, 90, () => TalentPanel.Open(), card);
+                if (EquipmentPanel != null) Button(page, "OpenEquipmentPanel", T("equipment", run.heldEquipmentIds.Count, session.EquipmentCapacity), 20, 1570, 465, 90, () => EquipmentPanel.Open(), card, DeepSeaGraphic.Shape.Equipment);
+                if (TalentPanel != null) Button(page, "OpenTalentsFromMap", T("talentsPage"), 515, 1570, 465, 90, () => TalentPanel.Open(), card, DeepSeaGraphic.Shape.Talent);
                 Button(page, "BackToMenuFromMap", T("back"), 20, 1690, 180, 60, session.Close, card);
                 if (run.phase == "ROOM") Button(page, "LeaveMapRoom", T("leaveRoom"), 730, 1690, 250, 60, session.LeaveRoom, card);
                 return;
@@ -191,10 +197,10 @@ namespace FallenAngel.UI
             // 装备持有计数（按钮：点击打开背包审阅；局内资源，局终清空）
             if (EquipmentPanel != null)
                 Button(page, "OpenEquipmentPanel", T("equipment", run != null ? run.heldEquipmentIds.Count : 0, session.EquipmentCapacity),
-                    20, 1640, 300, 65, () => EquipmentPanel.Open(), card);
+                    20, 1640, 300, 65, () => EquipmentPanel.Open(), card, DeepSeaGraphic.Shape.Equipment);
             // 右上角"天赋"入口：与存档选择面板同源（TalentPanel 自带 Canvas 排序 251，盖在地图页上）
             if (TalentPanel != null)
-                Button(page, "OpenTalentsFromMap", T("talentsPage"), 350, 1640, 300, 65, () => TalentPanel.Open(), card);
+                Button(page, "OpenTalentsFromMap", T("talentsPage"), 350, 1640, 300, 65, () => TalentPanel.Open(), card, DeepSeaGraphic.Shape.Talent);
             // 返回主菜单：局进度保留（含 growth.Run 快照），下次经"选择存档"进入继续
             Button(page, "BackToMenuFromMap", T("back"), session.InShop ? 830 : 720, 236, session.InShop ? 150 : 260, 68, session.Close, card);
             if (run == null || run.phase == "FINISHED")
@@ -225,6 +231,7 @@ namespace FallenAngel.UI
             if (run != null && run.phase == "RESULT")
             {
                 var cardBox = Box(page, "IncomeBreakdown", 20, 440, 960, 430, card);
+                DeepSeaTheme.CardSurface(cardBox, card);
                 Label(cardBox, T("income.title"), 25, 20, 910, 50, 30);
                 float ly = 90;
                 foreach (var l in run.incomeBreakdown)
@@ -238,6 +245,7 @@ namespace FallenAngel.UI
                 if (run.lastDropGranted)
                 {
                     var dropBox = Box(page, "DropGranted", 20, 890, 960, 84, card);
+                    DeepSeaTheme.CardSurface(dropBox, card);
                     string dropText = run.lastDropRewardType == "CURRENCY"
                         ? T("drop.cash", run.lastDropQuantity)
                         : T("drop.equipment", run.lastDropRewardId);
@@ -463,6 +471,7 @@ namespace FallenAngel.UI
             if (routeNodeId != null) { RenderRouteDetails(page); return; }
             var modal = Box(page, "ConfirmationShade", 0, 0, 1000, 1760, new Color(0, 0, 0, .88f));
             var box = Box(modal, "Confirmation", 75, 530, 850, 500, card);
+            DeepSeaTheme.CardSurface(box, card);
             Label(box, confirmText, 35, 40, 780, 260, 32);
             Button(box, "Confirm", T("confirm"), 35, 350, 365, 90, () =>
             {

@@ -153,7 +153,8 @@ namespace FallenAngel.UI
             page.anchorMin = page.anchorMax = new Vector2(.5f, .5f);
             page.pivot = new Vector2(.5f, .5f); page.anchoredPosition = Vector2.zero;
 
-            Label(page, T("balance", p.displayName, p.growthPoints), 20, 155, 960, 65, 32);
+            DeepSeaTheme.IconLabel(page, "TalentBalance", DeepSeaGraphic.Shape.Growth,
+                T("balance", p.displayName, p.growthPoints), 20, 155, 960, 65, 32, font, DeepSeaTheme.Accent);
 
             // 树区：上下滚动（同地图路线图模式——ScrollRect + RectMask2D + 内容板）
             const float viewportHeight = 900f;
@@ -189,6 +190,19 @@ namespace FallenAngel.UI
                     (unlocked ? T("unlocked") : node.UnlockCost.ToString()), pos.x, pos.y, 180, 70,
                     () => { selected = node.NodeId; dirty = true; }, unlocked ? owned : available ? accent : new Color(.13f, .16f, .21f));
                 button.GetComponentInChildren<TextMeshProUGUI>().fontSize = 20;
+                // TAL001：三类节点框（普通/交汇/终点，共用 3 个框类不为 24 个节点重复画框）+ 状态标记
+                var nodeFrame = button.transform.Find("SeaFrame");
+                var nodeFrameGraphic = nodeFrame != null ? nodeFrame.GetComponent<DeepSeaGraphic>() : null;
+                if (nodeFrameGraphic != null)
+                {
+                    nodeFrameGraphic.variant = node.NodeType == "CAPSTONE" ? 2 : node.NodeType == "JUNCTION" ? 1 : 0;
+                    nodeFrameGraphic.SetVerticesDirty();
+                }
+                var nodeState = unlocked ? DeepSeaTheme.CardState.Cleared
+                    : available ? DeepSeaTheme.CardState.Normal
+                    : DeepSeaTheme.CardState.Locked;
+                if (selected == node.NodeId) nodeState = DeepSeaTheme.CardState.Selected;
+                DeepSeaTheme.ApplyCardState(button.transform, nodeState);
             }
             // 切档案时滚动归零，否则恢复保存的位置
             string context = p.profileId;
@@ -196,6 +210,7 @@ namespace FallenAngel.UI
             else board.anchoredPosition = new Vector2(0, Mathf.Clamp(talentScrollY, 0, contentHeight - viewportHeight));
 
             var details = Box(page, "TalentDetails", 655, 470, 325, viewportHeight, card);
+            DeepSeaTheme.CardSurface(details, card);
             var n = PortfolioConfig.TalentNodes.FirstOrDefault(node => node.NodeId == selected);
             if (n == null) Label(details, T("detail"), 20, 25, 285, 400, 26);
             else
@@ -208,7 +223,9 @@ namespace FallenAngel.UI
                     effect.Coefficient.ToString("0.##%"), (effect.Threshold ?? 0).ToString("0.##%"),
                     (effect.ValueCapB ?? 0).ToString("0.##%"), effect.LimitCount ?? 0,
                     effect.Coefficient.ToString("0.##"), (effect.Threshold ?? 0).ToString("0.##"));
-                Label(details, T("effect", description), 20, 300, 285, 270, 24);
+                // TAL002：效果语义符号（奖励/增幅/保底/利息/商店/路线/升级）与说明同块显示
+                DeepSeaTheme.Icon(details, "EffectSymbol", EffectSymbol(effect), 20, 302, 34, 34, DeepSeaTheme.Accent);
+                Label(details, T("effect", description), 62, 300, 243, 270, 24);
                 if (effect != null && !PortfolioEffectStatus.IsTalentLive(effect.EffectId))
                     Label(details, T("effectNotLive"), 20, 575, 285, 90, 22);
                 var status = session.Talents.CheckUnlock(p, n.NodeId);
@@ -240,10 +257,36 @@ namespace FallenAngel.UI
             throw new InvalidOperationException("Talent layout missing: " + id);
         }
 
+        /// <summary>TAL002：效果语义符号——奖励/增幅/保底/利息/商店/路线/升级；升级由数据 target_effect 判定。</summary>
+        private static DeepSeaGraphic.Shape EffectSymbol(TalentEffectsRow effect)
+        {
+            if (effect == null) return DeepSeaGraphic.Shape.Info;
+            if (effect.TargetScope == "TARGET_EFFECT") return DeepSeaGraphic.Shape.Upgrade;
+            switch (effect.EffectId)
+            {
+                case "FX_A0": case "FX_A1": case "FX_B0": case "FX_B1": case "FX_C0":
+                case "FX_I0": case "FX_I1": case "FX_J0": case "FX_J1":
+                    return DeepSeaGraphic.Shape.Reward;
+                case "FX_D0": case "FX_D1": case "FX_K0": case "FX_K1":
+                    return DeepSeaGraphic.Shape.Amplify;
+                case "FX_G0":
+                    return DeepSeaGraphic.Shape.Floor;
+                case "FX_C1": case "FX_K2":
+                    return DeepSeaGraphic.Shape.Coin;
+                case "FX_E0": case "FX_E1":
+                    return DeepSeaGraphic.Shape.Shop;
+                case "FX_F0":
+                    return DeepSeaGraphic.Shape.Position;
+                default:
+                    return DeepSeaGraphic.Shape.Info;
+            }
+        }
+
         private void RenderConfirmation(RectTransform page)
         {
             var modal = Box(page, "ConfirmationShade", 0, 0, 1000, 1760, new Color(0, 0, 0, .88f));
             var box = Box(modal, "Confirmation", 75, 530, 850, 500, card);
+            DeepSeaTheme.CardSurface(box, card);
             Label(box, confirmText, 35, 40, 780, 260, 32);
             Button(box, "Confirm", T("confirm"), 35, 350, 365, 90, () =>
             {

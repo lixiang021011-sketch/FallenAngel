@@ -19,6 +19,7 @@ namespace FallenAngel.UI
                 var image = button.targetGraphic as Image;
                 if (image != null) image.color = DeepSeaTheme.Card;
                 DeepSeaTheme.StyleButton(button);
+                DeepSeaTheme.RefineButton(button); // UI002：矩形命中区转圆角面（方向 A）
                 if (button.name.EndsWith("CloseButton") || button.name == "PauseButton")
                 {
                     foreach (var label in button.GetComponentsInChildren<TextMeshProUGUI>())
