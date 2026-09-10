@@ -291,8 +291,8 @@ namespace FallenAngel.UI
             Button(box, "Confirm", T("confirm"), 35, 350, 365, 90, () =>
             {
                 var action = confirmAction; confirmAction = null; session.SetConfirmation(false); dirty = true; action?.Invoke();
-            });
-            Button(box, "Cancel", T("cancel"), 450, 350, 365, 90, () => { confirmAction = null; session.SetConfirmation(false); dirty = true; });
+            }, DeepSeaTheme.Danger);   // UI007：永久消耗不可退 → 危险确认（暗红，不与购买共用白底）
+            Button(box, "Cancel", T("cancel"), 450, 350, 365, 90, () => { confirmAction = null; session.SetConfirmation(false); dirty = true; }, card);
         }
     }
 }

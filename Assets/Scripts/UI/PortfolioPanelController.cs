@@ -51,6 +51,7 @@ namespace FallenAngel.UI
             Loc.AddFallback("portfolio.mapEmpty", "空房", "Empty room");
             Loc.AddFallback("portfolio.mapChallenge", "挑战", "Challenge");
             Loc.AddFallback("portfolio.mapPerformance", "普通演奏", "Performance");
+            Loc.AddFallback("portfolio.loadingNote", "谱面与音频载入中，请稍候", "Loading chart and audio…");
             Subscribe();
             font = GetComponentsInChildren<TextMeshProUGUI>(true).Select(t => t.font).FirstOrDefault(f => f != null);
             if (font == null) font = TMP_Settings.defaultFontAsset;
@@ -146,6 +147,7 @@ namespace FallenAngel.UI
             bool loading = session.OwnsSong && gm != null && gm.CurrentState == GameState.Loading;
             if ((playing || loading) && session.Error == null)
             {
+                if (loading) { RenderLoading(); return; }   // 页面 19：准备演出
                 var hud = Box(root, "GrowthHUD", 0, 0, 1000, 58, card);
                 hud.anchorMin = hud.anchorMax = new Vector2(.5f, 1); hud.pivot = new Vector2(.5f, 1);
                 Label(hud, playing ? T(session.FailureLimitEnabled ? "playing" : "playingUnlimited", session.Run.completedSongs + 1, session.Run.stageIds.Count,
@@ -178,6 +180,42 @@ namespace FallenAngel.UI
             }
             else RenderProfile(page);
             if (confirmAction != null) RenderConfirmation(page);
+        }
+
+        /// <summary>页面 19「准备演出」：实际加载中的不定进度（不伪造百分比），带品牌标记与说明。</summary>
+        private void RenderLoading()
+        {
+            var page = Box(root, "LoadingPage", 0, 0, 0, 0, background);
+            page.anchorMin = Vector2.zero; page.anchorMax = Vector2.one; page.sizeDelta = Vector2.zero;
+            DeepSeaTheme.Backdrop(page);
+
+            var mark = DeepSeaTheme.Graphic(page, "LoadingMark", DeepSeaGraphic.Shape.Beacon);
+            var markRect = (RectTransform)mark.transform;
+            markRect.anchorMin = markRect.anchorMax = new Vector2(.5f, 1);
+            markRect.pivot = new Vector2(.5f, 1);
+            markRect.anchoredPosition = new Vector2(0, -620);
+            markRect.sizeDelta = new Vector2(150, 150);
+            mark.color = ink;
+
+            var title = Label(page, T("loading"), 0, 810, 1000, 60, 32);
+            title.alignment = TextAlignmentOptions.Center;
+
+            var track = Box(page, "LoadingTrack", 0, 900, 420, 10, new Color(1f, 1f, 1f, .12f));
+            track.anchorMin = track.anchorMax = new Vector2(.5f, 1);
+            track.pivot = new Vector2(.5f, 1);
+            track.anchoredPosition = new Vector2(0, -900);
+            track.sizeDelta = new Vector2(420, 10);
+
+            var fill = Box(track, "LoadingFill", 0, 0, 120, 10, accent);
+            fill.anchorMin = fill.anchorMax = new Vector2(0, .5f);
+            fill.pivot = new Vector2(0, .5f);
+            fill.anchoredPosition = Vector2.zero;
+            fill.sizeDelta = new Vector2(120, 10);
+            fill.gameObject.AddComponent<DeepSeaLoadingPulse>().Configure(track, fill);
+
+            var note = Label(page, T("loadingNote"), 0, 930, 1000, 44, 28);
+            note.alignment = TextAlignmentOptions.Center;
+            note.color = DeepSeaTheme.Muted;
         }
 
         private void RenderProfile(RectTransform page)
@@ -476,8 +514,8 @@ namespace FallenAngel.UI
             Button(box, "Confirm", T("confirm"), 35, 350, 365, 90, () =>
             {
                 var action = confirmAction; confirmAction = null; session.SetConfirmation(false); dirty = true; action?.Invoke();
-            });
-            Button(box, "Cancel", T("cancel"), 450, 350, 365, 90, () => { confirmAction = null; session.SetConfirmation(false); dirty = true; }, background);
+            }, DeepSeaTheme.Danger);
+            Button(box, "Cancel", T("cancel"), 450, 350, 365, 90, () => { confirmAction = null; session.SetConfirmation(false); dirty = true; }, card);
         }
     }
 }
