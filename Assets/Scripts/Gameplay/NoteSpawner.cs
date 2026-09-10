@@ -56,6 +56,9 @@ namespace FallenAngel.Gameplay
         // 自动Miss阈值（音符过判定窗口多久后强制Miss，开局计算一次，避免热路径每帧分配）
         private float missThreshold;
 
+        /// <summary>同刻判定容差（秒）：与规则引擎 chord_split 的 ±1ms 同刻分组对齐</summary>
+        private const float SimultaneousLinkTolerance = 0.0015f;
+
         public float JudgeLineY => judgeLineY;
         public float SpawnY => spawnY;
         public IReadOnlyList<Note> ActiveNotes => activeNotes;
@@ -231,15 +234,16 @@ namespace FallenAngel.Gameplay
 
             while (nextNoteIndex < notes.Count && notes[nextNoteIndex].time <= spawnTimeThreshold)
             {
-                SpawnNote(notes[nextNoteIndex]);
+                SpawnNote(notes, nextNoteIndex);
                 nextNoteIndex++;
             }
         }
 
-        private void SpawnNote(NoteData data)
+        private void SpawnNote(IReadOnlyList<NoteData> notes, int index)
         {
             if (notePool == null) return;
 
+            NoteData data = notes[index];
             Note note = notePool.Get();
             if (note == null) return;
 
@@ -266,6 +270,17 @@ namespace FallenAngel.Gameplay
                 note.SetKickVisual(fullWidth);
             }
 
+            // 同时押：同刻右侧最近的伙伴 → 横向连线（协议上限 2 音；slide / 宽键不参与）。
+            // 只由左侧音符画这条线，右侧音符不重复画（Initialize 已清除残留）
+            int partner = FindSimultaneousPartner(notes, index, SimultaneousLinkTolerance);
+            if (partner >= 0)
+            {
+                NoteData p = notes[partner];
+                note.SetSimultaneousLink(
+                    LaneLayout.GetCenterXForActive(Mathf.Clamp(p.lane, 0, LaneLayout.ActiveLaneCount - 1)),
+                    LaneColors.GetLaneColor(p.lane));
+            }
+
             activeNotes.Add(note);
 
             // 长按音符加入字典
@@ -273,6 +288,48 @@ namespace FallenAngel.Gameplay
             {
                 activeLongNotesById[data.longNoteId] = note;
             }
+        }
+
+        /// <summary>
+        /// 找同刻（±tolerance 秒）右侧最近的同押伙伴，返回其在 notes 中的索引，没有则 -1。
+        /// 谱面按 (time, lane) 排序，同刻音符必在相邻段内，所以只扫前后相邻段、走出同刻段即停（不整表扫描）。
+        /// 只认右侧伙伴：每条连线由左边那个音符负责画，避免两个音符各画一条重复线。
+        /// 自检用 internal：NotePartChecks 用合成谱面直接验证配对规则。
+        /// </summary>
+        internal static int FindSimultaneousPartner(IReadOnlyList<NoteData> notes, int index, float tolerance)
+        {
+            if (notes == null || index < 0 || index >= notes.Count) return -1;
+            NoteData me = notes[index];
+            if (!CanLink(me)) return -1;
+
+            int best = -1;
+            int bestLane = int.MaxValue;
+            for (int dir = -1; dir <= 1; dir += 2)
+            {
+                for (int i = index + dir; i >= 0 && i < notes.Count; i += dir)
+                {
+                    NoteData other = notes[i];
+                    if (Mathf.Abs(other.time - me.time) > tolerance) break; // 已排序：走出同刻段即可停
+                    if (!CanLink(other)) continue;
+                    if (other.lane <= me.lane || other.lane >= bestLane) continue;
+                    bestLane = other.lane;
+                    best = i;
+                }
+            }
+            return best;
+        }
+
+        /// <summary>
+        /// 能否参与同时押连线：账本条目（LongBody/LongEnd）无视觉；
+        /// slide 头部会沿路径离开轨道、宽键本就横跨全轨，二者连出来都对不上位置。
+        /// </summary>
+        private static bool CanLink(NoteData n)
+        {
+            if (n == null) return false;
+            if (n.wide) return false;
+            if (n.type == NoteType.Slide) return false;
+            if (n.type == NoteType.LongEnd || n.type == NoteType.LongBody) return false;
+            return true;
         }
 
         private void UpdateAllNotePositions(float songTime)

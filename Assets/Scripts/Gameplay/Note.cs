@@ -55,6 +55,20 @@ namespace FallenAngel.Gameplay
         private ArrowGraphic arrowGraphic;               // Flick 方向箭头（运行时自生成）
         private SlidePathGraphic slidePathGraphic;       // Slide 路径折线（运行时自生成）
         private RectTransform slidePathRect;
+        // ===== 部件化（pjsk 风）：head / tail 部件（运行时自生成，零纹理）=====
+        private NoteHeadGraphic headGraphic;             // 头部部件（绘制取代预制体 Image）
+        private RectTransform headRect;
+        private NoteHeadGraphic tailGraphic;             // 尾部部件（hold/slide 的结束标记）
+        private RectTransform tailRect;
+        // 同时押横向连线（Sonolus SIMULTANEOUS_CONNECTION 语义）
+        private NoteLinkGraphic linkGraphic;
+        private RectTransform linkRect;
+        private Color linkBaseLeft = Color.clear;        // 连线两端基色（着色时按音符 alpha 统一缩放）
+        private Color linkBaseRight = Color.clear;
+        // Slide 剩余轨迹重算用（生成时记录，避免每帧重取）
+        private float slideFallDistance = 300f;
+        private float slideFallTime = 2f;
+        private float slideStartX;                       // slide 起点 Canvas X（尾部件定位用）
         private readonly List<HitRingEntry> hitRingPool = new List<HitRingEntry>(8); // 命中扩散环池
 
         /// <summary>轨道 → 鼓件图标类型（对齐 Moonscraper 鼓件语义：0底鼓/1军鼓/2踩镲/3吊镲）</summary>
@@ -90,18 +104,33 @@ namespace FallenAngel.Gameplay
             rectTransform.anchoredPosition = spawnPos;
             gameObject.SetActive(true);
 
-            // 设置颜色（轨道语义色，与谱面编辑器 Moonscraper 一致）
+            // 部件化（pjsk 风）：头部部件接管绘制，预制体 Image 退化为尺寸容器（不再绘制）
+            EnsureHeadGraphic();
+            SyncPartSizes();
             Color c = LaneColors.GetLaneColor(data.lane);
-            if (noteImage != null)
-            {
-                noteImage.color = c;
-                // 确保 Image 可见
-                noteImage.enabled = true;
-            }
+            ApplyPartsColor(c);
+
+            // LongEnd/LongBody 只是长按的账本条目（判定与回收用），不参与绘制
+            bool bookkeepingOnly = data.type == NoteType.LongEnd || data.type == NoteType.LongBody;
+            if (headGraphic != null) headGraphic.gameObject.SetActive(!bookkeepingOnly);
 
             // 配置长按音符身体 / Slide 路径（二者互斥，另一者自动隐藏）
             ConfigureLongNoteBody(spawnPos, judgeLinePos);
             ConfigureSlidePath(spawnPos, judgeLinePos);
+
+            // 尾部部件：hold/slide 的结束标记（与头部同族的圆角条，位置每帧跟随身体/路径末端）
+            bool wantsTail = (data.type == NoteType.LongStart && data.duration > 0f) ||
+                             (data.type == NoteType.Slide && data.path != null && data.path.Count >= 2);
+            if (wantsTail && !bookkeepingOnly) EnsureTailGraphic();
+            else if (tailGraphic != null)
+                tailGraphic.gameObject.SetActive(false);
+
+            // 身体 / 路径 / 尾部件按轨道色统一着色（部件存在性已在上方确定）
+            SyncPartSizes();
+            ApplyPartsColor(c);
+
+            // 同时押横向连线：由 NoteSpawner 在生成时按同刻伙伴设置；池复用先清掉上一条残留
+            ClearSimultaneousLink();
 
             // 重置命中特效缩放，应用出生透视缩放（近大远小：顶部小、判定线大）
             hitScale = 1f;
@@ -128,11 +157,10 @@ namespace FallenAngel.Gameplay
             isLongNoteConfigured = true;
             bodyRect.localScale = Vector3.one; // 池复用重置（收缩走 scaleY）
 
-            Color c = LaneColors.GetLaneColor(Data.lane);
-            bodyGraphic.bottomColor = new Color(c.r, c.g, c.b, 0.9f); // 贴近头部：接近实体
-            bodyGraphic.topColor = new Color(c.r, c.g, c.b, 0f);      // 远端：完全透明
-            bodyGraphic.SetVerticesDirty(); // 复用实例时强制重绘顶点色
             bodyGraphic.gameObject.SetActive(true);
+            // 身体配色并入部件统一着色：贴近头部 0.9 实体 → 远端 0.18 半透明
+            //（远端不再完全透明：尾部标记挂在身体末端，全透明会让连接段与尾标记断开）
+            ApplyPartsColor(LaneColors.GetLaneColor(Data.lane));
 
             // 身体长度 = 按住期间音符下落的距离（不再叠加整条轨道高度），
             // 修复：此前 body = 轨道全长 + 按住距离，远超屏幕高度，观感像无限长
@@ -230,6 +258,7 @@ namespace FallenAngel.Gameplay
             float fallDistance = Mathf.Abs(spawnPos.y - judgeLinePos.y); // 轨道全长（下落距离）
             float fallTime = GameManager.Instance != null ? GameManager.Instance.ActualFallTime : 2f;
             float startX = LaneLayout.GetXFromLaneCoord(Data.path[0].x);
+            slideStartX = startX;                    // 尾部件定位用（未按住时头部在起点）
 
             System.Collections.Generic.List<Vector2> local =
                 new System.Collections.Generic.List<Vector2>(Data.path.Count);
@@ -241,10 +270,31 @@ namespace FallenAngel.Gameplay
             }
             slidePathGraphic.SetLocalPoints(local);
             slidePathGraphic.gameObject.SetActive(true);
+            slideFallDistance = fallDistance;      // 供按住时重算剩余 ribbon 用
+            slideFallTime = fallTime;
 
             // 运行时自建的UI必须显式标记脏并强制Canvas立即重建，否则网格不会生成
             slidePathGraphic.SetAllDirty();
             Canvas.ForceUpdateCanvases();
+        }
+
+        /// <summary>
+        /// 按住时重算剩余路径：局部原点在头部（t=from01 处），只画「还没滑过」的部分，
+        /// 并按路径 x 与头部的差值做水平偏移——这样走过的轨迹会收起、尾部仍锚在谱面路径上。
+        /// </summary>
+        private void UpdateSlideRibbon(float from01, float headX)
+        {
+            if (slidePathGraphic == null || Data.path == null || Data.path.Count < 2) return;
+            const int samples = 12;
+            var local = new System.Collections.Generic.List<Vector2>(samples + 1);
+            for (int i = 0; i <= samples; i++)
+            {
+                float t = Mathf.Lerp(from01, 1f, i / (float)samples);
+                float x = SampleSlidePathX(t) - headX;
+                float y = slideFallDistance * (t - from01) / Mathf.Max(0.01f, slideFallTime);
+                local.Add(new Vector2(x, y));
+            }
+            slidePathGraphic.SetLocalPoints(local);
         }
 
         /// <summary>确保 Slide 路径子节点存在：运行时自生成折线图形节点</summary>
@@ -295,6 +345,230 @@ namespace FallenAngel.Gameplay
                 }
             }
             return LaneLayout.GetXFromLaneCoord(pts[pts.Count - 1].x);
+        }
+
+        // ============================================================
+        // 部件化（pjsk 风）：head（头）/ body·ribbon（身）/ tail（尾）
+        // 预制体 Image 只作尺寸容器，绘制全部交给运行时自生成的图形部件。
+        // 绘制顺序（子节点先后）：身体 / 路径 → 尾 → 头 → 图标，头部圆角正好压住身体接缝。
+        // ============================================================
+
+        /// <summary>确保头部部件存在（圆角条：描边 + 内面渐变 + 顶面高光）</summary>
+        private void EnsureHeadGraphic()
+        {
+            if (headGraphic != null && headRect != null) return;
+
+            GameObject go = new GameObject("NoteHead",
+                typeof(RectTransform), typeof(CanvasRenderer), typeof(NoteHeadGraphic));
+            go.transform.SetParent(transform, false);
+            RectTransform rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0.5f, 0.5f);
+            rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = Vector2.zero;
+            rt.sizeDelta = rectTransform.sizeDelta;
+
+            // 显式补挂 CanvasRenderer（运行时 AddComponent 时 RequireComponent 不保证生效）
+            if (go.GetComponent<CanvasRenderer>() == null) go.AddComponent<CanvasRenderer>();
+            headGraphic = go.GetComponent<NoteHeadGraphic>();
+            headGraphic.raycastTarget = false;
+            headRect = rt;
+
+            // 预制体自带的 Image 停绘（尺寸与池复用仍以根 RectTransform 为准）
+            if (noteImage != null) noteImage.enabled = false;
+
+            headGraphic.SetAllDirty();
+            Canvas.ForceUpdateCanvases();
+        }
+
+        /// <summary>确保尾部部件存在（hold/slide 的结束标记，与头部同族）</summary>
+        private void EnsureTailGraphic()
+        {
+            if (tailGraphic == null || tailRect == null)
+            {
+                GameObject go = new GameObject("NoteTail",
+                    typeof(RectTransform), typeof(CanvasRenderer), typeof(NoteHeadGraphic));
+                go.transform.SetParent(transform, false);
+                RectTransform rt = go.GetComponent<RectTransform>();
+                rt.anchorMin = new Vector2(0.5f, 0.5f);
+                rt.anchorMax = new Vector2(0.5f, 0.5f);
+                rt.pivot = new Vector2(0.5f, 0.5f);
+                rt.anchoredPosition = Vector2.zero;
+
+                if (go.GetComponent<CanvasRenderer>() == null) go.AddComponent<CanvasRenderer>();
+                tailGraphic = go.GetComponent<NoteHeadGraphic>();
+                tailGraphic.raycastTarget = false;
+                tailRect = rt;
+
+                // 插到头部之前：身体 → 尾 → 头（头压在身体接缝上，连接处无缝）
+                if (headRect != null) rt.SetSiblingIndex(headRect.GetSiblingIndex());
+            }
+
+            tailGraphic.gameObject.SetActive(true);
+            tailGraphic.SetAllDirty();
+        }
+
+        /// <summary>
+        /// 同时押横向连线：画出「本音符中心 → 伙伴音符中心」的渐变带（两端被各自头部盖住，
+        /// 读起来是一条横跨两轨的音符条）。partnerCanvasX 传 NaN 表示清除（无同押伙伴 / 池复用）。
+        /// </summary>
+        public void SetSimultaneousLink(float partnerCanvasX, Color partnerColor)
+        {
+            if (float.IsNaN(partnerCanvasX))
+            {
+                ClearSimultaneousLink();
+                return;
+            }
+            if (rectTransform == null) rectTransform = GetComponent<RectTransform>();
+
+            float dx = partnerCanvasX - rectTransform.anchoredPosition.x;
+            float width = Mathf.Abs(dx);
+            if (width < 1f) { ClearSimultaneousLink(); return; }
+
+            EnsureLinkGraphic();
+
+            Color mine = LaneColors.GetLaneColor(Data != null ? Data.lane : 0);
+            mine.a = 0.75f;
+            partnerColor.a = 0.75f;
+            linkBaseLeft = dx >= 0f ? mine : partnerColor;
+            linkBaseRight = dx >= 0f ? partnerColor : mine;
+
+            linkRect.sizeDelta = new Vector2(width, Mathf.Max(6f, rectTransform.sizeDelta.y * 0.62f));
+            linkRect.anchoredPosition = new Vector2(dx * 0.5f, 0f);
+            linkGraphic.LeftColor = linkBaseLeft;
+            linkGraphic.RightColor = linkBaseRight;
+            linkGraphic.gameObject.SetActive(true);
+            linkGraphic.SetAllDirty();
+        }
+
+        /// <summary>清除同时押横向连线（无伙伴或池复用）</summary>
+        public void ClearSimultaneousLink()
+        {
+            linkBaseLeft = Color.clear;
+            linkBaseRight = Color.clear;
+            if (linkGraphic != null) linkGraphic.gameObject.SetActive(false);
+        }
+
+        /// <summary>确保同时押连线子节点存在（画在头部之下，两端被头部盖住）</summary>
+        private void EnsureLinkGraphic()
+        {
+            if (linkGraphic != null && linkRect != null) return;
+
+            GameObject go = new GameObject("NoteLink",
+                typeof(RectTransform), typeof(CanvasRenderer), typeof(NoteLinkGraphic));
+            go.transform.SetParent(transform, false);
+            RectTransform rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0.5f, 0.5f);
+            rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = Vector2.zero;
+
+            if (go.GetComponent<CanvasRenderer>() == null) go.AddComponent<CanvasRenderer>();
+            linkGraphic = go.GetComponent<NoteLinkGraphic>();
+            linkGraphic.raycastTarget = false;
+            linkRect = rt;
+
+            // 插到头部之前：连线在头部之下、身体与尾之上
+            if (headRect != null) rt.SetSiblingIndex(headRect.GetSiblingIndex());
+
+            linkGraphic.SetAllDirty();
+        }
+
+        /// <summary>同步部件矩形与音符矩形（kick 全宽条、池复用改尺寸后都要对齐）</summary>
+        private void SyncPartSizes()
+        {
+            if (rectTransform == null) return;
+            Vector2 size = rectTransform.sizeDelta;
+            if (headRect != null) headRect.sizeDelta = size;
+
+            if (tailRect != null && tailGraphic != null && tailGraphic.gameObject.activeSelf)
+            {
+                // slide 尾收窄，与同宽的 hold 尾区分
+                float width = Data != null && Data.type == NoteType.Slide
+                    ? Mathf.Max(20f, size.x - 56f)
+                    : Mathf.Max(24f, size.x - 8f);
+                tailRect.sizeDelta = new Vector2(width, Mathf.Max(8f, size.y * 0.72f));
+            }
+        }
+
+        /// <summary>
+        /// 全部可见部件统一着色（轨道语义色 / 命中淡出 / Miss 压暗都走这里）：
+        /// 头与尾是实体部件用原色，身体与 slide 路径是同色半透明连接段。
+        /// </summary>
+        private void ApplyPartsColor(Color c)
+        {
+            if (noteImage != null) noteImage.color = c;   // Image 已停绘，仅保持数据一致
+            if (headGraphic != null) headGraphic.color = c;
+
+            if (tailGraphic != null && tailGraphic.gameObject.activeSelf)
+            {
+                Color t = Color.Lerp(c, Color.white, 0.25f);   // 尾标记略亮，便于辨认结束点
+                t.a = Mathf.Clamp01(c.a * 0.92f);
+                tailGraphic.color = t;
+            }
+
+            if (bodyGraphic != null && bodyGraphic.gameObject.activeSelf)
+            {
+                bodyGraphic.bottomColor = new Color(c.r, c.g, c.b, Mathf.Clamp01(c.a * 0.9f));
+                bodyGraphic.topColor = new Color(c.r, c.g, c.b, Mathf.Clamp01(c.a * 0.18f));
+                bodyGraphic.SetVerticesDirty();
+            }
+
+            if (slidePathGraphic != null && slidePathGraphic.gameObject.activeSelf)
+            {
+                slidePathGraphic.HeadColor = new Color(c.r, c.g, c.b, Mathf.Clamp01(c.a * 0.55f));
+                slidePathGraphic.TailColor = new Color(c.r, c.g, c.b, 0f);
+                slidePathGraphic.SetVerticesDirty();
+            }
+
+            if (linkGraphic != null && linkGraphic.gameObject.activeSelf)
+            {
+                Color l = linkBaseLeft, r = linkBaseRight;
+                l.a = Mathf.Clamp01(l.a * c.a);
+                r.a = Mathf.Clamp01(r.a * c.a);
+                linkGraphic.LeftColor = l;
+                linkGraphic.RightColor = r;
+                linkGraphic.SetVerticesDirty();
+            }
+        }
+
+        /// <summary>只改透明度（命中淡出 / Miss 淡出），色相不变</summary>
+        private void SetPartsAlpha(float alpha)
+        {
+            Color c = GetPartsColor();
+            c.a = Mathf.Clamp01(alpha);
+            ApplyPartsColor(c);
+        }
+
+        /// <summary>当前部件主色（头部优先；无部件时回退预制体 Image）</summary>
+        private Color GetPartsColor()
+        {
+            if (headGraphic != null) return headGraphic.color;
+            if (noteImage != null) return noteImage.color;
+            return Color.white;
+        }
+
+        /// <summary>
+        /// 尾部部件跟随：hold = 身体顶端（按住时随身体收缩下移）；slide = 路径终点。
+        /// </summary>
+        private void UpdateTailPart()
+        {
+            if (tailRect == null || tailGraphic == null || !tailGraphic.gameObject.activeSelf) return;
+            if (Data == null) return;
+
+            if (Data.type == NoteType.LongStart && bodyRect != null)
+            {
+                float shrink = Mathf.Clamp01(bodyRect.localScale.y);
+                tailRect.anchoredPosition = new Vector2(0f, bodyRect.sizeDelta.y * shrink);
+            }
+            else if (Data.type == NoteType.Slide && Data.path != null && Data.path.Count >= 2)
+            {
+                float progress = IsHolding ? HoldProgress : 0f;
+                float headX = IsHolding ? SampleSlidePathX(progress) : slideStartX;
+                tailRect.anchoredPosition = new Vector2(
+                    SampleSlidePathX(1f) - headX,
+                    slideFallDistance * (1f - progress) / Mathf.Max(0.01f, slideFallTime));
+            }
         }
 
         /// <summary>
@@ -350,9 +624,14 @@ namespace FallenAngel.Gameplay
             if (Data.type == NoteType.Slide && IsHolding)
             {
                 HoldProgress = Mathf.Clamp01((currentSongTime - Data.time) / Mathf.Max(0.01f, Data.duration));
+                float headX = SampleSlidePathX(HoldProgress);
                 rectTransform.anchoredPosition =
-                    new Vector2(SampleSlidePathX(HoldProgress), rectTransform.anchoredPosition.y);
+                    new Vector2(headX, rectTransform.anchoredPosition.y);
+                UpdateSlideRibbon(HoldProgress, headX);   // 走过的部分收起，尾部锚在谱面路径上
             }
+
+            // 尾部部件跟随身体/路径末端（hold 收缩后再算，故放在最后）
+            UpdateTailPart();
 
             // 近大远小：越靠近判定线越大（与命中特效缩放分层叠加）
             ApplyPerspectiveScale(progress);
@@ -381,13 +660,8 @@ namespace FallenAngel.Gameplay
             {
                 // 长按/Slide 头部命中 -> 进入按住状态
                 IsHolding = true;
-                // 视觉效果：稍微亮一点
-                if (noteImage != null)
-                {
-                    Color c = noteImage.color;
-                    c.a = 0.6f;
-                    noteImage.color = c;
-                }
+                // 视觉效果：头部/身体/尾一并压暗一档，标示"按住中"
+                SetPartsAlpha(0.6f);
                 SpawnHitRing(result);
             }
             else
@@ -451,12 +725,7 @@ namespace FallenAngel.Gameplay
                 timer += Time.unscaledDeltaTime;
                 float t = timer / duration;
                 hitScale = Mathf.Lerp(from, to, t);
-                if (noteImage != null)
-                {
-                    Color c = noteImage.color;
-                    c.a = 1f - t;
-                    noteImage.color = c;
-                }
+                SetPartsAlpha(1f - t);
                 yield return null;
             }
             hitScale = to; // 定格放大态，回收时由 Recycle/Initialize 重置
@@ -473,21 +742,18 @@ namespace FallenAngel.Gameplay
         {
             float duration = 0.3f;
             float timer = 0f;
-            if (noteImage != null)
+            Color orig = GetPartsColor();
+            while (timer < duration)
             {
-                Color orig = noteImage.color;
-                while (timer < duration)
-                {
-                    timer += Time.unscaledDeltaTime;
-                    float t = timer / duration;
-                    Color c = orig;
-                    c.r = Mathf.Lerp(orig.r, 0.3f, t);
-                    c.g = Mathf.Lerp(orig.g, 0.3f, t);
-                    c.b = Mathf.Lerp(orig.b, 0.3f, t);
-                    c.a = orig.a * (1f - t);
-                    noteImage.color = c;
-                    yield return null;
-                }
+                timer += Time.unscaledDeltaTime;
+                float t = timer / duration;
+                Color c = orig;
+                c.r = Mathf.Lerp(orig.r, 0.3f, t);
+                c.g = Mathf.Lerp(orig.g, 0.3f, t);
+                c.b = Mathf.Lerp(orig.b, 0.3f, t);
+                c.a = orig.a * (1f - t);
+                ApplyPartsColor(c);
+                yield return null;
             }
             gameObject.SetActive(false);
         }
@@ -528,6 +794,8 @@ namespace FallenAngel.Gameplay
             // 长按身体同步全宽（kick 长按未来可能出现；Initialize 时身体按标准宽生成）
             if (bodyRect != null && bodyGraphic != null && bodyGraphic.gameObject.activeSelf)
                 bodyRect.sizeDelta = new Vector2(Mathf.Max(24f, fullWidth - 2f), bodyRect.sizeDelta.y);
+
+            SyncPartSizes(); // 头/尾部件同步全宽（kick 横条）
         }
 
         // ============================================================
@@ -541,6 +809,14 @@ namespace FallenAngel.Gameplay
         /// </summary>
         private void EnsureIcon(NoteData data)
         {
+            // LongEnd/LongBody 只是长按的账本条目（判定/回收用），不绘制任何头部图标
+            if (data.type == NoteType.LongEnd || data.type == NoteType.LongBody)
+            {
+                if (iconGraphic != null) iconGraphic.gameObject.SetActive(false);
+                if (arrowGraphic != null) arrowGraphic.gameObject.SetActive(false);
+                return;
+            }
+
             if (data.type == NoteType.Flick)
             {
                 if (iconGraphic != null) iconGraphic.gameObject.SetActive(false);
