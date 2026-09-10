@@ -216,12 +216,12 @@ namespace FallenAngel.Gameplay
                 GameManager.Instance.CurrentState != GameState.Playing) return;
 
             if (e.isPressed)
-                HandlePress(e.laneIndex);
+                HandlePress(e.laneIndex, e.swipeY, e.swipeKnown);
             else
                 HandleRelease(e.laneIndex);
         }
 
-        private void HandlePress(int lane)
+        private void HandlePress(int lane, float swipeY = 0f, bool swipeKnown = false)
         {
             if (NoteSpawner.Instance == null)
             {
@@ -257,6 +257,23 @@ namespace FallenAngel.Gameplay
             // Drag：窗口内碰到即强制 Perfect（碰即 Perfect 语义）
             if (note.Data.type == NoteType.Drag)
                 result = JudgeResultType.Perfect;
+
+            // Flick：触屏要有方向正确的滑动才判（上下真方向判定）；
+            // 幅度不足或方向错误 → 本次不判定，留给后续正确的滑动，超时由清扫按 Miss 处理。
+            // 键盘/编辑器鼠标没有滑动向量（swipeKnown=false）→ 放宽为单击，保证 PC 可玩。
+            if (note.Data.type == NoteType.Flick && swipeKnown)
+            {
+                float minSwipe = Mathf.Max(18f, Screen.height * .012f);
+                bool up = swipeY > 0f;
+                bool wantUp = note.Data.direction == FlickDirection.Up;
+                if (Mathf.Abs(swipeY) < minSwipe || up != wantUp)
+                {
+#if UNITY_EDITOR
+                    Debug.Log($"[JudgeManager] Flick 方向不符：swipe={swipeY:F1}px 需要{(wantUp ? "上" : "下")}滑");
+#endif
+                    return;
+                }
+            }
 
             // 命中
             ApplyJudge(note, result, lane);

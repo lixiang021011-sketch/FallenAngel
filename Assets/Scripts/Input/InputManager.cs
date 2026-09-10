@@ -11,6 +11,10 @@ namespace FallenAngel.InputSystem
     public struct LaneInputArgs
     {
         public int laneIndex;        // 音轨索引 0-4（按当前活动键数）
+        /// <summary>本次按下时该轨累计的纵向滑动位移（屏幕坐标，正值 = 上滑；键盘/鼠标为 0）</summary>
+        public float swipeY;
+        /// <summary>滑动方向是否可信（触屏 true；键盘/编辑器鼠标 false，flick 方向判定据此放宽）</summary>
+        public bool swipeKnown;
         public bool isPressed;       // true=按下, false=抬起
         public Vector2 touchPos;     // 触屏位置（屏幕坐标）
     }
@@ -63,6 +67,9 @@ namespace FallenAngel.InputSystem
 
         // 用于跟踪触屏ID与音轨的对应关系
         private Dictionary<int, int> touchIdToLane = new Dictionary<int, int>();
+        // flick 方向判定用：每根手指上次位置 + 每轨累计纵向滑动（屏幕 y 向上为正 = 上滑）
+        private Dictionary<int, Vector2> touchPrev = new Dictionary<int, Vector2>();
+        private Dictionary<int, float> laneSwipeY = new Dictionary<int, float>();
         // 上一帧的键盘按下状态
         private bool[] lastKeyStates = new bool[4];
 
@@ -264,19 +271,28 @@ namespace FallenAngel.InputSystem
                         if (!touchIdToLane.ContainsKey(touchId))
                         {
                             touchIdToLane[touchId] = lane;
-                            SetLaneState(lane, true, touchPos);
+                            touchPrev[touchId] = touchPos;
+                            laneSwipeY[lane] = 0f;                 // 新按下：该轨滑动量归零
+                            SetLaneState(lane, true, touchPos, true);
                         }
                         break;
 
                     case TouchPhase.Moved:
                     case TouchPhase.Stationary:
+                        // 累计纵向滑动（flick 方向判定用）：同一根手指跨轨时，位移记到当前轨
+                        if (touchPrev.TryGetValue(touchId, out Vector2 prev))
+                        {
+                            if (touchIdToLane.TryGetValue(touchId, out int cur)) 
+                                laneSwipeY[cur] = (laneSwipeY.TryGetValue(cur, out float acc) ? acc : 0f) + (touchPos.y - prev.y);
+                            touchPrev[touchId] = touchPos;
+                        }
                         if (touchIdToLane.TryGetValue(touchId, out int oldLane) && oldLane != lane)
                         {
                             touchIdToLane[touchId] = lane;
                             // 旧轨道仅当没有其他手指按住时才释放（支持同轨多指交替）
                             if (!IsLaneHeldByAnyTouch(oldLane))
-                                SetLaneState(oldLane, false, touchPos);
-                            SetLaneState(lane, true, touchPos);
+                                SetLaneState(oldLane, false, touchPos, true);
+                            SetLaneState(lane, true, touchPos, true);   // 跨轨按下：带该轨累计滑动量
                         }
                         break;
                 }
@@ -346,7 +362,7 @@ namespace FallenAngel.InputSystem
         /// <summary>
         /// 改变音轨按下状态并触发事件
         /// </summary>
-        private void SetLaneState(int lane, bool pressed, Vector2 touchPos)
+        private void SetLaneState(int lane, bool pressed, Vector2 touchPos, bool fromTouch = false)
         {
             if (lane < 0 || lane >= LanePressStates.Length) return;
             LanePressStates[lane] = pressed;
@@ -355,7 +371,9 @@ namespace FallenAngel.InputSystem
             {
                 laneIndex = lane,
                 isPressed = pressed,
-                touchPos = touchPos
+                touchPos = touchPos,
+                swipeKnown = fromTouch,
+                swipeY = fromTouch && laneSwipeY.TryGetValue(lane, out float swipe) ? swipe : 0f
             };
             OnLaneInput?.Invoke(this, args);
         }

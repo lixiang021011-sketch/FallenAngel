@@ -10,7 +10,77 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from chart_import import parse_osu, parse_sm, validate, LANES   # noqa: E402
+from chart_import import parse_osu, parse_sm, parse_phigros, parse_pec, validate, LANES   # noqa: E402
+
+PHIGROS_JSON = """{
+  "formatVersion": 3, "offset": 0.0,
+  "judgeLineList": [
+    {"bpm": 120.0,
+     "notesAbove": [
+       {"type": 1, "time": 0.0, "positionX": -1.0, "holdTime": 0.0},
+       {"type": 1, "time": 1.0, "positionX": 0.0,   "holdTime": 0.0},
+       {"type": 1, "time": 2.0, "positionX": 1.0,   "holdTime": 0.0},
+       {"type": 3, "time": 3.0, "positionX": -1.0,  "holdTime": 2.0},
+       {"type": 2, "time": 4.0, "positionX": 0.0,   "holdTime": 0.0},
+       {"type": 4, "time": 5.0, "positionX": 1.0,   "holdTime": 0.0}
+     ],
+     "notesBelow": [
+       {"type": 1, "time": 0.5, "positionX": -1.0, "holdTime": 0.0},
+       {"type": 4, "time": 1.5, "positionX": 1.0,  "holdTime": 0.0}
+     ]}
+  ]
+}"""
+
+PEC_TEXT = """#offset 0
+#bpms 0=120
+&line1
+#notes
+0,1,-1,0
+1,3,1,2
+2,4,0,0
+2.5,2,0,0
+#end
+"""
+
+
+class TestPhigros(unittest.TestCase):
+    def test_above_lanes_and_beats_to_seconds(self):
+        chart = parse_phigros(PHIGROS_JSON)
+        # 只看上线那三个 tap（下线在 0.25s 也落在轨道 2，别混进来）
+        taps = [n for n in chart["notes"] if n["type"] == "tap" and n["time"] in (0.0, 0.5, 1.0)]
+        self.assertEqual([n["lane"] for n in taps], [0, 1, 2])          # x=-1/0/1 → 0/1/2
+        self.assertEqual([n["time"] for n in taps], [0.0, 0.5, 1.0])    # 120BPM：1 拍 = 0.5s
+
+    def test_below_lanes_shift_to_right_half(self):
+        chart = parse_phigros(PHIGROS_JSON)
+        below = [n for n in chart["notes"] if n["time"] in (0.25, 0.75)]
+        self.assertEqual([n["lane"] for n in below], [2, 4])            # 下线映射 2..4
+
+    def test_hold_and_drag_and_flick_types(self):
+        chart = parse_phigros(PHIGROS_JSON)
+        counts = chart["noteCounts"]
+        self.assertEqual(counts["drag"], 1)
+        self.assertEqual(counts["hold"], 1)
+        self.assertEqual(counts["flick"], 2)
+        hold = [n for n in chart["notes"] if n["type"] == "hold"][0]
+        self.assertAlmostEqual(hold["duration"], 1.0, places=3)         # 2 拍 @120BPM
+
+    def test_flick_direction_modes(self):
+        up = [n for n in parse_phigros(PHIGROS_JSON)["notes"] if n["type"] == "flick"]
+        self.assertEqual({n["direction"] for n in up}, {"up"})
+        alt = [n for n in parse_phigros(PHIGROS_JSON, "alternate")["notes"] if n["type"] == "flick"]
+        self.assertEqual(len(alt), 2)
+        self.assertEqual({n["direction"] for n in alt}, {"up", "down"})   # 排序后不保证先后
+
+
+class TestPec(unittest.TestCase):
+    def test_pec_notes(self):
+        chart = parse_pec(PEC_TEXT)
+        self.assertEqual(chart["metadata"]["bpm"], 120.0)
+        self.assertEqual(len(chart["notes"]), 4)
+        self.assertEqual(chart["noteCounts"]["hold"], 1)
+        self.assertEqual(chart["noteCounts"]["drag"], 1)
+        self.assertEqual(chart["noteCounts"]["flick"], 1)
 
 OSU_4K = """osu file format v14
 

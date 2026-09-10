@@ -242,7 +242,7 @@ def parse_sm(text, difficulty_filter=None):
     return finish(chart)
 
 
-def convert(path, difficulty=None):
+def convert(path, difficulty=None, flick_direction="up"):
     with open(path, "r", encoding="utf-8", errors="ignore") as handle:
         text = handle.read()
     ext = os.path.splitext(path)[1].lower()
@@ -250,7 +250,139 @@ def convert(path, difficulty=None):
         return parse_osu(text)
     if ext in (".sm", ".ssc"):
         return parse_sm(text, difficulty)
-    raise ValueError("暂不支持该格式：" + ext + "（支持 .osu / .sm / .ssc）")
+    if ext == ".json":
+        return parse_phigros(text, flick_direction)
+    if ext == ".pec":
+        return parse_pec(text, flick_direction)
+    raise ValueError("暂不支持该格式：" + ext + "（支持 .osu / .sm / .ssc / .json / .pec）")
+
+
+# ---------------- Phigros 系（官方 .json / 社区 .pec） ----------------
+
+def _phigros_lane(position_x, above):
+    """判定线内 x∈[-1,1] → 轨道：上线映射 0..2，下线映射 2..4（共用中间轨）。"""
+    t = max(0.0, min(1.0, (position_x + 1.0) / 2.0))
+    return int(round(t * 2)) if above else 2 + int(round(t * 2))
+
+
+def parse_phigros(text, flick_direction="up"):
+    """Phigros 官方谱面 JSON：judgeLineList[].notesAbove/notesBelow，time/holdTime 为拍。
+
+    约定：秒 = 拍 × 60 / 该判定线 bpm − offset；flick 无方向信息，
+    由 flick_direction 决定（up / down / alternate，alternate 便于测试上下两种判定）。
+    """
+    import json as _json
+    data = _json.loads(text)
+    chart = empty_chart()
+    meta = chart["metadata"]
+    meta["songName"] = data.get("songName") or data.get("name") or ""
+    meta["songArtist"] = data.get("songArtist") or data.get("artist") or ""
+    meta["chartAuthor"] = data.get("chartAuthor") or data.get("charter") or ""
+    offset = float(data.get("offset", 0.0) or 0.0)
+    lines = data.get("judgeLineList") or data.get("judgeLines") or []
+    if not lines:
+        raise ValueError("Phigros 谱面缺少 judgeLineList")
+    meta["bpm"] = round(float(lines[0].get("bpm", 120.0) or 120.0), 3)
+    meta["offset"] = round(-offset, 3)
+
+    flick_index = 0
+    for line in lines:
+        bpm = float(line.get("bpm", meta["bpm"]) or meta["bpm"])
+        beat_seconds = 60.0 / bpm if bpm > 0 else 0.5
+        for key, above in (("notesAbove", True), ("notesBelow", False), ("notes", True)):
+            for raw in line.get(key, []) or []:
+                kind = int(raw.get("type", 1))
+                if kind not in (1, 2, 3, 4):
+                    continue
+                beat = float(raw.get("time", 0.0) or 0.0)
+                hold_beats = float(raw.get("holdTime", 0.0) or 0.0)
+                time = beat * beat_seconds - offset
+                lane = _phigros_lane(float(raw.get("positionX", 0.0) or 0.0), above)
+                if kind == 1:
+                    chart["notes"].append({"type": "tap", "lane": lane, "time": time, "duration": 0.0})
+                elif kind == 2:
+                    chart["notes"].append({"type": "drag", "lane": lane, "time": time, "duration": 0.0})
+                elif kind == 3:
+                    chart["notes"].append({"type": "hold", "lane": lane, "time": time,
+                                           "duration": max(0.05, hold_beats * beat_seconds)})
+                else:
+                    if flick_direction == "alternate":
+                        direction = "up" if flick_index % 2 == 0 else "down"
+                        flick_index += 1
+                    else:
+                        direction = flick_direction
+                    chart["notes"].append({"type": "flick", "lane": lane, "time": time,
+                                           "duration": 0.0, "direction": direction})
+    return finish(chart)
+
+
+def parse_pec(text, flick_direction="up"):
+    """社区 PEC 文本格式：#offset / #bpms / 判定线段落里的音符行。
+
+    音符行形如 `时间,类型,位置,持续时间[,速度]`；类型 1=tap 2=drag 3=hold 4=flick。
+    只取主判定线（首个 `&` 之前的音符段），够用于测试。
+    """
+    chart = empty_chart()
+    offset = 0.0
+    bpm = 120.0
+    notes = []
+    in_notes = False
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line or line.startswith("//"):
+            continue
+        if line.startswith("#"):
+            head = line[1:].split(None, 1)
+            tag = head[0].lower() if head else ""
+            value = head[1].strip() if len(head) > 1 else ""
+            if tag == "offset":
+                offset = float(value or 0.0)
+            elif tag == "bpms":
+                first = value.split(",")[0]
+                bpm = float(first.split("=")[-1]) if "=" in first else float(first)
+            elif tag in ("notes", "note"):
+                in_notes = True
+            elif tag in ("end", "line"):
+                in_notes = False
+            continue
+        if line.startswith("&") or line.startswith("cv") or line.startswith("cp"):
+            continue
+        if "&" in line:
+            line = line.split("&")[0]
+        if in_notes and "," in line:
+            parts = [p for p in line.split(",")]
+            if len(parts) < 2:
+                continue
+            try:
+                beat = float(parts[0])
+                kind = int(parts[1])
+                position = float(parts[2]) if len(parts) > 2 and parts[2] else 0.0
+                hold_beats = float(parts[3]) if len(parts) > 3 and parts[3] else 0.0
+            except ValueError:
+                continue
+            notes.append((beat, kind, position, hold_beats))
+    if not notes:
+        raise ValueError("PEC 里没有解析到音符行")
+    chart["metadata"]["bpm"] = round(bpm, 3)
+    chart["metadata"]["offset"] = round(-offset, 3)
+    beat_seconds = 60.0 / bpm if bpm > 0 else 0.5
+    flick_index = 0
+    for beat, kind, position, hold_beats in notes:
+        lane = _phigros_lane(position, True)
+        time = beat * beat_seconds - offset
+        if kind == 1:
+            chart["notes"].append({"type": "tap", "lane": lane, "time": time, "duration": 0.0})
+        elif kind == 2:
+            chart["notes"].append({"type": "drag", "lane": lane, "time": time, "duration": 0.0})
+        elif kind == 3:
+            chart["notes"].append({"type": "hold", "lane": lane, "time": time,
+                                   "duration": max(0.05, hold_beats * beat_seconds)})
+        elif kind == 4:
+            direction = ("up" if flick_index % 2 == 0 else "down") if flick_direction == "alternate" else flick_direction
+            flick_index += 1
+            chart["notes"].append({"type": "flick", "lane": lane, "time": time,
+                                   "duration": 0.0, "direction": direction})
+    return finish(chart)
 
 
 def validate(chart):
@@ -280,9 +412,11 @@ def main(argv=None):
     parser.add_argument("--audio", help="覆盖音频名（不含扩展名）")
     parser.add_argument("--title", help="覆盖曲名")
     parser.add_argument("--artist", help="覆盖艺术家")
+    parser.add_argument("--flick-direction", default="up", choices=["up", "down", "alternate"],
+                        help="Phigros/PEC 的 flick 没有方向信息，用它决定（alternate=上下交替，便于测试方向判定）")
     args = parser.parse_args(argv)
 
-    chart = convert(args.input, args.difficulty)
+    chart = convert(args.input, args.difficulty, args.flick_direction)
     if args.audio:
         chart["metadata"]["audioFileName"] = args.audio
     if args.title:

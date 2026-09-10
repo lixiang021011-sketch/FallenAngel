@@ -47,6 +47,9 @@ namespace FallenAngel.Core
         private readonly List<Snapshot> undoStack = new List<Snapshot>();
         private readonly List<Snapshot> redoStack = new List<Snapshot>();
         private const int UndoLimit = 60;
+        // 开源谱面导入：调 chart_tools/chart_import.py（一份解析逻辑，命令行与编辑器共用）
+        private string pythonPath = "python";
+        private string importLog = "";
         private float scrollTime;
         private float pixelsPerSecond = 220f;
         private int snapDivision = 4;          // 1/4 拍；0 = 不吸附
@@ -410,7 +413,74 @@ namespace FallenAngel.Core
                 if (GUILayout.Button("载入", EditorStyles.toolbarButton, GUILayout.Width(52))) Load();
                 if (GUILayout.Button("新建 5 轨", EditorStyles.toolbarButton, GUILayout.Width(72))) NewChart();
                 if (GUILayout.Button("保存 v2", EditorStyles.toolbarButton, GUILayout.Width(70))) Save();
+                if (GUILayout.Button("导入开源谱面…", EditorStyles.toolbarButton, GUILayout.Width(108))) PickAndImport();
+                GUILayout.Label("python", EditorStyles.miniLabel, GUILayout.Width(38));
+                pythonPath = EditorGUILayout.TextField(pythonPath, GUILayout.Width(90));
             }
+        }
+
+        private void PickAndImport()
+        {
+            string path = EditorUtility.OpenFilePanel("导入开源谱面（osu!mania / StepMania / Phigros / PEC）", "", "osu,sm,ssc,json,pec");
+            if (!string.IsNullOrEmpty(path)) RunImport(path);
+        }
+
+        /// <summary>
+        /// 调 Python 导入器把外部谱面转成内部 v2 JSON，再读回编辑器继续编辑。
+        /// 这样三种格式的解析只有一份实现（chart_tools/chart_import.py），不会与 C# 版漂移。
+        /// </summary>
+        private void RunImport(string sourcePath)
+        {
+            string projectRoot = Directory.GetParent(Application.dataPath).FullName;
+            string script = Path.Combine(projectRoot, "chart_tools", "chart_import.py");
+            if (!File.Exists(script)) { importLog = "找不到导入脚本：" + script; return; }
+            string outPath = Path.Combine(Path.GetTempPath(), "fa_import_" + System.Guid.NewGuid().ToString("N") + ".json");
+            var start = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = pythonPath,
+                Arguments = "-X utf8 \"" + script + "\" \"" + sourcePath + "\" --out \"" + outPath + "\" --flick-direction alternate",
+                WorkingDirectory = projectRoot,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+            try
+            {
+                using (var process = System.Diagnostics.Process.Start(start))
+                {
+                    string stdout = process.StandardOutput.ReadToEnd();
+                    string stderr = process.StandardError.ReadToEnd();
+                    process.WaitForExit();
+                    importLog = (stdout + (string.IsNullOrEmpty(stderr) ? "" : "\n" + stderr)).Trim();
+                    if (process.ExitCode != 0 || !File.Exists(outPath))
+                    {
+                        UnityEngine.Debug.LogWarning("[ChartEditor] 导入失败\n" + importLog);
+                        return;
+                    }
+                }
+                var imported = ChartLoader.LoadFromJson(File.ReadAllText(outPath));
+                if (imported == null) { importLog += "\n导入结果无法解析"; return; }
+                PushUndo();
+                chart = imported;
+                chartPath = "Assets/Resources/Charts/" + Path.GetFileNameWithoutExtension(sourcePath) + ".json";
+                selection.Clear();
+                selected = -1;
+                MarkDirty();
+                LoadAudio();                       // 按 audioFileName 找音频并生成波形
+                importLog += "\n→ 已载入编辑器：" + chart.notes.Count + " 音符；保存路径 " + chartPath;
+                UnityEngine.Debug.Log("[ChartEditor] 已导入 " + Path.GetFileName(sourcePath) + "：" + chart.notes.Count + " 音符");
+            }
+            catch (System.Exception e)
+            {
+                importLog = "调用导入器失败：" + e.Message + "\n（可在上方填写 python 可执行文件路径）";
+                UnityEngine.Debug.LogError("[ChartEditor] " + importLog);
+            }
+            finally
+            {
+                if (File.Exists(outPath)) File.Delete(outPath);
+            }
+            Repaint();
         }
 
         private void DrawMetadata()
@@ -910,6 +980,8 @@ namespace FallenAngel.Core
                     chart.notes.Count, selection.Count, clipboard.Count, scrollTime));
             }
             var warnings = Validate();
+            if (!string.IsNullOrEmpty(importLog))
+                EditorGUILayout.HelpBox("导入器：" + importLog, MessageType.None);
             if (warnings.Count > 0)
                 foreach (var w in warnings) EditorGUILayout.HelpBox(w, MessageType.Warning);
             else
