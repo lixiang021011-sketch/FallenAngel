@@ -37,6 +37,16 @@ namespace FallenAngel.Core
         private float pendingTime;
         private int pendingLane;
         private Vector2 pendingMouse;
+        // 撤销/重做：整份音符与关键元数据的快照栈（比逐条命令简单，且不会漏字段）
+        private sealed class Snapshot
+        {
+            public List<NoteData> notes = new List<NoteData>();
+            public float bpm, offset;
+            public string songName;
+        }
+        private readonly List<Snapshot> undoStack = new List<Snapshot>();
+        private readonly List<Snapshot> redoStack = new List<Snapshot>();
+        private const int UndoLimit = 60;
         private float scrollTime;
         private float pixelsPerSecond = 220f;
         private int snapDivision = 4;          // 1/4 拍；0 = 不吸附
@@ -122,6 +132,8 @@ namespace FallenAngel.Core
             if (!typing && ctrl && e.keyCode == KeyCode.C) { CopySelection(); e.Use(); return; }
             if (!typing && ctrl && e.keyCode == KeyCode.V) { PasteClipboard(); e.Use(); return; }
             if (!typing && ctrl && e.keyCode == KeyCode.D) { DuplicateSelection(); e.Use(); return; }
+            if (!typing && ctrl && e.keyCode == KeyCode.Z && !e.shift) { Undo(); e.Use(); return; }
+            if (!typing && ctrl && (e.keyCode == KeyCode.Y || (e.shift && e.keyCode == KeyCode.Z))) { Redo(); e.Use(); return; }
             if (!typing && (e.keyCode == KeyCode.Delete || e.keyCode == KeyCode.Backspace)) { DeleteSelection(); e.Use(); return; }
             if (e.keyCode != KeyCode.Space) return;
             if (e.shift) return;                       // Shift+空格：让字段正常输入空格
@@ -132,6 +144,61 @@ namespace FallenAngel.Core
             }
             TogglePlay();
             e.Use();
+            Repaint();
+        }
+
+        private Snapshot Capture()
+        {
+            var s = new Snapshot { bpm = chart.metadata.bpm, offset = chart.metadata.offset, songName = chart.metadata.songName };
+            foreach (var n in chart.notes) s.notes.Add(Clone(n));
+            return s;
+        }
+
+        /// <summary>在改动之前调用：记录当前状态，并清空重做栈。</summary>
+        private void PushUndo()
+        {
+            if (chart == null) return;
+            undoStack.Add(Capture());
+            if (undoStack.Count > UndoLimit) undoStack.RemoveAt(0);
+            redoStack.Clear();
+        }
+
+        private void Undo()
+        {
+            if (undoStack.Count == 0) return;
+            var current = Capture();
+            var s = undoStack[undoStack.Count - 1];
+            undoStack.RemoveAt(undoStack.Count - 1);
+            redoStack.Add(current);
+            Restore(s);
+            Debug.Log($"[ChartEditor] 撤销（剩余 {undoStack.Count}）");
+        }
+
+        private void Redo()
+        {
+            if (redoStack.Count == 0) return;
+            var current = Capture();
+            var s = redoStack[redoStack.Count - 1];
+            redoStack.RemoveAt(redoStack.Count - 1);
+            undoStack.Add(current);
+            Restore(s);
+            Debug.Log($"[ChartEditor] 重做（剩余 {redoStack.Count}）");
+        }
+
+        private void Restore(Snapshot s)
+        {
+            chart.notes = new List<NoteData>();
+            foreach (var n in s.notes) chart.notes.Add(Clone(n));
+            chart.metadata.bpm = s.bpm;
+            chart.metadata.offset = s.offset;
+            chart.metadata.songName = s.songName;
+            selection.Clear();
+            selected = -1;
+            dragIndex = -1;
+            pendingPlace = false;
+            marqueeActive = false;
+            lastPreviewTime = scrollTime;
+            MarkDirty();
             Repaint();
         }
 
@@ -176,6 +243,7 @@ namespace FallenAngel.Core
         /// <summary>把剪贴板内容粘贴到 target 时间（保持音符之间的相对时差与轨道）。</summary>
         private void PasteAt(float target)
         {
+            PushUndo();
             selection.Clear();
             foreach (var src in clipboard)
             {
@@ -196,6 +264,7 @@ namespace FallenAngel.Core
             if (selection.Count == 0 && selected >= 0 && selected < chart.notes.Count)
                 selection.Add(chart.notes[selected]);
             if (selection.Count == 0) return;
+            PushUndo();
             foreach (var n in selection) chart.notes.Remove(n);
             selection.Clear();
             selected = -1;
@@ -219,10 +288,10 @@ namespace FallenAngel.Core
                 if (GUILayout.Button("+10ms", EditorStyles.toolbarButton, GUILayout.Width(52))) NudgeOffset(10f);
                 GUILayout.Label($"编辑头 {scrollTime:0.000}s", EditorStyles.miniLabel, GUILayout.Width(96));
                 if (GUILayout.Button("第 1 拍 = 编辑头(左边缘)", EditorStyles.toolbarButton, GUILayout.Width(160)))
-                { chart.metadata.offset = scrollTime; MarkDirty(); }
+                { PushUndo(); chart.metadata.offset = scrollTime; MarkDirty(); }
                 using (new EditorGUI.DisabledScope(hoverTime < 0f))
                     if (GUILayout.Button("第 1 拍 = 鼠标处", EditorStyles.toolbarButton, GUILayout.Width(110)))
-                    { chart.metadata.offset = hoverTime; MarkDirty(); }
+                    { PushUndo(); chart.metadata.offset = hoverTime; MarkDirty(); }
                 GUILayout.FlexibleSpace();
                 GUILayout.Label(clip == null ? "音频未载入（波形不可用）" : $"{clip.name}  {clip.length:0.00}s", EditorStyles.miniLabel);
             }
@@ -326,6 +395,7 @@ namespace FallenAngel.Core
 
         private void NudgeOffset(float ms)
         {
+            PushUndo();
             chart.metadata.offset += ms / 1000f;
             MarkDirty();
             Repaint();
@@ -698,6 +768,7 @@ namespace FallenAngel.Core
             {
                 if (hit >= 0)
                 {
+                    PushUndo();
                     var doomed = chart.notes[hit];
                     chart.notes.RemoveAt(hit);
                     selection.Remove(doomed);
@@ -718,6 +789,7 @@ namespace FallenAngel.Core
                 if (!selection.Contains(note)) { selection.Clear(); selection.Add(note); }
                 selected = hit;
                 dragIndex = hit;
+                PushUndo();                       // 拖动/缩放前记录一次（整段拖动算一步）
                 bool resizable = note.type == NoteType.LongStart || note.type == NoteType.Slide;
                 float noteX = (note.time - scrollTime) * pixelsPerSecond;
                 float tailX = noteX + note.duration * pixelsPerSecond;
@@ -800,6 +872,7 @@ namespace FallenAngel.Core
 
         private void AddNote(float time, int lane)
         {
+            PushUndo();
             var note = new NoteData(lane, time, placeType);
             note.wide = wide && (placeType == NoteType.Normal || placeType == NoteType.LongStart);
             if (placeType == NoteType.LongStart || placeType == NoteType.Slide)
@@ -830,7 +903,7 @@ namespace FallenAngel.Core
                 if (GUILayout.Button("复制", GUILayout.Width(50))) CopySelection();
                 if (GUILayout.Button("粘贴到光标", GUILayout.Width(90))) PasteClipboard();
                 if (GUILayout.Button("清空", GUILayout.Width(60)))
-                { chart.notes.Clear(); selection.Clear(); selected = -1; MarkDirty(); }
+                { PushUndo(); chart.notes.Clear(); selection.Clear(); selected = -1; MarkDirty(); }
                 GUILayout.FlexibleSpace();
                 GUILayout.Label(string.Format(CultureInfo.InvariantCulture,
                     "音符 {0} · 选中 {1} · 剪贴板 {2} · 编辑头 {3:0.00}s   （左键点空白=放置 · 左键拖动=框选 · Shift+点=加选 · 中键=平移）",
