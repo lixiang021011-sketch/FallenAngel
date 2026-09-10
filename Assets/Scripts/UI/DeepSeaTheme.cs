@@ -116,6 +116,8 @@ namespace FallenAngel.UI
             if(parent.Find("DeepSeaBackdrop")!=null)return;
             var art=Graphic(parent,"DeepSeaBackdrop",DeepSeaGraphic.Shape.Ocean);
             art.transform.SetAsFirstSibling();
+            // FX005：环境缓动（12s 循环、位移 ≤12、演奏页冻结）
+            if(art.GetComponent<DeepSeaAmbientDrift>()==null)art.gameObject.AddComponent<DeepSeaAmbientDrift>();
         }
         /// <summary>UI005 图标：按父级左上角定位（x/y 为距左上角偏移），线宽由形状统一决定。</summary>
         public static DeepSeaGraphic Icon(Transform parent,string name,DeepSeaGraphic.Shape shape,float x,float y,float w,float h,Color tint)

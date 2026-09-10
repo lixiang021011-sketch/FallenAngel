@@ -87,12 +87,13 @@
 6. 天赋：解锁一个节点（消费确认）（6s）
 7. 回到地图看到装备/现金变化（4s）
 
-## 六、打包清单（出可运行包前）
+## 六、演示与提交方式
 
-- [ ] 删除 `GameStarter` 中的临时验收悬浮条（`#if UNITY_EDITOR` 整段，含 Start 调用）
-- [ ] 替换占位音频（当前 `Resources/Audio/demo_song.mp3` 为占位，需可授权音源）
-- [ ] 谱面绑定确认：演示谱为 `酸橙色信笺_Easy`；S02/S03 差异谱可后置
-- [ ] Android 出包：菜单 `Tools > FallenAngel > Build Android APK`（已有构建脚本：重建场景 → 注册 Build Settings → 切 Android → 输出到 `Builds/`）
-- [ ] Windows 出包：按同一脚本思路增加 Standalone 目标（待补）
-- [ ] 出包后冒烟：新游戏 → 行程 → 商店购买 → 演奏 → 结算 → 天赋解锁 → 退出重进读档
-- [ ] 作品集素材：截图 8–10 张 + 录屏 30–60s
+**本轮决定：不出构建包，演示走 Unity 编辑器**（作品集只提交讲解 + 素材 + 源码仓库，不附可执行文件）。
+
+- 演示环境：Unity 2022.3.62f3c1 打开工程 → `Tools > FallenAngel > Build Default Game Scene` 重建场景 → Play。
+- 演示动线：新游戏 → 行程地图（含付费路线抽屉）→ 商店（固定详情 + 购买）→ 演奏 → 结算评级 → 天赋解锁 → 回地图看到现金与装备变化。
+- 编辑器专用内容：`GameStarter` 里的临时验收悬浮条（`#if UNITY_EDITOR`，获取装备/刷新次数/自动通关）**保留**，用于演示时跳过重复打歌；正式打包前再删。
+- 占位音频：`Resources/Audio/demo_song.mp3` 仅用于本地演示，**不随作品集外发**（如需外发再换可授权音源）。
+- 待补素材：截图 8–10 张 + 录屏 30–60s（分镜见第五节）。
+- 若日后要出包：Android 入口是 `Tools > FallenAngel > Build Android APK`（已有脚本），Windows 目标待补。

@@ -25,6 +25,7 @@ namespace FallenAngel.UI
         private RectTransform root;
         private TMP_FontAsset font;
         private bool dirty = true;
+        private bool fadePlayed;
         private string confirmText;
         private string routeNodeId;
         private bool useOptionalRoute;
@@ -52,6 +53,10 @@ namespace FallenAngel.UI
             Loc.AddFallback("portfolio.mapChallenge", "挑战", "Challenge");
             Loc.AddFallback("portfolio.mapPerformance", "普通演奏", "Performance");
             Loc.AddFallback("portfolio.loadingNote", "谱面与音频载入中，请稍候", "Loading chart and audio…");
+            Loc.AddFallback("portfolio.result.title", "本局演出记录", "Run performance record");
+            Loc.AddFallback("portfolio.result.score", "分数 {0:N0}", "Score {0:N0}");
+            Loc.AddFallback("portfolio.result.accuracy", "准确率 {0:0.00}%", "Accuracy {0:0.00}%");
+            Loc.AddFallback("portfolio.result.songs", "完成演奏 {0} / {1} · 本局积分 {2}", "Songs {0} / {1} · Run points {2}");
             Subscribe();
             font = GetComponentsInChildren<TextMeshProUGUI>(true).Select(t => t.font).FirstOrDefault(f => f != null);
             if (font == null) font = TMP_Settings.defaultFontAsset;
@@ -66,6 +71,10 @@ namespace FallenAngel.UI
             scaler.referenceResolution = new Vector2(1080, 1920);
             scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
             root = canvasObject.GetComponent<RectTransform>();
+            // FX001/M01：整页淡入 240ms（挂在根 CanvasGroup 上，重绘不会反复淡入）
+            var group = canvasObject.AddComponent<CanvasGroup>();
+            group.alpha = 0f;
+            canvasObject.AddComponent<DeepSeaFadeIn>();
             dirty = true;
         }
         private void Subscribe()
@@ -88,6 +97,11 @@ namespace FallenAngel.UI
             if (!dirty || root == null || session == null) return;
             dirty = false;
             Render();
+            if (!fadePlayed)
+            {
+                var fade = root.GetComponent<DeepSeaFadeIn>();
+                if (fade != null && root.childCount > 0) { fadePlayed = true; fade.Play(); }
+            }
         }
         private string T(string key, params object[] values) => Loc.T("portfolio." + key, values);
 
@@ -248,6 +262,16 @@ namespace FallenAngel.UI
                 {
                     Label(page, T(run.outcome), 20, 330, 960, 45, 28);
                     Label(page, T("credited", run.earnedPoints, run.creditedPoints - run.earnedPoints, run.creditedPoints), 20, 380, 960, 55, 25);
+                    // 页面 14/17：评级与统计（数据全部来自本局演出记录，不新增统计口径）
+                    var result = Box(page, "RunResult", 20, 450, 960, 320, card);
+                    DeepSeaTheme.CardSurface(result, card);
+                    Label(result, T("result.title"), 30, 20, 900, 44, 28).color = DeepSeaTheme.Muted;
+                    var rankLabel = Label(result, RankFor(run.lastAccuracy), 30, 70, 190, 190, 96);
+                    rankLabel.alignment = TextAlignmentOptions.Center;
+                    rankLabel.color = run.lastAccuracy >= 95f ? DeepSeaTheme.Accent : ink;
+                    Label(result, T("result.score", run.lastScore), 240, 92, 690, 54, 32);
+                    Label(result, T("result.accuracy", run.lastAccuracy), 240, 156, 690, 54, 32);
+                    Label(result, T("result.songs", run.completedSongs, run.stageIds.Count, run.earnedPoints), 240, 220, 690, 54, 28).color = DeepSeaTheme.Muted;
                 }
             }
             else
@@ -290,7 +314,9 @@ namespace FallenAngel.UI
                     Label(dropBox, dropText, 25, 22, 910, 44, 26);
                 }
             }
-            else RenderMap(page);
+            // 本局已结束时不再画地图：否则后绘制的地图视口会盖住结算卡与「开始一局/返回主菜单」，
+            // 表现为"结算在背景层 + 离开最后一个房间后卡死"。
+            else if (run == null || run.phase != "FINISHED") RenderMap(page);
         }
 
         private void RenderMap(RectTransform page)
@@ -420,6 +446,16 @@ namespace FallenAngel.UI
         }
 
         /// <summary>节点 → 关卡 → 谱面资源名（非关卡节点返回 null）</summary>
+        /// <summary>UI009：行程结算评级（只按准确率给 A–D；S 需现场判定计数，不在此重算）。</summary>
+        private static string RankFor(float accuracy)
+        {
+            if (accuracy <= 0f) return "—";
+            if (accuracy >= 95f) return "A";
+            if (accuracy >= 85f) return "B";
+            if (accuracy >= 70f) return "C";
+            return "D";
+        }
+
         private static string ChartNameForNode(MapNodesRow n)
         {
             if (string.IsNullOrEmpty(n.StageId)) return null;

@@ -34,6 +34,7 @@ namespace FallenAngel.UI
         private string promptText;          // 单按钮提示（购买失败），不改变确认态
         private string pendingBuyId;        // 购买确认中的装备
         private bool useOptionalPurchase;
+        private bool flashPending;          // FX003：购买成功后在下一次重绘的详情卡上播放闪光
         private readonly Color card = DeepSeaTheme.Card;
         private readonly Color ink = DeepSeaTheme.Ink;
 
@@ -279,6 +280,7 @@ namespace FallenAngel.UI
             const float dx = 40, dy = 930, dw = 920, dh = 560;
             var detail = Box(page, "ShopDetail", dx, dy, dw, dh, card);
             DeepSeaTheme.CardSurface(detail, card);
+            if (flashPending) { flashPending = false; DeepSeaSuccessFlash.Play(detail); }
             var run = session.Run;
 
             if (string.IsNullOrEmpty(selectedId) || cands == null || !cands.Contains(selectedId))
@@ -399,6 +401,7 @@ namespace FallenAngel.UI
                     {
                         feedbackText = T("shopBought", id);
                         selectedId = null;
+                        flashPending = true;   // FX003：事务成功后才播获得闪光
                     }
                     dirty = true;
                     return;
