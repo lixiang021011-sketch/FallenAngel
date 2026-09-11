@@ -46,3 +46,9 @@ chart_tools/lchzh3473-sim-phi-*/
 chart_tools/_Hit*.ts
 # 外部开源参考谱面/素材缓存（第三方内容，不入库）
 _refs/
+
+# ===== 第三方音频（不随仓库公开发布）=====
+# 本地保留可正常游玩，公开版不包含任何他人的音乐
+Assets/Resources/Audio/*.mp3
+Assets/Resources/Audio/*.ogg
+Assets/Resources/Audio/*.wav
