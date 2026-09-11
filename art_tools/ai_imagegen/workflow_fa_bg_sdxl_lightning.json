@@ -1,0 +1,98 @@
+{
+  "4": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "sd_xl_base_1.0.safetensors"
+    }
+  },
+  "20": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "sdxl_vae_fp16_fix.safetensors"
+    }
+  },
+  "12": {
+    "class_type": "LoraLoader",
+    "inputs": {
+      "lora_name": "sdxl_lightning_4step_lora.safetensors",
+      "strength_model": 1.0,
+      "strength_clip": 1.0,
+      "model": ["4", 0],
+      "clip": ["4", 1]
+    }
+  },
+  "6": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "deep sea abyss, dark still water filling the center of the frame, empty middle, bioluminescent coral and glowing plankton only along the left and right edges, deep navy blue water, teal glow on the sides, volumetric light rays from far above, drifting particles, tall narrow vertical composition, symmetrical, dark moody atmosphere, matte painting, game background art, highly detailed, cinematic",
+      "clip": ["12", 1]
+    }
+  },
+  "7": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "bright center, glowing center, central light source, light in the middle, cluster in the middle, busy middle, bright top, text, watermark, signature, logo, ui, hud, character, person, face, magenta, orange, oversaturated, clutter, hard edges, jpeg artifacts, lowres, blurry, deformed, frame, border",
+      "clip": ["12", 1]
+    }
+  },
+  "5": {
+    "class_type": "EmptyLatentImage",
+    "inputs": {
+      "width": 768,
+      "height": 1344,
+      "batch_size": 1
+    }
+  },
+  "3": {
+    "class_type": "KSampler",
+    "inputs": {
+      "seed": 777,
+      "steps": 6,
+      "cfg": 1.5,
+      "sampler_name": "euler",
+      "scheduler": "sgm_uniform",
+      "denoise": 1,
+      "model": ["12", 0],
+      "positive": ["6", 0],
+      "negative": ["7", 0],
+      "latent_image": ["5", 0]
+    }
+  },
+  "8": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["3", 0],
+      "vae": ["20", 0]
+    }
+  },
+  "13": {
+    "class_type": "UpscaleModelLoader",
+    "inputs": {
+      "model_name": "RealESRGAN_x4.pth"
+    }
+  },
+  "14": {
+    "class_type": "ImageUpscaleWithModel",
+    "inputs": {
+      "upscale_model": ["13", 0],
+      "image": ["8", 0]
+    }
+  },
+  "15": {
+    "class_type": "ImageScale",
+    "inputs": {
+      "upscale_method": "lanczos",
+      "width": 2160,
+      "height": 3840,
+      "crop": "disabled",
+      "image": ["14", 0]
+    }
+  },
+  "9": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "filename_prefix": "FA_sdxl",
+      "images": ["15", 0]
+    }
+  }
+}

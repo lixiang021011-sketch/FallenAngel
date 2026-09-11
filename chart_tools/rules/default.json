@@ -7,6 +7,7 @@
     "max_simultaneous": 2,
     "bend_displacement_lanes_per_semitone": 0.5,
     "ghost_dense_interval_beats": 1,
+    "rel_start_lane": 2,
     "flick_enabled": { "drums": true, "guitar": true, "bass": "partial", "keys": true }
   },
   "rules": [
@@ -18,20 +19,20 @@
     { "name": "drums-hh-open",   "match": { "instrument": "drums", "pitch": 46 },                                "emit": { "type": "flick", "lane": 2, "direction": "up" } },
     { "name": "drums-hh-pedal",  "match": { "instrument": "drums", "pitch": 44 },                                "emit": { "type": "flick", "lane": 2, "direction": "down" } },
     { "name": "drums-crash",     "match": { "instrument": "drums", "pitch_in": [49, 51, 52, 55, 57, 59] },       "emit": { "type": "tap", "lane": 3 } },
-    { "name": "guitar-bend",     "match": { "instrument": "guitar", "articulations": ["bend"] },                  "emit": { "type": "slide", "path": "bend_offset" } },
-    { "name": "guitar-release",  "match": { "instrument": "guitar", "articulations": ["release"] },               "emit": { "type": "slide", "path": "bend_offset_neg" } },
+    { "name": "guitar-bend",     "match": { "instrument": "guitar", "articulations": ["bend"] },                  "emit": { "type": "slide", "lane": "from_pitch_delta", "path": "bend_offset" } },
+    { "name": "guitar-release",  "match": { "instrument": "guitar", "articulations": ["release"] },               "emit": { "type": "slide", "lane": "from_pitch_delta", "path": "bend_offset_neg" } },
     { "name": "guitar-strum",    "match": { "instrument": "guitar", "articulations": ["strum"] },                 "emit": { "type": "drag", "lane": "cross_lane" } },
-    { "name": "bass-ghost-dense","match": { "instrument": "bass", "articulations": ["ghost"], "next_interval_beats_max": 1 }, "emit": { "type": "drag", "lane": "from_pitch" } },
-    { "name": "bass-ghost-sparse","match": { "instrument": "bass", "articulations": ["ghost"] },                  "emit": { "type": "flick", "lane": "from_pitch", "direction": "down" } },
-    { "name": "bass-slap",       "match": { "instrument": "bass", "articulations": ["slap"] },                    "emit": { "type": "flick", "lane": "from_pitch", "direction": "down" } },
-    { "name": "bass-hammer-on",  "match": { "instrument": "bass", "articulations": ["hammer_on"] },               "emit": { "type": "flick", "lane": "from_pitch", "direction": "up" } },
-    { "name": "bass-pull-off",   "match": { "instrument": "bass", "articulations": ["pull_off"] },                "emit": { "type": "drag", "lane": "from_pitch" } },
-    { "name": "melodic-slide",   "match": { "articulations": ["gliss"], "duration_min": "param:slide_min_duration" }, "emit": { "type": "slide", "path": "pitch_to_x" } },
-    { "name": "melodic-gliss-flick", "match": { "articulations": ["gliss"], "duration_max": "param:slide_min_duration" }, "emit": { "type": "flick", "lane": "from_pitch", "direction": "from_pitch" } },
-    { "name": "melodic-tremolo", "match": { "articulations": ["tremolo"] },                                       "emit": { "type": "drag", "lane": "from_pitch" } },
-    { "name": "melodic-grace",   "match": { "articulations": ["grace"] },                                         "emit": { "type": "flick", "lane": "from_pitch", "direction": "from_pitch" } },
-    { "name": "melodic-hold",    "match": { "tied": true, "duration_beats_min": "param:hold_threshold_beats" },   "emit": { "type": "hold", "lane": "from_pitch" } },
-    { "name": "melodic-hold-long","match": { "duration_beats_min": "param:hold_threshold_beats" },                "emit": { "type": "hold", "lane": "from_pitch" } }
+    { "name": "bass-ghost-dense","match": { "instrument": "bass", "articulations": ["ghost"], "next_interval_beats_max": 1 }, "emit": { "type": "drag", "lane": "from_pitch_delta" } },
+    { "name": "bass-ghost-sparse","match": { "instrument": "bass", "articulations": ["ghost"] },                  "emit": { "type": "flick", "lane": "from_pitch_delta", "direction": "down" } },
+    { "name": "bass-slap",       "match": { "instrument": "bass", "articulations": ["slap"] },                    "emit": { "type": "flick", "lane": "from_pitch_delta", "direction": "down" } },
+    { "name": "bass-hammer-on",  "match": { "instrument": "bass", "articulations": ["hammer_on"] },               "emit": { "type": "flick", "lane": "from_pitch_delta", "direction": "up" } },
+    { "name": "bass-pull-off",   "match": { "instrument": "bass", "articulations": ["pull_off"] },                "emit": { "type": "drag", "lane": "from_pitch_delta" } },
+    { "name": "melodic-slide",   "match": { "articulations": ["gliss"], "duration_min": "param:slide_min_duration" }, "emit": { "type": "slide", "lane": "from_pitch_delta", "path": "pitch_to_x" } },
+    { "name": "melodic-gliss-flick", "match": { "articulations": ["gliss"], "duration_max": "param:slide_min_duration" }, "emit": { "type": "flick", "lane": "from_pitch_delta", "direction": "from_pitch" } },
+    { "name": "melodic-tremolo", "match": { "articulations": ["tremolo"] },                                       "emit": { "type": "drag", "lane": "from_pitch_delta" } },
+    { "name": "melodic-grace",   "match": { "articulations": ["grace"] },                                         "emit": { "type": "flick", "lane": "from_pitch_delta", "direction": "from_pitch" } },
+    { "name": "melodic-hold",    "match": { "tied": true, "duration_beats_min": "param:hold_threshold_beats" },   "emit": { "type": "hold", "lane": "from_pitch_delta" } },
+    { "name": "melodic-hold-long","match": { "duration_beats_min": "param:hold_threshold_beats" },                "emit": { "type": "hold", "lane": "from_pitch_delta" } }
   ],
   "post": {
     "chord_split": { "max_simultaneous": "param:max_simultaneous" },
@@ -39,7 +40,7 @@
     "overlap": { "strategy": "truncate_earlier_end" }
   },
   "defaults": {
-    "tap_lane": "from_pitch",
+    "tap_lane": "from_pitch_delta",
     "unmatched": "tap"
   }
 }

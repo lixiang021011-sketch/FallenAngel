@@ -84,7 +84,8 @@ class TestMelodicRules(unittest.TestCase):
         path = n[0]["path"]
         self.assertEqual(path[0]["t"], 0.0)
         self.assertEqual(path[-1]["t"], n[0]["duration"])
-        self.assertTrue(path[-1]["x"] > path[0]["x"])  # 上行 → 右移
+        self.assertEqual(path[0]["x"], 2.0)  # 单音首音 → 相对锚点中间列
+        self.assertEqual(path[-1]["x"], 3.0)  # 上行 → 终点右移 1 列
         self.assertTrue(all(0.0 <= p["x"] <= 4.0 for p in path))
 
     def test_gliss_short_to_flick(self):
@@ -110,14 +111,65 @@ class TestMelodicRules(unittest.TestCase):
         self.assertEqual(n[0]["type"], "drag")
 
     def test_unmatched_tap_with_pitch_lane(self):
-        # 无记号普通音：未命中任何规则 → defaults.tap_lane = from_pitch
+        # 无记号普通音：未命中任何规则 → defaults.tap_lane = from_pitch_delta
+        # 单音（无前音）→ 锚定中间列 rel_start_lane=2
         n, _, _ = apply([ev(pitch=36)])  # keys 乐器低音
         self.assertEqual(n[0]["type"], "tap")
-        self.assertEqual(n[0]["lane"], pitch_lane(36))
+        self.assertEqual(n[0]["lane"], 2)
 
     def test_pitch_null_unmatched(self):
         n, _, _ = apply([ev(pitch=None, instrument="other")])
         self.assertEqual(n[0]["type"], "tap")
+
+
+class TestRelativeLanes(unittest.TestCase):
+    """相对音高轨道（用户拍板：按方向 ±1 列，起点中间列，超界钳制）"""
+
+    def rel_ev(self, pitch, tick, instrument="keys"):
+        return ev(pitch=pitch, tick=tick, time=tick / PPQ,  # tick 与 time 一致，避免同刻分组
+                  instrument=instrument)
+
+    def test_ascending_steps_right(self):
+        n, _, _ = apply([self.rel_ev(60, 0), self.rel_ev(64, 100),
+                         self.rel_ev(67, 200)])
+        self.assertEqual([x["lane"] for x in n], [2, 3, 4])
+
+    def test_descending_steps_left(self):
+        n, _, _ = apply([self.rel_ev(71, 0), self.rel_ev(67, 100),
+                         self.rel_ev(63, 200)])
+        self.assertEqual([x["lane"] for x in n], [2, 1, 0])
+
+    def test_same_pitch_stays(self):
+        n, _, _ = apply([self.rel_ev(60, 0), self.rel_ev(60, 100),
+                         self.rel_ev(60, 200)])
+        self.assertEqual([x["lane"] for x in n], [2, 2, 2])
+
+    def test_clamp_at_edges(self):
+        # 持续上行 10 音 → 在列 4 饱和；回落后从饱和列往左
+        n, _, _ = apply([self.rel_ev(60 + i * 2, i * 100) for i in range(10)])
+        lanes = [x["lane"] for x in n]
+        self.assertEqual(lanes[-1], 4)
+        self.assertTrue(all(0 <= l <= 4 for l in lanes))
+        n2, _, _ = apply([self.rel_ev(60 - i * 2, i * 100) for i in range(10)])
+        self.assertEqual([x["lane"] for x in n2][-1], 0)
+
+    def test_instruments_independent(self):
+        # 不同乐器旋律线各自累计（同刻不互相影响）
+        n, _, _ = apply([self.rel_ev(60, 0, "guitar"), self.rel_ev(48, 0, "bass"),
+                         self.rel_ev(64, 100, "guitar"), self.rel_ev(45, 100, "bass")])
+        lanes = [(x["type"], x["lane"]) for x in n]
+        self.assertIn(("tap", 3), lanes)  # guitar 60→64 右移
+        self.assertIn(("tap", 1), lanes)  # bass 48→45 左移
+
+    def test_slide_start_from_relative_lane(self):
+        # gliss slide 起点 = 相对轨道（上行旋律中）→ 终点再右移 1 列
+        n, _, _ = apply([self.rel_ev(60, 0),
+                         ev(pitch=64, pitch_end=72, duration=0.5,
+                            duration_ticks=PPQ, articulations=["gliss"],
+                            tick=100, time=100 / PPQ)])
+        s = [x for x in n if x["type"] == "slide"][0]
+        self.assertEqual(s["path"][0]["x"], 3.0)  # 前音 60 在列 2，64 → 列 3
+        self.assertEqual(s["path"][-1]["x"], 4.0)  # 上行终点 +1 列
 
 
 def pitch_lane(p):

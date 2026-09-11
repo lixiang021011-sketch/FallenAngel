@@ -1,0 +1,94 @@
+{
+  "4": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "DreamShaper_8_pruned.safetensors"
+    }
+  },
+  "30": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "layout_gameplay_1080x1920.png",
+      "upload": "image"
+    }
+  },
+  "32": {
+    "class_type": "ControlNetLoader",
+    "inputs": {
+      "control_net_name": "control_v11p_sd15_lineart.safetensors"
+    }
+  },
+  "6": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "deep sea bioluminescent rhythm game interface, five glowing translucent lane columns receding into the distance in strong perspective, converging toward a vanishing point near the top of the frame, luminous cyan notes falling down the lanes, intricate coral and kelp silhouettes framing the left and right edges, volumetric god rays, drifting plankton particles, caustic light patterns, glass reflections, dark navy abyss, teal and cyan palette, highly detailed matte painting, cinematic lighting, polished game interface, vertical composition",
+      "clip": ["4", 1]
+    }
+  },
+  "7": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "flat, vertical parallel lanes, orthographic, cluttered, messy, photo, 3d render, watermark, signature, text artifacts, blurry, lowres, extra lanes, distorted perspective, ugly, plain, empty",
+      "clip": ["4", 1]
+    }
+  },
+  "34": {
+    "class_type": "ControlNetApplyAdvanced",
+    "inputs": {
+      "strength": 1.0,
+      "start_percent": 0.0,
+      "end_percent": 1.0,
+      "positive": ["6", 0],
+      "negative": ["7", 0],
+      "control_net": ["32", 0],
+      "image": ["30", 0]
+    }
+  },
+  "5": {
+    "class_type": "EmptyLatentImage",
+    "inputs": {
+      "width": 540,
+      "height": 960,
+      "batch_size": 1
+    }
+  },
+  "3": {
+    "class_type": "KSampler",
+    "inputs": {
+      "seed": 777,
+      "steps": 28,
+      "cfg": 7.0,
+      "sampler_name": "dpmpp_2m",
+      "scheduler": "karras",
+      "denoise": 1,
+      "model": ["4", 0],
+      "positive": ["34", 0],
+      "negative": ["34", 1],
+      "latent_image": ["5", 0]
+    }
+  },
+  "8": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["3", 0],
+      "vae": ["4", 2]
+    }
+  },
+  "15": {
+    "class_type": "ImageScale",
+    "inputs": {
+      "upscale_method": "lanczos",
+      "width": 1080,
+      "height": 1920,
+      "crop": "disabled",
+      "image": ["8", 0]
+    }
+  },
+  "9": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "filename_prefix": "FA_uiS15",
+      "images": ["15", 0]
+    }
+  }
+}

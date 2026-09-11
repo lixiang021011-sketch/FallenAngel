@@ -49,6 +49,7 @@ _refs/
 
 # ===== 第三方音频（不随仓库公开发布）=====
 # 本地保留可正常游玩，公开版不包含任何他人的音乐
-Assets/Resources/Audio/*.mp3
-Assets/Resources/Audio/*.ogg
-Assets/Resources/Audio/*.wav
+Assets/Resources/Audio/
+
+# AI 生成概念图输出（体积大，不入库；workflow JSON 与脚本保留）
+art_tools/ai_imagegen/out/

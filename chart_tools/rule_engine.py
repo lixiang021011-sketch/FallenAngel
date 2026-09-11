@@ -74,11 +74,34 @@ def pitch_to_lane(pitch: int, params: Dict[str, Any]) -> int:
     return int(round(pitch_to_x(pitch, params)))
 
 
-def _resolve_lane(emit_lane: Any, ev: NoteEvent, params: Dict[str, Any]) -> Optional[int]:
+def rel_lanes(events: List[NoteEvent], start_lane: int) -> Dict[int, int]:
+    """相对音高轨道（用户拍板 2026-08-18）：同一乐器旋律线内，音符列 = 前一音符列 ± 方向——
+    音高升右移 1 列、降左移 1 列、同音不动，超界钳制。首音符锚定 start_lane（默认中间列）。
+    返回 id(事件) → lane（emit 时按同一事件对象查表）。"""
+    rel: Dict[int, int] = {}
+    for inst in sorted({e.instrument for e in events}):
+        line = sorted((e for e in events if e.instrument == inst), key=lambda e: e.tick)
+        cur = start_lane
+        prev_pitch = None
+        for e in line:
+            if e.pitch is None or prev_pitch is None:
+                rel[id(e)] = cur  # 首音符/无音高：锚定当前列
+            elif e.pitch > prev_pitch:
+                cur = min(cur + 1, LANE_MAX)
+            elif e.pitch < prev_pitch:
+                cur = max(cur - 1, 0)
+            rel[id(e)] = cur
+            prev_pitch = e.pitch
+    return rel
+
+
+def _resolve_lane(emit_lane: Any, ev: NoteEvent, ctx: Dict[str, Any]) -> Optional[int]:
     if isinstance(emit_lane, (int, float)):
         return int(emit_lane)
     if emit_lane == "from_pitch":
-        return pitch_to_lane(ev.pitch if ev.pitch is not None else PITCH_MIN + 12, params)
+        return pitch_to_lane(ev.pitch if ev.pitch is not None else PITCH_MIN + 12, ctx["params"])
+    if emit_lane == "from_pitch_delta":
+        return ctx.get("rel_lanes", {}).get(id(ev), ctx["params"].get("rel_start_lane", 2))
     return None  # cross_lane 等生成器另行处理
 
 
@@ -95,10 +118,11 @@ def _resolve_direction(emit_dir: Any, ev: NoteEvent) -> str:
 
 # ---------- slide path 生成器 ----------
 
-def _gen_slide_path(kind: str, ev: NoteEvent, params: Dict[str, Any]) -> Optional[List[Dict[str, float]]]:
-    """生成 slide path 点数组 [{t, x}]，首点 t=0，末点 t=duration"""
+def _gen_slide_path(kind: str, ev: NoteEvent, params: Dict[str, Any], x0: float) -> Optional[List[Dict[str, float]]]:
+    """生成 slide path 点数组 [{t, x}]，首点 t=0，末点 t=duration。
+    x0 = 起点轨道（相对音高轨道时由调用方传入；绝对时传 pitch_to_x）"""
     dur = round(max(ev.duration, 0.05), 3)
-    x0 = pitch_to_x(ev.pitch if ev.pitch is not None else PITCH_MIN + 12, params)
+    x0 = max(X_MIN, min(X_MAX, x0))
     if kind in ("bend_offset", "bend_offset_neg"):
         st = (ev.position or {}).get("bend_semitones")
         if st is None:
@@ -107,15 +131,17 @@ def _gen_slide_path(kind: str, ev: NoteEvent, params: Dict[str, Any]) -> Optiona
         sign = 1.0 if kind == "bend_offset" else -1.0
         x1 = max(X_MIN, min(X_MAX, x0 + sign * disp))
         return [{"t": 0.0, "x": round(x0, 3)}, {"t": dur, "x": round(x1, 3)}]
-    # pitch_to_x（gliss/滑弦）：起点 pitch → 终点 pitch_end 线性
+    # pitch_to_x（gliss/滑弦）：起点 x0 → 终点按相对音高方向 ±1 列
     if ev.pitch_end is None:
         return None
-    x1 = pitch_to_x(ev.pitch_end, params)
+    delta = 1 if ev.pitch_end > ev.pitch else (-1 if ev.pitch_end < ev.pitch else 0)
+    x1 = max(X_MIN, min(X_MAX, x0 + delta))
     return [{"t": 0.0, "x": round(x0, 3)}, {"t": dur, "x": round(x1, 3)}]
 
 
-def _gen_strum_drags(ev: NoteEvent, params: Dict[str, Any]) -> List[Dict[str, Any]]:
-    """扫弦 → 快速跨轨 drag 序列（协议：扫弦 = 快速跨轨 drag；Phigros 语义宽松不 miss）"""
+def _gen_strum_drags(ev: NoteEvent, params: Dict[str, Any], rel: Optional[int]) -> List[Dict[str, Any]]:
+    """扫弦 → 快速跨轨 drag 序列（协议：扫弦 = 快速跨轨 drag；Phigros 语义宽松不 miss）。
+    多音按琴弦顺序绝对映射（跨轨表演本身依弦序）；单音用相对轨道"""
     pitches = (ev.position or {}).get("strum_pitches") or [ev.pitch]
     pitches = [p for p in pitches if p is not None]
     n = len(pitches)
@@ -124,7 +150,7 @@ def _gen_strum_drags(ev: NoteEvent, params: Dict[str, Any]) -> List[Dict[str, An
     span = float(params.get("strum_span_seconds", 0.08))
     if n == 1:
         return [{"type": "drag", "time": round(ev.time, 3),
-                 "lane": pitch_to_lane(pitches[0], params)}]
+                 "lane": rel if rel is not None else pitch_to_lane(pitches[0], params)}]
     out = []
     for i, p in enumerate(pitches):
         t = ev.time + span * i / (n - 1)
@@ -195,11 +221,14 @@ def emit_event(rule: Dict[str, Any], ev: NoteEvent, ctx: Dict[str, Any],
     e = rule.get("emit", {})
     params = ctx["params"]
     ntype = e.get("type", "tap")
-    lane = _resolve_lane(e.get("lane", ctx["defaults"].get("tap_lane")), ev, params)
+    lane = _resolve_lane(e.get("lane", ctx["defaults"].get("tap_lane")), ev, ctx)
     base = {"type": ntype, "time": round(ev.time, 3)}
 
     if ntype == "slide":
-        path = _gen_slide_path(e.get("path", "pitch_to_x"), ev, params)
+        # 起点轨道：规则声明 lane（相对/绝对）优先，否则绝对 pitch 映射
+        x0 = lane if lane is not None else pitch_to_x(
+            ev.pitch if ev.pitch is not None else PITCH_MIN + 12, params)
+        path = _gen_slide_path(e.get("path", "pitch_to_x"), ev, params, x0)
         if path is None:
             warnings.append(f"⚠ {rule.get('name')}: slide 数据不足（bend 幅度/终止音高缺失），"
                             f"t={ev.time:.2f}s 降级 tap")
@@ -218,7 +247,7 @@ def emit_event(rule: Dict[str, Any], ev: NoteEvent, ctx: Dict[str, Any],
                  "direction": _resolve_direction(e.get("direction", "up"), ev)}]
     if ntype == "drag":
         if e.get("lane") == "cross_lane":
-            return _gen_strum_drags(ev, params)
+            return _gen_strum_drags(ev, params, ctx.get("rel_lanes", {}).get(id(ev)))
         return [{"type": "drag", "time": base["time"],
                  "lane": lane if lane is not None else 1}]
     # tap 兜底
@@ -365,7 +394,8 @@ class RuleEngine:
         """IR → (chart notes, 警告清单)。纯函数：同输入同输出。"""
         warnings: List[str] = []
         events = ir.sorted().events
-        ctx = {"params": self.params, "defaults": self.defaults}
+        ctx = {"params": self.params, "defaults": self.defaults,
+               "rel_lanes": rel_lanes(events, int(self.params.get("rel_start_lane", 2)))}
         notes: List[Dict[str, Any]] = []
         matched = 0
         for i, ev in enumerate(events):

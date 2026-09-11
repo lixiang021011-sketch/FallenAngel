@@ -1,0 +1,81 @@
+{
+  "4": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "sd_xl_base_1.0.safetensors"
+    }
+  },
+  "20": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "sdxl_vae_fp16_fix.safetensors"
+    }
+  },
+  "30": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "fa_design_init_1080x1920.png",
+      "upload": "image"
+    }
+  },
+  "31": {
+    "class_type": "VAEEncode",
+    "inputs": {
+      "pixels": ["30", 0],
+      "vae": ["20", 0]
+    }
+  },
+  "6": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "flat graphic rhythm game interface, designed UI components, note icons, hit effect ring, hud panels, deep sea teal palette with jellyfish pink accent, crisp shapes",
+      "clip": ["4", 1]
+    }
+  },
+  "7": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "thick paint, impasto, oil painting, painterly, brush strokes, matte painting, canvas texture, soft focus, blurry, muddy colors, photo, 3d render, watermark, text artifacts",
+      "clip": ["4", 1]
+    }
+  },
+  "3": {
+    "class_type": "KSampler",
+    "inputs": {
+      "seed": 777,
+      "steps": 24,
+      "cfg": 6.0,
+      "sampler_name": "dpmpp_2m",
+      "scheduler": "karras",
+      "denoise": 0.5,
+      "model": ["4", 0],
+      "positive": ["6", 0],
+      "negative": ["7", 0],
+      "latent_image": ["31", 0]
+    }
+  },
+  "8": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": ["3", 0],
+      "vae": ["20", 0]
+    }
+  },
+  "15": {
+    "class_type": "ImageScale",
+    "inputs": {
+      "upscale_method": "lanczos",
+      "width": 1080,
+      "height": 1920,
+      "crop": "disabled",
+      "image": ["8", 0]
+    }
+  },
+  "9": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "filename_prefix": "FA_concept_img2img",
+      "images": ["15", 0]
+    }
+  }
+}

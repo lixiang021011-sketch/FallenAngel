@@ -58,6 +58,10 @@ namespace FallenAngel.Gameplay
         private Note activeWideHold;
         // 按住中的 Slide 头部（任意键维持、全松即释放；跨轨拖动不中断，见 Update）
         private readonly List<Note> activeSlides = new List<Note>();
+        // Slide 跟手：记录每个按住中的滑条"脱离路径"的累计秒数（回到容差内清零）
+        private readonly Dictionary<Note, float> slideOutOfRange = new Dictionary<Note, float>();
+        private const float SlideFollowToleranceLanes = 1.0f;   // 与路径当前 x 的允许偏差（轨）
+        private const float SlideBreakSeconds = 0.25f;         // 连续脱离多久算断开
 
         private void Awake()
         {
@@ -161,6 +165,37 @@ namespace FallenAngel.Gameplay
             }
 
             // 宽长按 / Slide 释放：全部键松开即结束（释放时刻对结束时间判定）。
+            // Slide 跟手（pjsk 语义）：按住期间手指要停在路径当前 x 附近；
+            // 连续脱离超过 SlideBreakSeconds 才判断开（按 Miss），短暂偏离不惩罚。
+            for (int i = activeSlides.Count - 1; i >= 0; i--)
+            {
+                Note slide = activeSlides[i];
+                if (slide == null || !slide.IsHolding)
+                {
+                    if (slide != null) slideOutOfRange.Remove(slide);
+                    activeSlides.RemoveAt(i);
+                    continue;
+                }
+                float progress = Mathf.Clamp01((songTime - slide.Data.time) / Mathf.Max(.01f, slide.Data.duration));
+                float expectedX = SampleSlidePathX(slide.Data, progress);
+                bool following = false;
+                for (int lane = 0; lane < pressStates.Length; lane++)
+                {
+                    if (pressStates[lane] && Mathf.Abs(lane - expectedX) <= SlideFollowToleranceLanes)
+                    { following = true; break; }
+                }
+                if (following) { slideOutOfRange[slide] = 0f; continue; }
+                float off = (slideOutOfRange.TryGetValue(slide, out float acc) ? acc : 0f) + Time.deltaTime;
+                slideOutOfRange[slide] = off;
+                if (off >= SlideBreakSeconds)
+                {
+                    Debug.Log($"[JudgeManager] Slide 跟手断开（偏离 {off:F2}s）lane={slide.Data.lane}");
+                    ApplyJudge(slide, JudgeResultType.Miss, slide.Data.lane);
+                    slideOutOfRange.Remove(slide);
+                    activeSlides.RemoveAt(i);
+                }
+            }
+
             // Slide 与宽长按同语义：由任意键维持——触屏跨轨拖动（输入层
             // 松旧轨+按新轨）时只要还有键按住就不会中断。
             // 修复：此前 Slide 挂在单轨释放事件上（HandleRelease），跨行即被释放，slide 中途停止。
@@ -475,6 +510,23 @@ namespace FallenAngel.Gameplay
         /// <summary>
         /// 获取评级字符串 (S~D)
         /// </summary>
+        /// <summary>按进度 t01 采样 slide 路径的轨道坐标 x（分段线性；异常时回退到轨道号）。</summary>
+        private static float SampleSlidePathX(NoteData data, float t01)
+        {
+            var pts = data.path;
+            if (pts == null || pts.Count == 0) return data.lane;
+            if (pts.Count == 1) return pts[0].x;
+            float total = Mathf.Max(.001f, pts[pts.Count - 1].t);
+            float time = t01 * total;
+            for (int i = 0; i < pts.Count - 1; i++)
+            {
+                float t0 = pts[i].t, t1 = pts[i + 1].t;
+                if (time >= t0 && time <= t1)
+                    return Mathf.Lerp(pts[i].x, pts[i + 1].x, t1 > t0 ? (time - t0) / (t1 - t0) : 0f);
+            }
+            return pts[pts.Count - 1].x;
+        }
+
         public string GetRank()
         {
             float acc = CalculateAccuracy();

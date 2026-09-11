@@ -1,0 +1,418 @@
+{
+ "metadata": {
+  "songName": "TEST 无声全类型",
+  "songArtist": "silent",
+  "chartAuthor": "AI 测试谱",
+  "difficulty": 0,
+  "level": 1,
+  "bpm": 120.0,
+  "offset": 0.0,
+  "audioFileName": "silent",
+  "previewStartTime": 0.0,
+  "previewDuration": 15.0,
+  "formatVersion": 2,
+  "noteCounts": {
+   "tap": 40,
+   "hold": 7,
+   "drag": 10,
+   "flick": 5,
+   "slide": 3
+  }
+ },
+ "notes": [
+  {
+   "type": "tap",
+   "time": 1.0,
+   "lane": 0
+  },
+  {
+   "type": "tap",
+   "time": 1.5,
+   "lane": 1
+  },
+  {
+   "type": "tap",
+   "time": 2.0,
+   "lane": 2
+  },
+  {
+   "type": "tap",
+   "time": 2.5,
+   "lane": 3
+  },
+  {
+   "type": "tap",
+   "time": 3.0,
+   "lane": 4
+  },
+  {
+   "type": "tap",
+   "time": 3.5,
+   "lane": 0
+  },
+  {
+   "type": "tap",
+   "time": 4.0,
+   "lane": 1
+  },
+  {
+   "type": "tap",
+   "time": 4.5,
+   "lane": 2
+  },
+  {
+   "type": "tap",
+   "time": 5.0,
+   "lane": 3
+  },
+  {
+   "type": "tap",
+   "time": 5.5,
+   "lane": 4
+  },
+  {
+   "type": "tap",
+   "time": 6.0,
+   "lane": 0
+  },
+  {
+   "type": "tap",
+   "time": 6.5,
+   "lane": 1
+  },
+  {
+   "type": "tap",
+   "time": 7.0,
+   "lane": 2
+  },
+  {
+   "type": "tap",
+   "time": 7.5,
+   "lane": 3
+  },
+  {
+   "type": "tap",
+   "time": 8.0,
+   "lane": 4
+  },
+  {
+   "type": "tap",
+   "time": 9.0,
+   "lane": 0
+  },
+  {
+   "type": "tap",
+   "time": 9.0,
+   "lane": 2
+  },
+  {
+   "type": "tap",
+   "time": 9.5,
+   "lane": 1
+  },
+  {
+   "type": "tap",
+   "time": 9.5,
+   "lane": 3
+  },
+  {
+   "type": "tap",
+   "time": 10.0,
+   "lane": 0
+  },
+  {
+   "type": "tap",
+   "time": 10.0,
+   "lane": 4
+  },
+  {
+   "type": "tap",
+   "time": 10.5,
+   "lane": 2
+  },
+  {
+   "type": "tap",
+   "time": 10.5,
+   "lane": 4
+  },
+  {
+   "type": "tap",
+   "time": 11.0,
+   "lane": 0
+  },
+  {
+   "type": "tap",
+   "time": 11.0,
+   "lane": 2
+  },
+  {
+   "type": "tap",
+   "time": 11.5,
+   "lane": 1
+  },
+  {
+   "type": "tap",
+   "time": 11.5,
+   "lane": 3
+  },
+  {
+   "type": "tap",
+   "time": 12.0,
+   "lane": 0
+  },
+  {
+   "type": "tap",
+   "time": 12.0,
+   "lane": 4
+  },
+  {
+   "type": "tap",
+   "time": 12.5,
+   "lane": 2
+  },
+  {
+   "type": "tap",
+   "time": 12.5,
+   "lane": 4
+  },
+  {
+   "type": "hold",
+   "time": 14.0,
+   "lane": 0,
+   "duration": 1.2
+  },
+  {
+   "type": "hold",
+   "time": 15.5,
+   "lane": 1,
+   "duration": 1.2
+  },
+  {
+   "type": "hold",
+   "time": 17.0,
+   "lane": 2,
+   "duration": 1.2
+  },
+  {
+   "type": "hold",
+   "time": 18.5,
+   "lane": 3,
+   "duration": 1.2
+  },
+  {
+   "type": "hold",
+   "time": 20.0,
+   "lane": 4,
+   "duration": 1.2
+  },
+  {
+   "type": "flick",
+   "time": 22.0,
+   "lane": 0
+  },
+  {
+   "type": "flick",
+   "time": 22.6,
+   "lane": 1,
+   "direction": "down"
+  },
+  {
+   "type": "flick",
+   "time": 23.2,
+   "lane": 2
+  },
+  {
+   "type": "flick",
+   "time": 23.8,
+   "lane": 3,
+   "direction": "down"
+  },
+  {
+   "type": "flick",
+   "time": 24.4,
+   "lane": 4
+  },
+  {
+   "type": "drag",
+   "time": 26.0,
+   "lane": 0
+  },
+  {
+   "type": "drag",
+   "time": 26.4,
+   "lane": 2
+  },
+  {
+   "type": "drag",
+   "time": 26.8,
+   "lane": 4
+  },
+  {
+   "type": "drag",
+   "time": 27.2,
+   "lane": 1
+  },
+  {
+   "type": "drag",
+   "time": 27.6,
+   "lane": 3
+  },
+  {
+   "type": "drag",
+   "time": 28.0,
+   "lane": 0
+  },
+  {
+   "type": "drag",
+   "time": 28.4,
+   "lane": 2
+  },
+  {
+   "type": "drag",
+   "time": 28.8,
+   "lane": 4
+  },
+  {
+   "type": "drag",
+   "time": 29.2,
+   "lane": 1
+  },
+  {
+   "type": "drag",
+   "time": 29.6,
+   "lane": 3
+  },
+  {
+   "type": "slide",
+   "time": 32.0,
+   "lane": 0,
+   "duration": 2.0,
+   "path": [
+    {
+     "t": 0.0,
+     "x": 0.0
+    },
+    {
+     "t": 0.6,
+     "x": 1.0
+    },
+    {
+     "t": 1.3,
+     "x": 2.0
+    },
+    {
+     "t": 2.0,
+     "x": 4.0
+    }
+   ]
+  },
+  {
+   "type": "slide",
+   "time": 35.0,
+   "lane": 4,
+   "duration": 2.0,
+   "path": [
+    {
+     "t": 0.0,
+     "x": 4.0
+    },
+    {
+     "t": 0.6,
+     "x": 3.0
+    },
+    {
+     "t": 1.3,
+     "x": 1.0
+    },
+    {
+     "t": 2.0,
+     "x": 0.0
+    }
+   ]
+  },
+  {
+   "type": "slide",
+   "time": 38.0,
+   "lane": 2,
+   "duration": 1.0,
+   "path": [
+    {
+     "t": 0.0,
+     "x": 2.0
+    },
+    {
+     "t": 0.5,
+     "x": 2.3
+    },
+    {
+     "t": 1.0,
+     "x": 2.5
+    }
+   ]
+  },
+  {
+   "type": "tap",
+   "time": 41.0,
+   "lane": 2,
+   "wide": true
+  },
+  {
+   "type": "tap",
+   "time": 41.5,
+   "lane": 4,
+   "wide": true
+  },
+  {
+   "type": "tap",
+   "time": 42.0,
+   "lane": 1,
+   "wide": true
+  },
+  {
+   "type": "tap",
+   "time": 42.5,
+   "lane": 3,
+   "wide": true
+  },
+  {
+   "type": "hold",
+   "time": 44.0,
+   "lane": 0,
+   "duration": 1.5,
+   "wide": true
+  },
+  {
+   "type": "hold",
+   "time": 46.5,
+   "lane": 0,
+   "duration": 1.5,
+   "wide": true
+  },
+  {
+   "type": "tap",
+   "time": 49.0,
+   "lane": 0
+  },
+  {
+   "type": "tap",
+   "time": 49.0,
+   "lane": 1
+  },
+  {
+   "type": "tap",
+   "time": 49.0,
+   "lane": 2
+  },
+  {
+   "type": "tap",
+   "time": 49.0,
+   "lane": 3
+  },
+  {
+   "type": "tap",
+   "time": 49.0,
+   "lane": 4
+  }
+ ],
+ "events": []
+}
