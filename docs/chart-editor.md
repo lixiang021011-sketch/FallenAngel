@@ -1,3 +1,8 @@
+> **English summary** — How to use the in-engine 5-lane chart editor (`Tools > FallenAngel > Chart Editor`). It covers loading and saving v2 charts, the timeline and toolbar layout, mouse and keyboard shortcuts (place, box- and multi-select, drag to move, drag the edge to resize, copy/paste, 60-step undo/redo, waveform-aligned playback), the note types and their placement parameters, snapping (1/4 → 1/8 → 1/16 → off) and the built-in validity checks. It closes with a feature comparison against PhiEdit and an honest list of what is still missing. The full text below is in Chinese.
+
+
+---
+
 # 谱面编辑器使用说明（Chart Editor）
 
 > 面向 5 轨 v2 协议（`metadata.formatVersion = 2`）。当前是工程内 EditorWindow 版本，随 Unity 工程使用。

@@ -1,3 +1,8 @@
+> **English summary** — The mapping table from musical notation to FallenAngel note types, per instrument (drums, guitar, bass). It fixes the lane-colour convention (0 red / 1 yellow / 2 blue / 3 green, higher pitch further right), what flick direction means (up for upward technique, down for downward or muted technique), how a slide path is derived from pitch, the hold threshold (two beats or longer becomes a hold, applied uniformly across instruments), and the two-lane ceiling for simultaneous notes. The authoritative version has been folded back into chart-format.md §3.3; this table remains the change baseline. The full text below is in Chinese.
+
+
+---
+
 # 音符对照表（2026-08-18 已全部确认）
 
 > 记谱 → FallenAngel 音符的映射总表。**权威版已回填 `docs/谱面转换协议.md` §3.3**；本表留存为变更底稿——后续要改映射请直接编辑本表，我会同步协议文档与 `chart_tools/rules/default.json`。

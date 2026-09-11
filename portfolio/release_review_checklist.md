@@ -51,4 +51,4 @@
 | 配置/天赋/存档事务自检报告（95 项） | `C:\Users\LorXer\Documents\trae_projects\FallenAngel\Logs\portfolio_report_20260910.txt` |
 | 页面设计规格与交互提案 | `C:\Users\LorXer\Documents\Codex\2026-09-07\referenced-chatgpt-conversation-this-is-an\outputs\page_redesign_0909\design_handoff.md` |
 | 美术需求与工期表 | 同目录 `art_resource_requirements.xlsx` |
-| 项目设计说明 / 开发规范 | `C:\Users\LorXer\Documents\trae_projects\FallenAngel\docs\项目说明.md`、`docs\架构约定.md` |
+| 项目设计说明 / 开发规范 | `C:\Users\LorXer\Documents\trae_projects\FallenAngel\docs\project-overview.md`、`docs\architecture.md` |

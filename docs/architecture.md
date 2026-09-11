@@ -1,3 +1,8 @@
+> **English summary** — Development standards that every new or changed piece of code has to follow. It defines six layers under `Assets/Scripts/` (Core, Data, Gameplay, Input, UI, Audio), one namespace per layer, and the dependency rule that goes with them: layers may depend on Core and Data, but Gameplay, Input, UI and Audio must never call each other directly — only through events or through Core. UI is display-and-forward only; gameplay maths belongs in Core services. The document also fixes the singleton pattern, the C# event subscription conventions, and the rule that time is always read from `GameManager.SongTime`. Known violations are listed rather than hidden. The full text below is in Chinese.
+
+
+---
+
 # FallenAngel 架构约定
 
 > 本文档是**开发规范**：所有新增/修改代码必须遵守。与现状代码不一致的地方，以"改造点"标注。

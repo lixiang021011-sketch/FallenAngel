@@ -163,7 +163,7 @@ Assets/Scripts/     游戏代码（Core / Data / UI / Gameplay / Audio / Input�
 Assets/Resources/   谱面、本地化文案
 chart_tools/        谱面分析、转换、导入与规则引擎
 art_tools/          美术方向工作流与几何导出管线
-docs/               项目说明、架构约定、谱面转换协议
+docs/               项目说明、架构约定、谱面转换协议、编辑器说明（正文中文，每篇顶部带英文摘要）
 portfolio/          作品集素材与图表
 compile_check.sh    无头编译自检
 CLAUDE.md           AI 协作约定（可改范围、验证要求、提交纪律）
@@ -189,5 +189,23 @@ A single run is a few minutes of route decisions on a 9-node map (battle, shop a
 - **Headless verification** — 95 config and save-transaction determinism checks plus 27 icon-geometry checks, runnable without opening the editor.
 
 **How it was built**: AI wrote most of the implementation (Claude Code + DeepSeek V4 Pro/Flash), while design decisions and real-device testing were the author's. Tools are chosen on token cost and time-to-output rather than benchmarks; `CLAUDE.md` scopes what the model may touch and `compile_check.sh` keeps AI output verifiable before every commit.
+
+#### Commit rhythm
+
+Development moved in small, verifiable steps, and the commit history shows it. Representative commits, translated:
+
+| Commit | What it did |
+| --- | --- |
+| `chore: AI collaboration groundwork (git baseline + .gitignore + CLAUDE.md + compile check)` | Set the working rules before touching gameplay |
+| `fix: single clock source — AudioManager owns time, fixing dual-clock drift` | A rhythm game cannot have two clocks; this removed the race and the early BGM countdown |
+| `feat: chart toolchain + three auto-generated charts (drums/bass/synth)` | Built the analysis pipeline that was later demoted to a reference tool |
+| `feat: notation-to-chart protocol finalised (v2 five note types + two-stage rule pipeline)` | Locked the mapping contract before implementing it |
+| `feat: guitar-chart conversion finished and then dropped (output archived, hand-charting instead)` | Decided the automated result was not good enough, and said so |
+| `feat: 5-lane chart editor — waveform alignment / playback / preview / multi-select paste / Alt-zoom` | Authoring tools, not just gameplay |
+| `feat: open-source chart importers (osu!mania / StepMania) + first real chart in game` | Content interoperability |
+| `feat: note parts (head/tail) + simultaneous-note connectors + 16 geometry self-checks` | Feature work lands with the checks that prove it |
+| `chore: third-party audio kept local, not published with the repository` | Licensing handled before going public |
+
+Two habits show up throughout: every change states how it was verified, and features land together with the checks that prove them (95 configuration and save-transaction checks, 27 icon-geometry checks, both runnable headlessly).
 
 **Audio**: this repository contains no audio files. See section 9 above.

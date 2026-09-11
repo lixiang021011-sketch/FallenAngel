@@ -1,6 +1,6 @@
 # FallenAngel — Unity 音游 Demo
 
-> AI 协作入口文档。游戏设计详见 `docs/项目说明.md`；开发规范详见 `docs/架构约定.md`。
+> AI 协作入口文档。游戏设计详见 `docs/project-overview.md`；开发规范详见 `docs/architecture.md`。
 
 ## 速查
 
@@ -13,7 +13,7 @@
 
 1. **默认可改范围是 `Assets/Scripts` 下的 `.cs` 文件**；场景、预制体由人在编辑器内操作。文档仅在用户明确要求时改。删除脚本时同步删除对应 `.meta`，避免 Missing Script。
 2. 重命名/移动资产只在 Unity 内进行；不新增 Package；不改 ProjectSettings。
-3. 新代码遵守 `docs/架构约定.md`：分层与依赖规则、单例模式、C# 事件通信（OnEnable/Start/OnDisable 订阅规范）、**时间一律取 `GameManager.SongTime`**、音符只经 NoteSpawner 对象池创建。行程地图走 `PortfolioSession`，不要复活已删除的 RunManager。
+3. 新代码遵守 `docs/architecture.md`：分层与依赖规则、单例模式、C# 事件通信（OnEnable/Start/OnDisable 订阅规范）、**时间一律取 `GameManager.SongTime`**、音符只经 NoteSpawner 对象池创建。行程地图走 `PortfolioSession`，不要复活已删除的 RunManager。
 4. 小步快跑：一次一个可编译、可验证的改动，完成后说明"如何验证"。
 5. 关键状态用 `Debug.Log("[类名] ...")` 输出，方便玩家侧排查。
 6. 排查素材：`Logs/` 目录、玩家提供的 Console 报错原文与截图。

@@ -1,3 +1,8 @@
+> **English summary** — The authoritative conversion protocol from notation (MuseScore `.mscz` / MusicXML / MIDI / Guitar Pro / `.chart`) to the FallenAngel chart format. It specifies a two-stage pipeline: a per-format front-end parser that normalises each source into one IR event stream, then a single declarative rule engine that maps IR to chart JSON. The design principles are complexity isolation (a new source format means a new front-end only), rules as data rather than code, IR→chart as a pure function that can be unit-tested and round-trip verified, and one-way generation with no promise of reverse conversion. §1 defines the v2 chart schema, including the five note types and the `slide.path` field. The full text below is in Chinese.
+
+
+---
+
 # 谱面转换协议 v1（Notation → FallenAngel Chart）
 
 > 数字乐谱格式（mscz / MusicXML / MIDI / gp / .chart）→ FallenAngel 谱面 JSON 的转换规则手册。

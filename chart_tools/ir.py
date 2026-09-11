@@ -9,7 +9,7 @@ IR 约定：
   此分辨率（无 tick 概念的格式填 0，仅用 time）。引擎据此做"拍数"判定
   （duration_beats / next_interval_beats），与 BPM 无关。
 - time 为绝对秒（BPM 变化已由前端按段积分折算）。
-- 字段语义详见 docs/谱面转换协议.md §2.1；实现补充字段见各字段注释。
+- 字段语义详见 docs/chart-format.md §2.1；实现补充字段见各字段注释。
 
 序列化：stream_to_dict / stream_from_dict（JSON 往返）。
 """
