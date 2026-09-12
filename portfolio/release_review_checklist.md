@@ -49,6 +49,8 @@
 | 图标风格四方向选型对比 | `C:\Users\LorXer\Documents\trae_projects\FallenAngel\art_tools\review\directions\directions_compare.png` |
 | 图标几何自检报告（27 项） | `C:\Users\LorXer\Documents\trae_projects\FallenAngel\Logs\icon_geometry_check.txt` |
 | 配置/天赋/存档事务自检报告（95 项） | `C:\Users\LorXer\Documents\trae_projects\FallenAngel\Logs\portfolio_report_20260910.txt` |
+| 验证与数值证据汇总（可外发，仓库内） | `C:\Users\LorXer\Documents\trae_projects\FallenAngel\portfolio\validation_summary.md` |
+| 数值模拟器与报告（仓库内） | `C:\Users\LorXer\Documents\trae_projects\FallenAngel\balance\` |
 | 页面设计规格与交互提案 | `C:\Users\LorXer\Documents\Codex\2026-09-07\referenced-chatgpt-conversation-this-is-an\outputs\page_redesign_0909\design_handoff.md` |
 | 美术需求与工期表 | 同目录 `art_resource_requirements.xlsx` |
 | 项目设计说明 / 开发规范 | `C:\Users\LorXer\Documents\trae_projects\FallenAngel\docs\project-overview.md`、`docs\architecture.md` |

@@ -1,0 +1,18 @@
+[
+  {
+    "rule_id": "DP_NORMAL",
+    "pool_id": "POOL_STAGE_COMMON",
+    "trigger_event": "STAGE_COMPLETED",
+    "drop_chance": 0.5,
+    "max_rewards": 1,
+    "enabled": true
+  },
+  {
+    "rule_id": "DP_CHALLENGE",
+    "pool_id": "POOL_STAGE_COMMON",
+    "trigger_event": "STAGE_COMPLETED",
+    "drop_chance": 0.75,
+    "max_rewards": 1,
+    "enabled": true
+  }
+]

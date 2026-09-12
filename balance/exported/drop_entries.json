@@ -1,0 +1,112 @@
+[
+  {
+    "entry_id": "DE001",
+    "pool_id": "POOL_STAGE_COMMON",
+    "reward_type": "EQUIPMENT",
+    "reward_id": "E01",
+    "weight": 15,
+    "quantity": 1,
+    "exclude_owned": true,
+    "enabled": true
+  },
+  {
+    "entry_id": "DE002",
+    "pool_id": "POOL_STAGE_COMMON",
+    "reward_type": "EQUIPMENT",
+    "reward_id": "E02",
+    "weight": 15,
+    "quantity": 1,
+    "exclude_owned": true,
+    "enabled": true
+  },
+  {
+    "entry_id": "DE003",
+    "pool_id": "POOL_STAGE_COMMON",
+    "reward_type": "EQUIPMENT",
+    "reward_id": "E03",
+    "weight": 10,
+    "quantity": 1,
+    "exclude_owned": true,
+    "enabled": true
+  },
+  {
+    "entry_id": "DE004",
+    "pool_id": "POOL_STAGE_COMMON",
+    "reward_type": "EQUIPMENT",
+    "reward_id": "E04",
+    "weight": 10,
+    "quantity": 1,
+    "exclude_owned": true,
+    "enabled": true
+  },
+  {
+    "entry_id": "DE005",
+    "pool_id": "POOL_STAGE_COMMON",
+    "reward_type": "EQUIPMENT",
+    "reward_id": "E05",
+    "weight": 5,
+    "quantity": 1,
+    "exclude_owned": true,
+    "enabled": true
+  },
+  {
+    "entry_id": "DE006",
+    "pool_id": "POOL_STAGE_COMMON",
+    "reward_type": "EQUIPMENT",
+    "reward_id": "E06",
+    "weight": 10,
+    "quantity": 1,
+    "exclude_owned": true,
+    "enabled": true
+  },
+  {
+    "entry_id": "DE007",
+    "pool_id": "POOL_STAGE_COMMON",
+    "reward_type": "EQUIPMENT",
+    "reward_id": "E07",
+    "weight": 10,
+    "quantity": 1,
+    "exclude_owned": true,
+    "enabled": true
+  },
+  {
+    "entry_id": "DE008",
+    "pool_id": "POOL_STAGE_COMMON",
+    "reward_type": "EQUIPMENT",
+    "reward_id": "E08",
+    "weight": 10,
+    "quantity": 1,
+    "exclude_owned": true,
+    "enabled": true
+  },
+  {
+    "entry_id": "DE009",
+    "pool_id": "POOL_STAGE_COMMON",
+    "reward_type": "EQUIPMENT",
+    "reward_id": "E09",
+    "weight": 10,
+    "quantity": 1,
+    "exclude_owned": true,
+    "enabled": true
+  },
+  {
+    "entry_id": "DE010",
+    "pool_id": "POOL_STAGE_COMMON",
+    "reward_type": "EQUIPMENT",
+    "reward_id": "E10",
+    "weight": 5,
+    "quantity": 1,
+    "exclude_owned": true,
+    "enabled": true
+  },
+  {
+    "entry_id": "DE011",
+    "pool_id": "POOL_STAGE_COMMON",
+    "reward_type": "CURRENCY",
+    "reward_id": "RUN_CASH",
+    "weight": 10,
+    "quantity": 30,
+    "exclude_owned": false,
+    "enabled": false
+  }
+]

@@ -1,0 +1,32 @@
+[
+  {
+    "stage_id": "S01",
+    "name": "普通演奏（共用鼓谱）",
+    "stage_type": "NORMAL",
+    "chart_id": "CHART_DRUMS_PLACEHOLDER",
+    "base_income": 100,
+    "growth_score": 100,
+    "drop_rule_id": "DP_NORMAL",
+    "enabled": true
+  },
+  {
+    "stage_id": "S02",
+    "name": "付费挑战（共用鼓谱）",
+    "stage_type": "PAID_CHALLENGE",
+    "chart_id": "CHART_DRUMS_PLACEHOLDER",
+    "base_income": 150,
+    "growth_score": 150,
+    "drop_rule_id": "DP_CHALLENGE",
+    "enabled": true
+  },
+  {
+    "stage_id": "S03",
+    "name": "终点演奏（共用鼓谱）",
+    "stage_type": "FINAL",
+    "chart_id": "CHART_DRUMS_PLACEHOLDER",
+    "base_income": 100,
+    "growth_score": 200,
+    "drop_rule_id": "DP_NORMAL",
+    "enabled": true
+  }
+]

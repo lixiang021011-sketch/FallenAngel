@@ -1,0 +1,62 @@
+[
+  {
+    "entry_id": "G01",
+    "equipment_id": "E01",
+    "weight": 12,
+    "enabled": true
+  },
+  {
+    "entry_id": "G02",
+    "equipment_id": "E02",
+    "weight": 12,
+    "enabled": true
+  },
+  {
+    "entry_id": "G03",
+    "equipment_id": "E03",
+    "weight": 10,
+    "enabled": true
+  },
+  {
+    "entry_id": "G04",
+    "equipment_id": "E04",
+    "weight": 10,
+    "enabled": true
+  },
+  {
+    "entry_id": "G05",
+    "equipment_id": "E05",
+    "weight": 8,
+    "enabled": true
+  },
+  {
+    "entry_id": "G06",
+    "equipment_id": "E06",
+    "weight": 10,
+    "enabled": true
+  },
+  {
+    "entry_id": "G07",
+    "equipment_id": "E07",
+    "weight": 8,
+    "enabled": true
+  },
+  {
+    "entry_id": "G08",
+    "equipment_id": "E08",
+    "weight": 8,
+    "enabled": true
+  },
+  {
+    "entry_id": "G09",
+    "equipment_id": "E09",
+    "weight": 8,
+    "enabled": true
+  },
+  {
+    "entry_id": "G10",
+    "equipment_id": "E10",
+    "weight": 14,
+    "enabled": true
+  }
+]

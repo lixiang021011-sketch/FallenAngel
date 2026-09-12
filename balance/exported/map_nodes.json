@@ -1,0 +1,65 @@
+[
+  {
+    "node_id": "N00",
+    "node_type": "START",
+    "stage_id": null,
+    "layout_x": 0,
+    "layout_y": 0
+  },
+  {
+    "node_id": "N01",
+    "node_type": "STAGE",
+    "stage_id": "S01",
+    "layout_x": 0,
+    "layout_y": 1
+  },
+  {
+    "node_id": "N02",
+    "node_type": "SHOP",
+    "stage_id": null,
+    "layout_x": 0,
+    "layout_y": 2
+  },
+  {
+    "node_id": "N03",
+    "node_type": "STAGE",
+    "stage_id": "S01",
+    "layout_x": -1,
+    "layout_y": 3
+  },
+  {
+    "node_id": "N04",
+    "node_type": "STAGE",
+    "stage_id": "S02",
+    "layout_x": 1,
+    "layout_y": 3
+  },
+  {
+    "node_id": "N05",
+    "node_type": "SHOP",
+    "stage_id": null,
+    "layout_x": 0,
+    "layout_y": 5
+  },
+  {
+    "node_id": "N06",
+    "node_type": "FINAL",
+    "stage_id": "S03",
+    "layout_x": 0,
+    "layout_y": 6
+  },
+  {
+    "node_id": "N07",
+    "node_type": "EMPTY",
+    "stage_id": null,
+    "layout_x": -1,
+    "layout_y": 4
+  },
+  {
+    "node_id": "N08",
+    "node_type": "EMPTY",
+    "stage_id": null,
+    "layout_x": 1,
+    "layout_y": 4
+  }
+]

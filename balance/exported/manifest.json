@@ -1,0 +1,60 @@
+{
+  "schema_version": "3.0",
+  "validation_scope": "configuration_only",
+  "income_cap_ratio_checked": 0.5,
+  "resource_files_checked": true,
+  "warnings": [
+    "Placeholder chart bindings are present: difficulty and reward balance are not verified.",
+    "CHART_DRUMS_PLACEHOLDER: tap-only chart cannot verify hold effects."
+  ],
+  "tables": {
+    "chart_bindings": {
+      "count": 1,
+      "sha256": "2c7bc717c9d39fa7ae584b75c6a83b6732e13c5e68938acee2bc65fbbdd39661"
+    },
+    "drop_entries": {
+      "count": 11,
+      "sha256": "6e824679be7bd54b8db9db4b786742e3bbe8c4f0cfaf795c0e8a33f3bd9fc7ed"
+    },
+    "drop_rules": {
+      "count": 2,
+      "sha256": "5e3c8ce2f9ed6f9b441da2780ae48b873da74e34976a495dbf56fbb49c5c65af"
+    },
+    "equipment_base": {
+      "count": 10,
+      "sha256": "275d35a8c758388e22efd7b5a343aa0f9a8a9a9495e57b070e9bb043a10e3d03"
+    },
+    "equipment_effects": {
+      "count": 10,
+      "sha256": "309460466481ea72463f8ab75f1d942ec6b95d2b7245aca15bd4fb38a251063f"
+    },
+    "map_edges": {
+      "count": 9,
+      "sha256": "f11ca2549ea1dcf5b81cf9bd9730a4afaef729f43effd8bbce236e2ed0159229"
+    },
+    "map_nodes": {
+      "count": 9,
+      "sha256": "319805374d502edb3f80840daed1498eb4b8f598f519b9ceb19dc64838c044c4"
+    },
+    "shop_candidates": {
+      "count": 10,
+      "sha256": "b184bdd1e991c7ac3d80828b8427d9bad6dc54278dcc2da79322b96ab2f26db8"
+    },
+    "stages": {
+      "count": 3,
+      "sha256": "f15b6bfd1806492f4fbba89f5fb01b8940fd146c9b5e5de9bd3261f16a145793"
+    },
+    "talent_edges": {
+      "count": 27,
+      "sha256": "2d9109ffdefa1feadc5551338e9739546af2f087f2406c320dc7d87614a7ba94"
+    },
+    "talent_effects": {
+      "count": 21,
+      "sha256": "4d3e94b2f0ad09ec5b21a442973f694081da83ec74481a919535e4dcdeac251b"
+    },
+    "talent_nodes": {
+      "count": 24,
+      "sha256": "ccad8efd31f1b53257f401874bb90097de10a4603590a87aa5710638610e47bf"
+    }
+  }
+}

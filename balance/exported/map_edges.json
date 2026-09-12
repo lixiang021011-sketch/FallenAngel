@@ -1,0 +1,56 @@
+[
+  {
+    "edge_id": "ME01",
+    "from_node_id": "N00",
+    "to_node_id": "N01",
+    "route_price": 0
+  },
+  {
+    "edge_id": "ME02",
+    "from_node_id": "N01",
+    "to_node_id": "N02",
+    "route_price": 0
+  },
+  {
+    "edge_id": "ME03",
+    "from_node_id": "N02",
+    "to_node_id": "N03",
+    "route_price": 0
+  },
+  {
+    "edge_id": "ME04",
+    "from_node_id": "N02",
+    "to_node_id": "N04",
+    "route_price": 40
+  },
+  {
+    "edge_id": "ME05",
+    "from_node_id": "N03",
+    "to_node_id": "N07",
+    "route_price": 0
+  },
+  {
+    "edge_id": "ME06",
+    "from_node_id": "N04",
+    "to_node_id": "N08",
+    "route_price": 0
+  },
+  {
+    "edge_id": "ME07",
+    "from_node_id": "N05",
+    "to_node_id": "N06",
+    "route_price": 0
+  },
+  {
+    "edge_id": "ME08",
+    "from_node_id": "N07",
+    "to_node_id": "N05",
+    "route_price": 0
+  },
+  {
+    "edge_id": "ME09",
+    "from_node_id": "N08",
+    "to_node_id": "N05",
+    "route_price": 0
+  }
+]

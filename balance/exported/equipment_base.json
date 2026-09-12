@@ -1,0 +1,82 @@
+[
+  {
+    "equipment_id": "E01",
+    "effect_id": "EQ_E01",
+    "base_price": 60,
+    "allow_duplicate": false,
+    "enabled": true,
+    "description": "正常完成歌曲后结算：每个有效乐句Perfect率达到90%，获得0.03B演奏额外收益。"
+  },
+  {
+    "equipment_id": "E02",
+    "effect_id": "EQ_E02",
+    "base_price": 60,
+    "allow_duplicate": false,
+    "enabled": true,
+    "description": "正常完成歌曲后结算：每个完整且不断连的有效乐句获得0.03B演奏额外收益。"
+  },
+  {
+    "equipment_id": "E03",
+    "effect_id": "EQ_E03",
+    "base_price": 40,
+    "allow_duplicate": false,
+    "enabled": true,
+    "description": "本曲首次断连后，之后首个完整且不断连的有效乐句奖励0.02B，每曲一次；正常完成歌曲后结算。"
+  },
+  {
+    "equipment_id": "E04",
+    "effect_id": "EQ_E04",
+    "base_price": 50,
+    "allow_duplicate": false,
+    "enabled": true,
+    "description": "有效乐句中所有应结束的长按尾达到Great及以上，奖励0.04B；无长按尾不触发，正常完成歌曲后结算。"
+  },
+  {
+    "equipment_id": "E05",
+    "effect_id": "EQ_E05",
+    "base_price": 60,
+    "allow_duplicate": false,
+    "enabled": true,
+    "description": "正常完成歌曲且无Miss，演奏直接奖励及补偿增加25%，与适用增幅加算；不包含利息、挑战奖金、路费返还及保底。"
+  },
+  {
+    "equipment_id": "E06",
+    "effect_id": "EQ_E06",
+    "base_price": 50,
+    "allow_duplicate": false,
+    "enabled": true,
+    "description": "每曲首次合格的演奏奖励失败批次，补偿其中原始金额最高一项的50%，原始补偿最多0.03B，每曲一次；正常完成歌曲后结算。"
+  },
+  {
+    "equipment_id": "E07",
+    "effect_id": "EQ_E07",
+    "base_price": 60,
+    "allow_duplicate": false,
+    "enabled": true,
+    "description": "装备购买价格降低15%，与其他购买折扣取最大值；不对买入本装备的当次交易生效。"
+  },
+  {
+    "equipment_id": "E08",
+    "effect_id": "EQ_E08",
+    "base_price": 60,
+    "allow_duplicate": false,
+    "enabled": true,
+    "description": "可主动选择减免20%路费，获得时提供本局2次机会；成功支付并进入才消耗，与天赋折扣取最大值。"
+  },
+  {
+    "equipment_id": "E09",
+    "effect_id": "EQ_E09",
+    "base_price": 60,
+    "allow_duplicate": false,
+    "enabled": true,
+    "description": "正常完成歌曲后获得开曲现金的10%，最多0.05B；利息不参与演奏收益倍率、保底及演奏收益上限。"
+  },
+  {
+    "equipment_id": "E10",
+    "effect_id": "EQ_E10",
+    "base_price": 40,
+    "allow_duplicate": false,
+    "enabled": true,
+    "description": "下次刷新或进入新商店生成商品时，候选数量增加1；获得时不立即补货，读取存档不重复生成商品。"
+  }
+]
