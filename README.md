@@ -163,7 +163,7 @@ Assets/Scripts/     游戏代码（Core / Data / UI / Gameplay / Audio / Input�
 Assets/Resources/   谱面、本地化文案
 chart_tools/        谱面分析、转换、导入与规则引擎
 art_tools/          美术方向工作流与几何导出管线
-docs/               项目说明、架构约定、谱面转换协议、编辑器说明（正文中文，每篇顶部带英文摘要）
+docs/               项目说明、架构约定、谱面转换协议、编辑器说明、待办清单（正文中文，每篇顶部带英文摘要）
 portfolio/          作品集素材与图表
 compile_check.sh    无头编译自检
 CLAUDE.md           AI 协作约定（可改范围、验证要求、提交纪律）
