@@ -152,7 +152,13 @@ PC：D / F / J / K 击打，SPACE 暂停，ESC 退出
 
 游戏在缺少音频时使用虚拟时钟兜底，因此克隆仓库后工程仍可正常打开与运行（演奏无声）。
 
-同样地，`_refs/`（第三方开源参考谱面）未入库。许可信息见 `Assets/TextMesh Pro/` 与字体文件附带的授权说明（思源黑体 SIL OFL、TMP 示例素材随 Unity 包分发）。
+同样地，`_refs/`（第三方开源参考谱面）未入库。
+
+完整的第三方清单见 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) 与 [`LICENSES/`](LICENSES/)：
+思源黑体的 SIL OFL 全文就近放在 `Assets/Fonts/SourceHanSans-OFL.txt`；TextMesh Pro 走 Unity Companion License（官方只附链接）；
+TMP 示例里的 Anton / Bangers / Oswald / LiberationSans 为 OFL、**Roboto 为 Apache-2.0**（全文见 `LICENSES/Apache-2.0-Roboto.md`）、
+EmojiOne 表情图与 Electronic Highway Sign 字体建议随发行版一并清理（见 `THIRD_PARTY_NOTICES.md` 2.2）。
+本仓库的授权分两部分：代码 MIT（`LICENSE-CODE`）、内容保留所有权利（`LICENSE-ASSETS`），索引见 `LICENSE`。
 
 ---
 

@@ -1,0 +1,17 @@
+本仓库的授权分两部分（第三方组件另见 THIRD_PARTY_NOTICES.md 与 LICENSES/）：
+
+  * 源代码（Assets/Scripts/、chart_tools/、art_tools/ 等脚本）  →  LICENSE-CODE（MIT License）
+  * 游戏内容（谱面、数值表、设计文档、美术、本地化文案）        →  LICENSE-ASSETS（保留所有权利 + 使用条款）
+  * 第三方（Font / TextMesh Pro 等）                            →  THIRD_PARTY_NOTICES.md
+
+注意：本仓库**不包含任何音频文件**（第三方曲目仅在本地保留），详见 README 第九节。
+
+---
+
+This repository is licensed in two parts:
+
+  * Source code (Assets/Scripts/, chart_tools/, art_tools/, ...)  ->  LICENSE-CODE (MIT License)
+  * Game content (charts, balance data, docs, art, localization)  ->  LICENSE-ASSETS (All rights reserved)
+  * Third-party components                                        ->  THIRD_PARTY_NOTICES.md
+
+This repository contains no audio files; third-party tracks are kept locally only.
