@@ -12,7 +12,8 @@ import sys
 sys.stdout.reconfigure(encoding="utf-8")
 
 DIR = os.path.dirname(os.path.abspath(__file__))
-EXPORTED = os.path.join(DIR, "exported")
+# 2026-09-18：配置表统一到仓库根的 config/ 下（音符外观的源表 config/note_visual.xlsx 也在那里）
+EXPORTED = os.path.join(os.path.dirname(DIR), "config", "exported")
 
 
 def load(name):

@@ -97,8 +97,8 @@ I0 的 90% 阈值一票否决，导致 85% 与 60% 玩家收益相同；付费�
 
 | 文件 | 说明 |
 | --- | --- |
-| `balance/balance_sim.py` | 模拟器（纯标准库，读 `balance/exported/` 下的配置 JSON） |
-| `balance/exported/*.json` | 与游戏内 `PortfolioConfig.cs` 同源的导出配置 |
+| `balance/balance_sim.py` | 模拟器（纯标准库，读 `config/exported/` 下的配置 JSON） |
+| `config/exported/*.json` | 与游戏内 `PortfolioConfig.cs` 同源的导出配置（配置表统一根目录：`config/`） |
 | `balance/balance_report.md` | 报告全文（含 v2 调整记录） |
 
 **复现**：`python -X utf8 balance/balance_sim.py`
