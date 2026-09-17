@@ -27,6 +27,10 @@
 Thumbs.db
 desktop.ini
 
+# ===== Python 缓存 =====
+__pycache__/
+*.pyc
+
 # ===== 崩溃报告 / 日志 =====
 sysinfo.txt
 *.stackdump

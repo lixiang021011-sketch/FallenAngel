@@ -26,7 +26,18 @@ Y_JUDGE = H - LINE_FROM_BOTTOM
 LANE_CENTERS = [-410, -205, 0, 205, 410]
 LANE_HALF = 92
 TOP_SCALE = 0.30
-LANE_COLORS = [(79, 224, 200), (87, 190, 232), (127, 168, 242), (169, 214, 245), (69, 217, 168)]
+# 五轨配色（2026-09-13 方向定稿）：同色相青绿（≈186°），靠明度阶梯区分，不靠色相。
+# 阶梯间隔远大于 8%，色盲环境下同样可分。
+LANE_COLORS = [
+    (180, 232, 226),   # L0 最亮
+    (127, 207, 200),   # L1
+    (85, 170, 166),    # L2
+    (53, 127, 130),    # L3
+    (35, 92, 99),      # L4 最暗
+]
+
+# 唯一暖色强调（正向：连击 / 稀有 / 奖励）；Miss 不引入第二个暖色，走去饱和 + 压暗 + 斜切
+ACCENT_PINK = (240, 168, 204)
 
 
 def sc(y, top=TOP_SCALE):
@@ -164,7 +175,9 @@ def draw_hud(base):
     d.text((70, 126), "1 284 760", font=font(58, bold=True), fill=white)
     d.text((70, 196), "ACC 98.42%", font=font(30), fill=cyan)
 
-    d.text((W / 2, 600), "312", font=font(150, bold=True), fill=white, anchor="mm")
+    # 连击数字是唯一使用暖色强调的地方（其余全部留在青绿色域内）
+    d.text((W / 2, 600), "312", font=font(150, bold=True),
+           fill=(ACCENT_PINK[0], ACCENT_PINK[1], ACCENT_PINK[2], 255), anchor="mm")
     d.text((W / 2, 700), "COMBO", font=font(30), fill=cyan, anchor="mm")
 
     d.text((W / 2, Y_JUDGE - 132), "PERFECT", font=font(52, bold=True), fill=cyan, anchor="mm")
@@ -188,6 +201,8 @@ def main():
     ap.add_argument("--top-scale", type=float, default=None, dest="top_scale")
     ap.add_argument("--no-notes", action="store_true", dest="no_notes")
     ap.add_argument("--darken", type=float, default=0.55)
+    ap.add_argument("--vignette", default=None,
+                    help="近景暗角层路径（白底+两侧深色），用 Multiply 合成；中心为白即不压暗中央")
     args = ap.parse_args()
 
     if args.top_scale is not None:
@@ -195,6 +210,9 @@ def main():
 
     bg = Image.open(args.bg).convert("RGB").resize((W, H), Image.LANCZOS)
     img = center_darken(bg, args.darken)
+    if args.vignette:
+        vig = Image.open(args.vignette).convert("RGB").resize((W, H), Image.LANCZOS)
+        img = ImageChops.multiply(img.convert("RGB"), vig)   # 白=不变，深色=压暗两侧
     img = img.convert("RGBA")
     img = draw_lanes(img)
     if not args.no_notes:

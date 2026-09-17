@@ -47,7 +47,7 @@ private void OnDestroy()
 }
 ```
 
-- **已登记单例**：GameManager（唯一 `DontDestroyOnLoad`）、JudgeManager、NoteSpawner、InputManager、AudioManager。
+- **已登记单例**：GameManager（唯一 `DontDestroyOnLoad`）、JudgeManager、NoteSpawner、InputManager、AudioManager、ModifierManager（局内 modifier，见 §9）。
 - **非单例场景入口**：`PortfolioSession` 由 GameStarter 挂到 Canvas 根，经 `GameManager.SetPortfolioSession` 暴露；不要再加成长向全局单例。
 - 新增单例必须在本文档登记；除 GameManager 外**不要** `DontDestroyOnLoad`（场景由 SceneBuilder 重建，单例随场景销毁重建）。
 - 跨模块状态修改一律走公开方法（如 `GameManager.LoadChart`），禁止直接改别人的 `[SerializeField]` 字段。
@@ -196,6 +196,32 @@ Roguelike
   | 一键清屏 | `NoteSpawner` 提供公开接口 `ClearAllActiveNotes()`（现有私有 `ClearAllNotes` 改造暴露），效果调用接口，**禁止**直接操作 `activeNotes` |
 - **音画同步在 roguelike 下的约束**：所有时长类效果用 `GameManager.SongTime` 计时（§5），暂停时效果计时冻结（与游戏一致）。
 - **现有关卡改造点预告**：`JudgeManager.judgeWindows`（判定时读）、`NoteSpawner.missThreshold` 缓存字段（自动 Miss 阈值）、判定线/音符可见性均需改为经 Rules 读取；改造前先更新本文档。
+
+### 9.1 实现状态（2026-09-13）
+
+已落地，自检 `PlayModifierChecks`（8 项，`-executeMethod FallenAngel.Core.PlayModifierChecks.Run`）全绿：
+
+| 名称 | 文件 | 说明 |
+| --- | --- | --- |
+| `PlayRules` | `Core/PlayRules.cs` | 只读聚合。拟定结构里叫 `Rules`，实现时改名以免与 `DropRules` 混淆；判定窗口用缓存实例重算，热路径不分配 |
+| `ModifierManager` | `Core/ModifierManager.cs` | 单例。叠加规则（同 id 刷新时长、倍率乘法叠加）、按 `SongTime` 倒计时、`OnModifierApplied` / `OnModifierExpired` 事件、`ClearAll` |
+| `ModifierDef` / `ModifierRuntime` / `ModifierKind` | 同上 | 首批三类效果：`JudgeWindowScale` / `JudgeLineHidden` / `NotesHidden` |
+| `PlayVisibilityController` | `UI/PlayVisibilityController.cs` | 把可见性标志逐帧落到渲染（判定线 `Graphic.enabled`、音符容器 `CanvasGroup.alpha`） |
+
+已改造的接入点：
+
+- `JudgeManager`：`Awake` 把序列化窗口登记为基线（`PlayRules.SetBaseWindows`），判定改读 `EffectiveWindows`；
+- `NoteSpawner`：自动 Miss 阈值每帧从 `PlayRules.Windows` 刷新——窗口放宽时自动 Miss 同步放宽；
+- `SceneBuilder`：Managers 挂 `ModifierManager`；`NotesContainer` 加 `CanvasGroup`，Lanes 挂 `PlayVisibilityController`。
+
+与本节约定的两处差异（有意为之）：
+
+1. 聚合类命名 `PlayRules`（`Rules` 太泛，且工程里已有 `DropRules` 一族）；
+2. 谱面隐身走 `CanvasGroup.alpha`，不在 `Note.UpdatePosition` 里逐音符读标志——同样的可见性，少一层每帧每音符判断，也不会打断对象池与协程。
+
+**尚未接的内容层**：modifier 的**来源**（房间事件 / 商店 / 天赋）与**作用域**（本曲 vs 本次行程）属设计未定项（见 `docs/roadmap.md` D3）。代码两种都支持：`duration <= 0` 常驻到 `ClearAll`，`> 0` 按歌曲时间失效。
+
+**Play 验证入口**：选中场景里的 `Managers` 对象，用 Inspector 齿轮菜单的「调试/…」项施加效果（判定窗口放宽/收紧、判定线消失 3 秒、谱面隐身 3 秒、清空）。
 
 ## 10. AI 协作约束
 

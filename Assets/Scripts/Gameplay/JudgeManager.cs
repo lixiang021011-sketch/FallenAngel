@@ -18,6 +18,9 @@ namespace FallenAngel.Gameplay
         [Header("判定窗口")]
         [SerializeField] private JudgeWindows judgeWindows = new JudgeWindows();
 
+        /// <summary>有效判定窗口（基础值 × 局内 modifier 倍率）；热路径读缓存实例，不分配</summary>
+        private JudgeWindows EffectiveWindows { get { return PlayRules.Windows; } }
+
         /// <summary>当前判定结果（供UI订阅显示）</summary>
         public event System.Action<JudgeResultType, int> OnJudgeResult; // (result, lane)
 
@@ -71,6 +74,9 @@ namespace FallenAngel.Gameplay
                 return;
             }
             Instance = this;
+            // 判定窗口走「基础值 + 修改器」：基础值登记给 PlayRules，局内 modifier 只改倍率，
+            // 不直接改这里的序列化字段（docs/architecture.md §9）
+            PlayRules.SetBaseWindows(judgeWindows);
         }
 
         private void OnEnable()
@@ -132,7 +138,7 @@ namespace FallenAngel.Gameplay
                 if (wide != null)
                 {
                     float timeDiff = songTime - wide.Data.time;
-                    JudgeResultType result = judgeWindows.Judge(timeDiff);
+                    JudgeResultType result = EffectiveWindows.Judge(timeDiff);
                     if (result != JudgeResultType.Miss) // 窗口外：交给 auto-miss，不误判
                     {
                         if (wide.Data.type == NoteType.LongStart)
@@ -160,7 +166,7 @@ namespace FallenAngel.Gameplay
                 Note drag = NoteSpawner.Instance.GetClosestJudgableNote(lane, false, NoteType.Drag);
                 if (drag == null) continue;
                 float dragDiff = songTime - drag.Data.time;
-                if (judgeWindows.Judge(dragDiff) == JudgeResultType.Miss) continue;
+                if (EffectiveWindows.Judge(dragDiff) == JudgeResultType.Miss) continue;
                 ApplyJudge(drag, JudgeResultType.Perfect, lane);
             }
 
@@ -277,7 +283,7 @@ namespace FallenAngel.Gameplay
             }
 
             float timeDiff = songTime - note.Data.time;
-            JudgeResultType result = judgeWindows.Judge(timeDiff);
+            JudgeResultType result = EffectiveWindows.Judge(timeDiff);
 
 #if UNITY_EDITOR
             Debug.Log($"[JudgeManager] Press lane={lane} songTime={songTime:F2} noteTime={note.Data.time:F2} diff={timeDiff:F3} result={result}");

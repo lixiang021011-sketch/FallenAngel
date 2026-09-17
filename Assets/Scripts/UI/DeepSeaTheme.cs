@@ -9,15 +9,17 @@ namespace FallenAngel.UI
     public static class DeepSeaTheme
     {
         // UI001：page_redesign_0909 统一规范
-        public static readonly Color Background = Hex(0x101A22);
-        public static readonly Color Card = new Color(0.082f, 0.141f, 0.180f, 0.94f);
-        public static readonly Color Ink = Hex(0xE5E9E4);
-        public static readonly Color Muted = Hex(0x9BABAF);
-        public static readonly Color Accent = Hex(0x8DC6D0);
-        public static readonly Color Owned = new Color(0.13f, 0.36f, 0.29f, 1);
-        public static readonly Color Line = new Color(0.553f, 0.776f, 0.816f, 0.55f);
-        public static readonly Color Paid = Hex(0xCFB47B);
-        public static readonly Color Danger = Hex(0xC38680);
+        // 2026-09-14 对齐美术方向色板：背景/文字/强调取方向实提色值；
+        // 全屏只保留一个暖色（粉 = 正向强调），Danger 去饱和压暗后仍保留"危险"语义。
+        public static readonly Color Background = Hex(0x0F202E);   // 方向·最深
+        public static readonly Color Card = new Color(0.106f, 0.196f, 0.231f, 0.94f); // #1B323B
+        public static readonly Color Ink = Hex(0xE8F6F5);          // 方向·月白
+        public static readonly Color Muted = Hex(0x7F969B);
+        public static readonly Color Accent = Hex(0x91D0D4);       // 方向·亮元素
+        public static readonly Color Owned = new Color(0.184f, 0.498f, 0.431f, 1);   // #2F7F6E 同族青绿
+        public static readonly Color Line = new Color(0.569f, 0.816f, 0.831f, 0.5f); // #91D0D4 @50%
+        public static readonly Color Paid = Hex(0xF0A8CC);         // 唯一暖色：付费/正向强调
+        public static readonly Color Danger = Hex(0xB08A86);       // 去饱和暗红（不再是第二个高饱和暖色）
 
         public const int TitleSize = 60;
         public const int ActionSize = 36;

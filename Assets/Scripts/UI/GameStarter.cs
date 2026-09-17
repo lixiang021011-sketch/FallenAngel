@@ -117,6 +117,7 @@ namespace FallenAngel.UI
             if (GetComponent<DeepSeaPresentation>() == null) gameObject.AddComponent<DeepSeaPresentation>();
 #if UNITY_EDITOR
             CreateTemporaryArtDebugOverlay();
+            InstallModifierDebugPanel();
 #endif
             if (GameManager.Instance != null)
             {
@@ -325,6 +326,22 @@ namespace FallenAngel.UI
             if (artDebugRefreshButton != null) artDebugRefreshButton.interactable = hasRun;
             // 跳过战斗只对“待开始演奏”的战斗房有效；FINISHED/结算等阶段置灰，避免无效点击。
             if (artDebugSkipButton != null) artDebugSkipButton.interactable = run != null && run.phase == "READY";
+        }
+
+        /// <summary>
+        /// 局内 modifier 调试窗口。挂在 Canvas 根上而不是本对象下——本对象属于 MenuPanel，
+        /// 演奏页会把 MenuPanel 整个隐藏，挂在它下面的调试窗会跟着消失。
+        /// </summary>
+        private void InstallModifierDebugPanel()
+        {
+            var canvas = GetComponentInParent<Canvas>();
+            Transform host = canvas != null ? canvas.transform : transform.root;
+            var font = TMP_Settings.defaultFontAsset;
+            foreach (var text in GetComponentsInChildren<TextMeshProUGUI>(true))
+            {
+                if (text.font != null) { font = text.font; break; }
+            }
+            ModifierDebugPanel.Install(host, font);
         }
 
         private Button TemporaryDebugButton(Transform parent, string name, string text, float x, float y,

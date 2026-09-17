@@ -32,7 +32,7 @@ namespace FallenAngel.Gameplay
 
         [Header("判定线和生成位置Y坐标（anchoredPosition Y）")]
         [Tooltip("判定线位置Y（音符到达此处需击中）")]
-        [SerializeField] private float judgeLineY = -400f;
+        [SerializeField] private float judgeLineY = Core.PlayVisualSpec.JudgeLineY;   // 唯一来源见 Core/PlayVisualSpec
 
         [Tooltip("音符生成位置Y（屏幕上方）")]
         [SerializeField] private float spawnY = 600f;
@@ -98,8 +98,16 @@ namespace FallenAngel.Gameplay
 
             InitializePool();
 
-            // 开局计算一次（JudgeWindows.Default 为共享实例；将来 roguelike 接入时改读 Rules）
-            missThreshold = JudgeWindows.Default.badWindow + 0.1f;
+            RefreshMissThreshold();
+        }
+
+        /// <summary>
+        /// 自动 Miss 阈值随局内 modifier 的判定窗口走（基础值 + 修改器，见 docs/architecture.md §9）。
+        /// 每帧刷新成本只是几个浮点运算，换来"窗口放宽时自动 Miss 同步放宽"。
+        /// </summary>
+        private void RefreshMissThreshold()
+        {
+            missThreshold = PlayRules.Windows.badWindow + 0.1f;
         }
 
         /// <summary>
@@ -210,6 +218,8 @@ namespace FallenAngel.Gameplay
         {
             if (!isPlaying || GameManager.Instance == null) return;
             if (GameManager.Instance.CurrentState != GameState.Playing) return;
+
+            RefreshMissThreshold();   // 判定窗口可能被 modifier 改了，自动 Miss 阈值要跟着走
 
             float songTime = GameManager.Instance.SongTime;
             float fallTime = GameManager.Instance.ActualFallTime;

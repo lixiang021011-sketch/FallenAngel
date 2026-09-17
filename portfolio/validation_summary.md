@@ -13,7 +13,7 @@
 | `PortfolioChecks` | 95 | **PASS 95 / 0** | 配置表一致性、天赋前置与排他、存档事务与幂等、地图与掉落、折扣与利息叠加 |
 | `IconGeometryChecks` | 27 | **PASS 27 / 0** | 图标墨迹包围盒中心偏移 ≤1px、不溢出宿主矩形 |
 | `NotePartChecks` | 16 | **PASS 16 / 0** | 音符 head / body / tail 部件存在性与顺序、网格非空、不溢出、配色、同押连线几何 |
-| `PlayVisualChecks` | 8 | **PASS 8 / 0** | 判定线视觉位置 == 音符判定位置、按键区不遮判定线 |
+| `PlayVisualChecks` | 11 | **PASS 11 / 0** | 判定线视觉位置 == 音符判定位置、按键区不越线、演奏背景已挂载、Miss 特效已接线、modifier 调试窗口可安装 |
 
 原始日志（本地、不入库）：`Logs/portfolio_report_20260910.txt`、`Logs/icon_geometry_check.txt`、
 `Logs/note_part_check.txt`、`Logs/play_visual_check.txt`。
@@ -49,17 +49,25 @@ foreach ($m in 'PortfolioChecks','IconGeometryChecks','NotePartChecks','PlayVisu
 `SceneBuilder`（视觉线 / 按键区）与 `NoteSpawner`（判定位置 / 生成位置）都只读它；
 新增 `PlayVisualChecks` 断言「视觉线 == 判定线」，并且在真实装配出的场景里量，而不是只比常量。
 
-**结果**：
+**取值口径**：按**美术方向稿**取定——判定线**距底 400**，按键区就是判定线往下的那一段
+（所以按键区顶边与判定线重合）。xlsx v0.1 里的「判定位置距底 560 / 按键区 500 高」是更早一版，已被美术稿取代。
+
+**结果**（判定位置由 560 下移到 400，与视觉线对齐）：
 
 ```
-PASS 视觉线 == 判定线      视觉线距底 560 / 判定距底 560，差 0px
-PASS 视觉线 == 规格值      视觉线距底 560 / 规格 560
-PASS 按键区顶边在判定线之下  按键区顶边距底 500 < 判定线距底 560
-演奏界面视觉基准自检：8 项通过 / 0 项异常
+PASS 视觉线 == 判定线        视觉线距底 400 / 判定距底 400，差 0px
+PASS 按键区顶边不越过判定线     按键区顶边距底 400 ≤ 判定线距底 400
+PASS 演奏背景已挂载           sprite=bg_gameplay 1080x1920
+PASS Miss 特效已接线          HitEffectController=1 个，轨道柱引用 5/5
+演奏界面视觉基准自检：10 项通过 / 0 项异常
 ```
 
-**注意**：本项只改**视觉位置**，判定时机与下落时间（`ActualFallTime`）未受影响——
-音符仍是"同样时间落到判定点"，只是那条线现在画在真正的判定点上。
+**副作用（已知并接受）**：判定点下移 160px 后，音符下落距离由 1600px 变为 1760px（+10%）。
+下落时间 `ActualFallTime` 未变，所以**滚动速度相应快 10%**。若日后觉得偏快，
+调 `PlayVisualSpec` 里的生成高度即可，不必动判定位置。
+
+**触控不受影响**：移动端有效区取的是屏幕高度比例（`InputManager.touchBottomRatio = 0.6`），
+与按键区高度无关。
 
 ---
 

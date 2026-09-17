@@ -178,6 +178,7 @@ namespace FallenAngel.Core
             AudioManager am = managers.AddComponent<AudioManager>();
             InputManager im = managers.AddComponent<InputManager>();
             JudgeManager jm = managers.AddComponent<JudgeManager>();
+            ModifierManager modifierManager = managers.AddComponent<ModifierManager>();   // 局内 modifier（docs/architecture.md §9）
 
             // ---- 3. Canvas ----
             GameObject canvasGO = new GameObject("Canvas");
@@ -196,11 +197,15 @@ namespace FallenAngel.Core
             // 游戏面板（包含音轨、音符、判定）
             GameObject gamePanel = CreatePanel("GamePanel", canvasRect);
             gamePanel.SetActive(false);
+            CreateGameplayBackground(gamePanel.transform);
             CreateLaneAndNotesUI(gamePanel.transform, out NoteSpawner spawner);
 
             // 触点涟漪层：盖在 GamePanel 之上、MenuPanel 之下（层级顺序即渲染顺序）
             GameObject rippleLayer = CreatePanel("HitFeedbackLayer", canvasRect);
             rippleLayer.AddComponent<HitFeedbackController>();
+            // 判定特效（Miss 轨道压暗）：需要五条轨道柱的 Image，按 SceneBuilder 自己创建的命名取
+            HitEffectController hitFx = rippleLayer.AddComponent<HitEffectController>();
+            SetPrivateField(hitFx, "laneColumns", CollectLaneColumns(gamePanel.transform));
 
             // 若工程里已有 Note.prefab，自动赋值给 NoteSpawner（否则使用默认Prefab）
             GameObject notePrefabAsset = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Note.prefab");
@@ -335,6 +340,61 @@ namespace FallenAngel.Core
             return go;
         }
 
+        /// <summary>演奏背景位图路径（第一版美术定稿的符号化色块背景）</summary>
+        private const string GameplayBgPath = "Assets/Art/bg/bg_gameplay.png";
+
+        /// <summary>取演奏层的五条轨道柱 Image（供命中/Miss 特效改色）。命名由本文件自己创建，非外部约定。</summary>
+        private static Image[] CollectLaneColumns(Transform gamePanel)
+        {
+            var result = new Image[LaneLayout.MaxLaneCount];
+            Transform lanesRoot = gamePanel.Find("LanesBG");
+            if (lanesRoot == null) return result;
+            for (int i = 0; i < result.Length; i++)
+            {
+                Transform t = lanesRoot.Find("Lane" + i + "_BG");
+                result[i] = t != null ? t.GetComponent<Image>() : null;
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// 演奏背景位图。插在 LanesBG 之前创建，所以渲染在轨道与音符之下；
+        /// 运行时 DeepSeaPresentation 会把程序化 Backdrop 设为第一个子节点，位图正好盖在它上面。
+        /// 素材缺失时只告警、不影响出图（回退到程序化背景）。
+        /// </summary>
+        private static void CreateGameplayBackground(Transform parent)
+        {
+            TextureImporter importer = AssetImporter.GetAtPath(GameplayBgPath) as TextureImporter;
+            if (importer != null && importer.textureType != TextureImporterType.Sprite)
+            {
+                importer.textureType = TextureImporterType.Sprite;
+                importer.spriteImportMode = SpriteImportMode.Single;
+                importer.mipmapEnabled = false;
+                importer.SaveAndReimport();
+            }
+
+            Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(GameplayBgPath);
+            if (sprite == null)
+            {
+                Debug.LogWarning("[SceneBuilder] 演奏背景缺失，回退到程序化背景：" + GameplayBgPath);
+                return;
+            }
+
+            GameObject go = new GameObject("GameplayBackground", typeof(RectTransform), typeof(Image));
+            go.transform.SetParent(parent, false);
+            RectTransform rt = (RectTransform)go.transform;
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+
+            Image img = go.GetComponent<Image>();
+            img.sprite = sprite;
+            img.type = Image.Type.Simple;
+            img.raycastTarget = false;
+            img.preserveAspect = false;   // 素材就是 1080×1920 基准分辨率，直接铺满
+        }
+
         private static void CreateLaneAndNotesUI(Transform parent, out NoteSpawner spawner)
         {
             // 音轨背景
@@ -355,7 +415,7 @@ namespace FallenAngel.Core
             keyCRect.anchorMax = new Vector2(0.5f, 0f);
             keyCRect.pivot = new Vector2(0.5f, 0f);
             keyCRect.anchoredPosition = Vector2.zero;
-            keyCRect.sizeDelta = new Vector2(900, 500);
+            keyCRect.sizeDelta = new Vector2(900, PlayVisualSpec.KeyAreaHeight);
 
             // 判定线
             GameObject judgeLine = new GameObject("JudgeLine", typeof(RectTransform), typeof(Image));
@@ -364,8 +424,9 @@ namespace FallenAngel.Core
             jlRect.anchorMin = new Vector2(0.5f, 0f);
             jlRect.anchorMax = new Vector2(0.5f, 0f);
             jlRect.pivot = new Vector2(0.5f, 0.5f);
-            jlRect.anchoredPosition = new Vector2(0, 400);
-            jlRect.sizeDelta = new Vector2(1000, 6);
+            // 视觉线必须与 NoteSpawner 的判定位置同源（曾差 160px：视觉 400 / 判定 560）
+            jlRect.anchoredPosition = new Vector2(0, PlayVisualSpec.JudgeLineAnchoredY);
+            jlRect.sizeDelta = new Vector2(1000, PlayVisualSpec.JudgeLineThickness);
             Image jlImg = judgeLine.GetComponent<Image>();
             jlImg.color = Color.white;
             jlImg.raycastTarget = false;
@@ -378,16 +439,22 @@ namespace FallenAngel.Core
             ncRect.anchorMax = Vector2.one;
             ncRect.offsetMin = Vector2.zero;
             ncRect.offsetMax = Vector2.zero;
+            // 谱面隐身用 alpha，不用 SetActive（后者会打断对象池与正在跑的协程）
+            CanvasGroup notesGroup = notesContainer.AddComponent<CanvasGroup>();
 
             // NoteSpawner
             spawner = notesContainer.AddComponent<NoteSpawner>();
             SetPrivateField(spawner, "notesContainer", ncRect);
             SetPrivateField(spawner, "lanePositionsX", laneX);
-            SetPrivateField(spawner, "judgeLineY", -400f);
-            SetPrivateField(spawner, "spawnY", 1200f);
+            SetPrivateField(spawner, "judgeLineY", PlayVisualSpec.JudgeLineY);
+            SetPrivateField(spawner, "spawnY", PlayVisualSpec.SpawnYFromCenter);
 
             // 5 个音轨条 + LaneKeyVisual（LanePanelController 按谱面键数启停/重定位）
             lanes.AddComponent<LanePanelController>();
+            // 局内可见性：判定线消失 / 谱面隐身（只改渲染，判定与位置照常）
+            PlayVisibilityController visibility = lanes.AddComponent<PlayVisibilityController>();
+            SetPrivateField(visibility, "judgeLine", jlImg);
+            SetPrivateField(visibility, "notesGroup", notesGroup);
             for (int i = 0; i < LaneLayout.MaxLaneCount; i++)
             {
                 // 音轨背景条

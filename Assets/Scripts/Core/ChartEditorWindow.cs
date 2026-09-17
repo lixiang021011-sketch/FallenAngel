@@ -17,11 +17,8 @@ namespace FallenAngel.Core
     public sealed class ChartEditorWindow : EditorWindow
     {
         private const int Lanes = 5;
-        private static readonly Color[] LaneColors =
-        {
-            new Color(.85f, .35f, .35f), new Color(.9f, .8f, .35f), new Color(.4f, .6f, .95f),
-            new Color(.45f, .85f, .5f), new Color(.75f, .55f, .9f)
-        };
+        // 轨道配色统一取自 Core.LaneColors（与游戏同一份来源）——此前这里是第二份拷贝，
+        // 一旦两边不同步，"打谱与游玩共用同一套颜色语言"就不成立。
 
         private string chartPath = "Assets/Resources/Charts/chart_editor_draft.json";
         private ChartData chart;
@@ -1016,7 +1013,9 @@ namespace FallenAngel.Core
                 case NoteType.Flick: return n.direction == FlickDirection.Up ? new Color(.95f, .8f, .35f) : new Color(.95f, .55f, .3f);
                 case NoteType.Slide: return new Color(.45f, .9f, .6f);
                 case NoteType.LongStart: return new Color(.6f, .7f, .95f);
-                default: return n.wide ? new Color(.95f, .95f, .95f) : LaneColors[Mathf.Clamp(n.lane, 0, Lanes - 1)];
+                default: return n.wide
+                    ? new Color(.95f, .95f, .95f)
+                    : FallenAngel.Core.LaneColors.GetLaneColor(n.lane, Lanes);
             }
         }
 

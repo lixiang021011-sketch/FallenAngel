@@ -26,7 +26,8 @@ namespace FallenAngel.Core
     public static class NotePartChecks
     {
         private static readonly Vector2 SpawnPos = new Vector2(0f, 600f);
-        private static readonly Vector2 JudgePos = new Vector2(0f, -400f);
+        // 判定位置取自唯一来源（PlayVisualSpec），别在这里写死——否则视觉改了、自检还在测旧几何
+        private static readonly Vector2 JudgePos = new Vector2(0f, PlayVisualSpec.JudgeLineY);
         private const float TolerancePx = 0.5f;
 
         private sealed class Case
