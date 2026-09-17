@@ -99,6 +99,10 @@ MuseScore 乐谱 → MusicXML → 转换器 → 游戏谱面 JSON
 - 实时合法性校验（同轨同刻重复、同刻超 2 音、时长有效性）
 - 内置开源谱面导入
 
+![谱面编辑器（载入 mecha_tribe.json 时的实机截图）](docs/figures/chart-editor.png)
+
+打开方式：`Tools > FallenAngel > Chart Editor`。界面为中文——这是给单人作者用的工具，不是面向玩家的产品。
+
 ### 4.2 谱面转换与导入
 
 - 乐谱链路：`mscz → MusicXML → chart`，往返零差异
