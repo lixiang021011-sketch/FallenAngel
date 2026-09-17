@@ -45,6 +45,19 @@ namespace FallenAngel.Core
                 string.Format("按键区顶边距底 {0:0.#} ≤ 判定线距底 {1:0.#}",
                     PlayVisualSpec.KeyAreaHeight, PlayVisualSpec.JudgeLineFromBottom));
 
+            // 轨道加宽（2026-09-18）：几乎占满屏幕宽；音符宽度随轨道宽自适配
+            float usable = LaneLayout.GetUsableWidth(LaneLayout.MaxLaneCount);
+            float coverage = usable / LaneLayout.CanvasWidth;
+            check("轨道几乎占满屏幕", coverage >= 0.9f,
+                string.Format("轨组 {0:0}px / 画布 {1:0}px = {2:P0}（要求 ≥90%）",
+                    usable, LaneLayout.CanvasWidth, coverage));
+
+            float laneW = LaneLayout.GetLaneWidth(4);
+            float noteFill = Note.DefaultNoteWidth / laneW;   // 4 键时的填充比
+            check("音符宽度随轨道适配", noteFill >= 0.85f && noteFill <= 1.0f,
+                string.Format("4 键轨宽 {0:0.#}，音符宽 {1:0.#}（填充 {2:P0}）",
+                    laneW, Note.DefaultNoteWidth, noteFill));
+
             // ② 真实场景装配：用 SceneBuilder 造一遍，量判定线与 NoteSpawner 的实际位置
             if (!Application.isBatchMode)
             {

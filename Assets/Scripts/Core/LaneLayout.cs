@@ -6,7 +6,12 @@ namespace FallenAngel.Core
     /// 轨道布局约定（Canvas 本地坐标，原点在 Canvas 中心，参考分辨率 1080×1920）。
     /// SceneBuilder（按键视觉）/ NoteSpawner（音符）/ InputManager（输入判定）共用，
     /// 保证不同视图缩放、裁切下按键视觉与输入判定一致。
-    /// 键数为运行时状态：由 GameManager.LoadChart 按谱面 LaneCount 设置（4K/5K）。
+    ///
+    /// **2026-09-18 改动：轨道加宽到几乎占满屏幕宽。**此前 4 键轨道每组只有 590px（1080 的 55%），
+    /// 视觉上挤在中间；现在两侧各留 20px，缝隙占节距 10%：
+    ///   5 键：节距 208，轨宽 187，中心 ±416 / ±208 / 0
+    ///   4 键：节距 260，轨宽 234，中心 ±390 / ±130
+    /// 尺寸不再写死，一律由 <see cref="GetLaneWidth"/> / <see cref="GetCentersX"/> 按当前键数算出。
     /// </summary>
     public static class LaneLayout
     {
@@ -16,41 +21,84 @@ namespace FallenAngel.Core
         /// <summary>当前生效轨道数（默认 4，加载谱面时更新）</summary>
         public static int ActiveLaneCount = 4;
 
-        /// <summary>4 键轨道中心（v1 兼容，保持历史值）</summary>
-        private static readonly float[] Centers4 = { -225f, -75f, 75f, 225f };
+        /// <summary>参考画布宽（竖屏）</summary>
+        public const float CanvasWidth = 1080f;
 
-        /// <summary>5 键轨道中心（v2 协议 lane 0-4，左右对称）</summary>
-        private static readonly float[] Centers5 = { -270f, -135f, 0f, 135f, 270f };
+        /// <summary>两侧留白：越小轨道越宽（20px ≈ 几乎占满）</summary>
+        public const float SideMargin = 20f;
 
-        /// <summary>轨道宽度（Canvas 单位）</summary>
-        public const float LaneWidth = 140f;
+        /// <summary>轨间缝占节距的比例（0.10 = 每两条轨道之间有 10% 的缝）</summary>
+        public const float LaneGapRatio = 0.10f;
 
         /// <summary>
-        /// 按当前生效键数设置活动轨道数（钳制到 1..MaxLaneCount）
+        /// 外观尺寸的**参考轨道宽**：配表里的音符尺寸（如 130×28）是按这个宽度设计的。
+        /// 实际尺寸 = 配表尺寸 × (当前轨宽 / 本值)，见 <see cref="SizeScale"/>。
         /// </summary>
+        public const float ReferenceLaneWidth = 140f;
+
+        private static readonly float[][] centersCache = new float[MaxLaneCount + 1][];
+
+        /// <summary>指定键数下的可用总宽（画布宽 − 两侧留白）</summary>
+        public static float GetUsableWidth(int laneCount)
+        {
+            return CanvasWidth - SideMargin * 2f;
+        }
+
+        /// <summary>指定键数下的轨道节距（中心到中心）</summary>
+        public static float GetLanePitch(int laneCount)
+        {
+            int n = Mathf.Clamp(laneCount, 1, MaxLaneCount);
+            return GetUsableWidth(n) / n;
+        }
+
+        /// <summary>指定键数下的轨道宽度（已扣掉缝）</summary>
+        public static float GetLaneWidth(int laneCount)
+        {
+            return GetLanePitch(laneCount) * (1f - LaneGapRatio);
+        }
+
+        /// <summary>当前活动轨道宽（动态；原先是写死的常量 140）</summary>
+        public static float LaneWidth
+        {
+            get { return GetLaneWidth(ActiveLaneCount); }
+        }
+
+        /// <summary>外观尺寸缩放：配表尺寸 × 本值 = 实际尺寸（音符宽度随轨道宽自适配）</summary>
+        public static float SizeScale
+        {
+            get { return LaneWidth / ReferenceLaneWidth; }
+        }
+
+        /// <summary>按当前生效键数设置活动轨道数（钳制到 1..MaxLaneCount）</summary>
         public static void SetActiveLaneCount(int count)
         {
             int clamped = Mathf.Clamp(count, 1, MaxLaneCount);
             if (clamped == ActiveLaneCount) return;
             ActiveLaneCount = clamped;
-            Debug.Log($"[LaneLayout] 活动轨道数: {ActiveLaneCount}");
+            Debug.Log(string.Format("[LaneLayout] 活动轨道数: {0}（轨宽 {1:0.#}，缩放 {2:0.###}）",
+                ActiveLaneCount, LaneWidth, SizeScale));
         }
 
-        /// <summary>
-        /// 取指定键数的轨道中心数组（4 → 4 键布局；其他 → 5 键布局）
-        /// </summary>
+        /// <summary>取指定键数的轨道中心数组（左右对称、等距、几乎铺满画布宽）</summary>
         public static float[] GetCentersX(int laneCount)
         {
-            return laneCount == 4 ? Centers4 : Centers5;
+            int n = Mathf.Clamp(laneCount, 1, MaxLaneCount);
+            if (centersCache[n] == null)
+            {
+                float pitch = GetLanePitch(n);
+                float first = -GetUsableWidth(n) * 0.5f + pitch * 0.5f;
+                var centers = new float[n];
+                for (int i = 0; i < n; i++) centers[i] = first + pitch * i;
+                centersCache[n] = centers;
+            }
+            return centersCache[n];
         }
 
-        /// <summary>
-        /// 取当前活动布局中某轨道中心的 Canvas 本地 X 坐标（越界自动钳制）
-        /// </summary>
+        /// <summary>取当前活动布局中某轨道中心的 Canvas 本地 X 坐标（越界自动钳制）</summary>
         public static float GetCenterXForActive(int lane)
         {
-            int clamped = Mathf.Clamp(lane, 0, ActiveLaneCount - 1);
-            return GetCentersX(ActiveLaneCount)[clamped];
+            float[] centers = GetCentersX(ActiveLaneCount);
+            return centers[Mathf.Clamp(lane, 0, centers.Length - 1)];
         }
 
         /// <summary>
@@ -67,7 +115,6 @@ namespace FallenAngel.Core
 
         /// <summary>
         /// 根据 Canvas 本地 X 坐标计算所属轨道（按相邻轨道中点划分，两侧延伸到底）。
-        /// 按当前活动布局循环判定（支持 4/5 键，不再硬编码 if 链）。
         /// </summary>
         public static int GetLaneFromCanvasX(float canvasX)
         {

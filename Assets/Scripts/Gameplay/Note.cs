@@ -46,11 +46,17 @@ namespace FallenAngel.Gameplay
         private const float PerspectiveMinScale = 0.55f; // 出生（屏幕顶部）时的缩放
         private float hitScale = 1f;                     // 命中特效缩放（与透视分层，避免互抢 localScale）
 
-        /// <summary>普通音符宽度（与 NoteSpawner 默认预制体一致；kick 全宽条复用为普通音符时还原）</summary>
-        public const float DefaultNoteWidth = 130f;
+        /// <summary>
+        /// 普通音符宽度：配表里 tap 是 130（按参考轨宽 140 设计），
+        /// **实际宽度随当前轨道宽自适配**——轨道加宽后音符跟着变宽，否则会缩在轨道中间。
+        /// </summary>
+        public static float DefaultNoteWidth
+        {
+            get { return 130f * LaneLayout.SizeScale; }
+        }
 
-        /// <summary>普通音符厚度（高度；原 40 的三分之一）</summary>
-        public const float DefaultNoteHeight = 14f;
+        /// <summary>普通音符厚度（高度，不随轨道宽缩放；2026-09-17 设计稿定为 28）</summary>
+        public const float DefaultNoteHeight = 28f;
         private DrumIconGraphic iconGraphic;             // 鼓件图标（运行时自生成，零资源）
         private ArrowGraphic arrowGraphic;               // Flick 方向箭头（运行时自生成）
         private SlidePathGraphic slidePathGraphic;       // Slide 路径折线（运行时自生成）
@@ -86,6 +92,12 @@ namespace FallenAngel.Gameplay
         /// <summary>
         /// 初始化音符
         /// </summary>
+        /// <summary>
+        /// 该音符使用的配色版本（由 NoteSpawner 在生成时决定；默认跟随当前选定调色板）。
+        /// 每局三版混排：见 LaneColors.NoteMode / PickNotePalette。对象池复用时每次生成都会重设。
+        /// </summary>
+        public LaneColors.PaletteId Palette { get; set; } = LaneColors.ActivePalette;
+
         public void Initialize(NoteData data, Vector2 spawnPos, Vector2 judgeLinePos)
         {
             Data = data;
@@ -100,14 +112,19 @@ namespace FallenAngel.Gameplay
 
             // 设置位置（先还原标准尺寸：kick 全宽条复用为普通音符时）
             if (rectTransform == null) rectTransform = GetComponent<RectTransform>();
-            rectTransform.sizeDelta = new Vector2(DefaultNoteWidth, DefaultNoteHeight);
+            // 尺寸也走配表（2026-09-17：设计稿 v2 厚度 ×2，tap 130×28 / drag 94×24 / 尾 20）
+            NoteVisualRow visual = NoteVisualConfig.Find(VisualKey(false));
+            rectTransform.sizeDelta = visual != null
+                ? new Vector2(visual.Width * LaneLayout.SizeScale, visual.Height)
+                : new Vector2(DefaultNoteWidth, DefaultNoteHeight);
             rectTransform.anchoredPosition = spawnPos;
             gameObject.SetActive(true);
 
             // 部件化（pjsk 风）：头部部件接管绘制，预制体 Image 退化为尺寸容器（不再绘制）
             EnsureHeadGraphic();
+            if (headGraphic != null) headGraphic.Shape = NoteVisualConfig.ShapeOf(VisualKey(false));
             SyncPartSizes();
-            Color c = LaneColors.GetLaneColor(data.lane);
+            Color c = LaneColors.GetLaneColor(data.lane, Palette);
             ApplyPartsColor(c);
 
             // LongEnd/LongBody 只是长按的账本条目（判定与回收用），不参与绘制
@@ -124,6 +141,7 @@ namespace FallenAngel.Gameplay
             if (wantsTail && !bookkeepingOnly) EnsureTailGraphic();
             else if (tailGraphic != null)
                 tailGraphic.gameObject.SetActive(false);
+            if (tailGraphic != null) tailGraphic.Shape = NoteVisualConfig.ShapeOf(VisualKey(true));
 
             // 身体 / 路径 / 尾部件按轨道色统一着色（部件存在性已在上方确定）
             SyncPartSizes();
@@ -160,7 +178,7 @@ namespace FallenAngel.Gameplay
             bodyGraphic.gameObject.SetActive(true);
             // 身体配色并入部件统一着色：贴近头部 0.9 实体 → 远端 0.18 半透明
             //（远端不再完全透明：尾部标记挂在身体末端，全透明会让连接段与尾标记断开）
-            ApplyPartsColor(LaneColors.GetLaneColor(Data.lane));
+            ApplyPartsColor(LaneColors.GetLaneColor(Data.lane, Palette));
 
             // 身体长度 = 按住期间音符下落的距离（不再叠加整条轨道高度），
             // 修复：此前 body = 轨道全长 + 按住距离，远超屏幕高度，观感像无限长
@@ -354,6 +372,23 @@ namespace FallenAngel.Gameplay
         // ============================================================
 
         /// <summary>确保头部部件存在（圆角条：描边 + 内面渐变 + 顶面高光）</summary>
+        /// <summary>
+        /// 配表用的外观键：宽键优先（kick 是标记不是独立类型）；尾标记按类型映射到 LongEnd / SlideTail。
+        /// </summary>
+        private string VisualKey(bool tail)
+        {
+            if (Data == null) return tail ? "LongEnd" : "Normal";
+            if (Data.wide && !tail) return "Wide";
+            switch (Data.type)
+            {
+                case NoteType.Drag: return "Drag";
+                case NoteType.Flick: return "Flick";
+                case NoteType.LongStart: return tail ? "LongEnd" : "LongStart";
+                case NoteType.Slide: return tail ? "SlideTail" : "Slide";
+                default: return "Normal";
+            }
+        }
+
         private void EnsureHeadGraphic()
         {
             if (headGraphic != null && headRect != null) return;
@@ -427,7 +462,7 @@ namespace FallenAngel.Gameplay
 
             EnsureLinkGraphic();
 
-            Color mine = LaneColors.GetLaneColor(Data != null ? Data.lane : 0);
+            Color mine = LaneColors.GetLaneColor(Data != null ? Data.lane : 0, Palette);
             mine.a = 0.75f;
             partnerColor.a = 0.75f;
             linkBaseLeft = dx >= 0f ? mine : partnerColor;
@@ -915,7 +950,7 @@ namespace FallenAngel.Gameplay
             entry.rt.localScale = Vector3.one;
             if (entry.canvasGroup != null) entry.canvasGroup.alpha = 1f;
 
-            Color c = LaneColors.GetLaneColor(Data.lane);
+            Color c = LaneColors.GetLaneColor(Data.lane, Palette);
             // Perfect：向白色混合 + 更亮，视觉上更"硬"
             float perfectBlend = result == JudgeResultType.Perfect ? 1f : 0f;
             c = Color.Lerp(c, Color.white, perfectBlend * 0.45f);

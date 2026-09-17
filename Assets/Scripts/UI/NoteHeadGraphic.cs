@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using FallenAngel.Data;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -23,6 +24,17 @@ namespace FallenAngel.UI
         [Tooltip("每个圆角的细分段数")]
         [SerializeField] private int cornerSegments = 4;
 
+        [Header("形状来源（由 NoteVisualConfig 配表驱动，运行时不写死）")]
+        [Tooltip("RoundedBar = 旧版圆角条兜底；其余为设计稿 v2 的轮廓级形状")]
+        [SerializeField] private NoteShapeKind shape = NoteShapeKind.ChamferBar;
+
+        /// <summary>外观形状（由 Note 按配表设置）</summary>
+        public NoteShapeKind Shape
+        {
+            get { return shape; }
+            set { if (shape != value) { shape = value; SetVerticesDirty(); } }
+        }
+
         [Header("描边")]
         [Tooltip("外圈描边厚度（像素）；自动不超过高度的 1/3")]
         [SerializeField] private float rimThickness = 2.4f;
@@ -46,6 +58,13 @@ namespace FallenAngel.UI
             Rect rect = rectTransform.rect;
             float w = rect.width, h = rect.height;
             if (w <= 0.5f || h <= 0.5f) return;
+
+            // 配表指定的形状走几何库；RoundedBar 保留旧路径作兜底
+            if (shape != NoteShapeKind.RoundedBar)
+            {
+                BuildShapeMesh(vh, rect);
+                return;
+            }
 
             float radius = Mathf.Clamp(h * radiusRatio, minRadius,
                                        Mathf.Min(maxRadius, Mathf.Min(w, h) * 0.5f));
@@ -83,6 +102,59 @@ namespace FallenAngel.UI
         /// 画一个圆角条：外轮廓扇形填充，顶点色按 y 在 cBottom→cTop 间线性插值
         /// （顶亮底暗的纵向渐变）。
         /// </summary>
+        /// <summary>
+        /// 按 NoteShapeGeometry 的轮廓生成三层：外圈描边（顶亮底暗）→ 内面（纵向渐变）→ 顶面高光带。
+        /// 轮廓全部来自配表指定的形状，新增形状只需改配表 + 几何库，不动这里。
+        /// </summary>
+        private void BuildShapeMesh(VertexHelper vh, Rect rect)
+        {
+            Color baseColor = color;
+            float rim = Mathf.Clamp(rimThickness, 0.5f, rect.height * 0.34f);
+            float shrink = Mathf.Clamp01(rim / Mathf.Max(1f, rect.height * 0.5f));
+            Vector2 center = rect.center;
+
+            List<Vector2[]> polys = NoteShapeGeometry.Build(shape, rect.width, rect.height);
+
+            // 1) 外圈描边
+            for (int i = 0; i < polys.Count; i++)
+                AddPolygon(vh, polys[i], center, rect, Shade(baseColor, rimTopLighten), Shade(baseColor, -rimBottomDarken));
+
+            // 2) 内面
+            List<Vector2[]> inner = NoteShapeGeometry.Scale(polys, 1f - shrink, 1f - shrink * 0.6f);
+            for (int i = 0; i < inner.Count; i++)
+                AddPolygon(vh, inner[i], center, rect, Shade(baseColor, faceTopLighten), Shade(baseColor, -faceBottomDarken));
+
+            // 3) 顶面高光带（内面上方一条半透明白）
+            Color gloss = new Color(1f, 1f, 1f, baseColor.a * glossAlpha);
+            float bandShift = rect.height * 0.5f * (1f - shrink) * (1f - glossHeightRatio) * 0.9f;
+            List<Vector2[]> glossPolys = NoteShapeGeometry.Scale(polys, 1f - shrink, glossHeightRatio * (1f - shrink));
+            for (int i = 0; i < glossPolys.Count; i++)
+            {
+                Vector2[] p = glossPolys[i];
+                var shifted = new Vector2[p.Length];
+                for (int k = 0; k < p.Length; k++) shifted[k] = new Vector2(p[k].x, p[k].y + bandShift);
+                AddPolygon(vh, shifted, center, rect, gloss, gloss);
+            }
+        }
+
+        /// <summary>把一个凸多边形按纵向渐变塞进网格（顶点色乘 Graphic.color，并做预乘）</summary>
+        private static void AddPolygon(VertexHelper vh, Vector2[] pts, Vector2 center, Rect rect,
+                                       Color top, Color bottom)
+        {
+            if (pts == null || pts.Length < 3) return;
+            Color cTop = RoundedMeshUtil.Premultiply(top);
+            Color cBottom = RoundedMeshUtil.Premultiply(bottom);
+            int start = vh.currentVertCount;
+            for (int i = 0; i < pts.Length; i++)
+            {
+                Vector2 p = pts[i] + center;
+                float t = Mathf.InverseLerp(rect.yMin, rect.yMax, p.y);
+                vh.AddVert(new Vector3(p.x, p.y, 0f), Color.Lerp(cBottom, cTop, t), Vector2.zero);
+            }
+            for (int i = 1; i < pts.Length - 1; i++)
+                vh.AddTriangle(start, start + i, start + i + 1);
+        }
+
         private void AddRoundedBar(VertexHelper vh, float x0, float y0, float x1, float y1,
                                    float radius, Color cBottom, Color cTop, int segments)
         {

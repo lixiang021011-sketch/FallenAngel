@@ -28,7 +28,9 @@ namespace FallenAngel.Gameplay
         [SerializeField] private Note notePrefab;
 
         [Header("轨道X位置（兜底/编辑器Gizmos用；音符坐标统一取 LaneLayout 动态布局）")]
-        [SerializeField] private float[] lanePositionsX = new float[] { -225f, -75f, 75f, 225f };
+        // 兜底值（编辑器 Gizmos 用）。运行时音符坐标统一取 LaneLayout —— 2026-09-18 轨道加宽后
+        // 4 键中心为 ±390 / ±130（节距 260、轨宽 234）；这里只作缺省，不再参与定位。
+        [SerializeField] private float[] lanePositionsX = new float[] { -390f, -130f, 130f, 390f };
 
         [Header("判定线和生成位置Y坐标（anchoredPosition Y）")]
         [Tooltip("判定线位置Y（音符到达此处需击中）")]
@@ -194,6 +196,8 @@ namespace FallenAngel.Gameplay
             ClearAllNotes();
             nextNoteIndex = 0;
             isPlaying = true;
+            // 每局换一次音符配色种子：同一局内混排稳定（同一音符不会中途变色），不同局之间会变
+            LaneColors.SetNotePaletteSeed(Random.Range(1, 999999));
         }
 
         private void OnGameEnd()
@@ -267,6 +271,8 @@ namespace FallenAngel.Gameplay
             Vector2 spawnPos = new Vector2(x, spawnY);
             Vector2 judgePos = new Vector2(x, judgeLineY);
 
+            // 每个音符随机取一版配色（LaneColors.NoteMode 决定策略）
+            note.Palette = LaneColors.PickNotePalette(data.lane, data.time);
             note.Initialize(data, spawnPos, judgePos);
 
             // 宽音符视觉：横跨全键的全宽横条（任意键触发，见 JudgeManager 宽音符轮询）。
@@ -288,7 +294,8 @@ namespace FallenAngel.Gameplay
                 NoteData p = notes[partner];
                 note.SetSimultaneousLink(
                     LaneLayout.GetCenterXForActive(Mathf.Clamp(p.lane, 0, LaneLayout.ActiveLaneCount - 1)),
-                    LaneColors.GetLaneColor(p.lane));
+                    // 用伙伴音符将采用的那一版配色，保证连线两端与音符本体同色
+                    LaneColors.GetLaneColor(p.lane, LaneColors.PickNotePalette(p.lane, p.time)));
             }
 
             activeNotes.Add(note);

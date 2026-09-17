@@ -426,7 +426,9 @@ namespace FallenAngel.Core
             jlRect.pivot = new Vector2(0.5f, 0.5f);
             // 视觉线必须与 NoteSpawner 的判定位置同源（曾差 160px：视觉 400 / 判定 560）
             jlRect.anchoredPosition = new Vector2(0, PlayVisualSpec.JudgeLineAnchoredY);
-            jlRect.sizeDelta = new Vector2(1000, PlayVisualSpec.JudgeLineThickness);
+            // 宽度跟着轨组走：2026-09-18 轨道加宽后轨组 = 可用宽（1080 − 两侧留白）
+            jlRect.sizeDelta = new Vector2(LaneLayout.GetUsableWidth(LaneLayout.MaxLaneCount),
+                                           PlayVisualSpec.JudgeLineThickness);
             Image jlImg = judgeLine.GetComponent<Image>();
             jlImg.color = Color.white;
             jlImg.raycastTarget = false;
