@@ -59,7 +59,7 @@ namespace FallenAngel.UI
         private void Build()
         {
             // 折叠按钮自己占一行，否则会被第一行盖住（点不到）
-            toggle = MakeButton(transform, "MOD 调试 ▾", 0f, ToggleRows);
+            toggle = MakeButton(transform, "MOD 调试 ▾", PanelX, -PanelY, ToggleRows);
 
             rowsRoot = new GameObject("Rows", typeof(RectTransform));
             rowsRoot.transform.SetParent(transform, false);
@@ -111,7 +111,31 @@ namespace FallenAngel.UI
 
         private void Apply(string id, ModifierKind kind, float magnitude, float duration)
         {
-            // 全部就地兜底：调试窗口不依赖"场景是否重建过"
+            ApplyInternal(id, kind, magnitude, duration);
+        }
+
+        /// <summary>
+        /// 快捷键入口（GameStarter 调用）：0–3 施加预设效果，4 = 清空全部。
+        /// 与面板按钮走同一条路径，用于"面板点不动时也能验证 modifier"。
+        /// </summary>
+        public static void ApplyPresetByIndex(int index)
+        {
+            switch (index)
+            {
+                case 0: ApplyInternal("DBG_LOOSE", ModifierKind.JudgeWindowScale, 1.5f, 0f); break;
+                case 1: ApplyInternal("DBG_TIGHT", ModifierKind.JudgeWindowScale, 0.6f, 0f); break;
+                case 2: ApplyInternal("DBG_NOLINE", ModifierKind.JudgeLineHidden, 0f, 3f); break;
+                case 3: ApplyInternal("DBG_NONOTES", ModifierKind.NotesHidden, 0f, 3f); break;
+                case 4:
+                    ModifierManager.EnsureInstance().ClearAll();
+                    Debug.Log("[ModifierDebug] 清空全部效果");
+                    break;
+            }
+        }
+
+        /// <summary>统一入口：就地兜底，不依赖"场景是否重建过"</summary>
+        private static void ApplyInternal(string id, ModifierKind kind, float magnitude, float duration)
+        {
             ModifierManager mgr = ModifierManager.EnsureInstance();
             if (kind == ModifierKind.JudgeLineHidden || kind == ModifierKind.NotesHidden)
                 PlayVisibilityController.EnsureInstance();   // 渲染侧控制器，旧场景里没有就现建
@@ -121,19 +145,21 @@ namespace FallenAngel.UI
 
         private void MakeRow(string text, ref float y, Color color, System.Action action)
         {
-            Button b = MakeButton(rowsRoot.transform, text, y, action);
+            // 行容器已经定位在右侧，子节点必须用相对坐标 (0, -y)：
+            // 之前又加了一次 PanelX/PanelY，按钮被推到 x≈1636（画布只有 1080 宽）——整排跑到屏幕外
+            Button b = MakeButton(rowsRoot.transform, text, 0f, -y, action);
             b.GetComponent<Image>().color = color;
             y += RowH + RowGap;
         }
 
-        private Button MakeButton(Transform parent, string text, float y, System.Action action)
+        private Button MakeButton(Transform parent, string text, float x, float y, System.Action action)
         {
             var go = new GameObject("Btn_" + text, typeof(RectTransform), typeof(Image));
             go.transform.SetParent(parent, false);
             RectTransform rt = (RectTransform)go.transform;
             rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
             rt.pivot = new Vector2(0f, 1f);
-            rt.anchoredPosition = new Vector2(PanelX, -PanelY - y);
+            rt.anchoredPosition = new Vector2(x, y);
             rt.sizeDelta = new Vector2(PanelW, RowH);
 
             Image img = go.GetComponent<Image>();

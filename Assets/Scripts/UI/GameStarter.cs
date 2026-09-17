@@ -141,7 +141,21 @@ namespace FallenAngel.UI
                 HideNewGameConfirm();
 #if UNITY_EDITOR
             RefreshArtDebugButtons();
+            HandleModifierDebugKeys();
 #endif
+        }
+
+        /// <summary>
+        /// modifier 调试快捷键（编辑器专用）：1–4 施加效果，5 清空全部。
+        /// 面板按钮若因布局/射线问题点不动，这里仍可验证 modifier 是否生效（Console 会打日志）。
+        /// </summary>
+        private void HandleModifierDebugKeys()
+        {
+            if (Input.GetKeyDown(KeyCode.Alpha1)) ModifierDebugPanel.ApplyPresetByIndex(0);
+            else if (Input.GetKeyDown(KeyCode.Alpha2)) ModifierDebugPanel.ApplyPresetByIndex(1);
+            else if (Input.GetKeyDown(KeyCode.Alpha3)) ModifierDebugPanel.ApplyPresetByIndex(2);
+            else if (Input.GetKeyDown(KeyCode.Alpha4)) ModifierDebugPanel.ApplyPresetByIndex(3);
+            else if (Input.GetKeyDown(KeyCode.Alpha5)) ModifierDebugPanel.ApplyPresetByIndex(4);
         }
 
         private void OnGameStateChanged(GameState state)

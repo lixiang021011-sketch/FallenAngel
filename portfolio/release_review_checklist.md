@@ -6,18 +6,17 @@
 
 ## A. 需要你 Play 验收（本轮未提交的改动）
 
-> **2026-09-13 起的新一批（与「第一版美术」合并验收、同批提交）**
-> 验收前先跑一次 `Tools > FallenAngel > Build Default Game Scene` 重建场景——
-> 这批改了 `SceneBuilder`，不重建的话 `ModifierManager` / `PlayVisibilityController` 不在场景里。
+> **2026-09-13 起的新一批 —— 2026-09-17 验收完毕**
 
-| # | 验收点 | 预期表现 | 怎么看 |
+| # | 验收点 | 结论 | 说明 |
 | --- | --- | --- | --- |
-| A8 | 判定线与判定位置统一到**距底 400**（美术稿口径） | 音符落在白线上；白线在按键区顶边；滚动比之前快约 10% | 进任意一局演奏 |
-| A9 | 局内 modifier 基础层 | 判定窗口可放宽/收紧、判定线可消失、谱面可隐身，失效后自动恢复 | 选中 `Managers` 对象 → Inspector 齿轮菜单「调试/…」四项 |
-| A10 | **第一版美术** | 背景三层 + 五轨配色（不靠色相区分）+ 判定线 + 命中特效，按已定方向色板 | 待生成后补具体验收点 |
+| A8 | 判定线与判定位置统一到**距底 400** | ✅ 通过 | 视觉线与判定同源于 `PlayVisualSpec`；`PlayVisualChecks` 14 项含"视觉线 == 判定线" |
+| A9a | modifier：**谱面隐身 / 判定线消失** | ✅ 通过（人工实测） | 游戏内调试窗口「MOD 调试」面板；快捷键 1–4 施加、5 清空 |
+| A9b | modifier：**判定窗口放宽/收紧** | ⏸ 人工挂起，**以机器验证为准** | 引擎内人力测不准（80ms 级差异无法用肉眼稳定判断）；`PlayModifierChecks` 8 项 + 面板按钮功能自检均通过 |
+| A10 | **第一版美术** | ✅ 暂时通过 | 符号化色块背景 + 五轨明度阶梯 + 四项判定特效 + 菜单配色。**组件形状仍偏简陋**，下一轮先在 `art_tools/` 出设计稿再过稿入游戏 |
 
-> 提交方式：同批验收，但建议拆成 2–3 个提交（先代码后美术），保留可回退粒度。
-> 自检状态：`PortfolioChecks` 95 / `IconGeometryChecks` 27 / `NotePartChecks` 16 / `PlayVisualChecks` 8 / `PlayModifierChecks` 8，全绿。
+> 自检状态（2026-09-17）：`PortfolioChecks` 95 / `IconGeometryChecks` 27 / `NotePartChecks` 16 / `PlayModifierChecks` 8 / `PlayVisualChecks` 14 = **160 项全绿**。
+> 场景提示：`ModifierManager` / `PlayVisibilityController` 由 `SceneBuilder` 装配；调试窗口已改为 `EnsureInstance` 就地兜底，**不重建场景也能用**。
 
 | # | 验收点 | 预期表现 | 怎么看 |
 | --- | --- | --- | --- |

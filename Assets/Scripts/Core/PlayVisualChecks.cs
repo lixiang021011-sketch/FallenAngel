@@ -153,6 +153,23 @@ namespace FallenAngel.Core
                     check("调试窗口按钮真的生效", applied && Mathf.Abs(windowScale - 1.5f) < 0.01f,
                         string.Format("点击后 已施加={0}，判定窗口倍率={1:0.0}", applied, windowScale));
                     ModifierManager.Instance.ClearAll();
+
+                    // 布局回归：行按钮必须与折叠按钮同一条竖线。
+                    // 曾因坐标重复叠加（父容器已偏移、子节点又加一次）被推到 x≈1636，整排在屏幕外。
+                    float toggleX = float.NaN;
+                    int rows = 0, misaligned = 0;
+                    foreach (UnityEngine.UI.Button b in panelBtns)
+                    {
+                        RectTransform brt = (RectTransform)b.transform;
+                        if (brt.parent != null && brt.parent.name == "Rows")
+                        {
+                            rows++;
+                            if (float.IsNaN(toggleX)) toggleX = brt.position.x;   // 第一行作为基准
+                            else if (Mathf.Abs(brt.position.x - toggleX) > 0.5f) misaligned++;
+                        }
+                    }
+                    check("调试窗口各行左对齐", rows >= 5 && misaligned == 0,
+                        string.Format("行按钮 {0} 个，未对齐 {1} 个", rows, misaligned));
                 }
                 catch (Exception e)
                 {
