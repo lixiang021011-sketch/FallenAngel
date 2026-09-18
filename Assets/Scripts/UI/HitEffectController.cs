@@ -157,8 +157,8 @@ namespace FallenAngel.UI
                 HandleMiss(lane);
                 return;
             }
-            if (result == JudgeResultType.Perfect || result == JudgeResultType.Great)
-                SpawnBurst(lane, result);
+            // 命中闪光不在这里生成：按设计稿预览图，命中特效（双层环 + 放射条）是**长在音符上**的，
+            // 由 Note.SpawnHitRing 在音符位置生成。本控制器只负责 Miss 的轨道压暗与连击脉冲。
         }
 
         private void HandleComboUpdate(int combo, bool isFullComboNow)

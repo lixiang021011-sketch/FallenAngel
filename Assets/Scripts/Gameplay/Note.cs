@@ -927,12 +927,43 @@ namespace FallenAngel.Gameplay
         // 命中扩散环（判定线处向外扩散的音符色圆环，判定等级决定大小/亮度）
         // ============================================================
 
-        /// <summary>命中时生成扩散环（环挂在 NotesContainer 下，与音符同一坐标系；协程挂环自身，不受音符回收影响）</summary>
+        /// <summary>命中特效基准直径（网格固定，扩散用 localScale —— 零网格重建）</summary>
+        private const float EffectBaseSize = 32f;
+
+        /// <summary>
+        /// 命中特效（对齐设计稿预览图）：**双层扩散环**（外 = 轨道色 / 内 = 月白）+ **八向放射条**。
+        /// 三点与预览一致：① 全部长在音符当前位置（不是判定线上的装饰）；
+        /// ② 双层环同心、内环约为外环的 0.62；③ Perfect 更大更亮，其余判定小一号。
+        /// 特效对象挂在 NotesContainer 下（与音符同一坐标系），协程挂在自身，不受音符回收影响。
+        /// </summary>
         private void SpawnHitRing(JudgeResultType result)
         {
             if (result == JudgeResultType.Miss || result == JudgeResultType.None) return;
             if (transform.parent == null) return;
 
+            bool perfect = result == JudgeResultType.Perfect;
+            // 宽键（横条）是全宽条：特效**不按它的宽度等比例放大**，否则环会撑满整屏。
+            // 统一按普通音符宽度取尺寸；位置仍取音符中心（横条本身已居中，见 SetKickVisual）。
+            float noteW = Mathf.Min(rectTransform != null ? rectTransform.sizeDelta.x : DefaultNoteWidth,
+                                    DefaultNoteWidth);
+            float outerScale = noteW * (perfect ? 2.7f : 2.1f) / EffectBaseSize;
+            Color laneColor = LaneColors.GetLaneColor(Data.lane, Palette);
+
+            // 外环：轨道色
+            Color outer = Color.Lerp(laneColor, Color.white, perfect ? 0.25f : 0f);
+            outer.a = perfect ? 0.95f : 0.8f;
+            SpawnRing(outer, outerScale, perfect ? 0.34f : 0.28f);
+
+            // 内环：月白（更小更亮）
+            Color inner = new Color(1f, 1f, 1f, perfect ? 0.85f : 0.6f);
+            SpawnRing(inner, outerScale * 0.62f, perfect ? 0.26f : 0.22f);
+
+            // 放射条：比外环略大，最短
+            SpawnBurst(laneColor, outerScale * 1.15f, perfect ? 0.24f : 0.2f);
+        }
+
+        private void SpawnRing(Color c, float endScale, float duration)
+        {
             HitRingEntry entry = null;
             for (int i = 0; i < hitRingPool.Count; i++)
             {
@@ -946,18 +977,64 @@ namespace FallenAngel.Gameplay
 
             entry.rt.gameObject.SetActive(true);
             entry.rt.anchoredPosition = rectTransform.anchoredPosition; // 命中瞬间音符已在判定线
-            entry.rt.sizeDelta = new Vector2(32f, 32f); // 网格固定，扩散用 localScale（零网格重建）
+            entry.rt.sizeDelta = new Vector2(EffectBaseSize, EffectBaseSize);
             entry.rt.localScale = Vector3.one;
             if (entry.canvasGroup != null) entry.canvasGroup.alpha = 1f;
-
-            Color c = LaneColors.GetLaneColor(Data.lane, Palette);
-            // Perfect：向白色混合 + 更亮，视觉上更"硬"
-            float perfectBlend = result == JudgeResultType.Perfect ? 1f : 0f;
-            c = Color.Lerp(c, Color.white, perfectBlend * 0.45f);
-            c.a = result == JudgeResultType.Perfect ? 0.9f : 0.75f;
             entry.graphic.RingColor = c;
+            entry.coroutine = entry.graphic.StartCoroutine(AnimateHitRing(entry, endScale, duration, c.a));
+        }
 
-            entry.coroutine = entry.graphic.StartCoroutine(AnimateHitRing(entry, result));
+        /// <summary>放射条池（预览里的八向闪光）</summary>
+        private readonly List<BurstEntry> burstPool = new List<BurstEntry>(6);
+
+        private void SpawnBurst(Color c, float endScale, float duration)
+        {
+            BurstEntry entry = null;
+            for (int i = 0; i < burstPool.Count; i++)
+            {
+                if (!burstPool[i].rt.gameObject.activeSelf) { entry = burstPool[i]; break; }
+            }
+            if (entry == null)
+            {
+                if (burstPool.Count >= 6) return;
+                GameObject go = new GameObject("HitBurst",
+                    typeof(RectTransform), typeof(CanvasRenderer), typeof(BurstGraphic), typeof(CanvasGroup));
+                go.transform.SetParent(transform.parent, false);
+                RectTransform rt = (RectTransform)go.transform;
+                rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+                rt.pivot = new Vector2(0.5f, 0.5f);
+                rt.sizeDelta = new Vector2(EffectBaseSize, EffectBaseSize);
+                BurstGraphic g = go.GetComponent<BurstGraphic>();
+                g.raycastTarget = false;
+                CanvasGroup cg = go.GetComponent<CanvasGroup>();
+                go.SetActive(false);
+                entry = new BurstEntry { rt = rt, graphic = g, canvasGroup = cg };
+                burstPool.Add(entry);
+            }
+
+            entry.rt.gameObject.SetActive(true);
+            entry.rt.anchoredPosition = rectTransform.anchoredPosition;
+            entry.rt.localScale = Vector3.one;
+            entry.graphic.color = c;
+            if (entry.canvasGroup != null) entry.canvasGroup.alpha = 1f;
+            entry.coroutine = entry.graphic.StartCoroutine(AnimateBurst(entry, endScale, duration));
+        }
+
+        private System.Collections.IEnumerator AnimateBurst(BurstEntry entry, float endScale, float duration)
+        {
+            float timer = 0f;
+            while (timer < duration)
+            {
+                timer += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(timer / duration);
+                float s = Mathf.Lerp(0.6f, endScale, t);
+                entry.rt.localScale = new Vector3(s, s, 1f);
+                if (entry.canvasGroup != null) entry.canvasGroup.alpha = 1f - t;
+                yield return null;
+            }
+            entry.rt.localScale = Vector3.one;
+            entry.rt.gameObject.SetActive(false);
+            entry.coroutine = null;
         }
 
         private HitRingEntry CreateHitRingEntry()
@@ -977,12 +1054,10 @@ namespace FallenAngel.Gameplay
             return entry;
         }
 
-        private System.Collections.IEnumerator AnimateHitRing(HitRingEntry entry, JudgeResultType result)
+        private System.Collections.IEnumerator AnimateHitRing(HitRingEntry entry, float endScale,
+                                                              float duration, float baseAlpha)
         {
-            float duration = result == JudgeResultType.Perfect ? 0.35f : 0.28f;
-            float endScale = result == JudgeResultType.Perfect ? 5f : 3.8f;
             float timer = 0f;
-            Color baseColor = entry.graphic.RingColor;
 
             // 帧数优化：扩散用 localScale、淡出用 CanvasGroup——全程不重建 UI 网格
             entry.rt.localScale = new Vector3(0.9f, 0.9f, 1f);
@@ -993,13 +1068,22 @@ namespace FallenAngel.Gameplay
                 float s = Mathf.Lerp(0.9f, endScale, t);
                 entry.rt.localScale = new Vector3(s, s, 1f);
                 if (entry.canvasGroup != null)
-                    entry.canvasGroup.alpha = baseColor.a * (1f - t * t); // 先慢后快淡出
+                    entry.canvasGroup.alpha = baseAlpha * (1f - t * t); // 先慢后快淡出
                 yield return null;
             }
 
             entry.rt.localScale = Vector3.one;
             entry.rt.gameObject.SetActive(false);
             entry.coroutine = null;
+        }
+
+        /// <summary>命中放射条池条目</summary>
+        private class BurstEntry
+        {
+            public RectTransform rt;
+            public BurstGraphic graphic;
+            public CanvasGroup canvasGroup;
+            public Coroutine coroutine;
         }
 
         /// <summary>命中扩散环池条目</summary>

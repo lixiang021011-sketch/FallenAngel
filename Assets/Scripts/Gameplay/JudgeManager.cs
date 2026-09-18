@@ -21,6 +21,13 @@ namespace FallenAngel.Gameplay
         /// <summary>有效判定窗口（基础值 × 局内 modifier 倍率）；热路径读缓存实例，不分配</summary>
         private JudgeWindows EffectiveWindows { get { return PlayRules.Windows; } }
 
+        /// <summary>
+        /// 宽音符（横条）的"按下边沿"队列，由 Update 消费。
+        /// 必须用按下而不是按住：此前用 anyHeld，玩家按住任意键时，横条一进入判定窗
+        /// （±200ms，视觉上还在判定线上方约 160px）就被自动判掉——表现为"总是被提前判掉"。
+        /// </summary>
+        private bool widePressQueued;
+
         /// <summary>当前判定结果（供UI订阅显示）</summary>
         public event System.Action<JudgeResultType, int> OnJudgeResult; // (result, lane)
 
@@ -131,9 +138,10 @@ namespace FallenAngel.Gameplay
 
             float songTime = GameManager.Instance.SongTime;
 
-            // 宽音符按压判定
-            if (anyHeld)
+            // 宽音符（横条）判定：只认"按下边沿"，不认"按住"
+            if (widePressQueued)
             {
+                widePressQueued = false;
                 Note wide = NoteSpawner.Instance.GetClosestWideJudgableNote();
                 if (wide != null)
                 {
@@ -257,7 +265,10 @@ namespace FallenAngel.Gameplay
                 GameManager.Instance.CurrentState != GameState.Playing) return;
 
             if (e.isPressed)
+            {
+                widePressQueued = true;   // 横条只认按下边沿（见 Update 的宽音符段）
                 HandlePress(e.laneIndex, e.swipeY, e.swipeKnown);
+            }
             else
                 HandleRelease(e.laneIndex);
         }
