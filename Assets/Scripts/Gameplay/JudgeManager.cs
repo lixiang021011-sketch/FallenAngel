@@ -22,11 +22,29 @@ namespace FallenAngel.Gameplay
         private JudgeWindows EffectiveWindows { get { return PlayRules.Windows; } }
 
         /// <summary>
-        /// 宽音符（横条）的"按下边沿"队列，由 Update 消费。
-        /// 必须用按下而不是按住：此前用 anyHeld，玩家按住任意键时，横条一进入判定窗
-        /// （±200ms，视觉上还在判定线上方约 160px）就被自动判掉——表现为"总是被提前判掉"。
+        /// 本帧是否已因"按下"判掉过一个音符。
+        /// 用途：一次按下只能判掉**一个**音符——此前"按下事件（轨道音符）"与"Update 轮询（横条/拖键）"
+        /// 会在同一帧各判一个，两个音符挨得近时表现为"点一次同时判两个"。
         /// </summary>
-        private bool widePressQueued;
+        private int pressJudgeFrame = -1;
+
+        /// <summary>
+        /// 同刻判定容差（秒）：一次按下可以同时判掉**真同刻**的多个音符（伪双押：横条 + 普通音符）。
+        /// 只是"挨得近"（间隔超过此值）的音符仍需分别输入——两者不要混为一谈。
+        /// </summary>
+        private const float ChordPressTolerance = 0.02f;
+
+        /// <summary>标记本帧的按下已经判掉过音符</summary>
+        private void MarkPressJudged()
+        {
+            pressJudgeFrame = Time.frameCount;
+        }
+
+        /// <summary>本帧的按下是否已经判掉过音符</summary>
+        private bool PressJudgedThisFrame
+        {
+            get { return pressJudgeFrame == Time.frameCount; }
+        }
 
         /// <summary>当前判定结果（供UI订阅显示）</summary>
         public event System.Action<JudgeResultType, int> OnJudgeResult; // (result, lane)
@@ -138,39 +156,16 @@ namespace FallenAngel.Gameplay
 
             float songTime = GameManager.Instance.SongTime;
 
-            // 宽音符（横条）判定：只认"按下边沿"，不认"按住"
-            if (widePressQueued)
-            {
-                widePressQueued = false;
-                Note wide = NoteSpawner.Instance.GetClosestWideJudgableNote();
-                if (wide != null)
-                {
-                    float timeDiff = songTime - wide.Data.time;
-                    JudgeResultType result = EffectiveWindows.Judge(timeDiff);
-                    if (result != JudgeResultType.Miss) // 窗口外：交给 auto-miss，不误判
-                    {
-                        if (wide.Data.type == NoteType.LongStart)
-                        {
-                            // 宽长按头：已有按住中的宽长按时不抢占（单槽位，防重叠宽长按互相覆盖）
-                            if (activeWideHold == null)
-                            {
-                                ApplyJudge(wide, result, wide.Data.lane);
-                                activeWideHold = wide;
-                            }
-                        }
-                        else // Normal 宽音符（kick 单击）
-                        {
-                            ApplyJudge(wide, result, wide.Data.lane);
-                        }
-                    }
-                }
-            }
+            // 宽音符（横条）的判定已移到 HandlePress（TryJudgeWideOnPress）。
+            // 放在按下事件里，"一次按下一个音符"才成立；留在 Update 轮询会与按下事件在同一帧各判一个。
 
             // Drag：按住该轨穿过判定窗即 Perfect（碰即 Perfect）。
             // 只认按下边沿时，「按住等 Drag 经过」会被 NoteSpawner 静默回收，0 分。
             for (int lane = 0; lane < pressStates.Length; lane++)
             {
                 if (!pressStates[lane]) continue;
+                // 本帧按下已经判掉过一个音符 → 轮询不再补刀（防"点一次判两个"）
+                if (PressJudgedThisFrame) break;
                 Note drag = NoteSpawner.Instance.GetClosestJudgableNote(lane, false, NoteType.Drag);
                 if (drag == null) continue;
                 float dragDiff = songTime - drag.Data.time;
@@ -265,12 +260,72 @@ namespace FallenAngel.Gameplay
                 GameManager.Instance.CurrentState != GameState.Playing) return;
 
             if (e.isPressed)
-            {
-                widePressQueued = true;   // 横条只认按下边沿（见 Update 的宽音符段）
                 HandlePress(e.laneIndex, e.swipeY, e.swipeKnown);
-            }
             else
                 HandleRelease(e.laneIndex);
+        }
+
+        /// <summary>
+        /// 宽键（横条）：任意键**按下**可触发，但是"一次按下一个音符"中的那一个。
+        /// 只在本次按下**没有**判到轨道音符时调用（空按 / 窗口外）。
+        /// 返回是否判掉了宽键。
+        /// </summary>
+        private bool TryJudgeWideOnPress()
+        {
+            if (NoteSpawner.Instance == null || GameManager.Instance == null) return false;
+            Note wide = NoteSpawner.Instance.GetClosestWideJudgableNote();
+            if (wide == null) return false;
+
+            float timeDiff = GameManager.Instance.SongTime - wide.Data.time;
+            JudgeResultType result = EffectiveWindows.Judge(timeDiff);
+            if (result == JudgeResultType.Miss) return false;   // 窗口外：交给 auto-miss，不误判
+
+            if (wide.Data.type == NoteType.LongStart)
+            {
+                // 宽长按头：已有按住中的宽长按时不抢占（单槽位，防重叠宽长按互相覆盖）
+                if (activeWideHold != null) return false;
+                ApplyJudge(wide, result, wide.Data.lane);
+                activeWideHold = wide;
+            }
+            else
+            {
+                ApplyJudge(wide, result, wide.Data.lane);   // Normal 宽音符（kick 单击）
+            }
+            MarkPressJudged();
+            return true;
+        }
+
+        /// <summary>
+        /// 伪双押：把与 judgedTime **同刻**（±ChordPressTolerance）的横条一并判掉。
+        /// 只在本次按下已经判掉一个轨道音符之后调用——"一次按下一个"针对的是**不同时刻**的音符，
+        /// 同刻的横条本来就该被这一次按下覆盖（kick 语义：任意键触发）。
+        /// </summary>
+        private int JudgeCoincidentWide(float judgedTime)
+        {
+            if (NoteSpawner.Instance == null || GameManager.Instance == null) return 0;
+            int judged = 0;
+            for (int guard = 0; guard < 4; guard++)
+            {
+                Note wide = NoteSpawner.Instance.GetClosestWideTo(judgedTime, ChordPressTolerance);
+                if (wide == null) break;
+
+                float timeDiff = GameManager.Instance.SongTime - wide.Data.time;
+                JudgeResultType result = EffectiveWindows.Judge(timeDiff);
+                if (result == JudgeResultType.Miss) break;   // 同刻但已过窗（极端情况）：不误判
+
+                if (wide.Data.type == NoteType.LongStart)
+                {
+                    if (activeWideHold != null) break;
+                    ApplyJudge(wide, result, wide.Data.lane);
+                    activeWideHold = wide;
+                }
+                else
+                {
+                    ApplyJudge(wide, result, wide.Data.lane);
+                }
+                judged++;
+            }
+            return judged;
         }
 
         private void HandlePress(int lane, float swipeY = 0f, bool swipeKnown = false)
@@ -290,6 +345,7 @@ namespace FallenAngel.Gameplay
 #if UNITY_EDITOR
                 Debug.Log($"[JudgeManager] Press lane={lane} songTime={songTime:F2} -> No note found (air press)");
 #endif
+                TryJudgeWideOnPress();   // 该轨没有音符：这次按下可以给横条
                 return;
             }
 
@@ -303,6 +359,7 @@ namespace FallenAngel.Gameplay
             if (result == JudgeResultType.Miss)
             {
                 // 太远不判定（空按）；drag 音符保留等后续按（永不 MISS 语义）
+                TryJudgeWideOnPress();   // 轨道音符在窗口外：这次按下可以给横条
                 return;
             }
 
@@ -329,6 +386,8 @@ namespace FallenAngel.Gameplay
 
             // 命中
             ApplyJudge(note, result, lane);
+            MarkPressJudged();
+            JudgeCoincidentWide(note.Data.time);   // 伪双押：同刻的横条一起判掉
 
             // 长按：普通轨跟单轨松开；宽键/kick 跟 Slide 一样由任意键维持
             if (note.Data.type == NoteType.LongStart)

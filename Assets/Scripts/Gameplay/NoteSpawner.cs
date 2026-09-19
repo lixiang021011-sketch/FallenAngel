@@ -535,9 +535,19 @@ namespace FallenAngel.Gameplay
         /// </summary>
         public Note GetClosestWideJudgableNote()
         {
+            return GetClosestWideTo(-1f, -1f);
+        }
+
+        /// <summary>
+        /// 取最靠近 targetTime 的未判定宽音符（kick 语义：4K 谱 lane 0 或 data.wide）。
+        /// targetTime &lt; 0 → 用当前歌曲时间；tolerance ≥ 0 → 只接受 |note.time − targetTime| ≤ tolerance 的候选。
+        /// 用于"伪双押"：横条与普通音符真同刻时，按 targetTime = 普通音符时刻 + 小容差 找到那条横条。
+        /// </summary>
+        public Note GetClosestWideTo(float targetTime, float tolerance)
+        {
             bool isDrumChart = GameManager.Instance != null && GameManager.Instance.CurrentChart != null &&
                                GameManager.Instance.CurrentChart.LaneCount == 4;
-            float songTime = GameManager.Instance != null ? GameManager.Instance.SongTime : 0f;
+            if (targetTime < 0f) targetTime = GameManager.Instance != null ? GameManager.Instance.SongTime : 0f;
             Note best = null;
             float minDiff = float.MaxValue;
 
@@ -549,7 +559,8 @@ namespace FallenAngel.Gameplay
                 bool isWide = note.Data.wide || (isDrumChart && note.Data.lane == 0);
                 if (!isWide) continue;
 
-                float diff = Mathf.Abs(songTime - note.Data.time);
+                float diff = Mathf.Abs(targetTime - note.Data.time);
+                if (tolerance >= 0f && diff > tolerance) continue;
                 if (diff < minDiff)
                 {
                     minDiff = diff;
