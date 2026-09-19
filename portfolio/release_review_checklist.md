@@ -10,12 +10,14 @@
 
 | # | 验收点 | 结论 | 说明 |
 | --- | --- | --- | --- |
-| A8 | 判定线与判定位置统一到**距底 400** | ✅ 通过 | 视觉线与判定同源于 `PlayVisualSpec`；`PlayVisualChecks` 14 项含"视觉线 == 判定线" |
+| A8 | 判定线与判定位置统一到**距底 400** | ✅ 通过 | 视觉线与判定同源于 `PlayVisualSpec`；`PlayVisualChecks` 16 项含"视觉线 == 判定线" |
 | A9a | modifier：**谱面隐身 / 判定线消失** | ✅ 通过（人工实测） | 游戏内调试窗口「MOD 调试」面板；快捷键 1–4 施加、5 清空 |
 | A9b | modifier：**判定窗口放宽/收紧** | ⏸ 人工挂起，**以机器验证为准** | 引擎内人力测不准（80ms 级差异无法用肉眼稳定判断）；`PlayModifierChecks` 8 项 + 面板按钮功能自检均通过 |
 | A10 | **第一版美术** | ✅ 暂时通过 | 符号化色块背景 + 五轨明度阶梯 + 四项判定特效 + 菜单配色。**组件形状仍偏简陋**，下一轮先在 `art_tools/` 出设计稿再过稿入游戏 |
+| A11 | **判定时序三条规则**：伪双押同刻一起判 / 相邻音符分开按 / 横条只认按下边沿 | 🤖 机器验证通过 | 20ms 级时序人工点不准，按既定口径以机器验证为准。`JudgeTimingChecks` 7 项全绿；并经三次变异测试确认能抓回归（放宽容差、去掉同帧护栏、把"按住即判横条"加回去） |
 
-> 自检状态（2026-09-17）：`PortfolioChecks` 95 / `IconGeometryChecks` 27 / `NotePartChecks` 16 / `PlayModifierChecks` 8 / `PlayVisualChecks` 14 = **160 项全绿**。
+> 自检状态（2026-09-19）：`PortfolioChecks` 95 / `IconGeometryChecks` 27 / `NotePartChecks` 16 /
+> `PlayVisualChecks` 16 / `PlayModifierChecks` 8 / `JudgeTimingChecks` 7 / `NoteShapeChecks` 4 = **173 项全绿**。
 > 场景提示：`ModifierManager` / `PlayVisibilityController` 由 `SceneBuilder` 装配；调试窗口已改为 `EnsureInstance` 就地兜底，**不重建场景也能用**。
 
 | # | 验收点 | 预期表现 | 怎么看 |

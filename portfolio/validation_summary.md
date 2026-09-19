@@ -2,7 +2,7 @@
 
 > **为什么有这份文件**：原始报告写在 `Logs/` 下，而 `Logs/` 在 `.gitignore` 里、不随仓库分发。
 > 这份文件把每一项验证的**结论、日期与复现方式**固定进仓库，原始日志仍在本地。
-> 最后更新：2026-09-13。
+> 最后更新：2026-09-19。
 
 ---
 
@@ -13,10 +13,16 @@
 | `PortfolioChecks` | 95 | **PASS 95 / 0** | 配置表一致性、天赋前置与排他、存档事务与幂等、地图与掉落、折扣与利息叠加 |
 | `IconGeometryChecks` | 27 | **PASS 27 / 0** | 图标墨迹包围盒中心偏移 ≤1px、不溢出宿主矩形 |
 | `NotePartChecks` | 16 | **PASS 16 / 0** | 音符 head / body / tail 部件存在性与顺序、网格非空、不溢出、配色、同押连线几何 |
-| `PlayVisualChecks` | 11 | **PASS 11 / 0** | 判定线视觉位置 == 音符判定位置、按键区不越线、演奏背景已挂载、Miss 特效已接线、modifier 调试窗口可安装 |
+| `NoteShapeChecks` | 4 | **PASS 4 / 0** | 音符厚度（tap 130×28，加厚 ×2 已生效）、八类形状几何不溢出自身包围盒 |
+| `PlayVisualChecks` | 16 | **PASS 16 / 0** | 判定线视觉位置 == 音符判定位置、按键区不越线、轨道占屏 ≥90%、音符宽度随轨宽自适配、演奏背景已挂载、Miss 特效已接线、modifier 调试窗口可安装且按钮真的生效 |
+| `PlayModifierChecks` | 8 | **PASS 8 / 0** | 判定窗口倍率乘法叠加、同 id 刷新不叠加、按歌曲时间失效、判定线/谱面隐身、清空复位 |
+| `JudgeTimingChecks` | 7 | **PASS 7 / 0** | 伪双押同刻一起判、相邻音符分开按、同刻容差边界、真双押两次按下、横条只认按下边沿、同一次按下同帧不补刀 |
+
+合计 **173 项**，2026-09-19 无头重跑全绿（每组进程退出码 0）。
 
 原始日志（本地、不入库）：`Logs/portfolio_report_20260910.txt`、`Logs/icon_geometry_check.txt`、
-`Logs/note_part_check.txt`、`Logs/play_visual_check.txt`。
+`Logs/note_part_check.txt`、`Logs/play_visual_check.txt`、`Logs/play_modifier_check.txt`、
+`Logs/judge_timing_check.txt`。
 
 ### 复现方式
 
@@ -25,7 +31,8 @@
 ```powershell
 $unity = 'D:\unity\2022.3.62f3c1\Editor\Unity.exe'
 $proj  = 'C:\Users\LorXer\Documents\trae_projects\FallenAngel'
-foreach ($m in 'PortfolioChecks','IconGeometryChecks','NotePartChecks','PlayVisualChecks') {
+foreach ($m in 'PortfolioChecks','IconGeometryChecks','NotePartChecks','NoteShapeChecks',
+               'PlayVisualChecks','PlayModifierChecks','JudgeTimingChecks') {
   & $unity -batchmode -nographics -quit -projectPath $proj `
     -executeMethod "FallenAngel.Core.$m.Run" -logFile "$proj\Logs\$m.log"
 }
@@ -105,7 +112,50 @@ I0 的 90% 阈值一票否决，导致 85% 与 60% 玩家收益相同；付费�
 
 ---
 
-## 四、相关图表
+## 四、判定时序规则（2026-09-19）
+
+**问题**：一次按下会命中两条路径——① 按下事件（`JudgeManager.HandlePress`）判轨道音符；
+② 帧轮询（`Update`：drag 保持、曾经的宽键轮询）补刀。两条路径在同一帧各判一个，
+表现为**两个音符挨得近时"点一次判两个"**；反之，宽键曾被 `anyHeld` 轮询提前判掉
+（横条还在判定线上方 160px 就被判），玩家看到的时机与判定时机不一致。
+
+**规则**（`ChordPressTolerance = 20ms`，仅这一个常量控制同刻口径）：
+
+| 场景 | 规则 |
+| --- | --- |
+| 真同刻（±20ms）横条 + 普通音符 = **伪双押** | 一次按下**一起判**（kick 语义：任意键触发） |
+| 只是挨得近（不同刻） | 一次按下**只判一个**，另一个要再按一次（帧护栏 `PressJudgedThisFrame`） |
+| 真双押（不同轨、同一时刻） | 走两次按下事件，各自判一个，不受影响 |
+| 横条（宽键） | **只认按下边沿**：按住不放、音符随后进窗也不会被判掉 |
+
+**为什么必须机器验证**：这几条都是 20ms 量级的时序规则，人力在引擎里点不准。
+`JudgeTimingChecks` 用真实装配的 `NoteSpawner` + `JudgeManager` + `InputManager` 沙箱、
+经 `SimulateLaneInput` 走真实按下事件路径，断言 `Note.IsJudged` 与判定计数。
+
+**自检本身的有效性（变异测试）**——三个变异都被对应用例判 FAIL：
+
+| 变异 | 被抓到的用例 |
+| --- | --- |
+| `ChordPressTolerance` 0.02 → 1.0 | 容差外 +30ms 分开按 |
+| 去掉同帧护栏 `PressJudgedThisFrame` | 同一次按下同帧不补刀 |
+| 把"按住即判横条"的旧行为加回 `Update` | 横条只认按下边沿 |
+
+**踩到的坑（供以后写 play 级自检参考）**：
+
+1. 批处理**不在播放模式**，`Awake` / `OnEnable` 不会执行——单例全空、输入事件没人订阅，
+   按下事件根本到不了判定。自检须显式补上（反射设单例 + 接事件），不能假设唤醒会跑。
+2. `JudgeManager.Update` 开头有 `CurrentChart == null → return` 守卫。沙箱不挂谱面时
+   帧轮询整段被跳过，用例会**假通过**（什么都没测到还全 PASS）。沙箱必须挂一张 v2 五键谱。
+
+**未覆盖的边界（诚实声明）**：批处理里帧号不推进，用例只能锁"同一次按下同帧"的行为；
+drag「按住穿过判定窗即 Perfect」的**跨帧**语义仍靠实机。
+
+**首个版本曾改错**：先做成"一次按下一个"，把正常的伪双押也挡掉了。规则必须按**是否同刻**区分，
+而不是一律只判一个——这也是把这几条锁进自检的直接原因。
+
+---
+
+## 五、相关图表
 
 - `portfolio/figures/fig_loop.png` —— 双层循环示意
 - `portfolio/figures/fig_income.png` —— 收益构成示意
