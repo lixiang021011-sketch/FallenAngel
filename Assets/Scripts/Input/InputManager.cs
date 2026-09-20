@@ -17,6 +17,12 @@ namespace FallenAngel.InputSystem
         public bool swipeKnown;
         public bool isPressed;       // true=按下, false=抬起
         public Vector2 touchPos;     // 触屏位置（屏幕坐标）
+        /// <summary>
+        /// 本次输入对应的**歌曲时间**（秒）。
+        /// 触屏 = 事件自带的时间戳换算（同一帧里晚读到的触摸，按它真实发生的时刻算）；
+        /// 键盘/编辑器鼠标 = 当前帧的歌曲时间。判定用它，而不是帧采样的 SongTime。
+        /// </summary>
+        public float musicTime;
     }
 
     /// <summary>
@@ -364,6 +370,15 @@ namespace FallenAngel.InputSystem
         /// </summary>
         private void SetLaneState(int lane, bool pressed, Vector2 touchPos, bool fromTouch = false)
         {
+            // 默认时间戳 = 本帧歌曲时间。触屏事件真正自带时间戳的路径见 SetLaneStateAt
+            //（legacy Input 拿不到触摸事件时间，接 EnhancedTouch 后由那条路补上）
+            float musicTime = GameManager.Instance != null ? GameManager.Instance.SongTime : 0f;
+            SetLaneStateAt(lane, pressed, touchPos, fromTouch, musicTime);
+        }
+
+        /// <summary>按指定歌曲时间触发音轨事件（自检注入事件时间戳用）</summary>
+        private void SetLaneStateAt(int lane, bool pressed, Vector2 touchPos, bool fromTouch, float musicTime)
+        {
             if (lane < 0 || lane >= LanePressStates.Length) return;
             LanePressStates[lane] = pressed;
 
@@ -373,7 +388,8 @@ namespace FallenAngel.InputSystem
                 isPressed = pressed,
                 touchPos = touchPos,
                 swipeKnown = fromTouch,
-                swipeY = fromTouch && laneSwipeY.TryGetValue(lane, out float swipe) ? swipe : 0f
+                swipeY = fromTouch && laneSwipeY.TryGetValue(lane, out float swipe) ? swipe : 0f,
+                musicTime = musicTime
             };
             OnLaneInput?.Invoke(this, args);
         }
@@ -426,6 +442,17 @@ namespace FallenAngel.InputSystem
             int count = Mathf.Max(1, LanePressStates.Length);
             Vector2 pos = new Vector2(Screen.width * (lane + 0.5f) / count, Screen.height * 0.3f);
             SetLaneState(lane, pressed, pos);
+        }
+
+        /// <summary>
+        /// 自检用：按**指定的歌曲时间**注入一次音轨输入，模拟"引擎晚读到触摸事件"
+        /// （判定必须按事件时间戳算，而不是按当前帧的 SongTime）。
+        /// </summary>
+        public void SimulateLaneInputAt(int lane, bool pressed, float musicTime)
+        {
+            int count = Mathf.Max(1, LanePressStates.Length);
+            Vector2 pos = new Vector2(Screen.width * (lane + 0.5f) / count, Screen.height * 0.3f);
+            SetLaneStateAt(lane, pressed, pos, false, musicTime);
         }
 
         private void OnDestroy()

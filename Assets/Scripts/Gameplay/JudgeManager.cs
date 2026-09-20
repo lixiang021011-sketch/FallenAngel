@@ -260,9 +260,9 @@ namespace FallenAngel.Gameplay
                 GameManager.Instance.CurrentState != GameState.Playing) return;
 
             if (e.isPressed)
-                HandlePress(e.laneIndex, e.swipeY, e.swipeKnown);
+                HandlePress(e.laneIndex, e.swipeY, e.swipeKnown, e.musicTime);
             else
-                HandleRelease(e.laneIndex);
+                HandleRelease(e.laneIndex, e.musicTime);
         }
 
         /// <summary>
@@ -328,14 +328,16 @@ namespace FallenAngel.Gameplay
             return judged;
         }
 
-        private void HandlePress(int lane, float swipeY = 0f, bool swipeKnown = false)
+        private void HandlePress(int lane, float swipeY = 0f, bool swipeKnown = false, float musicTime = -1f)
         {
             if (NoteSpawner.Instance == null)
             {
                 Debug.LogWarning("[JudgeManager] NoteSpawner.Instance is null!");
                 return;
             }
-            float songTime = GameManager.Instance.SongTime;
+            // 判定时刻 = 输入事件自己的时刻（时间戳管线见 InputManager.LaneInputArgs.musicTime）：
+            // 引擎晚读到的触摸要按它真实发生的时刻判；没有时间戳的调用者回退到本帧 SongTime。
+            float songTime = musicTime >= 0f ? musicTime : GameManager.Instance.SongTime;
 
             Note note = NoteSpawner.Instance.GetClosestJudgableNote(lane, false);
 
@@ -410,9 +412,10 @@ namespace FallenAngel.Gameplay
                 activeSlides.Add(note);
         }
 
-        private void HandleRelease(int lane)
+        private void HandleRelease(int lane, float musicTime = -1f)
         {
-            float songTime = GameManager.Instance.SongTime;
+            // 释放时刻同样按事件时间戳算（长按尾判定 20ms 量级，差一帧就是档位差）
+            float songTime = musicTime >= 0f ? musicTime : GameManager.Instance.SongTime;
 
             // 检查是否是长按的释放
             int longId = laneHoldLongId[lane];

@@ -64,7 +64,9 @@ namespace FallenAngel.Core
 
             string summary = string.Format(
                 "判定时序自检：{0} 项通过 / {1} 项异常" +
-                "（判定：伪双押同刻一起判 + 相邻音符分开判 + 容差边界 + 真双押 + 横条只认按下边沿 + 同帧不补刀）",
+                "（判定：伪双押同刻一起判 + 相邻音符分开判 + 容差边界 + 真双押 + 横条只认按下边沿 + " +
+                "同帧不补刀 + 输入事件时间戳参与判定）" +
+                "；注：真实触摸时间戳需接 EnhancedTouch（新输入系统），当前触摸事件的时间戳 = 本帧歌曲时间",
                 pass, fail);
             foreach (string line in lines) Debug.Log("[JudgeTiming] " + line);
             Debug.Log("[JudgeTiming] " + summary);
@@ -211,6 +213,23 @@ namespace FallenAngel.Core
                     string.Format("按下判 {0} 个、同帧轮询后仍 {1} 个（drag 未判={2}）",
                         judgedByPress, judgedAfterPoll, !drag.IsJudged));
             }
+
+            // ⑦ 事件时间戳参与判定：这一帧引擎读到触摸时歌曲时间已经走到 10.150，
+            //    但触摸**真实发生**在 10.020。按帧时间判算成 +150ms（Great），
+            //    按事件时间戳判才是 +20ms（Perfect）——这正是低帧/高刷下判定抖动的来源。
+            using (var sb = new Sandbox())
+            {
+                Note tap = sb.AddNote(new NoteData(2, 10.000f, NoteType.Normal));
+
+                sb.SetSongTime(10.150f);
+                sb.PressAt(2, 10.020f);
+
+                check("输入事件时间戳参与判定",
+                    tap.IsJudged && sb.Judge.PerfectCount == 1 && sb.Judge.GreatCount == 0,
+                    string.Format("帧时间 10.150、触摸时间 10.020 → 判 {0}（Perfect={1} Great={2}）",
+                        tap.IsJudged ? tap.JudgeResult.ToString() : "未判",
+                        sb.Judge.PerfectCount, sb.Judge.GreatCount));
+            }
         }
 
         /// <summary>
@@ -292,10 +311,18 @@ namespace FallenAngel.Core
                 SetSongTime(0f);
             }
 
-            public void SetSongTime(float t) { PSongTime.SetValue(Game, t); }
+            private float sandboxSongTime;
+
+            public void SetSongTime(float t) { PSongTime.SetValue(Game, t); sandboxSongTime = t; }
             public void SetState(GameState s) { PState.SetValue(Game, s); }
-            public void Press(int lane) { Input.SimulateLaneInput(lane, true); }
-            public void Release(int lane) { Input.SimulateLaneInput(lane, false); }
+
+            // 注入输入时显式带上"事件时刻 = 当前沙箱歌曲时间"：
+            // 判定从此按输入自己的时间戳算，不再依赖真实时钟（batchmode 里没有 Update 在推进它）。
+            public void Press(int lane) { Input.SimulateLaneInputAt(lane, true, sandboxSongTime); }
+            public void Release(int lane) { Input.SimulateLaneInputAt(lane, false, sandboxSongTime); }
+
+            /// <summary>按指定音乐时间注入一次按下（模拟"引擎晚读到的触摸事件"）</summary>
+            public void PressAt(int lane, float musicTime) { Input.SimulateLaneInputAt(lane, true, musicTime); }
 
             /// <summary>四个单例是否都指向本沙箱的实例（指向别人 = 后面测的不是这套对象）</summary>
             public bool InstancesMatch
