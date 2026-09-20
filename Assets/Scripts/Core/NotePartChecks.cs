@@ -19,13 +19,18 @@ namespace FallenAngel.Core
     ///   ② 部件网格是否真的生成、是否溢出自身矩形（运行时自建 UI 最易静默失败的一环）；
     ///   ③ 部件矩形与音符矩形是否一致（含 kick 全宽条）；
     ///   ④ 绘制顺序：身体 → 尾 → 头 → 图标（头部圆角压住身体接缝，图标在头之上）；
-    ///   ⑤ 配色：头 = 轨道语义色，尾 = 头部提亮版，身体/路径 = 同色半透明；
-    ///   ⑥ 尾部件位置跟随身体顶端（hold）/ 路径终点（slide）。
+    ///   ⑤ 配色：头 = 轨道语义色，尾 = 头部提亮版，身体/轨迹 = 同色半透明；
+    ///   ⑥ **带子逐高度贴合轨道**（作者 2026-09-20 的"音符任何时候都和轨道一样宽"）：
+    ///      长按身体与 slide 轨迹的采样折线换算到画布中心系后，宽度必须等于该高度的轨道宽（越界 0）；
+    ///      并且要在"贴着判定线"的位置量一次——那里带子会横跨透视折点，最容易露馅；
+    ///   ⑦ 尾部件落在带子末端，且宽度不超过它所在高度的轨道宽。
     /// 只读，不改场景与资源；菜单与 batchmode（-executeMethod FallenAngel.Core.NotePartChecks.Run）两用。
     /// </summary>
     public static class NotePartChecks
     {
-        private static readonly Vector2 SpawnPos = new Vector2(0f, 600f);
+        // 生成点取游戏真实值（PlayVisualSpec.SpawnYFromCenter = 1200）：自检要量玩家看到的几何，
+        // 而不是 NoteSpawner 上的字段缺省 600（总场景由 SceneBuilder 覆盖成 1200）。
+        private static readonly Vector2 SpawnPos = new Vector2(0f, PlayVisualSpec.SpawnYFromCenter);
         // 判定位置取自唯一来源（PlayVisualSpec），别在这里写死——否则视觉改了、自检还在测旧几何
         private static readonly Vector2 JudgePos = new Vector2(0f, PlayVisualSpec.JudgeLineY);
         private const float TolerancePx = 0.5f;
@@ -68,6 +73,13 @@ namespace FallenAngel.Core
             var lines = new List<string>();
             int pass = 0, fail = 0;
             int savedLaneCount = LaneLayout.ActiveLaneCount;
+            // 透视几何必须与装配用的 SpawnPos/JudgePos 一致（带子宽度按画布高度取轨道半宽，
+            // 几何不同源就会量出假偏差）。
+            float savedSpawnY = PlayPerspective.SpawnY;
+            float savedJudgeY = PlayPerspective.JudgeY;
+            bool savedPerspective = PlayPerspective.Enabled;
+            PlayPerspective.Enabled = true;
+            PlayPerspective.SetGeometry(SpawnPos.y, JudgePos.y);
 
             foreach (Case c in BuildCases())
             {
@@ -101,8 +113,10 @@ namespace FallenAngel.Core
             }
 
             LaneLayout.SetActiveLaneCount(savedLaneCount);
+            PlayPerspective.SetGeometry(savedSpawnY, savedJudgeY);
+            PlayPerspective.Enabled = savedPerspective;
 
-            string summary = string.Format("音符部件自检：{0} 项通过 / {1} 项异常（判定：部件齐全 + 网格非空 + 不溢出矩形 + 顺序/配色/尾位置一致 + 同押配对与连线几何正确）", pass, fail);
+            string summary = string.Format("音符部件自检：{0} 项通过 / {1} 项异常（判定：部件齐全 + 网格非空 + 不溢出矩形 + 顺序/配色/尾位置一致 + 带子逐高度贴合轨道 + 同押配对与连线几何正确）", pass, fail);
             foreach (string line in lines) Debug.Log("[NotePart] " + line);
             Debug.Log("[NotePart] " + summary);
             try
@@ -152,9 +166,9 @@ namespace FallenAngel.Core
             var headRect = (RectTransform)Field("headRect").GetValue(note);
             var tail = (NoteHeadGraphic)Field("tailGraphic").GetValue(note);
             var tailRect = (RectTransform)Field("tailRect").GetValue(note);
-            var body = (GradientImage)Field("bodyGraphic").GetValue(note);
+            var body = (NoteBandGraphic)Field("bodyGraphic").GetValue(note);
             var bodyRect = (RectTransform)Field("bodyRect").GetValue(note);
-            var ribbon = (SlidePathGraphic)Field("slidePathGraphic").GetValue(note);
+            var ribbon = (NoteBandGraphic)Field("slidePathGraphic").GetValue(note);
             var link = (NoteLinkGraphic)Field("linkGraphic").GetValue(note);
 
             bool bookkeeping = c.Data.type == NoteType.LongEnd || c.Data.type == NoteType.LongBody;
@@ -216,7 +230,7 @@ namespace FallenAngel.Core
             if (c.Data.type == NoteType.Flick && (arrow == null || !arrow.gameObject.activeSelf))
             { ok = false; notes.Add("flick 方向箭头未显示"); }
 
-            // ⑤ 身体 / 路径
+            // ⑤ 身体 / 轨迹（带子几何 + 尾部件）
             if (hold)
             {
                 if (body == null || !body.gameObject.activeSelf) { ok = false; notes.Add("长按身体未显示"); }
@@ -224,28 +238,31 @@ namespace FallenAngel.Core
                 {
                     if (!Approx(body.bottomColor, new Color(laneColor.r, laneColor.g, laneColor.b, 0.9f))) { ok = false; notes.Add("身体近端未取轨道色"); }
                     if (body.topColor.a <= 0.01f) { ok = false; notes.Add("身体远端全透明（尾标记会与连接段脱节）"); }
-                    float expectY = bodyRect.sizeDelta.y * Mathf.Clamp01(bodyRect.localScale.y);
-                    if (Mathf.Abs(tailRect.anchoredPosition.y - expectY) > TolerancePx || Mathf.Abs(tailRect.anchoredPosition.x) > TolerancePx)
-                    { ok = false; notes.Add($"尾部件未贴身体顶端 y={tailRect.anchoredPosition.y:0.0} 期望 {expectY:0.0}"); }
-                    else metrics.Add($"尾 y={tailRect.anchoredPosition.y:0.0}（身体 {bodyRect.sizeDelta.y:0.0}×{bodyRect.sizeDelta.x:0.0}，远端 α={body.topColor.a:0.00}）");
+                    // 带子的形状由「画布高度 → 轨道半宽」决定，所以本身不能被缩放
+                    if (Mathf.Abs(bodyRect.localScale.y - 1f) > 0.001f)
+                    { ok = false; notes.Add($"身体被缩放 {bodyRect.localScale.y:0.###}（带子靠画布高度取宽，缩放会让宽窄对不上轨道）"); }
+
+                    // 下落中：出生点附近整条带子都在尺寸下限区，是等宽带
+                    if (!InspectBandAndTail(body, noteRect, tailRect, "身体", notes, metrics)) ok = false;
+
+                    // 贴判定线（真实按住时的姿态）：带子横跨透视折点，这里才量得出折线是否贴合
+                    noteRect.anchoredPosition = new Vector2(noteRect.anchoredPosition.x, JudgePos.y);
+                    Method("UpdateTailPart").Invoke(note, null);
+                    if (!InspectBandAndTail(body, noteRect, tailRect, "身体@判定线", notes, metrics)) ok = false;
                 }
             }
             if (slide)
             {
-                if (ribbon == null || !ribbon.gameObject.activeSelf) { ok = false; notes.Add("slide 路径未显示"); }
-                else if (!Approx(ribbon.HeadColor, new Color(laneColor.r, laneColor.g, laneColor.b, 0.55f)))
-                { ok = false; notes.Add("slide 路径未取轨道色"); }
+                if (ribbon == null || !ribbon.gameObject.activeSelf) { ok = false; notes.Add("slide 轨迹未显示"); }
+                else
+                {
+                    if (!Approx(ribbon.bottomColor, new Color(laneColor.r, laneColor.g, laneColor.b, 0.55f)))
+                    { ok = false; notes.Add("slide 轨迹未取轨道色"); }
+                    if (ribbon.topColor.a > 0.01f) { ok = false; notes.Add("slide 轨迹远端应完全透明（收尾渐隐）"); }
 
-                float fallDistance = Mathf.Abs(SpawnPos.y - JudgePos.y);
-                float fallTime = GameManager.Instance != null ? GameManager.Instance.ActualFallTime : 2f;
-                float startX = LaneLayout.GetXFromLaneCoord(c.Data.path[0].x);
-                float endX = LaneLayout.GetXFromLaneCoord(c.Data.path[c.Data.path.Count - 1].x);
-                float expectX = endX - startX;
-                float expectY = fallDistance / Mathf.Max(0.01f, fallTime);
-                if (Mathf.Abs(tailRect.anchoredPosition.x - expectX) > TolerancePx ||
-                    Mathf.Abs(tailRect.anchoredPosition.y - expectY) > TolerancePx)
-                { ok = false; notes.Add($"slide 尾部件未贴路径终点 {Fmt(tailRect.anchoredPosition)} 期望 ({expectX:0.0},{expectY:0.0})"); }
-                else metrics.Add($"尾 {Fmt(tailRect.anchoredPosition)} = 路径终点（{c.Data.path.Count} 点）");
+                    // 轨迹也是带子：宽度逐高度贴合轨道；尾部件要落在轨迹末端（不是"照公式抄一遍"）
+                    if (!InspectBandAndTail(ribbon, noteRect, tailRect, "轨迹", notes, metrics)) ok = false;
+                }
             }
 
             // ⑥ kick 全宽
@@ -265,6 +282,143 @@ namespace FallenAngel.Core
         {
             return inner.xMin >= outer.xMin - 1f && inner.xMax <= outer.xMax + 1f &&
                    inner.yMin >= outer.yMin - 1f && inner.yMax <= outer.yMax + 1f;
+        }
+
+        // ============================================================
+        // 带子几何：任何高度上带子边缘 == 轨道边缘（作者 2026-09-20 的要求）
+        // ============================================================
+
+        private sealed class BandReport
+        {
+            public bool Ok;
+            public int Vertices;
+            public Vector2 CanvasEnd;
+            public string Detail = "";
+        }
+
+        /// <summary>带子 + 尾部件一次量完，通过则记一行量化结果。</summary>
+        private static bool InspectBandAndTail(NoteBandGraphic band, RectTransform noteRect, RectTransform tailRect,
+                                               string label, List<string> notes, List<string> metrics)
+        {
+            BandReport report = InspectBand(band, noteRect, label, notes);
+            if (!report.Ok) return false;
+
+            string metric = "";
+            bool ok = true;
+            if (tailRect != null) ok = InspectTail(noteRect, tailRect, report.CanvasEnd, label, notes, out metric);
+
+            metrics.Add(string.Format("{0}带 {1} 顶点 {2}{3}", label, report.Vertices, report.Detail,
+                metric.Length > 0 ? "；" + metric : ""));
+            return ok;
+        }
+
+        /// <summary>
+        /// 带子贴合自检。带子自己报出「局部 → 画布」映射和采样折线（画布单位），这里做三件事：
+        ///   ① 映射必须等于音符真实变换链（自带缩放 × 音符缩放）——漏掉缩放补偿会在这里红；
+        ///   ② 每个采样点的宽度必须等于该画布高度上的轨道宽（越界 0）；
+        ///   ③ 采样点之间再按线性插值比一次——折点（尺寸下限拐点）没插结点会在这里红。
+        /// </summary>
+        private static BandReport InspectBand(NoteBandGraphic band, RectTransform noteRect,
+                                              string label, List<string> notes)
+        {
+            var report = new BandReport();
+            if (band == null) { notes.Add(label + "带子缺失"); return report; }
+
+            var centers = new List<Vector2>();
+            var halves = new List<float>();
+            Rect meshBounds;
+            report.Vertices = band.BuildDebugGeometry(centers, halves, out meshBounds);
+            if (report.Vertices <= 0 || centers.Count < 2)
+            {
+                notes.Add(label + "带子网格未生成");
+                return report;
+            }
+            report.CanvasEnd = centers[centers.Count - 1];
+
+            // ① 局部 → 画布映射：带子报出来的必须和音符真实变换一致
+            float noteScale = noteRect.localScale.x;
+            float expectScale = noteScale * band.rectTransform.localScale.x;
+            if (Mathf.Abs(band.DebugCanvasScale - expectScale) > 0.001f ||
+                Mathf.Abs(band.DebugCanvasOrigin.y - noteRect.anchoredPosition.y) > TolerancePx)
+            {
+                notes.Add(string.Format("{0}带子坐标系错位：原点 y {1:0.0}（音符 {2:0.0}）、缩放 {3:0.###}（期望 {4:0.###}）",
+                    label, band.DebugCanvasOrigin.y, noteRect.anchoredPosition.y, band.DebugCanvasScale, expectScale));
+                return report;
+            }
+
+            // ②③ 逐段比对：段内线性插值与网格折线同构，所以能抓住"漏插折点"的外鼓
+            float laneWidth = LaneLayout.LaneWidth;
+            float worstOut = 0f, worstIn = 0f;
+            for (int i = 0; i < centers.Count - 1; i++)
+            {
+                for (int k = 0; k <= 8; k++)
+                {
+                    float u = k / 8f;
+                    float y = Mathf.Lerp(centers[i].y, centers[i + 1].y, u);
+                    float width = 2f * Mathf.Lerp(halves[i], halves[i + 1], u);
+                    float over = width - laneWidth * PlayPerspective.SizeScaleAtY(y);
+                    worstOut = Mathf.Max(worstOut, over);
+                    worstIn = Mathf.Max(worstIn, -over);
+                }
+            }
+
+            // 网格顶点（局部单位）换算回画布后，应等于采样折线的包围盒——防止"采样对、画错"
+            float minX = float.MaxValue, maxX = float.MinValue, minY = float.MaxValue, maxY = float.MinValue;
+            for (int i = 0; i < centers.Count; i++)
+            {
+                minX = Mathf.Min(minX, centers[i].x - halves[i]);
+                maxX = Mathf.Max(maxX, centers[i].x + halves[i]);
+                minY = Mathf.Min(minY, centers[i].y);
+                maxY = Mathf.Max(maxY, centers[i].y);
+            }
+            float s = band.DebugCanvasScale;
+            bool meshOk = Mathf.Abs(band.DebugCanvasOrigin.x + meshBounds.xMin * s - minX) <= TolerancePx &&
+                          Mathf.Abs(band.DebugCanvasOrigin.x + meshBounds.xMax * s - maxX) <= TolerancePx &&
+                          Mathf.Abs(band.DebugCanvasOrigin.y + meshBounds.yMin * s - minY) <= TolerancePx &&
+                          Mathf.Abs(band.DebugCanvasOrigin.y + meshBounds.yMax * s - maxY) <= TolerancePx;
+            if (!meshOk)
+            {
+                notes.Add(label + "带子网格与采样折线不一致（顶点换算有误）");
+                return report;
+            }
+
+            report.Ok = worstOut <= TolerancePx && worstIn <= TolerancePx;
+            report.Detail = string.Format("越界 {0:0.###}px / 内缩 {1:0.###}px（{2} 采样点）",
+                Mathf.Max(0f, worstOut), Mathf.Max(0f, worstIn), centers.Count);
+            if (!report.Ok) notes.Add(label + "带子未贴合轨道：" + report.Detail);
+            return report;
+        }
+
+        /// <summary>
+        /// 尾部件自检：① 落在带子末端（画布中心系比较——能抓住漏掉的画布↔局部换算，长按越长偏得越多）；
+        /// ② 画布宽度不超过它所在高度的轨道宽（否则长按顶端的尾标记会戳出轨道）。
+        /// </summary>
+        private static bool InspectTail(RectTransform noteRect, RectTransform tailRect, Vector2 expectCanvasEnd,
+                                        string label, List<string> notes, out string metric)
+        {
+            float noteScale = Mathf.Max(0.0001f, noteRect.localScale.x);
+            Vector2 tailCanvas = new Vector2(noteRect.anchoredPosition.x, noteRect.anchoredPosition.y) +
+                                 tailRect.anchoredPosition * noteScale;
+            bool ok = true;
+            if (Mathf.Abs(tailCanvas.x - expectCanvasEnd.x) > TolerancePx ||
+                Mathf.Abs(tailCanvas.y - expectCanvasEnd.y) > TolerancePx)
+            {
+                ok = false;
+                notes.Add(string.Format("{0}尾部件不在带子末端：画布 {1} vs {2}", label, Fmt(tailCanvas), Fmt(expectCanvasEnd)));
+            }
+
+            float tailCanvasWidth = tailRect.sizeDelta.x * tailRect.localScale.x * noteScale;
+            float laneWidthAtTail = LaneLayout.LaneWidth * PlayPerspective.SizeScaleAtY(tailCanvas.y);
+            if (tailCanvasWidth > laneWidthAtTail + TolerancePx)
+            {
+                ok = false;
+                notes.Add(string.Format("{0}尾部件戳出轨道：画布宽 {1:0.0} > 该高度轨宽 {2:0.0}",
+                    label, tailCanvasWidth, laneWidthAtTail));
+            }
+
+            metric = string.Format("尾 画布 {0}、宽 {1:0.0} ≤ 轨宽 {2:0.0}",
+                Fmt(tailCanvas), tailCanvasWidth, laneWidthAtTail);
+            return ok;
         }
 
         // ============================================================

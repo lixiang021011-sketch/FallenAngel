@@ -57,3 +57,17 @@ Assets/Resources/Audio/
 
 # AI 生成概念图输出（体积大，不入库；workflow JSON 与脚本保留）
 art_tools/ai_imagegen/out/
+# 透视 / 带子对比图（由 art_tools/note_perspective/*.py 生成，本机过稿用，不入库）
+art_tools/note_perspective/out/
+# ---- 本地自测曲包（第三方版权素材，仅本机；禁止提交） ----
+# 来源：storage.sekai.best（官方 SUS 谱面 + 音频），版权归 SEGA / Colorful Palette 及原曲权利方。
+# 仅用于作者本机自测；不含在任何分发范围内。删除本段前请先确认素材已移出仓库。
+/Assets/Resources/Charts/pjsk_0001_tell_your_world.json
+/Assets/Resources/Charts/pjsk_0001_tell_your_world.json.meta
+/Assets/Resources/Charts/pjsk_0003_teo.json
+/Assets/Resources/Charts/pjsk_0003_teo.json.meta
+/Assets/Resources/Charts/pjsk_0008_time_machine.json
+/Assets/Resources/Charts/pjsk_0008_time_machine.json.meta
+/Assets/Resources/Charts/pjsk_0010_happy_synthesizer.json
+/Assets/Resources/Charts/pjsk_0010_happy_synthesizer.json.meta
+# 音频无需在此列出：上面第 56 行的 `Assets/Resources/Audio/` 已整体忽略（既有规则）

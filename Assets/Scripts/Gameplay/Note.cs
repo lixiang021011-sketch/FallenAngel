@@ -37,18 +37,22 @@ namespace FallenAngel.Gameplay
         private Vector3 originalScale;
         private Color originalNoteColor;
 
-        // 长按身体：运行时自生成（GradientImage 顶点色渐变，零纹理/预制体依赖）
-        private GradientImage bodyGraphic;
+        // 长按身体：运行时自生成（NoteBandGraphic 梯形带，零纹理/预制体依赖）
+        // 带子宽度按"当前画布高度上轨道的半宽"取，所以身体与轨道在任意高度都严丝合缝
+        private NoteBandGraphic bodyGraphic;
         private RectTransform bodyRect;
         private bool bodyCreatedLogged;
+        private float bodyShrink = 1f;                   // 身体可见比例（1 = 全长；按住时随 HoldProgress 收缩）
 
         // ===== 视觉增强：近大远小 / 鼓件图标 / 命中扩散环 =====
-        private const float PerspectiveMinScale = 0.55f; // 出生（屏幕顶部）时的缩放
+        // 出生（屏幕顶部）时的缩放下限已统一到 PlayPerspective.MinScale（0.35，作者 2026-09-20 选型 B）；
+        // 原来的线性 0.55 是没和轨道对齐的旧版，已删。
         private float hitScale = 1f;                     // 命中特效缩放（与透视分层，避免互抢 localScale）
 
         /// <summary>
-        /// 普通音符宽度：配表里 tap 是 130（按参考轨宽 140 设计），
-        /// **实际宽度随当前轨道宽自适配**——轨道加宽后音符跟着变宽，否则会缩在轨道中间。
+        /// 普通音符宽度：配表里 tap = 130，而参考轨宽也是 130，
+        /// 所以 **tap 恒定等于整条轨道宽**（作者 2026-09-20：音符任何时候都和轨道一样宽），
+        /// 再乘透视缩放 PlayPerspective.SizeScale 保证任意高度都贴合梯形轨道。
         /// </summary>
         public static float DefaultNoteWidth
         {
@@ -59,8 +63,11 @@ namespace FallenAngel.Gameplay
         public const float DefaultNoteHeight = 28f;
         private DrumIconGraphic iconGraphic;             // 鼓件图标（运行时自生成，零资源）
         private ArrowGraphic arrowGraphic;               // Flick 方向箭头（运行时自生成）
-        private SlidePathGraphic slidePathGraphic;       // Slide 路径折线（运行时自生成）
+        private NoteBandGraphic slidePathGraphic;        // Slide 轨迹带（运行时自生成，与长按身体同一把尺子）
         private RectTransform slidePathRect;
+        private float slideEndCanvasY;                   // 轨迹终点相对头部的画布高度（按住时按剩余量收缩）
+        // 逐帧重算轨迹用的复用缓冲（滑条按住期间每帧都会重写，别每次新建 List）
+        private readonly List<Vector2> slidePointBuffer = new List<Vector2>(16);
         // ===== 部件化（pjsk 风）：head / tail 部件（运行时自生成，零纹理）=====
         private NoteHeadGraphic headGraphic;             // 头部部件（绘制取代预制体 Image）
         private RectTransform headRect;
@@ -72,8 +79,6 @@ namespace FallenAngel.Gameplay
         private Color linkBaseLeft = Color.clear;        // 连线两端基色（着色时按音符 alpha 统一缩放）
         private Color linkBaseRight = Color.clear;
         // Slide 剩余轨迹重算用（生成时记录，避免每帧重取）
-        private float slideFallDistance = 300f;
-        private float slideFallTime = 2f;
         private float slideStartX;                       // slide 起点 Canvas X（尾部件定位用）
         private readonly List<HitRingEntry> hitRingPool = new List<HitRingEntry>(8); // 命中扩散环池
 
@@ -173,7 +178,10 @@ namespace FallenAngel.Gameplay
 
             EnsureBodyGraphic();
             isLongNoteConfigured = true;
-            bodyRect.localScale = Vector3.one; // 池复用重置（收缩走 scaleY）
+            // 池复用重置：带子的形状由"画布高度 → 轨道半宽"决定，缩放恒为 1
+            //（收缩不再走 localScale，见 UpdatePosition —— 按 scaleY 压扁会让带子跟着变窄，反而脱离轨道）
+            bodyRect.localScale = Vector3.one;
+            bodyShrink = 1f;
 
             bodyGraphic.gameObject.SetActive(true);
             // 身体配色并入部件统一着色：贴近头部 0.9 实体 → 远端 0.18 半透明
@@ -186,11 +194,14 @@ namespace FallenAngel.Gameplay
             float fallTime = GameManager.Instance != null ? GameManager.Instance.ActualFallTime : 2f;
             float holdDistance = fallDistance * (Data.duration / fallTime); // 按住期间下落距离
             float bodyHeight = Mathf.Max(holdDistance, 300f);               // 最短拖尾保证可辨识
-            float bodyWidth = Mathf.Max(24f, rectTransform.sizeDelta.x - 2f); // 宽对齐音符头部（留 2px 边距；kick 全宽条随行）
+            // 宽度只是矩形参考值：实际画出来的宽度由带子按轨道曲线逐高度取值（kick 全宽条走 SetKickVisual）
+            float bodyWidth = Mathf.Max(24f, rectTransform.sizeDelta.x - 2f);
             bodyRect.sizeDelta = new Vector2(bodyWidth, bodyHeight);
             // 底边贴住头部中心（pivot 在底部，anchoredPosition 必须为 0）：
             // 修复原版 bug——此前用 height/2 定位，pivot 又在底部，双重偏移导致身体整体在屏幕外
             bodyRect.anchoredPosition = Vector2.zero;
+            // 带子几何按**画布单位**给（与 fallDistance / 轨道宽度同口径）
+            bodyGraphic.SetStraightBand(bodyHeight);
 
             // 运行时自建的UI必须显式标记脏并强制Canvas立即重建，否则网格不会生成
             bodyGraphic.SetAllDirty();
@@ -233,7 +244,7 @@ namespace FallenAngel.Gameplay
             Transform legacy = transform.Find("LongNoteBody");
             if (legacy != null) legacy.gameObject.SetActive(false);
 
-            GameObject bodyGO = new GameObject("LongNoteBody_Gradient", typeof(RectTransform));
+            GameObject bodyGO = new GameObject("LongNoteBody_Band", typeof(RectTransform));
             bodyGO.transform.SetParent(transform, false);
             bodyGO.transform.SetAsFirstSibling(); // 画在头部后面
 
@@ -244,7 +255,8 @@ namespace FallenAngel.Gameplay
             rt.anchoredPosition = Vector2.zero;
             rt.sizeDelta = new Vector2(128f, 300f); // 宽对齐音符头部（130），留 2px 视觉边距
 
-            GradientImage g = bodyGO.AddComponent<GradientImage>();
+            // 带子（梯形）：宽度按每个高度的轨道半宽取，不再是等宽矩形
+            NoteBandGraphic g = bodyGO.AddComponent<NoteBandGraphic>();
             // 显式补挂 CanvasRenderer（运行时 AddComponent 时 RequireComponent 不保证生效）
             if (bodyGO.GetComponent<CanvasRenderer>() == null)
                 bodyGO.AddComponent<CanvasRenderer>();
@@ -255,9 +267,9 @@ namespace FallenAngel.Gameplay
         }
 
         /// <summary>
-        /// 配置 Slide 路径渲染：路径点转为相对头部中心的局部坐标
-        /// （x 随轨道坐标、y 随时间，自头部向上展开——与长按身体同向），
-        /// 子节点随头部移动，无需每帧重绘。
+        /// 配置 Slide 轨迹带：路径点转为「相对头部中心的画布偏移」
+        /// （x 取轨道坐标、y 随时间自头部向上展开——与长按身体同向）。
+        /// 点按画布单位给（与 LaneLayout / 轨道宽度同口径），带子自己换算回局部单位。
         /// </summary>
         private void ConfigureSlidePath(Vector2 spawnPos, Vector2 judgeLinePos)
         {
@@ -278,18 +290,18 @@ namespace FallenAngel.Gameplay
             float startX = LaneLayout.GetXFromLaneCoord(Data.path[0].x);
             slideStartX = startX;                    // 尾部件定位用（未按住时头部在起点）
 
-            System.Collections.Generic.List<Vector2> local =
-                new System.Collections.Generic.List<Vector2>(Data.path.Count);
+            slidePointBuffer.Clear();
             foreach (SlidePathPoint pt in Data.path)
             {
-                float lx = LaneLayout.GetXFromLaneCoord(pt.x) - startX;
-                float ly = fallDistance * pt.t / fallTime; // 路径自头部向上展开（与长按身体同向）
-                local.Add(new Vector2(lx, ly));
+                float x = LaneLayout.GetXFromLaneCoord(pt.x) - startX;
+                float y = fallDistance * pt.t / fallTime; // 路径自头部向上展开（与长按身体同向）
+                slidePointBuffer.Add(new Vector2(x, y));
             }
-            slidePathGraphic.SetLocalPoints(local);
+            slidePathGraphic.SetPathPoints(slidePointBuffer);
             slidePathGraphic.gameObject.SetActive(true);
-            slideFallDistance = fallDistance;      // 供按住时重算剩余 ribbon 用
-            slideFallTime = fallTime;
+            // 轨迹终点相对头部的画布高度（= 谱面路径的总时长对应的下落距离），
+            // 按住时按剩余比例收缩，尾部标记也用它（两边同源，尾部件才会正好落在轨迹末端）
+            slideEndCanvasY = slidePointBuffer[slidePointBuffer.Count - 1].y;
 
             // 运行时自建的UI必须显式标记脏并强制Canvas立即重建，否则网格不会生成
             slidePathGraphic.SetAllDirty();
@@ -297,25 +309,26 @@ namespace FallenAngel.Gameplay
         }
 
         /// <summary>
-        /// 按住时重算剩余路径：局部原点在头部（t=from01 处），只画「还没滑过」的部分，
+        /// 按住时重算剩余轨迹：原点在头部（t=from01 处），只画「还没滑过」的部分，
         /// 并按路径 x 与头部的差值做水平偏移——这样走过的轨迹会收起、尾部仍锚在谱面路径上。
+        /// 点仍是画布单位（x 取轨道坐标、y 取剩余高度），与初始轨迹口径一致。
         /// </summary>
         private void UpdateSlideRibbon(float from01, float headX)
         {
             if (slidePathGraphic == null || Data.path == null || Data.path.Count < 2) return;
             const int samples = 12;
-            var local = new System.Collections.Generic.List<Vector2>(samples + 1);
+            slidePointBuffer.Clear();
             for (int i = 0; i <= samples; i++)
             {
                 float t = Mathf.Lerp(from01, 1f, i / (float)samples);
                 float x = SampleSlidePathX(t) - headX;
-                float y = slideFallDistance * (t - from01) / Mathf.Max(0.01f, slideFallTime);
-                local.Add(new Vector2(x, y));
+                float y = slideEndCanvasY * (t - from01);
+                slidePointBuffer.Add(new Vector2(x, y));
             }
-            slidePathGraphic.SetLocalPoints(local);
+            slidePathGraphic.SetPathPoints(slidePointBuffer);
         }
 
-        /// <summary>确保 Slide 路径子节点存在：运行时自生成折线图形节点</summary>
+        /// <summary>确保 Slide 轨迹子节点存在：运行时自生成带子节点（与长按身体同一套图形）</summary>
         private void EnsureSlidePathGraphic()
         {
             if (slidePathGraphic != null && slidePathRect != null) return;
@@ -330,7 +343,7 @@ namespace FallenAngel.Gameplay
             rt.pivot = new Vector2(0.5f, 0.5f);
             rt.anchoredPosition = Vector2.zero;
 
-            SlidePathGraphic g = go.AddComponent<SlidePathGraphic>();
+            NoteBandGraphic g = go.AddComponent<NoteBandGraphic>();
             // 显式补挂 CanvasRenderer（运行时 AddComponent 时 RequireComponent 不保证生效）
             if (go.GetComponent<CanvasRenderer>() == null)
                 go.AddComponent<CanvasRenderer>();
@@ -551,8 +564,8 @@ namespace FallenAngel.Gameplay
 
             if (slidePathGraphic != null && slidePathGraphic.gameObject.activeSelf)
             {
-                slidePathGraphic.HeadColor = new Color(c.r, c.g, c.b, Mathf.Clamp01(c.a * 0.55f));
-                slidePathGraphic.TailColor = new Color(c.r, c.g, c.b, 0f);
+                slidePathGraphic.bottomColor = new Color(c.r, c.g, c.b, Mathf.Clamp01(c.a * 0.55f));
+                slidePathGraphic.topColor = new Color(c.r, c.g, c.b, 0f);
                 slidePathGraphic.SetVerticesDirty();
             }
 
@@ -584,26 +597,51 @@ namespace FallenAngel.Gameplay
         }
 
         /// <summary>
-        /// 尾部部件跟随：hold = 身体顶端（按住时随身体收缩下移）；slide = 路径终点。
+        /// 尾部部件跟随：hold = 身体顶端（按住时随身体收缩下移）；slide = 轨迹末端。
+        /// 位置按**画布单位**算出后再除以音符缩放：身体/轨迹的几何是画布单位，而尾部件是普通子节点
+        /// （尺寸随音符缩放），不换算的话长按一长，尾标记就会离开带子末端。
+        /// 尺寸同样按"所在高度"收窄，尾标记才会和轨道一样宽（否则顶端那一小段会戳出轨道）。
         /// </summary>
         private void UpdateTailPart()
         {
             if (tailRect == null || tailGraphic == null || !tailGraphic.gameObject.activeSelf) return;
             if (Data == null) return;
 
+            float noteScale = Mathf.Max(0.01f, transform.localScale.x);
+            float canvasX = 0f, canvasY = 0f;
+
             if (Data.type == NoteType.LongStart && bodyRect != null)
             {
-                float shrink = Mathf.Clamp01(bodyRect.localScale.y);
-                tailRect.anchoredPosition = new Vector2(0f, bodyRect.sizeDelta.y * shrink);
+                canvasY = bodyRect.sizeDelta.y * Mathf.Clamp01(bodyShrink);
             }
             else if (Data.type == NoteType.Slide && Data.path != null && Data.path.Count >= 2)
             {
                 float progress = IsHolding ? HoldProgress : 0f;
                 float headX = IsHolding ? SampleSlidePathX(progress) : slideStartX;
-                tailRect.anchoredPosition = new Vector2(
-                    SampleSlidePathX(1f) - headX,
-                    slideFallDistance * (1f - progress) / Mathf.Max(0.01f, slideFallTime));
+                canvasX = SampleSlidePathX(1f) - headX;
+                canvasY = slideEndCanvasY * (1f - progress);
             }
+            else
+            {
+                return;
+            }
+
+            tailRect.anchoredPosition = new Vector2(canvasX / noteScale, canvasY / noteScale);
+
+            float laneScale = PlayPerspective.SizeScaleAtY(CanvasY(canvasY));
+            tailRect.localScale = new Vector3(laneScale / noteScale, laneScale / noteScale, 1f);
+        }
+
+        /// <summary>
+        /// 本音符中心在画布中心系里的 y（可加一个局部偏移）。
+        /// 层级约定：音符 → NotesContainer（全画布、无偏移）→ Canvas，由 PlayVisualChecks 守住。
+        /// </summary>
+        private float CanvasY(float localOffsetY)
+        {
+            float y = rectTransform.anchoredPosition.y + localOffsetY;
+            RectTransform parent = transform.parent as RectTransform;
+            if (parent != null && parent.anchorMin == parent.anchorMax) y += parent.anchoredPosition.y;
+            return y;
         }
 
         /// <summary>
@@ -620,6 +658,10 @@ namespace FallenAngel.Gameplay
             // 进度 0 = 刚生成， 1 = 到达判定线
             float timeToJudge = Data.time - currentSongTime;
             float progress = 1f - Mathf.Clamp01(timeToJudge / fallTime);
+
+            // 先落定本帧的透视缩放：后面尾部件要按"画布单位 ÷ 当前缩放"定位，
+            // 带子的网格重建也读它——放到最后会让尾标记慢一帧、跟着抖。
+            ApplyPerspectiveScale(progress);
 
             if (Data.type == NoteType.LongEnd)
             {
@@ -641,8 +683,9 @@ namespace FallenAngel.Gameplay
             }
             else
             {
-                // 普通音符和长按头部正常下落
-                float y = Mathf.Lerp(spawnPosY, judgePosY, progress);
+                // 普通音符和长按头部正常下落（近大远小：位置走 PlayPerspective 的归一化曲线，
+                // 尺寸由本方法末尾的 ApplyPerspectiveScale 统一施加，两处都不再自己算）
+                float y = PlayPerspective.PositionY(progress, spawnPosY, judgePosY);
                 rectTransform.anchoredPosition = new Vector2(rectTransform.anchoredPosition.x, y);
             }
 
@@ -650,8 +693,11 @@ namespace FallenAngel.Gameplay
             if (Data.type == NoteType.LongStart && IsHolding && isLongNoteConfigured && bodyRect != null)
             {
                 HoldProgress = Mathf.Clamp01((currentSongTime - Data.time) / Mathf.Max(0.01f, Data.duration));
-                // 帧数优化：收缩用 localScale.y（pivot 在底部）——不重建网格
-                bodyRect.localScale = new Vector3(1f, Mathf.Max(0f, 1f - HoldProgress), 1f);
+                // 收缩不再靠 localScale.y：带子的宽度是"每个高度上轨道的半宽"，
+                // 纵向压扁会把上半段挪到轨道更窄的高度，宽窄就对不上了。
+                // 改成把「剩余长度」交给带子重采样（12 段 = 48 顶点，网格很小），底边始终贴住头部。
+                bodyShrink = Mathf.Clamp01(1f - HoldProgress);
+                bodyGraphic.SetStraightBand(bodyRect.sizeDelta.y * bodyShrink);
                 bodyRect.anchoredPosition = Vector2.zero; // 底边始终贴住头部
             }
 
@@ -667,9 +713,6 @@ namespace FallenAngel.Gameplay
 
             // 尾部部件跟随身体/路径末端（hold 收缩后再算，故放在最后）
             UpdateTailPart();
-
-            // 近大远小：越靠近判定线越大（与命中特效缩放分层叠加）
-            ApplyPerspectiveScale(progress);
         }
 
         /// <summary>
@@ -678,7 +721,7 @@ namespace FallenAngel.Gameplay
         /// </summary>
         private void ApplyPerspectiveScale(float progress)
         {
-            float s = Mathf.Lerp(PerspectiveMinScale, 1f, Mathf.Clamp01(progress)) * hitScale;
+            float s = PlayPerspective.SizeScale(progress) * hitScale;
             transform.localScale = new Vector3(s, s, 1f);
         }
 
@@ -715,7 +758,11 @@ namespace FallenAngel.Gameplay
             if (Data.type != NoteType.LongStart && Data.type != NoteType.Slide) return JudgeResultType.None;
             IsHolding = false;
 
-            JudgeResultType result = JudgeWindows.Default.Judge(releaseTimeDiff);
+            // 释放判定必须走**有效**窗口（基础值 × 局内 modifier 倍率）：
+            // 此前读 JudgeWindows.Default，"判定窗口放宽/收紧"对长按尾完全没生效。
+            // 长按尾在窗口表里是独立的 HoldEnd 行（原作同样给尾判更宽的窗口）。
+            JudgeNoteKind kind = Data.type == NoteType.Slide ? JudgeNoteKind.Slide : JudgeNoteKind.HoldEnd;
+            JudgeResultType result = PlayRules.Windows.Judge(releaseTimeDiff, kind);
             // 长按至少按到Good才算成功
             if (result == JudgeResultType.Bad) result = JudgeResultType.Good;
             JudgeResult = result;

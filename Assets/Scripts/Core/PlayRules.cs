@@ -67,6 +67,10 @@ namespace FallenAngel.Core
             effectiveWindows.greatWindow = baseWindows.greatWindow * judgeWindowScale;
             effectiveWindows.goodWindow = baseWindows.goodWindow * judgeWindowScale;
             effectiveWindows.badWindow = baseWindows.badWindow * judgeWindowScale;
+            // 按种类的细表同样要吃倍率——否则"判定窗口放宽"只对普通音符生效
+            // （长按尾/滑动等走表，之前正是这类漏接）。
+            effectiveWindows.CopyTableFrom(baseWindows);
+            effectiveWindows.ScaleTable(judgeWindowScale);
             dirty = false;
         }
     }

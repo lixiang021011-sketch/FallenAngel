@@ -116,6 +116,29 @@ namespace FallenAngel.Core
                     check("生成点在判定线上方", spawners[0].SpawnY > spawners[0].JudgeLineY,
                         string.Format("生成 y={0:0.#} > 判定 y={1:0.#}", spawners[0].SpawnY, spawners[0].JudgeLineY));
 
+                    // 音符带子的坐标系前提（NoteBandGraphic）：画布 y = 音符 anchoredPosition.y + 局部 y，
+                    // 这要求 NotesContainer 是全画布、无偏移、无缩放的容器。改了这里，长按身体/slide 轨迹
+                    // 就会整体错位到别的轨道高度上，所以钉住它。
+                    RectTransform notesContainer = null;
+                    foreach (RectTransform r in rects)
+                    {
+                        if (notesContainer == null && r.name == "NotesContainer") notesContainer = r;
+                    }
+                    bool containerOk = notesContainer != null &&
+                        Mathf.Abs(notesContainer.anchoredPosition.x) < 0.01f &&
+                        Mathf.Abs(notesContainer.anchoredPosition.y) < 0.01f &&
+                        Mathf.Abs(notesContainer.anchorMin.x) < 0.01f && Mathf.Abs(notesContainer.anchorMin.y) < 0.01f &&
+                        Mathf.Abs(notesContainer.anchorMax.x - 1f) < 0.01f && Mathf.Abs(notesContainer.anchorMax.y - 1f) < 0.01f &&
+                        Mathf.Abs(notesContainer.sizeDelta.x) < 0.01f && Mathf.Abs(notesContainer.sizeDelta.y) < 0.01f &&
+                        Mathf.Abs(notesContainer.localScale.x - 1f) < 0.0001f &&
+                        Mathf.Abs(notesContainer.localScale.y - 1f) < 0.0001f;
+                    check("音符容器全画布无偏移", containerOk,
+                        notesContainer == null
+                            ? "场景里没有 NotesContainer"
+                            : string.Format("anchors {0}–{1}、sizeDelta {2}、scale {3}",
+                                notesContainer.anchorMin, notesContainer.anchorMax,
+                                notesContainer.sizeDelta, notesContainer.localScale));
+
                     RectTransform bg = null;
                     foreach (RectTransform r in rects)
                     {

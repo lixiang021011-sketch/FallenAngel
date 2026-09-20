@@ -169,7 +169,7 @@ namespace FallenAngel.Gameplay
                 Note drag = NoteSpawner.Instance.GetClosestJudgableNote(lane, false, NoteType.Drag);
                 if (drag == null) continue;
                 float dragDiff = songTime - drag.Data.time;
-                if (EffectiveWindows.Judge(dragDiff) == JudgeResultType.Miss) continue;
+                if (EffectiveWindows.Judge(dragDiff, JudgeNoteKind.Drag) == JudgeResultType.Miss) continue;
                 ApplyJudge(drag, JudgeResultType.Perfect, lane);
             }
 
@@ -277,7 +277,7 @@ namespace FallenAngel.Gameplay
             if (wide == null) return false;
 
             float timeDiff = GameManager.Instance.SongTime - wide.Data.time;
-            JudgeResultType result = EffectiveWindows.Judge(timeDiff);
+            JudgeResultType result = EffectiveWindows.Judge(timeDiff, JudgeNoteKind.Wide);
             if (result == JudgeResultType.Miss) return false;   // 窗口外：交给 auto-miss，不误判
 
             if (wide.Data.type == NoteType.LongStart)
@@ -310,7 +310,7 @@ namespace FallenAngel.Gameplay
                 if (wide == null) break;
 
                 float timeDiff = GameManager.Instance.SongTime - wide.Data.time;
-                JudgeResultType result = EffectiveWindows.Judge(timeDiff);
+                JudgeResultType result = EffectiveWindows.Judge(timeDiff, JudgeNoteKind.Wide);
                 if (result == JudgeResultType.Miss) break;   // 同刻但已过窗（极端情况）：不误判
 
                 if (wide.Data.type == NoteType.LongStart)
@@ -350,7 +350,7 @@ namespace FallenAngel.Gameplay
             }
 
             float timeDiff = songTime - note.Data.time;
-            JudgeResultType result = EffectiveWindows.Judge(timeDiff);
+            JudgeResultType result = EffectiveWindows.Judge(timeDiff, JudgeWindowTable.KindOf(note.Data, IsWideNote(note)));
 
 #if UNITY_EDITOR
             Debug.Log($"[JudgeManager] Press lane={lane} songTime={songTime:F2} noteTime={note.Data.time:F2} diff={timeDiff:F3} result={result}");

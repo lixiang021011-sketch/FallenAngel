@@ -31,10 +31,12 @@ namespace FallenAngel.Core
         public const float LaneGapRatio = 0.10f;
 
         /// <summary>
-        /// 外观尺寸的**参考轨道宽**：配表里的音符尺寸（如 130×28）是按这个宽度设计的。
-        /// 实际尺寸 = 配表尺寸 × (当前轨宽 / 本值)，见 <see cref="SizeScale"/>。
+        /// 外观尺寸的**参考轨道宽**：配表里的音符尺寸按它缩放，见 <see cref="SizeScale"/>。
+        /// 取值 = 配表里 tap 的宽度（130）——这样 **tap 音符恰好铺满整条轨道**，
+        /// 其余类型（drag 94 / 尾 20 等）按同一比例保持相对宽度。
+        /// 作者 2026-09-20 要求："音符在任何时候都和轨道一样宽"。
         /// </summary>
-        public const float ReferenceLaneWidth = 140f;
+        public const float ReferenceLaneWidth = 130f;
 
         private static readonly float[][] centersCache = new float[MaxLaneCount + 1][];
 

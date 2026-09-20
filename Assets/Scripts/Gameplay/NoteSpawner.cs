@@ -101,6 +101,8 @@ namespace FallenAngel.Gameplay
             InitializePool();
 
             RefreshMissThreshold();
+            // 登记演奏几何：轨道透视（PerspectiveLaneGraphic）与音符共用同一组 spawn/judge Y
+            PlayPerspective.SetGeometry(spawnY, judgeLineY);
         }
 
         /// <summary>
@@ -130,7 +132,7 @@ namespace FallenAngel.Gameplay
             img.color = new Color(0.3f, 0.8f, 1f, 0.9f);
             img.raycastTarget = false; // 音符不拦截触摸
 
-            // 长按身体由 Note 运行时自生成（GradientImage 顶点色渐变），
+            // 长按身体由 Note 运行时自生成（NoteBandGraphic 梯形带：宽度逐高度贴合轨道），
             // 预制体不再包含身体节点，避免依赖与双重渲染
             Note note = go.AddComponent<Note>();
             // 自动绑定 noteImage
@@ -168,6 +170,7 @@ namespace FallenAngel.Gameplay
             {
                 GameManager.Instance.OnGameStart += OnGameStart;
                 GameManager.Instance.OnGameEnd += OnGameEnd;
+                GameManager.Instance.OnStateChanged += OnGameStateChanged;
             }
         }
 
@@ -179,6 +182,8 @@ namespace FallenAngel.Gameplay
                 GameManager.Instance.OnGameStart += OnGameStart;
                 GameManager.Instance.OnGameEnd -= OnGameEnd;
                 GameManager.Instance.OnGameEnd += OnGameEnd;
+                GameManager.Instance.OnStateChanged -= OnGameStateChanged;
+                GameManager.Instance.OnStateChanged += OnGameStateChanged;
             }
         }
 
@@ -188,7 +193,83 @@ namespace FallenAngel.Gameplay
             {
                 GameManager.Instance.OnGameStart -= OnGameStart;
                 GameManager.Instance.OnGameEnd -= OnGameEnd;
+                GameManager.Instance.OnStateChanged -= OnGameStateChanged;
             }
+        }
+
+        /// <summary>
+        /// 进 Loading（加载页）时按谱面预热对象池。
+        /// 目的：把实例化开销从"演奏中第一次用到"挪到加载页，避免演奏中的分配尖峰。
+        /// </summary>
+        private void OnGameStateChanged(GameState state)
+        {
+            if (state != GameState.Loading) return;
+            GameManager gm = GameManager.Instance;
+            if (gm == null || gm.CurrentChart == null) return;
+            PrewarmForChart(gm.CurrentChart, gm.ActualFallTime);
+        }
+
+        /// <summary>
+        /// 按谱面预热对象池（返回预热后池中空闲音符数）。
+        /// 需要多少见 <see cref="EstimateMaxSimultaneousNotes"/>：同屏最多同时存在几个音符。
+        /// </summary>
+        public int PrewarmForChart(ChartData chart, float fallTime)
+        {
+            if (chart == null || chart.notes == null) return 0;
+            return PrewarmPool(EstimateMaxSimultaneousNotes(chart.notes, fallTime));
+        }
+
+        /// <summary>
+        /// 预热到 target 个空闲音符（受 defaultPoolSize 下限与 maxPoolSize 上限约束）。
+        /// Unity 官方 ObjectPool 的 defaultCapacity 只决定内部数组容量、不实例化对象，
+        /// 所以这里显式 Get/Release 一圈把实例造出来。
+        /// </summary>
+        public int PrewarmPool(int target)
+        {
+            if (notePool == null) return 0;
+            int want = Mathf.Clamp(target, defaultPoolSize, Mathf.Max(defaultPoolSize, maxPoolSize));
+            var created = new List<Note>(want);
+            while (notePool.CountInactive + created.Count < want)
+            {
+                Note note = notePool.Get();
+                if (note == null) break;      // 预制体缺失等异常：不要在加载页死循环
+                created.Add(note);
+            }
+            for (int i = 0; i < created.Count; i++) notePool.Release(created[i]);
+            return notePool.CountInactive;
+        }
+
+        /// <summary>
+        /// 估算谱面"同屏最大音符数"：把每个音符占屏时间看成一个区间
+        /// [时刻 − 下落时长, 时刻 + 持续时长]（长按/滑条按持续时长占位），取最大重叠数。
+        /// 纯函数，便于自检；空谱返回 1（池至少留一个）。
+        /// </summary>
+        public static int EstimateMaxSimultaneousNotes(IReadOnlyList<NoteData> notes, float fallTime)
+        {
+            if (notes == null || notes.Count == 0) return 1;
+            float fall = Mathf.Max(0.05f, fallTime);
+
+            var events = new List<Vector2>(notes.Count * 2);   // x = 时刻, y = ±1
+            for (int i = 0; i < notes.Count; i++)
+            {
+                NoteData n = notes[i];
+                if (n == null) continue;
+                float duration = n.type == NoteType.LongStart || n.type == NoteType.Slide ? Mathf.Max(0f, n.duration) : 0f;
+                events.Add(new Vector2(n.time - fall, 1f));
+                events.Add(new Vector2(n.time + duration, -1f));
+            }
+            if (events.Count == 0) return 1;
+
+            // 同一时刻先处理"离开"(-1)再处理"进入"(+1)：首尾相接的两个音符不算同屏
+            events.Sort((a, b) => a.x != b.x ? a.x.CompareTo(b.x) : a.y.CompareTo(b.y));
+
+            int current = 0, max = 0;
+            for (int i = 0; i < events.Count; i++)
+            {
+                current += events[i].y > 0f ? 1 : -1;
+                if (current > max) max = current;
+            }
+            return Mathf.Max(1, max);
         }
 
         private void OnGameStart()

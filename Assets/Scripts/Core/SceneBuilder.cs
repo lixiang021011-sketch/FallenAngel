@@ -460,7 +460,8 @@ namespace FallenAngel.Core
             for (int i = 0; i < LaneLayout.MaxLaneCount; i++)
             {
                 // 音轨背景条
-                GameObject lane = new GameObject($"Lane{i}_BG", typeof(RectTransform), typeof(Image));
+                // 透视轨道条（上窄下宽）：宽度曲线与音符同源（PlayPerspective），保证严格对齐
+                GameObject lane = new GameObject($"Lane{i}_BG", typeof(RectTransform), typeof(PerspectiveLaneGraphic));
                 lane.transform.SetParent(lanes.transform, false);
                 RectTransform lRT = (RectTransform)lane.transform;
                 lRT.anchorMin = new Vector2(0.5f, 0f);

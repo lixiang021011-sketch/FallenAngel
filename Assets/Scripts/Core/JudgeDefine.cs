@@ -29,12 +29,17 @@ namespace FallenAngel.Core
         public float goodWindow = 0.180f;    // 180ms
         public float badWindow = 0.200f;     // 200ms
         // 超过 badWindow 的都算 Miss
+        //
+        // 上面四个字段 = 「Normal 行的对称基准」，也是历史序列化字段（场景里存的就是它们）。
+        // 按音符种类的细表见 table：默认每行都等于这四个值，所以引入表**不改变现有判定**；
+        // 需要单独放宽/收紧某一类（例如长按尾、滑动）时只改表，不动判定代码。
+        public JudgeWindowTable table = JudgeWindowTable.CreateDefault();
 
         /// <summary>默认判定窗口共享实例（热路径复用避免重复分配；static 不参与序列化）</summary>
         public static readonly JudgeWindows Default = new JudgeWindows();
 
         /// <summary>
-        /// 根据时间差计算判定结果
+        /// 根据时间差计算判定结果（对称口径，等价于 Normal 行）
         /// </summary>
         public JudgeResultType Judge(float timeDiff)
         {
@@ -44,6 +49,44 @@ namespace FallenAngel.Core
             if (abs <= goodWindow) return JudgeResultType.Good;
             if (abs <= badWindow) return JudgeResultType.Bad;
             return JudgeResultType.Miss;
+        }
+
+        /// <summary>对称基准行（Normal 行 / 退化表回退用）</summary>
+        public JudgeWindowRow SymmetricRow
+        {
+            get { return JudgeWindowRow.Symmetric(perfectWindow, greatWindow, goodWindow, badWindow); }
+        }
+
+        /// <summary>
+        /// 按音符种类判定。Normal 走原来的对称实现（保证与历史行为逐位一致），
+        /// 其余种类查表；表退化成全 0 时回退到对称口径。
+        /// </summary>
+        public JudgeResultType Judge(float timeDiff, JudgeNoteKind kind)
+        {
+            if (kind == JudgeNoteKind.Normal) return Judge(timeDiff);
+            if (table == null) return Judge(timeDiff);
+            return table.Judge(timeDiff, kind, SymmetricRow);
+        }
+
+        /// <summary>时机提示（Just / Fast / Late），仅供显示，不参与判定</summary>
+        public JudgeTimingHint Describe(float timeDiff, JudgeNoteKind kind)
+        {
+            if (table == null) return timeDiff > 0f ? JudgeTimingHint.Fast : JudgeTimingHint.Late;
+            return table.Describe(timeDiff, kind, SymmetricRow);
+        }
+
+        /// <summary>把基础表复制进来（PlayRules 刷新有效窗口时用）</summary>
+        public void CopyTableFrom(JudgeWindows source)
+        {
+            if (table == null) table = JudgeWindowTable.CreateDefault();
+            table.CopyFrom(source != null ? source.table : null);
+            if (!table.initialized) table = JudgeWindowTable.CreateDefault(perfectWindow, greatWindow, goodWindow, badWindow);
+        }
+
+        /// <summary>整表按倍率缩放（modifier 用）</summary>
+        public void ScaleTable(float factor)
+        {
+            if (table != null) table.Scale(factor);
         }
 
         /// <summary>
