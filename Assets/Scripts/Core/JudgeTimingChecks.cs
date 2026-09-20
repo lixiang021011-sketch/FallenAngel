@@ -194,24 +194,42 @@ namespace FallenAngel.Core
 
             // ⑥ 同一次按下不在同帧补刀：按住 drag 轨的同时点另一个音符，
             //    drag 轮询（Update）不得在这一次按下的帧里顺手把 drag 也判掉。
-            //    注：drag"按住穿过判定窗即 Perfect"的跨帧语义仍然成立（自检里帧号不推进，只锁同帧行为）。
+            //    注：护栏是**每根手指**的——"同一次按下"指的是同一根手指的那一次按下，
+            //    另一根手指的按下不该封住我这根手指的手势（见 ⑧）。
+            using (var sb = new Sandbox())
+            {
+                Note drag = sb.AddNote(new NoteData(2, 10.010f, NoteType.Drag));
+                Note tap = sb.AddNote(new NoteData(2, 10.000f, NoteType.Normal));
+
+                sb.SetSongTime(10.000f);
+                sb.Press(2);                 // 这一次按下判普通音符（最近的那个）
+                int judgedByPress = sb.CountJudged(drag, tap);
+                sb.JudgeUpdate();            // 同帧轮询：不得再补一刀
+                int judgedAfterPoll = sb.CountJudged(drag, tap);
+
+                check("同指同帧不补刀",
+                    judgedByPress == 1 && judgedAfterPoll == 1 && tap.IsJudged && !drag.IsJudged,
+                    string.Format("按下判 {0} 个、同帧轮询后仍 {1} 个（drag 未判={2}）",
+                        judgedByPress, judgedAfterPoll, !drag.IsJudged));
+            }
+
+            // ⑧ 两指并行：一根手指**按住** drag 轨，另一根手指在同一帧点掉普通音符——
+            //    两个都该判掉（PJSK 语义：护栏按手指记账，不是整帧封口）。
             using (var sb = new Sandbox())
             {
                 Note drag = sb.AddNote(new NoteData(3, 10.000f, NoteType.Drag));
                 Note tap = sb.AddNote(new NoteData(2, 10.000f, NoteType.Normal));
 
                 sb.SetSongTime(9.000f);
-                sb.Press(3);                 // 提前按住 drag 轨（此时 drag 在窗内不可判，只保留）
+                sb.PressAs(3, 30);           // 手指 A 提前按住 drag 轨（此时不在窗口，只登记按住）
                 sb.SetSongTime(10.000f);
-                sb.Press(2);                 // 这一次按下判普通音符
-                int judgedByPress = sb.CountJudged(drag, tap);
-                sb.JudgeUpdate();            // 同帧轮询：不得再补一刀
-                int judgedAfterPoll = sb.CountJudged(drag, tap);
+                sb.PressAs(2, 20);           // 手指 B 同帧点掉普通音符
+                sb.JudgeUpdate();            // 轮询：手指 A 按住的那条轨也该把 drag 判掉
 
-                check("同一次按下同帧不补刀",
-                    judgedByPress == 1 && judgedAfterPoll == 1 && tap.IsJudged && !drag.IsJudged,
-                    string.Format("按下判 {0} 个、同帧轮询后仍 {1} 个（drag 未判={2}）",
-                        judgedByPress, judgedAfterPoll, !drag.IsJudged));
+                check("两指并行各判一个",
+                    drag.IsJudged && tap.IsJudged && sb.Judge.PerfectCount == 2,
+                    string.Format("按住轨的 drag={0}、点掉的 tap={1}，Perfect={2}",
+                        drag.IsJudged, tap.IsJudged, sb.Judge.PerfectCount));
             }
 
             // ⑦ 事件时间戳参与判定：这一帧引擎读到触摸时歌曲时间已经走到 10.150，
@@ -323,6 +341,9 @@ namespace FallenAngel.Core
 
             /// <summary>按指定音乐时间注入一次按下（模拟"引擎晚读到的触摸事件"）</summary>
             public void PressAt(int lane, float musicTime) { Input.SimulateLaneInputAt(lane, true, musicTime); }
+
+            /// <summary>指定手指 id 注入一次按下（模拟"多指同时输入"）</summary>
+            public void PressAs(int lane, int fingerId) { Input.SimulateLaneInputAt(lane, true, sandboxSongTime, fingerId); }
 
             /// <summary>四个单例是否都指向本沙箱的实例（指向别人 = 后面测的不是这套对象）</summary>
             public bool InstancesMatch

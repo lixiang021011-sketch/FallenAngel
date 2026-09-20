@@ -26,7 +26,9 @@ namespace FallenAngel.Gameplay
         /// 用途：一次按下只能判掉**一个**音符——此前"按下事件（轨道音符）"与"Update 轮询（横条/拖键）"
         /// 会在同一帧各判一个，两个音符挨得近时表现为"点一次同时判两个"。
         /// </summary>
-        private int pressJudgeFrame = -1;
+        // 每根手指各自记账（PJSK 语义）：一根手指的按下只封住它自己这一次，
+        // 别的按下的手指/按住中的手势不受影响。见 fingerJudgeFrame。
+        private readonly Dictionary<int, int> fingerJudgeFrame = new Dictionary<int, int>();
 
         /// <summary>
         /// 同刻判定容差（秒）：一次按下可以同时判掉**真同刻**的多个音符（伪双押：横条 + 普通音符）。
@@ -34,16 +36,16 @@ namespace FallenAngel.Gameplay
         /// </summary>
         private const float ChordPressTolerance = 0.02f;
 
-        /// <summary>标记本帧的按下已经判掉过音符</summary>
-        private void MarkPressJudged()
+        /// <summary>标记这根手指本帧已经判掉过音符</summary>
+        private void MarkPressJudged(int fingerId)
         {
-            pressJudgeFrame = Time.frameCount;
+            fingerJudgeFrame[fingerId] = Time.frameCount;
         }
 
-        /// <summary>本帧的按下是否已经判掉过音符</summary>
-        private bool PressJudgedThisFrame
+        /// <summary>这根手指本帧是否已经判掉过音符</summary>
+        private bool PressJudgedThisFrameFor(int fingerId)
         {
-            get { return pressJudgeFrame == Time.frameCount; }
+            return fingerJudgeFrame.TryGetValue(fingerId, out int frame) && frame == Time.frameCount;
         }
 
         /// <summary>当前判定结果（供UI订阅显示）</summary>
@@ -164,8 +166,9 @@ namespace FallenAngel.Gameplay
             for (int lane = 0; lane < pressStates.Length; lane++)
             {
                 if (!pressStates[lane]) continue;
-                // 本帧按下已经判掉过一个音符 → 轮询不再补刀（防"点一次判两个"）
-                if (PressJudgedThisFrame) break;
+                // 这根手指本帧已经判掉过一个音符 → 它不再补刀；其它手指/按住中的手势照常
+                int holder = InputManager.Instance != null ? InputManager.Instance.FingerIdForLane(lane) : -1;
+                if (holder >= 0 && PressJudgedThisFrameFor(holder)) continue;
                 Note drag = NoteSpawner.Instance.GetClosestJudgableNote(lane, false, NoteType.Drag);
                 if (drag == null) continue;
                 float dragDiff = songTime - drag.Data.time;
@@ -260,7 +263,7 @@ namespace FallenAngel.Gameplay
                 GameManager.Instance.CurrentState != GameState.Playing) return;
 
             if (e.isPressed)
-                HandlePress(e.laneIndex, e.swipeY, e.swipeKnown, e.musicTime);
+                HandlePress(e.laneIndex, e.swipeY, e.swipeKnown, e.musicTime, e.fingerId);
             else
                 HandleRelease(e.laneIndex, e.musicTime);
         }
@@ -270,7 +273,7 @@ namespace FallenAngel.Gameplay
         /// 只在本次按下**没有**判到轨道音符时调用（空按 / 窗口外）。
         /// 返回是否判掉了宽键。
         /// </summary>
-        private bool TryJudgeWideOnPress()
+        private bool TryJudgeWideOnPress(int fingerId)
         {
             if (NoteSpawner.Instance == null || GameManager.Instance == null) return false;
             Note wide = NoteSpawner.Instance.GetClosestWideJudgableNote();
@@ -291,7 +294,7 @@ namespace FallenAngel.Gameplay
             {
                 ApplyJudge(wide, result, wide.Data.lane);   // Normal 宽音符（kick 单击）
             }
-            MarkPressJudged();
+            MarkPressJudged(fingerId);
             return true;
         }
 
@@ -328,7 +331,8 @@ namespace FallenAngel.Gameplay
             return judged;
         }
 
-        private void HandlePress(int lane, float swipeY = 0f, bool swipeKnown = false, float musicTime = -1f)
+        private void HandlePress(int lane, float swipeY = 0f, bool swipeKnown = false, float musicTime = -1f,
+                                 int fingerId = -1)
         {
             if (NoteSpawner.Instance == null)
             {
@@ -347,7 +351,7 @@ namespace FallenAngel.Gameplay
 #if UNITY_EDITOR
                 Debug.Log($"[JudgeManager] Press lane={lane} songTime={songTime:F2} -> No note found (air press)");
 #endif
-                TryJudgeWideOnPress();   // 该轨没有音符：这次按下可以给横条
+                TryJudgeWideOnPress(fingerId);   // 该轨没有音符：这次按下可以给横条
                 return;
             }
 
@@ -361,7 +365,7 @@ namespace FallenAngel.Gameplay
             if (result == JudgeResultType.Miss)
             {
                 // 太远不判定（空按）；drag 音符保留等后续按（永不 MISS 语义）
-                TryJudgeWideOnPress();   // 轨道音符在窗口外：这次按下可以给横条
+                TryJudgeWideOnPress(fingerId);   // 轨道音符在窗口外：这次按下可以给横条
                 return;
             }
 
@@ -388,7 +392,7 @@ namespace FallenAngel.Gameplay
 
             // 命中
             ApplyJudge(note, result, lane);
-            MarkPressJudged();
+            MarkPressJudged(fingerId);
             JudgeCoincidentWide(note.Data.time);   // 伪双押：同刻的横条一起判掉
 
             // 长按：普通轨跟单轨松开；宽键/kick 跟 Slide 一样由任意键维持
