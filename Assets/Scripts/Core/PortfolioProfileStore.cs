@@ -20,6 +20,11 @@ namespace FallenAngel.Core
         public PortfolioProfileStore(string directory)
         {
             this.directory = Path.GetFullPath(directory ?? throw new ArgumentNullException(nameof(directory)));
+            // 真机首次启动时存档目录还不存在：所有写路径（Commit/Delete）都会直接开文件流，
+            // 缺目录会抛 DirectoryNotFoundException 并把调用方（例如"新游戏"按钮回调）整条打断。
+            // 在构造处确保目录存在，一处解决全部读写路径。
+            try { Directory.CreateDirectory(this.directory); }
+            catch (Exception e) { Debug.LogError("[PortfolioProfileStore] 创建存档目录失败：" + e.Message); }
         }
 
         /// <summary>正式存档目录独立于现有主游戏配置，不修改PlayerPrefs。</summary>
@@ -101,6 +106,7 @@ namespace FallenAngel.Core
         public void Delete(string profileId)
         {
             string target = ProfilePath(profileId);
+            Directory.CreateDirectory(directory);   // 兜底：目录可能被外部清掉
             // 与 Commit 使用同一把锁，避免与并发提交竞争。
             using (new FileStream(target + ".lock", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None))
             {

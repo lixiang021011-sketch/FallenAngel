@@ -28,8 +28,13 @@ namespace FallenAngel.UI
             RectTransform rt = (RectTransform)go.transform;
             rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f);
             rt.pivot = new Vector2(0f, 1f);
-            rt.anchoredPosition = new Vector2(10f, -8f);
-            rt.sizeDelta = new Vector2(360f, 52f);
+            // 贴左上角会被状态栏/刘海盖住：按安全区上边再往下让一点，并把读数放在一个半透明底上
+            Vector2 safeMin, safeMax;
+            FallenAngel.Core.SafeAreaFitter.ComputeAnchors(
+                Screen.safeArea, new Vector2(Screen.width, Screen.height), out safeMin, out safeMax);
+            float notchInset = Mathf.Max(0f, (1f - safeMax.y) * Screen.height / Mathf.Max(1f, parent.rect.height));
+            rt.anchoredPosition = new Vector2(10f, -(8f + notchInset * parent.rect.height));
+            rt.sizeDelta = new Vector2(400f, 56f);
 
             TextMeshProUGUI t = go.GetComponent<TextMeshProUGUI>();
             t.font = font != null ? font : TMP_Settings.defaultFontAsset;
@@ -38,6 +43,17 @@ namespace FallenAngel.UI
             t.color = new Color(1f, 0.85f, 0.3f, 0.9f);
             t.raycastTarget = false;
             t.text = "FPS --";
+
+            // 半透明底：纯文字在深色背景上够看，但在亮色 UI（选歌/结算）上会被淹没
+            GameObject bg = new GameObject("Bg", typeof(RectTransform), typeof(UnityEngine.UI.Image));
+            bg.transform.SetParent(go.transform, false);
+            RectTransform brt = (RectTransform)bg.transform;
+            brt.anchorMin = Vector2.zero; brt.anchorMax = Vector2.one;
+            brt.offsetMin = Vector2.zero; brt.offsetMax = Vector2.zero;
+            UnityEngine.UI.Image img = bg.GetComponent<UnityEngine.UI.Image>();
+            img.color = new Color(0f, 0f, 0f, 0.45f);
+            img.raycastTarget = false;
+            t.transform.SetAsLastSibling();   // 文字压在底上
 
             var overlay = go.AddComponent<DebugFpsOverlay>();
             overlay.text = t;
@@ -67,17 +83,36 @@ namespace FallenAngel.UI
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Install()
         {
-            HUDController hud = Object.FindObjectOfType<HUDController>();
-            if (hud == null) return;
-            RectTransform rt = hud.transform as RectTransform;
-            if (rt == null) return;
+            // 关键：FindObjectOfType 默认**不找未激活对象**，而 HUD 在菜单状态是隐藏的——
+            // 上一版真机"什么都没装上"就是这个原因（hud == null 直接 return）。必须传 includeInactive。
+            HUDController hud = Object.FindObjectOfType(typeof(HUDController), true) as HUDController;
 
-            if (hud.GetComponent<FallenAngel.Core.SafeAreaFitter>() == null)
+            // FPS 读数挂在 **Canvas** 上（不是 HUD）：HUD 在菜单/加载状态是隐藏的，
+            // 挂在它下面会导致"只有进局内才看得见"，真机上很容易被误判成"没生效"。
+            Canvas canvas = Object.FindObjectOfType<Canvas>();
+            RectTransform host = canvas != null ? canvas.transform as RectTransform : null;
+            if (host == null && hud != null) host = hud.transform as RectTransform;
+            if (host == null)
+            {
+                Debug.LogWarning("[HudFittings] 没找到 HUD/Canvas：安全区适配与 FPS 读数未安装");
+                return;
+            }
+
+            bool fitted = false;
+            if (hud != null && hud.GetComponent<FallenAngel.Core.SafeAreaFitter>() == null)
+            {
                 hud.gameObject.AddComponent<FallenAngel.Core.SafeAreaFitter>();
+                fitted = true;
+            }
+            else if (hud != null)
+            {
+                fitted = true;   // 已有
+            }
 
-            TextMeshProUGUI anyText = null;
-            foreach (var t in hud.GetComponentsInChildren<TextMeshProUGUI>(true)) { anyText = t; break; }
-            DebugFpsOverlay.Install(rt, anyText != null ? anyText.font : null);
+            TextMeshProUGUI anyText = host.GetComponentInChildren<TextMeshProUGUI>(true);
+            DebugFpsOverlay overlay = DebugFpsOverlay.Install(host, anyText != null ? anyText.font : null);
+            Debug.Log(string.Format("[HudFittings] 安装完成：HUD={0} 宿主={1} 安全区适配={2} FPS读数={3}",
+                hud != null, host.name, fitted, overlay != null));
         }
     }
 }

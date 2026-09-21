@@ -20,6 +20,20 @@ namespace FallenAngel.Core
         const string ApkPath = "Builds/FallenAngel.apk";
         const string PackageName = "com.lorxer.fallenangel";
 
+        /// <summary>是否构建开发版（带日志 / 调试符号，logcat 里能看到 Debug.Log）。真机排查用。</summary>
+        public static bool DevelopmentBuild;
+
+        /// <summary>
+        /// 开发版构建入口（带日志）：真机排查用。
+        /// batchmode：-executeMethod FallenAngel.Core.BuildApk.BuildAndroidApkDevelopment
+        /// </summary>
+        public static void BuildAndroidApkDevelopment()
+        {
+            DevelopmentBuild = true;
+            try { BuildAndroidApk(); }
+            finally { DevelopmentBuild = false; }
+        }
+
         [MenuItem("Tools/FallenAngel/Build Android APK")]
         public static void BuildAndroidApk()
         {
@@ -70,7 +84,9 @@ namespace FallenAngel.Core
                 locationPathName = ApkPath,
                 target = BuildTarget.Android,
                 targetGroup = BuildTargetGroup.Android, // 必须显式指定，否则读不到 Android 架构设置
-                options = BuildOptions.None,
+                // 开发版：带日志（logcat 里能看到 Debug.Log）与调试符号，真机排查用
+                options = DevelopmentBuild ? (BuildOptions.Development | BuildOptions.AllowDebugging)
+                                           : BuildOptions.None,
             };
             BuildReport report = BuildPipeline.BuildPlayer(options);
 
