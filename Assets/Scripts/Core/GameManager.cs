@@ -219,11 +219,15 @@ namespace FallenAngel.Core
                 return;
             }
 
-            // 谱面偏移 + 全局节拍校准偏移（CalibrationSettings，PlayerPrefs 持久化）+ 音频输出延迟补偿
-            // （AudioLatency：AudioSource.time 给的是"送去播的位置"，真正听到还要晚一个 DSP+设备延迟）
-            SongTime = Mathf.Max(0f, AudioManager.Instance.CurrentTime -
-                ((CurrentChart?.metadata.offset ?? 0f) + CalibrationSettings.OffsetSeconds +
-                 AudioLatency.CompensationSeconds));
+            // 时间基 = 音频位置 **+ 判定偏移**（照抄上游 BaseLiveController：
+            // currentAudioLatencyMusicTimeMs => Mathf.Max(timingAdjust + 音乐秒数, 0f)；
+            // 正数 = 音符提前）**− 谱面偏移** − 音频输出延迟补偿
+            // （AudioLatency：AudioSource.time 给的是"送去播的位置"，真正听到还要晚一个 DSP+设备延迟，正数 = 音符推迟。
+            //  两档方向相反，别混——上游靠 fillerSec 垫音频解决后一档，我们靠时钟扣减。）
+            SongTime = Mathf.Max(0f, AudioManager.Instance.CurrentTime
+                + CalibrationSettings.TimingAdjustSeconds
+                - (CurrentChart?.metadata.offset ?? 0f)
+                - AudioLatency.CompensationSeconds);
             // 记下"这次 SongTime 采样时的输入时钟读数"：输入事件按自己的时间戳换算歌曲时间要用
             InputClock.Sample(SongTime);
 

@@ -27,13 +27,14 @@ namespace FallenAngel.UI
                 TextAlignmentOptions.MidlineLeft, new Vector2(0f, 1f), new Vector2(1f, 1f),
                 new Vector2(24f, -8f), new Vector2(-24f, -40f));
 
-            RowButtons(bg.transform, 48f, new[]
+            // 编译修复（2026-09-20，AI 协作侧）：元组数组里的 lambda 推不出类型（CS0826），显式给出元素类型
+            RowButtons(bg.transform, 48f, new (string, Color, UnityEngine.Events.UnityAction)[]
             {
                 ("Perfect", ArtWorkbenchTokens.Perfect, () => Host.FireGrade(ArtWorkbenchGrade.Perfect)),
                 ("Great", ArtWorkbenchTokens.Great, () => Host.FireGrade(ArtWorkbenchGrade.Great)),
                 ("Miss", ArtWorkbenchTokens.Miss, () => Host.FireGrade(ArtWorkbenchGrade.Miss))
             });
-            RowButtons(bg.transform, 112f, new[]
+            RowButtons(bg.transform, 112f, new (string, Color, UnityEngine.Events.UnityAction)[]
             {
                 ("长按开始", ArtWorkbenchTokens.Paid, () => Host.FireHold(true)),
                 ("长按结束", ArtWorkbenchTokens.Card, () => Host.FireHold(false)),
@@ -44,7 +45,7 @@ namespace FallenAngel.UI
             burstSlider = SliderRow(bg.transform, 224f, "爆发", 0.4f, 2.2f, Host.Preset.hitBurstScale, v => { Host.Preset.hitBurstScale = v; Host.ApplyPreset(); });
             pulseSlider = SliderRow(bg.transform, 272f, "长按脉冲", 0.4f, 5f, Host.Preset.holdPulseSpeed, v => { Host.Preset.holdPulseSpeed = v; Host.ApplyPreset(); });
 
-            RowButtons(bg.transform, 320f, new[]
+            RowButtons(bg.transform, 320f, new (string, Color, UnityEngine.Events.UnityAction)[]
             {
                 ("保存", ArtWorkbenchTokens.Accent, () => Host.SaveSlot(CurrentSlot())),
                 ("读取", ArtWorkbenchTokens.Card, () => Host.LoadSlot(CurrentSlot())),

@@ -12,7 +12,8 @@ namespace FallenAngel.Core
     ///
     /// 为什么需要：真机反馈"音画偏差非常大"。这条链上有四个量——
     ///   ① 谱面 `metadata.offset`（作者对齐用）
-    ///   ② 玩家校准 `CalibrationSettings.OffsetMs`（设备个体差异）
+    ///   ② 判定偏移 `CalibrationSettings.TimingAdjustData`（**帧**，±20；照抄上游 LiveSettingData.TimingAdjustData，
+    ///      加在音乐时间上 → 正数 = 音符提前）
     ///   ③ 音频**输出延迟** `AudioLatency`（AudioSource.time 给的是"送去播的位置"，
     ///      真正听到还要晚 DSP 缓冲 + 设备延迟）
     ///   ④ 输入时间戳外推 `InputClock`（触摸事件时刻 → 歌曲时间）
@@ -35,17 +36,24 @@ namespace FallenAngel.Core
                 lines.Add(string.Format("{0} {1,-30} {2}", ok ? "PASS" : "FAIL", name, detail));
             };
 
-            int savedCalibration = CalibrationSettings.OffsetMs;
+            float savedCalibration = CalibrationSettings.TimingAdjustData;
             bool savedLatencyEnabled = AudioLatency.Enabled;
             try
             {
-                // ① 校准偏移：毫秒 ↔ 秒（正负都要通）
-                CalibrationSettings.OffsetMs = 120;
-                bool calPos = Mathf.Abs(CalibrationSettings.OffsetSeconds - 0.12f) < 1e-5f;
-                CalibrationSettings.OffsetMs = -80;
-                bool calNeg = Mathf.Abs(CalibrationSettings.OffsetSeconds + 0.08f) < 1e-5f;
-                check("校准偏移 ms→秒（正负都通）", calPos && calNeg,
-                    string.Format("+120ms→{0:0.###}s、-80ms→{1:0.###}s", 0.12f, -0.08f));
+                // ① 判定偏移（照抄上游：单位=帧、范围 ±20、帧→秒 ×1/60、正数 = 音符提前）
+                CalibrationSettings.TimingAdjustData = 20f;
+                bool framesMax = Mathf.Abs(CalibrationSettings.TimingAdjustSeconds - 20f / 60f) < 1e-5f;
+                CalibrationSettings.TimingAdjustData = -20f;
+                bool framesMin = Mathf.Abs(CalibrationSettings.TimingAdjustSeconds + 20f / 60f) < 1e-5f;
+                CalibrationSettings.TimingAdjustData = 999f;                 // 越界 → 夹到 +20
+                bool clampedHigh = Mathf.Abs(CalibrationSettings.TimingAdjustData - 20f) < 1e-5f;
+                bool parsed = Mathf.Abs(CalibrationSettings.ParseClamped("abc", 7f) - 7f) < 1e-5f
+                              && Mathf.Abs(CalibrationSettings.ParseClamped("-5.5", 0f) + 5.5f) < 1e-5f;
+                check("判定偏移·帧/范围/换算（上游口径）",
+                    framesMax && framesMin && clampedHigh && parsed,
+                    string.Format("+20 帧={0:0.0}ms、-20 帧={1:0.0}ms、越界→{2}、解析失败保持原值={3}",
+                        CalibrationSettings.TimingAdjustSeconds * 1000f, -20f / 60f * 1000f,
+                        CalibrationSettings.TimingAdjustData, parsed));
 
                 // ② 输出延迟补偿：DSP 缓冲可测；补偿量 = DSP + 设备估计；关掉 / 平台不需要时归零
                 AudioLatency.Measure();
@@ -95,38 +103,10 @@ namespace FallenAngel.Core
                     string.Format("{0:0.###}/{1:0.###}/{2:0.###}（回跳不退）→ seek {3:0.###}",
                         a, b, c, seek));
 
-                // ⑦ 跟拍测量的数学：修剪平均要能顶住离群点（点歪的那两下不该把结果带跑）
-                // 注意选样本要选"离群点不会自己抵消"的：-300 与 -310 都在早的一侧，
-                // 不剔极值的平均会被拖到 -70ms（若取 +310/-300 两个反向离群点，平均反而≈0，测不出差别）
-                var samples = new List<double> { 0.010, 0.012, 0.008, 0.011, -0.30, -0.31, 0.009, 0.013 };
-                int trimmed = CalibrationMath.TrimmedMeanMs(samples);
-                double sum = 0.0;
-                for (int i = 0; i < samples.Count; i++) sum += samples[i];
-                int naive = (int)Math.Round(sum / samples.Count * 1000.0);
-                check("跟拍测量·修剪平均抗离群",
-                    Mathf.Abs(trimmed - 11) <= 3 && Mathf.Abs(naive - trimmed) > 20,
-                    string.Format("8 次含 -300/-310ms 误点：修剪平均={0}ms、不剔极值={1}ms", trimmed, naive));
-
-                // ⑧ 测量结果夹取（防止误触算出几秒的离谱值）
-                bool clampedMs = CalibrationMath.ClampMs(5000) == CalibrationMath.MaxMs
-                                 && CalibrationMath.ClampMs(-5000) == CalibrationMath.MinMs;
-                check("跟拍测量·结果夹取",
-                    clampedMs,
-                    string.Format("±5000ms → [{0}, {1}]",
-                        CalibrationMath.ClampMs(-5000), CalibrationMath.ClampMs(5000)));
-
-                // ⑨ 半拍之外的点击不算（没跟上节拍的那些不该进平均）
-                double off;
-                bool nearBeat = CalibrationMath.TryAssignToBeat(10.02, 10.00, 0.6, out off);
-                bool nearOk = nearBeat && Mathf.Abs((float)off - 0.02f) < 1e-4f;
-                bool farBeat = CalibrationMath.TryAssignToBeat(10.40, 10.00, 0.6, out off);
-                check("跟拍测量·半拍之外不计",
-                    nearOk && !farBeat,
-                    string.Format("+20ms 计入={0}、+400ms（>半拍）计入={1}", nearOk, farBeat));
             }
             finally
             {
-                CalibrationSettings.OffsetMs = savedCalibration;
+                CalibrationSettings.TimingAdjustData = savedCalibration;
                 AudioLatency.Enabled = savedLatencyEnabled;
                 InputClock.Reset();
             }

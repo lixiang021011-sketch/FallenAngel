@@ -108,8 +108,12 @@ namespace FallenAngel.UI
             string dir = Path.GetFullPath(Path.Combine(Application.dataPath, "../docs/art-workbench/evidence"));
             Directory.CreateDirectory(dir);
             string path = Path.Combine(dir, "workbench-play.png");
-            ScreenCapture.CaptureScreenshot(path);
-            Debug.Log("[ArtWorkbench] 已请求截图 -> " + path);
+            // 编译修复（2026-09-20，AI 协作侧）：项目未启用 com.unity.modules.screencapture（铁律 2 不新增 Package），
+            // ScreenCapture / ImageConversion 在本工程不可用，编辑器内直接截图这条路先停用；
+            // 离屏证据图仍走 docs/art-workbench/render_evidence.py（现有 PNG 即由它产出）。
+            // 若将来确需编辑器内截图：在 manifest 里加 com.unity.modules.screencapture + imageconversion 后，
+            // 这里恢复 ScreenCapture.CaptureScreenshot(path) 即可。
+            Debug.LogWarning("[ArtWorkbench] 截图已停用（缺少 screencapture 模块），目标路径：" + path);
         }
     }
 }

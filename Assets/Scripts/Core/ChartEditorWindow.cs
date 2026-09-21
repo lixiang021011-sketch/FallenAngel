@@ -418,7 +418,7 @@ namespace FallenAngel.Core
 
         private void PickAndImport()
         {
-            string path = EditorUtility.OpenFilePanel("导入开源谱面（osu!mania / StepMania / Phigros / PEC）", "", "osu,sm,ssc,json,pec");
+            string path = EditorUtility.OpenFilePanel("导入开源谱面（osu!mania / StepMania / SUS / Phigros / PEC）", "", "osu,sm,ssc,sus,txt,json,pec");
             if (!string.IsNullOrEmpty(path)) RunImport(path);
         }
 

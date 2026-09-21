@@ -151,11 +151,15 @@ namespace FallenAngel.UI
         /// </summary>
         private void HandleModifierDebugKeys()
         {
+#if UNITY_EDITOR
+            // ModifierDebugPanel 整个类都在 #if UNITY_EDITOR 里：播放器构建里它不存在，
+            // 这里不加守卫会导致 Android 构建直接编译失败（本行曾是长期潜伏的构建阻塞）。
             if (Input.GetKeyDown(KeyCode.Alpha1)) ModifierDebugPanel.ApplyPresetByIndex(0);
             else if (Input.GetKeyDown(KeyCode.Alpha2)) ModifierDebugPanel.ApplyPresetByIndex(1);
             else if (Input.GetKeyDown(KeyCode.Alpha3)) ModifierDebugPanel.ApplyPresetByIndex(2);
             else if (Input.GetKeyDown(KeyCode.Alpha4)) ModifierDebugPanel.ApplyPresetByIndex(3);
             else if (Input.GetKeyDown(KeyCode.Alpha5)) ModifierDebugPanel.ApplyPresetByIndex(4);
+#endif
         }
 
         private void OnGameStateChanged(GameState state)

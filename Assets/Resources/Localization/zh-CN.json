@@ -93,42 +93,6 @@
       "value": "返回"
     },
     {
-      "key": "cal.title",
-      "value": "节拍校准"
-    },
-    {
-      "key": "cal.plus5",
-      "value": "+5ms"
-    },
-    {
-      "key": "cal.minus5",
-      "value": "-5ms"
-    },
-    {
-      "key": "cal.close",
-      "value": "关闭"
-    },
-    {
-      "key": "cal.offset",
-      "value": "当前偏移: {0} ms（正 = 音符推迟）"
-    },
-    {
-      "key": "cal.observe",
-      "value": "开始观察"
-    },
-    {
-      "key": "cal.observeStop",
-      "value": "停止观察"
-    },
-    {
-      "key": "cal.observeHint",
-      "value": "观察音画是否重合：\n声音比音符晚 → 按 +5ms\n声音比音符早 → 按 -5ms\n直到音画完全重合"
-    },
-    {
-      "key": "cal.observing",
-      "value": "观察中…用 ±5ms 调整，直到音画重合（ESC 退出）"
-    },
-    {
       "key": "map.title",
       "value": "冒险地图"
     },
@@ -169,30 +133,6 @@
       "value": "选歌"
     },
     {
-      "key": "cal.start",
-      "value": "开始测量"
-    },
-    {
-      "key": "cal.stop",
-      "value": "停止"
-    },
-    {
-      "key": "cal.tapAlong",
-      "value": "跟着节拍点屏幕（8 拍）"
-    },
-    {
-      "key": "cal.tapping",
-      "value": "第 {0}/{1} 拍 · 已记录 {2} 次点击"
-    },
-    {
-      "key": "cal.measuredApplied",
-      "value": "共 {0} 次点击 → 建议 {1}ms，已应用 {2}ms（可用 ±5 微调）"
-    },
-    {
-      "key": "cal.noTap",
-      "value": "没有采集到点击，请重试"
-    },
-    {
       "key": "judge.miss",
       "value": "MISS"
     },
@@ -223,6 +163,14 @@
     {
       "key": "judge.desc.flickMiss",
       "value": "FLICK MISS"
+    },
+    {
+      "key": "settings.timingAdjust",
+      "value": "判定偏移"
+    },
+    {
+      "key": "settings.timingAdjustHint",
+      "value": "-20.0 - 20.0"
     }
   ]
 }

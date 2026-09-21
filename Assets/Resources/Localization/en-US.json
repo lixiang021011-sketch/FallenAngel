@@ -93,42 +93,6 @@
       "value": "BACK"
     },
     {
-      "key": "cal.title",
-      "value": "Beat Calibration"
-    },
-    {
-      "key": "cal.plus5",
-      "value": "+5ms"
-    },
-    {
-      "key": "cal.minus5",
-      "value": "-5ms"
-    },
-    {
-      "key": "cal.close",
-      "value": "CLOSE"
-    },
-    {
-      "key": "cal.offset",
-      "value": "Offset: {0} ms (+ = notes delayed)"
-    },
-    {
-      "key": "cal.observe",
-      "value": "START"
-    },
-    {
-      "key": "cal.observeStop",
-      "value": "STOP"
-    },
-    {
-      "key": "cal.observeHint",
-      "value": "Watch sound vs note:\nSound later than note → +5ms\nSound earlier than note → -5ms\nUntil they align perfectly"
-    },
-    {
-      "key": "cal.observing",
-      "value": "Observing… adjust with ±5ms until aligned (ESC to exit)"
-    },
-    {
       "key": "map.title",
       "value": "ADVENTURE MAP"
     },
@@ -169,30 +133,6 @@
       "value": "SONG SELECT"
     },
     {
-      "key": "cal.start",
-      "value": "Start"
-    },
-    {
-      "key": "cal.stop",
-      "value": "Stop"
-    },
-    {
-      "key": "cal.tapAlong",
-      "value": "Tap along with the beats (8)"
-    },
-    {
-      "key": "cal.tapping",
-      "value": "Beat {0}/{1} · {2} taps"
-    },
-    {
-      "key": "cal.measuredApplied",
-      "value": "{0} taps → suggested {1}ms, applied {2}ms (fine-tune with ±5)"
-    },
-    {
-      "key": "cal.noTap",
-      "value": "No taps captured — please retry"
-    },
-    {
       "key": "judge.miss",
       "value": "MISS"
     },
@@ -223,6 +163,14 @@
     {
       "key": "judge.desc.flickMiss",
       "value": "FLICK MISS"
+    },
+    {
+      "key": "settings.timingAdjust",
+      "value": "Timing adjust"
+    },
+    {
+      "key": "settings.timingAdjustHint",
+      "value": "-20.0 - 20.0"
     }
   ]
 }
