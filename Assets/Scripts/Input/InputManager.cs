@@ -89,6 +89,8 @@ namespace FallenAngel.InputSystem
 
         // 用于跟踪触屏ID与音轨的对应关系
         private Dictionary<int, int> touchIdToLane = new Dictionary<int, int>();
+        // 真实触摸事件时间戳（EnhancedTouch，装 Input System 后才有；没装则回退帧时间）
+        private readonly Dictionary<int, double> touchEventTimes = new Dictionary<int, double>();
         // flick 方向判定用：每根手指上次位置 + 每轨累计纵向滑动（屏幕 y 向上为正 = 上滑）
         private Dictionary<int, Vector2> touchPrev = new Dictionary<int, Vector2>();
         private Dictionary<int, float> laneSwipeY = new Dictionary<int, float>();
@@ -126,6 +128,42 @@ namespace FallenAngel.InputSystem
                 return;
             }
             Instance = this;
+            EnableEnhancedTouch();
+        }
+
+        /// <summary>启用 EnhancedTouch（新输入系统的触摸时间戳）；未装包时是空操作</summary>
+        private void EnableEnhancedTouch()
+        {
+#if ENABLE_INPUT_SYSTEM
+            try
+            {
+                UnityEngine.InputSystem.EnhancedTouch.EnhancedTouchSupport.Enable();
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning("[InputManager] EnhancedTouch 启用失败，回退到帧时间戳：" + e.Message);
+            }
+#endif
+        }
+
+        /// <summary>每帧缓存"fingerId → 事件时刻"，供本帧的触摸事件换算音乐时间</summary>
+        private void RefreshTouchEventTimes()
+        {
+            touchEventTimes.Clear();
+#if ENABLE_INPUT_SYSTEM
+            var active = UnityEngine.InputSystem.EnhancedTouch.Touch.activeTouches;
+            for (int i = 0; i < active.Count; i++)
+            {
+                var t = active[i];
+                touchEventTimes[t.touchId] = t.time;
+            }
+#endif
+        }
+
+        /// <summary>取这根手指本次事件的时间戳；拿不到返回 -1（调用方回退帧时间）</summary>
+        private double TouchEventTime(int fingerId)
+        {
+            return touchEventTimes.TryGetValue(fingerId, out double t) ? t : -1.0;
         }
 
         private void OnEnable()
@@ -270,6 +308,7 @@ namespace FallenAngel.InputSystem
         private void HandleTouchInput()
         {
             if (UnityEngine.Input.touchCount <= 0) return;
+            RefreshTouchEventTimes();
 
             for (int i = 0; i < UnityEngine.Input.touchCount; i++)
             {
@@ -302,7 +341,7 @@ namespace FallenAngel.InputSystem
                             touchIdToLane[touchId] = lane;
                             touchPrev[touchId] = touchPos;
                             laneSwipeY[lane] = 0f;                 // 新按下：该轨滑动量归零
-                            SetLaneState(lane, true, touchPos, true, touchId);
+                            SetLaneState(lane, true, touchPos, true, touchId, TouchEventTime(touchId));
                         }
                         break;
 
@@ -320,8 +359,9 @@ namespace FallenAngel.InputSystem
                             touchIdToLane[touchId] = lane;
                             // 旧轨道仅当没有其他手指按住时才释放（支持同轨多指交替）
                             if (!IsLaneHeldByAnyTouch(oldLane))
-                                SetLaneState(oldLane, false, touchPos, true, touchId);
-                            SetLaneState(lane, true, touchPos, true, touchId);   // 跨轨按下：带该轨累计滑动量
+                                SetLaneState(oldLane, false, touchPos, true, touchId, TouchEventTime(touchId));
+                            // 跨轨按下：带该轨累计滑动量
+                            SetLaneState(lane, true, touchPos, true, touchId, TouchEventTime(touchId));
                         }
                         break;
                 }
@@ -391,11 +431,13 @@ namespace FallenAngel.InputSystem
         /// <summary>
         /// 改变音轨按下状态并触发事件
         /// </summary>
-        private void SetLaneState(int lane, bool pressed, Vector2 touchPos, bool fromTouch = false, int fingerId = -1)
+        private void SetLaneState(int lane, bool pressed, Vector2 touchPos, bool fromTouch = false, int fingerId = -1,
+                                  double eventTime = -1.0)
         {
             // 默认时间戳 = 本帧歌曲时间。触屏事件真正自带时间戳的路径见 SetLaneStateAt
             //（legacy Input 拿不到触摸事件时间，接 EnhancedTouch 后由那条路补上）
             float musicTime = GameManager.Instance != null ? GameManager.Instance.SongTime : 0f;
+            if (eventTime >= 0.0) musicTime = InputClock.ToMusicTime(eventTime);
             SetLaneStateAt(lane, pressed, touchPos, fromTouch, musicTime, fingerId);
         }
 

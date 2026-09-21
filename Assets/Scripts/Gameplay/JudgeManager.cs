@@ -90,6 +90,8 @@ namespace FallenAngel.Gameplay
         private readonly List<Note> activeSlides = new List<Note>();
         // Slide 跟手：记录每个按住中的滑条"脱离路径"的累计秒数（回到容差内清零）
         private readonly Dictionary<Note, float> slideOutOfRange = new Dictionary<Note, float>();
+        // 已经掉过段的滑条（只管 combo，不作废整条；见 Update 的跟手段）
+        private readonly HashSet<Note> slideSegmentBroken = new HashSet<Note>();
         private const float SlideFollowToleranceLanes = 1.0f;   // 与路径当前 x 的允许偏差（轨）
         private const float SlideBreakSeconds = 0.25f;         // 连续脱离多久算断开
 
@@ -201,10 +203,15 @@ namespace FallenAngel.Gameplay
                 slideOutOfRange[slide] = off;
                 if (off >= SlideBreakSeconds)
                 {
-                    Debug.Log($"[JudgeManager] Slide 跟手断开（偏离 {off:F2}s）lane={slide.Data.lane}");
-                    ApplyJudge(slide, JudgeResultType.Miss, slide.Data.lane);
-                    slideOutOfRange.Remove(slide);
-                    activeSlides.RemoveAt(i);
+                    // PJSK 语义：跟手断开**不作废整条滑条**——掉的是这一段的 combo，
+                    // 手指回到轨内就能继续跟；整条的成败最终由"松手时刻 vs 尾巴时刻"决定。
+                    if (slideSegmentBroken.Add(slide))
+                    {
+                        BreakCombo();
+                        Debug.Log($"[JudgeManager] Slide 掉段（偏离 {off:F2}s）lane={slide.Data.lane}：" +
+                                  "断 combo、不断整条");
+                    }
+                    slideOutOfRange[slide] = 0f;   // 重置计时，给手指回到轨内的机会
                 }
             }
 
@@ -248,6 +255,8 @@ namespace FallenAngel.Gameplay
             for (int i = 0; i < count; i++) laneHoldLongId[i] = -1;
             activeWideHold = null;
             activeSlides.Clear();
+            slideSegmentBroken.Clear();
+            slideOutOfRange.Clear();
 
             OnScoreUpdate?.Invoke(0);
             OnComboUpdate?.Invoke(0, true);
