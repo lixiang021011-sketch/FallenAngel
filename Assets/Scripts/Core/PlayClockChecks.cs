@@ -96,14 +96,16 @@ namespace FallenAngel.Core
                         a, b, c, seek));
 
                 // ⑦ 跟拍测量的数学：修剪平均要能顶住离群点（点歪的那两下不该把结果带跑）
-                var samples = new List<double> { 0.010, 0.012, 0.008, 0.011, -0.30, 0.31, 0.009, 0.013 };
+                // 注意选样本要选"离群点不会自己抵消"的：-300 与 -310 都在早的一侧，
+                // 不剔极值的平均会被拖到 -70ms（若取 +310/-300 两个反向离群点，平均反而≈0，测不出差别）
+                var samples = new List<double> { 0.010, 0.012, 0.008, 0.011, -0.30, -0.31, 0.009, 0.013 };
                 int trimmed = CalibrationMath.TrimmedMeanMs(samples);
                 double sum = 0.0;
                 for (int i = 0; i < samples.Count; i++) sum += samples[i];
                 int naive = (int)Math.Round(sum / samples.Count * 1000.0);
                 check("跟拍测量·修剪平均抗离群",
                     Mathf.Abs(trimmed - 11) <= 3 && Mathf.Abs(naive - trimmed) > 20,
-                    string.Format("8 次含 +310/-300ms 误点：修剪平均={0}ms、不剔极值={1}ms", trimmed, naive));
+                    string.Format("8 次含 -300/-310ms 误点：修剪平均={0}ms、不剔极值={1}ms", trimmed, naive));
 
                 // ⑧ 测量结果夹取（防止误触算出几秒的离谱值）
                 bool clampedMs = CalibrationMath.ClampMs(5000) == CalibrationMath.MaxMs
