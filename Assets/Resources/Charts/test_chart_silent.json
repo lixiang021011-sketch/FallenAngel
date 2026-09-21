@@ -12,7 +12,7 @@
     "previewDuration": 15.0,
     "formatVersion": 2,
     "noteCounts": {
-      "tap": 40,
+      "tap": 37,
       "hold": 7,
       "drag": 10,
       "flick": 5,
@@ -400,21 +400,6 @@
       "type": "tap",
       "time": 49.0,
       "lane": 1
-    },
-    {
-      "type": "tap",
-      "time": 49.0,
-      "lane": 2
-    },
-    {
-      "type": "tap",
-      "time": 49.0,
-      "lane": 3
-    },
-    {
-      "type": "tap",
-      "time": 49.0,
-      "lane": 4
     }
   ],
   "events": []

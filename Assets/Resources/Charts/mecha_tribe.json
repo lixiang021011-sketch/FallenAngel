@@ -493,15 +493,6 @@
     {
       "type": "tap",
       "lane": 2,
-      "time": 21.861,
-      "duration": 0.0,
-      "direction": "up",
-      "wide": false,
-      "path": []
-    },
-    {
-      "type": "tap",
-      "lane": 2,
       "time": 22.195,
       "duration": 0.0,
       "direction": "up",
@@ -926,15 +917,6 @@
       "type": "tap",
       "lane": 2,
       "time": 32.195,
-      "duration": 0.0,
-      "direction": "up",
-      "wide": false,
-      "path": []
-    },
-    {
-      "type": "tap",
-      "lane": 2,
-      "time": 32.528,
       "duration": 0.0,
       "direction": "up",
       "wide": false,
@@ -2399,15 +2381,6 @@
       "path": []
     },
     {
-      "type": "tap",
-      "lane": 2,
-      "time": 69.028,
-      "duration": 0.0,
-      "direction": "up",
-      "wide": false,
-      "path": []
-    },
-    {
       "type": "hold",
       "lane": 4,
       "time": 69.361,
@@ -2851,15 +2824,6 @@
     {
       "type": "tap",
       "lane": 2,
-      "time": 87.028,
-      "duration": 0.0,
-      "direction": "up",
-      "wide": false,
-      "path": []
-    },
-    {
-      "type": "tap",
-      "lane": 2,
       "time": 87.361,
       "duration": 0.0,
       "direction": "up",
@@ -3004,15 +2968,6 @@
     {
       "type": "tap",
       "lane": 2,
-      "time": 90.695,
-      "duration": 0.0,
-      "direction": "up",
-      "wide": false,
-      "path": []
-    },
-    {
-      "type": "tap",
-      "lane": 2,
       "time": 91.195,
       "duration": 0.0,
       "direction": "up",
@@ -3140,15 +3095,6 @@
       "type": "tap",
       "lane": 3,
       "time": 95.695,
-      "duration": 0.0,
-      "direction": "up",
-      "wide": false,
-      "path": []
-    },
-    {
-      "type": "tap",
-      "lane": 2,
-      "time": 96.028,
       "duration": 0.0,
       "direction": "up",
       "wide": false,
