@@ -61,9 +61,10 @@ namespace FallenAngel.InputSystem
         private KeyCode[] ActiveKeys => LaneLayout.ActiveLaneCount == 5 ? laneKeys5 : laneKeys4;
 
         [Header("触屏判定区域底部高度（屏幕高度比例）")]
-        [Tooltip("判定区为屏幕底部 touchBottomRatio 比例（0.6 = 底部60%），y=0 为屏幕底边")]
-        [Range(0.1f, 0.9f)]
-        public float touchBottomRatio = 0.6f;
+        [Tooltip("判定区为屏幕底部 touchBottomRatio 比例（1 = 整屏，参照 Phigros；y=0 为屏幕底边）。" +
+                 "只影响"按下能不能判到"，不影响轨道 X 映射；UI 上的触摸仍然被 IsPointerOverUI 挡掉")]
+        [Range(0.1f, 1f)]
+        public float touchBottomRatio = 1f;
 
         /// <summary>
         /// 音轨输入事件：按下/抬起时触发

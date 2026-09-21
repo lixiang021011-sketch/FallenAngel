@@ -177,6 +177,9 @@ namespace FallenAngel.Core
             GameManager gm = managers.AddComponent<GameManager>();
             AudioManager am = managers.AddComponent<AudioManager>();
             InputManager im = managers.AddComponent<InputManager>();
+            // 判定区 = **整屏纵向**（参照 Phigros：哪里按都能判到最近那条轨）。
+            // 只改逻辑范围，不改任何画面；UI 上的触摸仍由 IsPointerOverUI 拦掉。
+            SetPrivateField(im, "touchBottomRatio", 1f);
             JudgeManager jm = managers.AddComponent<JudgeManager>();
             ModifierManager modifierManager = managers.AddComponent<ModifierManager>();   // 局内 modifier（docs/architecture.md §9）
 
