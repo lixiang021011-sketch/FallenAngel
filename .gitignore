@@ -71,3 +71,9 @@ art_tools/note_perspective/out/
 /Assets/Resources/Charts/pjsk_0010_happy_synthesizer.json
 /Assets/Resources/Charts/pjsk_0010_happy_synthesizer.json.meta
 # 音频无需在此列出：上面第 56 行的 `Assets/Resources/Audio/` 已整体忽略（既有规则）
+
+# 本机参考/暂存目录（不进仓库，也不参与编译）
+# _refs/：上游源码与原始转储的本地参考（唯一事实来源在仓库外）
+# _archive/：被替换/归档的旧实现
+_refs/
+_archive/
