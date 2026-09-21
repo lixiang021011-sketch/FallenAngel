@@ -62,7 +62,7 @@ namespace FallenAngel.InputSystem
 
         [Header("触屏判定区域底部高度（屏幕高度比例）")]
         [Tooltip("判定区为屏幕底部 touchBottomRatio 比例（1 = 整屏，参照 Phigros；y=0 为屏幕底边）。" +
-                 "只影响"按下能不能判到"，不影响轨道 X 映射；UI 上的触摸仍然被 IsPointerOverUI 挡掉")]
+                 "只影响「按下能不能判到」的 Y 范围，不影响轨道 X 映射；UI 上的触摸仍被 IsPointerOverUI 挡掉")]
         [Range(0.1f, 1f)]
         public float touchBottomRatio = 1f;
 
