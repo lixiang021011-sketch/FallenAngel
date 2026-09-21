@@ -167,6 +167,30 @@
     {
       "key": "songSelect.title",
       "value": "选歌"
+    },
+    {
+      "key": "cal.start",
+      "value": "开始测量"
+    },
+    {
+      "key": "cal.stop",
+      "value": "停止"
+    },
+    {
+      "key": "cal.tapAlong",
+      "value": "跟着节拍点屏幕（8 拍）"
+    },
+    {
+      "key": "cal.tapping",
+      "value": "第 {0}/{1} 拍 · 已记录 {2} 次点击"
+    },
+    {
+      "key": "cal.measuredApplied",
+      "value": "共 {0} 次点击 → 建议 {1}ms，已应用 {2}ms（可用 ±5 微调）"
+    },
+    {
+      "key": "cal.noTap",
+      "value": "没有采集到点击，请重试"
     }
   ]
 }

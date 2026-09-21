@@ -167,6 +167,30 @@
     {
       "key": "songSelect.title",
       "value": "SONG SELECT"
+    },
+    {
+      "key": "cal.start",
+      "value": "Start"
+    },
+    {
+      "key": "cal.stop",
+      "value": "Stop"
+    },
+    {
+      "key": "cal.tapAlong",
+      "value": "Tap along with the beats (8)"
+    },
+    {
+      "key": "cal.tapping",
+      "value": "Beat {0}/{1} · {2} taps"
+    },
+    {
+      "key": "cal.measuredApplied",
+      "value": "{0} taps → suggested {1}ms, applied {2}ms (fine-tune with ±5)"
+    },
+    {
+      "key": "cal.noTap",
+      "value": "No taps captured — please retry"
     }
   ]
 }

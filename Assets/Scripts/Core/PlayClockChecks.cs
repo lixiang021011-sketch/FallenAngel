@@ -94,6 +94,33 @@ namespace FallenAngel.Core
                     b >= a - 1e-4f && c >= b - 1e-4f && Mathf.Abs(seek - 20f) < 1e-3f,
                     string.Format("{0:0.###}/{1:0.###}/{2:0.###}（回跳不退）→ seek {3:0.###}",
                         a, b, c, seek));
+
+                // ⑦ 跟拍测量的数学：修剪平均要能顶住离群点（点歪的那两下不该把结果带跑）
+                var samples = new List<double> { 0.010, 0.012, 0.008, 0.011, -0.30, 0.31, 0.009, 0.013 };
+                int trimmed = CalibrationMath.TrimmedMeanMs(samples);
+                double sum = 0.0;
+                for (int i = 0; i < samples.Count; i++) sum += samples[i];
+                int naive = (int)Math.Round(sum / samples.Count * 1000.0);
+                check("跟拍测量·修剪平均抗离群",
+                    Mathf.Abs(trimmed - 11) <= 3 && Mathf.Abs(naive - trimmed) > 20,
+                    string.Format("8 次含 +310/-300ms 误点：修剪平均={0}ms、不剔极值={1}ms", trimmed, naive));
+
+                // ⑧ 测量结果夹取（防止误触算出几秒的离谱值）
+                bool clampedMs = CalibrationMath.ClampMs(5000) == CalibrationMath.MaxMs
+                                 && CalibrationMath.ClampMs(-5000) == CalibrationMath.MinMs;
+                check("跟拍测量·结果夹取",
+                    clampedMs,
+                    string.Format("±5000ms → [{0}, {1}]",
+                        CalibrationMath.ClampMs(-5000), CalibrationMath.ClampMs(5000)));
+
+                // ⑨ 半拍之外的点击不算（没跟上节拍的那些不该进平均）
+                double off;
+                bool nearBeat = CalibrationMath.TryAssignToBeat(10.02, 10.00, 0.6, out off);
+                bool nearOk = nearBeat && Mathf.Abs((float)off - 0.02f) < 1e-4f;
+                bool farBeat = CalibrationMath.TryAssignToBeat(10.40, 10.00, 0.6, out off);
+                check("跟拍测量·半拍之外不计",
+                    nearOk && !farBeat,
+                    string.Format("+20ms 计入={0}、+400ms（>半拍）计入={1}", nearOk, farBeat));
             }
             finally
             {

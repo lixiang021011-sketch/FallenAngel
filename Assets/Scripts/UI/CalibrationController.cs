@@ -100,6 +100,7 @@ namespace FallenAngel.UI
 
         private void Update()
         {
+            CollectTaps();
             // ESC 随时可关闭面板（观察中也可退出）
             if (Input.GetKeyDown(KeyCode.Escape))
             {
@@ -130,7 +131,100 @@ namespace FallenAngel.UI
         {
             AudioManager.Instance?.PlayButtonClick();
             if (observing) StopObserving();
-            else StartObserving();
+            else StartMeasuring();
+        }
+
+        // ── 跟拍点击测量（2026-09-21 重做；口径对齐判定簇 + 输出延迟补偿）──────────────
+        // 旧版是"观察式"：音符下落 + 滴答按偏移提前/推迟，靠人耳听感 ±5ms 微调。
+        // 判定改成"按事件时间戳"、音画又接上输出延迟补偿之后，那套闭环与游戏实际口径脱节，
+        // 玩家怎么调都不对（作者反馈"校准变成摆设"）。
+        // 现在改成**跟拍点击**：节拍响 8 次，玩家跟着点屏幕任意处；
+        // 取"点击时刻 − 该拍时刻"的**修剪平均**（两端各剔 25%）作为建议值，直接写进 CalibrationSettings。
+        private const float MeasureBeatInterval = 0.60f;
+        private const int MeasureBeatCount = 8;
+
+        private readonly List<double> tapOffsets = new List<double>();
+        private readonly List<double> beatTimes = new List<double>();
+        private Coroutine measureCoroutine;
+        private bool measuring;
+
+        private void StartMeasuring()
+        {
+            observing = true;                     // 复用状态位：按钮 label / Close 逻辑不变
+            measuring = true;
+            tapOffsets.Clear();
+            beatTimes.Clear();
+            if (startStopLabel != null) startStopLabel.text = Loc.T("cal.stop");
+            if (statusText != null) statusText.text = Loc.T("cal.tapAlong");
+            measureCoroutine = StartCoroutine(MeasureLoop());
+        }
+
+        /// <summary>节拍循环：每拍前后各留半拍，超出的点击不算</summary>
+        private System.Collections.IEnumerator MeasureLoop()
+        {
+            double start = Time.unscaledTimeAsDouble + 1.0;      // 前导 1 秒让玩家准备
+            for (int i = 0; i < MeasureBeatCount; i++)
+            {
+                if (!measuring) yield break;
+                double beat = start + i * MeasureBeatInterval;
+                beatTimes.Add(beat);
+
+                while (Time.unscaledTimeAsDouble < beat - 0.05) yield return null;
+                testSource.PlayOneShot(tickClip, 0.8f);
+                if (statusText != null)
+                    statusText.text = Loc.T("cal.tapping", i + 1, MeasureBeatCount, tapOffsets.Count);
+                while (Time.unscaledTimeAsDouble < beat + MeasureBeatInterval - 0.05) yield return null;
+            }
+
+            FinishMeasuring();
+        }
+
+        /// <summary>收尾：修剪平均 → 应用 → 显示（并写明输出延迟是自动补偿的）</summary>
+        private void FinishMeasuring()
+        {
+            measuring = false;
+            observing = false;
+            measureCoroutine = null;
+            if (startStopLabel != null) startStopLabel.text = Loc.T("cal.start");
+
+            int suggested = CalibrationMath.TrimmedMeanMs(tapOffsets);
+            CalibrationSettings.OffsetMs = suggested;          // 直接应用，玩家还能 ±5ms 微调
+            RefreshOffsetText();
+            if (statusText != null)
+            {
+                statusText.text = tapOffsets.Count > 0
+                    ? Loc.T("cal.measuredApplied", tapOffsets.Count, suggested, CalibrationSettings.OffsetMs)
+                    : Loc.T("cal.noTap");
+            }
+            Debug.Log(string.Format(
+                "[Calibration] 跟拍测量：{0} 次点击 → 建议 {1}ms，已应用 {2}ms（输出延迟补偿 {3:0}ms 自动加在时钟上）",
+                tapOffsets.Count, suggested, CalibrationSettings.OffsetMs, AudioLatency.CompensationSeconds * 1000f));
+        }
+
+        /// <summary>测量期间收点击：面板是 UI，不走 InputManager 的轨道输入，所以自己读触摸/鼠标</summary>
+        private void CollectTaps()
+        {
+            if (!measuring) return;
+
+            bool tapped = false;
+#if UNITY_EDITOR
+            tapped = UnityEngine.Input.GetMouseButtonDown(0);
+#else
+            for (int i = 0; i < UnityEngine.Input.touchCount; i++)
+            {
+                if (UnityEngine.Input.GetTouch(i).phase == TouchPhase.Began) { tapped = true; break; }
+            }
+#endif
+            if (!tapped || beatTimes.Count == 0) return;
+
+            double tapTime = Time.unscaledTimeAsDouble;
+            double best = beatTimes[0];
+            foreach (double beat in beatTimes)
+                if (System.Math.Abs(tapTime - beat) < System.Math.Abs(tapTime - best)) best = beat;
+
+            double offset;
+            if (CalibrationMath.TryAssignToBeat(tapTime, best, MeasureBeatInterval, out offset))
+                tapOffsets.Add(offset);
         }
 
         private void StartObserving()
