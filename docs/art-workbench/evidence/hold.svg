@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 1080 1920">
+  <rect width="1080" height="1920" fill="#0F202E"/>
+  <rect x="290" y="140" width="220" height="1320" rx="8" fill="#1B323B"/>
+  <rect x="570" y="140" width="220" height="1320" rx="8" fill="#1B323B"/>
+  <rect x="80" y="1392" width="920" height="8" fill="#E8F6F5"/>
+  <defs>
+    <linearGradient id="hold" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#F0A8CC" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#F0A8CC" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect x="620" y="720" width="120" height="680" fill="url(#hold)"/>
+  <polygon points="680,1360 760,1396 680,1432 600,1396" fill="#F0A8CC"/>
+  <text x="540" y="240" fill="#F0A8CC" font-size="40" font-family="sans-serif" text-anchor="middle">HOLD</text>
+</svg>

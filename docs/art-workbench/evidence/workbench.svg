@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 1080 1920">
+  <rect width="1080" height="1920" fill="#0F202E"/>
+  <rect x="0" y="0" width="1080" height="88" fill="#0D171F"/>
+  <text x="40" y="56" fill="#E8F6F5" font-size="36" font-family="sans-serif">KÕ:</text>
+  <text x="1040" y="56" fill="#7F969B" font-size="28" font-family="sans-serif" text-anchor="end">Ž/å\ð v1.0</text>
+  <rect x="290" y="140" width="220" height="1320" rx="8" fill="#1B323B"/>
+  <rect x="570" y="140" width="220" height="1320" rx="8" fill="#1B323B"/>
+  <rect x="80" y="1392" width="920" height="8" fill="#E8F6F5"/>
+  <polygon points="360,980 440,1000 360,1020 280,1000" fill="#91D0D4"/>
+  <polygon points="640,860 720,880 640,900 560,880" fill="#91D0D4"/>
+  <rect x="0" y="1500" width="1080" height="420" fill="#0F1C24"/>
+  <rect x="40" y="1540" width="320" height="70" rx="8" fill="#91D0D4"/>
+  <rect x="380" y="1540" width="320" height="70" rx="8" fill="#2F7F6E"/>
+  <rect x="720" y="1540" width="320" height="70" rx="8" fill="#B08A86"/>
+  <text x="200" y="1586" fill="#0F202E" font-size="28" text-anchor="middle" font-family="sans-serif">Perfect</text>
+  <text x="540" y="1586" fill="#E8F6F5" font-size="28" text-anchor="middle" font-family="sans-serif">Great</text>
+  <text x="880" y="1586" fill="#E8F6F5" font-size="28" text-anchor="middle" font-family="sans-serif">Miss</text>
+</svg>

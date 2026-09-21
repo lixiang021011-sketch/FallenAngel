@@ -1,0 +1,20 @@
+{
+  "name": "default",
+  "version": "1.0",
+  "laneCount": 2,
+  "noteWidth": 168,
+  "noteHeight": 36,
+  "fallSpeed": 780,
+  "hitBurstScale": 1,
+  "hitBurstDuration": 0.28,
+  "holdPulseSpeed": 2.4,
+  "bindLiveEvents": false,
+  "tapFill": { "r": 0.569, "g": 0.816, "b": 0.831, "a": 1 },
+  "holdFill": { "r": 0.941, "g": 0.659, "b": 0.8, "a": 1 },
+  "holdBody": { "r": 0.941, "g": 0.659, "b": 0.8, "a": 0.55 },
+  "laneFill": { "r": 0.106, "g": 0.196, "b": 0.231, "a": 0.92 },
+  "judgeLine": { "r": 0.91, "g": 0.965, "b": 0.96, "a": 1 },
+  "perfect": { "r": 0.569, "g": 0.816, "b": 0.831, "a": 1 },
+  "great": { "r": 0.184, "g": 0.498, "b": 0.431, "a": 1 },
+  "miss": { "r": 0.69, "g": 0.541, "b": 0.525, "a": 1 }
+}

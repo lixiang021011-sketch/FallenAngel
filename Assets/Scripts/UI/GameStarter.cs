@@ -328,6 +328,8 @@ namespace FallenAngel.UI
                 font, new Color(.18f, .32f, .36f), () => session?.DebugGrantRefreshBudget());
             artDebugSkipButton = TemporaryDebugButton(overlay.transform, "DebugSkipBattle", "自动通关", 12, 136, 250, 54,
                 font, new Color(.45f, .24f, .16f), () => session?.DebugSkipBattle());
+            TemporaryDebugButton(overlay.transform, "DebugArtWorkbench", "美术工作台", 12, 198, 250, 54,
+                font, new Color(.18f, .28f, .40f), () => ArtWorkbenchHost.Toggle());
             RefreshArtDebugButtons();
         }
 

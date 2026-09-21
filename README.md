@@ -149,6 +149,7 @@ PC：D / F / J / K 击打，SPACE 暂停，ESC 退出
 手机：屏幕下半部按轨等分触屏
 谱面编辑器：Tools > FallenAngel > Chart Editor
 编译自检：关闭 Unity 编辑器后执行 ./compile_check.sh
+美术工作台：Tools > FallenAngel > Build Art Workbench Scene 后打开 `Assets/Scenes/ArtWorkbench.unity` 按 Play；或在正式场景 Play 后按 `F9` / 点左上「美术工作台」。步骤见 `docs/art-workbench/README.md`。
 ```
 
 ---
@@ -181,6 +182,7 @@ art_tools/          美术方向工作流与几何导出管线
 docs/               项目说明、架构约定、谱面转换协议、编辑器说明、待办清单（正文中文，每篇顶部带英文摘要）
 portfolio/          作品集素材与图表
 compile_check.sh    无头编译自检
+docs/art-workbench  美术工作台（独立预览，不替换局内素材）
 CLAUDE.md           AI 协作约定（可改范围、验证要求、提交纪律）
 ```
 

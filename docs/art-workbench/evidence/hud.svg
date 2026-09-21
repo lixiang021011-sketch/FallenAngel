@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 1080 1920">
+  <rect width="1080" height="1920" fill="#0F202E"/>
+  <rect x="36" y="36" width="1008" height="8" fill="#22343C"/>
+  <rect x="36" y="36" width="420" height="8" fill="#91D0D4"/>
+  <text x="36" y="100" fill="#E8F6F5" font-size="40" font-family="sans-serif">0012600</text>
+  <text x="1044" y="100" fill="#7F969B" font-size="28" font-family="sans-serif" text-anchor="end">00:18 / 00:42</text>
+  <text x="540" y="760" fill="#F0A8CC" font-size="120" font-family="sans-serif" text-anchor="middle">24</text>
+  <text x="540" y="820" fill="#7F969B" font-size="28" font-family="sans-serif" text-anchor="middle">COMBO</text>
+  <rect x="290" y="200" width="220" height="1200" rx="8" fill="#1B323B" opacity="0.7"/>
+  <rect x="570" y="200" width="220" height="1200" rx="8" fill="#1B323B" opacity="0.7"/>
+</svg>

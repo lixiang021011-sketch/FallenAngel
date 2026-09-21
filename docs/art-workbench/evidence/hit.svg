@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="270" height="480" viewBox="0 0 1080 1920">
+  <rect width="1080" height="1920" fill="#0F202E"/>
+  <rect x="290" y="140" width="220" height="1320" rx="8" fill="#1B323B"/>
+  <rect x="570" y="140" width="220" height="1320" rx="8" fill="#1B323B"/>
+  <rect x="80" y="1392" width="920" height="8" fill="#E8F6F5"/>
+  <circle cx="400" cy="1396" r="90" fill="none" stroke="#91D0D4" stroke-width="14" opacity="0.9"/>
+  <circle cx="400" cy="1396" r="140" fill="none" stroke="#91D0D4" stroke-width="8" opacity="0.4"/>
+  <g transform="translate(400 1396)" fill="#91D0D4">
+    <polygon points="0,-20 18,-160 -18,-160"/>
+    <polygon points="0,20 18,160 -18,160"/>
+    <polygon points="-20,0 -160,18 -160,-18"/>
+    <polygon points="20,0 160,18 160,-18"/>
+  </g>
+  <text x="540" y="240" fill="#91D0D4" font-size="48" font-family="sans-serif" text-anchor="middle">PERFECT</text>
+</svg>
