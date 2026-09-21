@@ -205,8 +205,11 @@ namespace FallenAngel.Gameplay
             float fps = perfFrames / elapsed;
             float avg = perfStaleCount > 0 ? perfStaleSum / perfStaleCount : 0f;
             Debug.Log(string.Format(
-                "[Perf] fps={0:0.0}（显示 {1}Hz / target {2}） 输入滞后 avg={3:0.0}ms max={4:0.0}ms（{5} 次事件输入）",
-                fps, HighRefreshRate.SampleCurrentHz(), Application.targetFrameRate, avg, perfStaleMax, perfStaleCount));
+                "[Perf] fps={0:0.0}（显示 {1}Hz / target {2} / 帧 {3:0.0}ms） 输入滞后 avg={4:0.0}ms max={5:0.0}ms（{6} 次）"
+                + " / 音频延迟补偿 {7:0.0}ms（DSP {8:0.0}ms）",
+                fps, HighRefreshRate.SampleCurrentHz(), Application.targetFrameRate, Time.unscaledDeltaTime * 1000f,
+                avg, perfStaleMax, perfStaleCount,
+                AudioLatency.CompensationSeconds * 1000f, AudioLatency.DspBufferSeconds * 1000f));
 
             perfWindowStart = Time.unscaledTime;
             perfFrames = 0;

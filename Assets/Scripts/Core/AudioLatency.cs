@@ -73,7 +73,8 @@ namespace FallenAngel.Core
                 var config = AudioSettings.GetConfiguration();
                 int original = config.dspBufferSize;
                 int originalSampleRate = config.sampleRate;
-                foreach (int candidate in new[] { 512, 256, 1024 })
+                // 从**最小**往大试：第一个成功的才是"这台上能拿到的最小缓冲"（顺序写反会停在 512）
+                foreach (int candidate in new[] { 64, 128, 256, 512 })
                 {
                     if (candidate >= original) continue;
                     config.dspBufferSize = candidate;
