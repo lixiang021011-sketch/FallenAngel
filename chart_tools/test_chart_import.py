@@ -10,7 +10,9 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from chart_import import parse_osu, parse_sm, parse_phigros, parse_pec, validate, LANES   # noqa: E402
+from chart_import import (parse_osu, parse_sm, parse_phigros, parse_pec, parse_sus,   # noqa: E402
+                          convert, validate, LANES)
+import tempfile
 
 PHIGROS_JSON = """{
   "formatVersion": 3, "offset": 0.0,
@@ -128,6 +130,116 @@ SM_SINGLE = """#TITLE:Step Test;
 0000
 ;
 """
+
+
+SUS_TEXT = """#TITLE "SUS Test"
+#ARTIST "Tester"
+#DESIGNER "Mapper"
+#WAVE "demo_song.wav"
+#BPM01: 120
+#BPM02: 240
+#TIL01: 4/4
+#00002: 01
+#00008: 01
+#00012: 1100 0000 0000 0000
+#00014: 0011 0000 0000 0000
+#00017: 0000 0011 0000 0000
+#00019: 0000 0000 0011 0000
+#0001c: 0000 0000 0000 0011
+#00056: 0000 0000 0000 0000 0011 0000 0000 0000
+#00033a: 1100 0000 0000 0000
+#00133a: 2100 0000 0000 0000
+#00112: 1100 0000 0000 0000
+"""
+
+
+class TestSus(unittest.TestCase):
+    """SUS（Project Sekai 社区格式）：通道语义照 OpenSekai 的 Converter 复刻。"""
+
+    def test_metadata(self):
+        meta = parse_sus(SUS_TEXT)["metadata"]
+        self.assertEqual(meta["songName"], "SUS Test")
+        self.assertEqual(meta["songArtist"], "Tester")
+        self.assertEqual(meta["chartAuthor"], "Mapper")
+        self.assertEqual(meta["audioFileName"], "demo_song")
+        self.assertAlmostEqual(meta["bpm"], 120.0, places=3)
+        self.assertEqual(meta["formatVersion"], 2)
+
+    def test_bar_tokens_to_seconds(self):
+        """120BPM 4/4：一小节 2s；数据 8 等分 → 每格 0.25s。"""
+        chart = parse_sus(SUS_TEXT)
+        lane0 = sorted(n["time"] for n in chart["notes"] if n["lane"] == 0 and n["type"] == "tap")
+        self.assertEqual(lane0, [0.0, 2.0])          # bar0 第 0 格 / bar1 第 0 格
+
+    def test_sus_lane_to_five_lanes(self):
+        """SUS 12 条线线性铺到 5 轨。"""
+        chart = parse_sus(SUS_TEXT)
+        lanes = sorted({n["lane"] for n in chart["notes"]})
+        self.assertEqual(lanes, [0, 1, 2, 3, 4])
+
+    def test_friction_becomes_drag(self):
+        text = '#BPM01: 120\n#00012: 5100 0000 0000 0000\n'
+        chart = parse_sus(text)
+        self.assertEqual(chart["noteCounts"].get("drag", 0), 1)
+
+    def test_flick_channel(self):
+        text = '#BPM01: 120\n#00052: 1100 0000 0000 0000\n'
+        chart = parse_sus(text)
+        flicks = [n for n in chart["notes"] if n["type"] == "flick"]
+        self.assertEqual(len(flicks), 1)
+        self.assertEqual(flicks[0]["direction"], "up")
+
+    def test_long_note_pairs_head_and_tail(self):
+        """longNo 通道里 1=头、2=尾 → 合成 hold，时长 = 尾时刻 − 头时刻。"""
+        text = '#BPM01: 120\n#00033a: 1100 0000 0000 0000\n#00133a: 2100 0000 0000 0000\n'
+        chart = parse_sus(text)
+        holds = [n for n in chart["notes"] if n["type"] == "hold"]
+        self.assertEqual(len(holds), 1)
+        self.assertAlmostEqual(holds[0]["time"], 0.0, places=3)
+        self.assertAlmostEqual(holds[0]["duration"], 2.0, places=3)   # bar1 起点 @120BPM = 2s
+        self.assertEqual(holds[0]["lane"], 0)                          # SUS 线 1 → 轨 0（12→5 线性映射）
+
+    def test_bpm_change_shifts_later_notes(self):
+        """#00108 切到 240BPM：第 2 小节的音符要按新 BPM 折算。"""
+        text = '#BPM01: 120\n#BPM02: 240\n#00008: 01\n#00108: 02\n#00112: 1100 0000 0000 0000\n'
+        chart = parse_sus(text)
+        # bar0 = 4 拍 @120 = 2.0s；bar1 的第一个记号就在 2.0s
+        self.assertEqual([n["time"] for n in chart["notes"]], [2.0])
+
+    def test_unclosed_long_note_gets_fallback_duration(self):
+        chart = parse_sus('#BPM01: 120\n#00033a: 1100 0000 0000 0000\n')
+        holds = [n for n in chart["notes"] if n["type"] == "hold"]
+        self.assertEqual(len(holds), 1)
+        self.assertAlmostEqual(holds[0]["duration"], 0.5, places=3)
+
+    def test_skip_and_guide_ignored(self):
+        """记号 3（skip）与 guide 通道（9x + longNo）不产出可玩音符。"""
+        chart = parse_sus('#BPM01: 120\n#00012: 3100 0000 0000 0000\n#00092a: 1100 0000 0000 0000\n')
+        self.assertEqual(chart["notes"], [])
+
+    def test_validate_passes_on_fixture(self):
+        self.assertEqual(validate(parse_sus(SUS_TEXT)), [])
+
+    def test_txt_extension_dispatches_to_sus(self):
+        """官方/社区 SUS 导出常用 .txt 扩展名（sekai.best 直链给的就是 .txt）。"""
+        with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8") as handle:
+            handle.write('#TITLE "TxtSus"\n#BPM01: 120\n#00012: 1100 0000 0000 0000\n')
+            path = handle.name
+        try:
+            chart = convert(path)
+            self.assertEqual(chart["metadata"]["songName"], "TxtSus")
+            self.assertEqual(len(chart["notes"]), 1)
+        finally:
+            os.unlink(path)
+
+    def test_same_lane_collapse_is_deduped(self):
+        """12 线压到 5 轨会把不同源轨的同刻音符挤到同一条轨：必须去重，否则同轨同刻重复。"""
+        text = ('#BPM01: 120\n'
+                '#00012: 1100 0000 0000 0000\n'      # SUS 线 2 → 轨 0
+                '#00013: 1100 0000 0000 0000\n')     # SUS 线 3 → 轨 0（同刻）
+        chart = parse_sus(text)
+        self.assertEqual(len(chart["notes"]), 1)
+        self.assertEqual(chart["notes"][0]["lane"], 0)
 
 
 class TestOsuMania(unittest.TestCase):

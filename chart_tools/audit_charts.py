@@ -95,6 +95,33 @@ def audit(path, max_hold):
 
     seen = {}
     missing_dir = 0
+    # 玩法硬约束：整谱两指可打 + 长音不干扰其他音符
+    EPS = 0.030
+    sorted_notes = sorted(notes, key=lambda n: n.get("time", 0))
+    active = {}
+    j = 0
+    while j < len(sorted_notes):
+        t0 = sorted_notes[j].get("time", 0)
+        group = []
+        while j < len(sorted_notes) and sorted_notes[j].get("time", 0) - t0 <= EPS:
+            group.append(sorted_notes[j])
+            j += 1
+        for lane in [l for l, end in active.items() if end <= t0 + EPS]:
+            del active[lane]
+        long_here = [n for n in group if n.get("type") in ("hold", "slide") and n.get("duration", 0) > 0]
+        # 手指数 = 仍在按住的长音（active）+ 这一簇的落手（long_here 也在 group 里）
+        fingers = len(active) - len(long_here) + len(group)
+        if fingers > 2:
+            issues.append("同时刻需要 %d 根手指 > 2（%s @ %.3f）——两指打不了" %
+                          (fingers, "+".join(n.get("type", "?") for n in group), t0))
+        for n in group:
+            lane = n.get("lane", 0)
+            if lane in active and n.get("type") not in ("hold", "slide"):
+                issues.append("长音干扰：lane %d 正在长按（到 %.2fs），但 %.3fs 有 %s"
+                              % (lane, active[lane], n.get("time", 0), n.get("type")))
+        for n in long_here:
+            active[n.get("lane", 0)] = n.get("time", 0) + n.get("duration", 0)
+
     for n in notes:
         key = (round(n.get("time", 0), 3), n.get("lane", 0), n.get("type"))
         if key in seen:

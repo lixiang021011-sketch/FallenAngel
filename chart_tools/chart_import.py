@@ -2,13 +2,15 @@
 # -*- coding: utf-8 -*-
 """开源谱面导入 → FallenAngel 内部 v2 JSON（5 轨）。
 
-支持：osu!mania（.osu）、StepMania（.sm / .ssc）。
-映射：tap→tap、long note/hold/roll→hold；轨道按源键数线性铺到 0..4。
+支持：osu!mania（.osu）、StepMania（.sm / .ssc）、SUS（.sus，Project Sekai 社区格式）、
+Phigros 官方 JSON（.json）、社区 PEC（.pec）。
+映射：tap→tap、long note/hold/roll→hold、friction→drag、flick→flick；轨道按源键数线性铺到 0..4。
 不写游戏侧统计（noteCounts 由本脚本填），events 默认空。
 
 用法：
   python -X utf8 chart_tools/chart_import.py song.osu --out chart.json --audio demo_song
   python -X utf8 chart_tools/chart_import.py song.sm  --out chart.json --difficulty Expert
+  python -X utf8 chart_tools/chart_import.py song.sus --out chart.json
 
 自测：python -X utf8 -m unittest chart_tools.test_chart_import -v
 """
@@ -250,11 +252,303 @@ def convert(path, difficulty=None, flick_direction="up"):
         return parse_osu(text)
     if ext in (".sm", ".ssc"):
         return parse_sm(text, difficulty)
+    # 官方/社区 SUS 导出常见两种扩展名：.sus 与 .txt（sekai.best 直链给的就是 .txt）
+    if ext in (".sus", ".txt"):
+        return parse_sus(text, flick_direction)
     if ext == ".json":
         return parse_phigros(text, flick_direction)
     if ext == ".pec":
         return parse_pec(text, flick_direction)
-    raise ValueError("暂不支持该格式：" + ext + "（支持 .osu / .sm / .ssc / .json / .pec）")
+    raise ValueError("暂不支持该格式：" + ext + "（支持 .osu / .sm / .ssc / .sus / .txt / .json / .pec）")
+
+
+# ---------------- SUS（Project Sekai 社区格式） ----------------
+#
+# 依据 OpenSekai（cubeww/OpenSekai，MIT）的 Sekai/SUS/Converter.cs 复刻其通道语义：
+#   数据行 = #<bar:3><通道:1~2><子通道:1>:<数据>
+#     · 通道 02 = 拍号（TIL）、08 = BPM；1x = 普通轨、3x = 长按、5x = flick、9x = guide
+#     · 长按/guide 多一位 longNo（同 longNo 的一串音符串成一条长按）
+#   数据 = 等分小节的一串 2 字符记号 `[记号][宽度]`（可跟 `,倍速`），`00` 表示空
+#     记号：1=普通 2=critical 3=skip 4=技能 5=friction 6=critical friction 7/8=隐藏 friction
+#     flick 通道：1=flick 2=缓入普通 3=左 flick 4=右 flick 5/6=缓出普通
+#     longNo 通道：1=长按头 2=长按尾 3=连接 5=隐藏
+#   小节内位置 = 记号序号 / 记号总数。
+
+SUS_LANE_NAMES = {"2": 0, "3": 1, "4": 2, "5": 3, "6": 4, "7": 5,
+                  "8": 6, "9": 7, "a": 8, "b": 9, "c": 10, "d": 11}
+SUS_LANE_COUNT = 12
+
+
+def _sus_digit(ch):
+    """SUS 的十六进制式记号：0-9 a-z。"""
+    ch = ch.lower()
+    if "0" <= ch <= "9":
+        return int(ch)
+    if "a" <= ch <= "z":
+        return ord(ch) - ord("a") + 10
+    return -1
+
+
+def _sus_map_lane(sus_lane):
+    """SUS 的 12 条判定线 → 本作 5 轨（线性铺开）。"""
+    if sus_lane < 0:
+        return -1
+    return max(0, min(LANES - 1, int(round(sus_lane * (LANES - 1) / (SUS_LANE_COUNT - 1)))))
+
+
+def _drop_same_lane_duplicates(chart, tolerance=0.005):
+    """丢弃"同一轨 + 同刻（±tolerance）"的重复音符，返回丢弃数。
+
+    为什么需要：SUS 是 12 条判定线，本作只有 5 轨，映射必然塌缩——
+    官方谱里不同源轨的同刻音符会落到同一条轨的同刻位置，一个按键位置放不下两个音符。
+    这是"12→5"的固有损失，不是解析 bug；这里显式丢弃并报告，避免导入出的谱面
+    出现同轨同刻重复（那种谱面在游戏里必然判不准）。
+    """
+    kept, seen, dropped = [], set(), 0
+    for note in chart["notes"]:
+        key = (note["lane"], round(note["time"] / tolerance))
+        if key in seen:
+            dropped += 1
+            continue
+        seen.add(key)
+        kept.append(note)
+    chart["notes"] = kept
+    return dropped
+
+
+def _sus_tokens(data):
+    """把数据字段拆成 [(记号2字符, 倍速)]；忽略空白与非法字符。"""
+    out = []
+    i = 0
+    data = (data or "").replace("\t", " ")
+    while i < len(data):
+        while i < len(data) and data[i].isspace():
+            i += 1
+        if i + 1 >= len(data):
+            break
+        token = data[i:i + 2].lower()
+        if _sus_digit(token[0]) < 0 or _sus_digit(token[1]) < 0:
+            i += 1
+            continue
+        i += 2
+        speed = 1.0
+        if i < len(data) and data[i] == ",":
+            i += 1
+            start = i
+            while i < len(data) and not data[i].isspace():
+                i += 1
+            try:
+                speed = float(data[start:i])
+            except ValueError:
+                speed = 1.0
+        out.append((token, speed))
+    return out
+
+
+def _sus_header(text):
+    """#TITLE / #BPMxx / #TILxx 等头部标签（SUS 常用 `#TAG "值"` 无冒号形式，也兼容 `#TAG:值`）。"""
+    header = {"bpm": {}, "til": {}, "meta": {}}
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line.startswith("#"):
+            continue
+        body = line[1:]
+        if ":" in body:
+            tag, value = body.split(":", 1)
+        else:
+            parts = body.split(None, 1)
+            if len(parts) < 2:
+                continue
+            tag, value = parts[0], parts[1]
+        tag = tag.strip().upper()
+        value = value.strip().strip('"')
+        if tag.startswith("BPM") and len(tag) == 5:          # #BPM01:120
+            try:
+                header["bpm"][tag[3:]] = float(value)
+            except ValueError:
+                pass
+        elif tag.startswith("TIL") and len(tag) == 5:        # #TIL01:4/4
+            header["til"][tag[3:]] = value
+        elif tag in ("TITLE", "ARTIST", "DESIGNER", "CHARTER", "WAVE", "GENRE"):
+            header["meta"][tag] = os.path.splitext(value)[0] if tag == "WAVE" else value
+    return header
+
+
+def _sus_beats_per_bar(til_text, default=4.0):
+    """TIL 形如 4/4 → 每小节拍数（以四分音符为 1 拍）。"""
+    if not til_text or "/" not in til_text:
+        return default
+    try:
+        num, den = til_text.split("/", 1)
+        num, den = float(num), float(den)
+        if num <= 0 or den <= 0:
+            return default
+        return num * 4.0 / den
+    except ValueError:
+        return default
+
+
+def _sus_time_map(bpm_events, til_events, default_bpm, default_beats):
+    """把 (bar, progress) 映射成秒：按事件切段做分段积分。
+
+    bpm_events / til_events 形如 [(bar, progress, 值)]；返回 f(bar, progress) -> 秒。
+    """
+    merged = sorted([(b, p, "bpm", v) for b, p, v in bpm_events] +
+                    [(b, p, "til", v) for b, p, v in til_events],
+                    key=lambda e: (e[0], e[1]))
+    # 每段 = (起始 bar, 起始 progress, bpm, 每小节拍数, 该段起点的秒数)
+    timeline = [(0, 0.0, default_bpm, default_beats, 0.0)]
+    for bar, progress, kind, value in merged:
+        prev = timeline[-1]
+        elapsed = _sus_advance(prev[0], prev[1], int(bar), float(progress), prev[2], prev[3])
+        bpm = float(value) if kind == "bpm" and float(value) > 0 else prev[2]
+        beats = value if kind == "til" else prev[3]
+        timeline.append((int(bar), float(progress), bpm, beats, prev[4] + elapsed))
+
+    def time_at(bar, progress):
+        current = timeline[0]
+        for seg in timeline:
+            if (seg[0], seg[1]) <= (bar, progress):
+                current = seg
+            else:
+                break
+        return current[4] + _sus_advance(current[0], current[1], bar, progress, current[2], current[3])
+
+    return time_at
+
+
+def _sus_advance(from_bar, from_progress, to_bar, to_progress, bpm, beats_per_bar):
+    """(from) → (to) 之间的秒数；假设区间内 BPM/拍号不变。"""
+    if (to_bar, to_progress) <= (from_bar, from_progress):
+        return 0.0
+    seconds_per_beat = 60.0 / bpm if bpm > 0 else 0.5
+    # 小节内进度线性：跨 n 个小节就是 n 个小节长，加上两端进度差（可为负）
+    bars = (to_bar - from_bar) + (to_progress - from_progress)
+    return bars * beats_per_bar * seconds_per_beat
+
+
+def parse_sus(text, flick_direction="up"):
+    """SUS → 内部 v2 JSON。只取可玩内容：tap / hold / flick / drag（friction）。"""
+    chart = empty_chart()
+    meta = chart["metadata"]
+    header = _sus_header(text)
+    meta["songName"] = header["meta"].get("TITLE", "")
+    meta["songArtist"] = header["meta"].get("ARTIST", "")
+    meta["chartAuthor"] = header["meta"].get("DESIGNER") or header["meta"].get("CHARTER", "")
+    meta["audioFileName"] = header["meta"].get("WAVE", "")
+
+    # 收集数据行：区分短音符/事件（3 字符通道）与长按（4 字符通道）
+    note_lines, bpm_events, til_events = [], [], []
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line.startswith("#"):
+            continue
+        match = re.match(r"^#(\d{3})([0-9a-zA-Z]{2,3}):(.*)$", line)
+        if not match:
+            continue
+        bar = int(match.group(1))
+        channel = match.group(2).lower()
+        data = match.group(3)
+        if len(channel) == 2 and channel == "02":
+            til_events.append((bar, data))
+        elif len(channel) == 2 and channel == "08":
+            bpm_events.append((bar, data))
+        else:
+            note_lines.append((bar, channel, data))
+
+    default_bpm = 120.0
+    if "01" in header["bpm"]:
+        default_bpm = header["bpm"]["01"]
+    elif header["bpm"]:
+        default_bpm = sorted(header["bpm"].items())[0][1]
+    meta["bpm"] = round(default_bpm, 3)
+    default_beats = _sus_beats_per_bar(header["til"].get("01"))
+
+    def expand(events, lookup, fallback):
+        out = []
+        for bar, data in events:
+            tokens = _sus_tokens(data)
+            total = max(1, len(tokens))
+            for index, (token, _speed) in enumerate(tokens):
+                # 数据记号本身就是要引用的 id（如 #BPM01 → 记号 "01"）
+                value = lookup.get(token, fallback)
+                if value is None:
+                    continue
+                out.append((bar, index / total, value))
+        return out
+
+    bpm_resolved = expand(bpm_events, header["bpm"], None)
+    til_lookup = {}
+    for key, value in header["til"].items():
+        til_lookup[key] = _sus_beats_per_bar(value, default_beats)
+    til_resolved = expand(til_events, til_lookup, None)
+
+    time_at = _sus_time_map(bpm_resolved, til_resolved, default_bpm, default_beats)
+
+    longs = {}            # (sus_lane, long_no) -> 起始时间
+    flick_index = 0
+    for bar, channel, data in note_lines:
+        tokens = _sus_tokens(data)
+        if not tokens:
+            continue
+        total = len(tokens)
+        channel_type = _sus_digit(channel[0])
+        sub = _sus_digit(channel[1]) if len(channel) > 1 else -1
+        long_no = channel[2] if len(channel) > 2 else None
+        sus_lane = SUS_LANE_NAMES.get(channel[1].lower(), -1)
+        lane = _sus_map_lane(sus_lane)
+        if lane < 0:
+            continue                                  # 'e'/'f' 等特殊线：fever/事件，跳过
+
+        for index, (token, _speed) in enumerate(tokens):
+            if token == "00":
+                continue
+            code = _sus_digit(token[0])
+            if code < 0:
+                continue
+            time = time_at(bar, index / total)
+
+            if long_no is not None and channel_type == 3:      # 长按通道
+                key = (sus_lane, long_no)
+                if code == 1:                                  # 头
+                    longs[key] = time
+                elif code == 2:                                # 尾 → 合成 hold
+                    start = longs.pop(key, None)
+                    if start is not None and time > start:
+                        chart["notes"].append({"type": "hold", "lane": lane,
+                                               "time": start, "duration": time - start})
+                # 连接/隐藏记号忽略
+                continue
+            if long_no is not None:
+                continue                                       # guide 等其它长通道：跳过
+
+            if channel_type == 1:
+                if code in (1, 2):
+                    chart["notes"].append({"type": "tap", "lane": lane, "time": time, "duration": 0.0})
+                elif code in (5, 6, 7, 8):                     # friction：碰即过，映射为 drag
+                    chart["notes"].append({"type": "drag", "lane": lane, "time": time, "duration": 0.0})
+            elif channel_type == 5:
+                if code in (1, 3, 4):                          # flick（原作左右滑，本作上下滑）
+                    if flick_direction == "alternate":
+                        direction = "up" if flick_index % 2 == 0 else "down"
+                        flick_index += 1
+                    else:
+                        direction = flick_direction
+                    chart["notes"].append({"type": "flick", "lane": lane, "time": time,
+                                           "duration": 0.0, "direction": direction})
+                elif code in (2, 5, 6):
+                    chart["notes"].append({"type": "tap", "lane": lane, "time": time, "duration": 0.0})
+
+    # 未闭合的长按：按 0.5s 补一个音，避免只剩一个孤零零的头
+    for (_sus_lane, _long_no), start in longs.items():
+        lane = _sus_map_lane(_sus_lane)
+        if lane >= 0:
+            chart["notes"].append({"type": "hold", "lane": lane, "time": start, "duration": 0.5})
+    chart = finish(chart)
+    dropped = _drop_same_lane_duplicates(chart)
+    if dropped:
+        print("  ⚠ 12→5 轨映射塌缩：丢弃同轨同刻重复音符 %d 个（原谱 12 线，本作 5 轨）" % dropped)
+    return finish(chart)
 
 
 # ---------------- Phigros 系（官方 .json / 社区 .pec） ----------------
@@ -406,7 +700,7 @@ def validate(chart):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="开源谱面导入 → FallenAngel v2 JSON（5 轨）")
-    parser.add_argument("input", help="源谱面（.osu / .sm / .ssc）")
+    parser.add_argument("input", help="源谱面（.osu / .sm / .ssc / .sus / .json / .pec）")
     parser.add_argument("--out", required=True, help="输出 JSON 路径")
     parser.add_argument("--difficulty", help="StepMania 难度名（如 Expert / Challenge）")
     parser.add_argument("--audio", help="覆盖音频名（不含扩展名）")
