@@ -39,6 +39,13 @@ namespace FallenAngel.Gameplay
         /// <summary>判定偏差事件（秒，正=按早了，负=按晚了），供 HUD 显示"早/晚"指示</summary>
         public event Action<float> OnJudgeBias;
 
+        /// <summary>
+        /// 判定结果 + 描述（逐字对应上游 LiveFrontView.JudgmentNote → JudgmentView/DescriptionView.Excute）：
+        /// **每个音符判完都会抛**（含长按头/连接点，与上游一致），前端只用它显示判定文字与 Fast/Late/FlickMiss。
+        /// 计分/HUD 计数仍走 OnJudgeResult（那个才区分"计不计分"）。
+        /// </summary>
+        public event Action<NoteResult, NoteResultDescription> OnJudgeJudged;
+
         /// <summary>连击数更新事件</summary>
         public event Action<int, bool> OnComboUpdate; // (combo, isFullComboNow)
 
@@ -646,6 +653,9 @@ namespace FallenAngel.Gameplay
             bool isFriction = note.Category == NoteCategory.Friction || note.Category == NoteCategory.FrictionHide;
             JudgeResultType result = MapResult(note);
             int lane = Mathf.RoundToInt((note.LaneStartF + note.LaneEndF) * 0.5f);
+
+            // 前端判定文字/描述：照上游"每个音符判完都显示"（在计分门控之前抛）
+            OnJudgeJudged?.Invoke(note.Result, note.Description);
 
             if (Debug.isDebugBuild)
             {

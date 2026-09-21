@@ -79,8 +79,8 @@ namespace FallenAngel.UI
             {
                 JudgeManager.Instance.OnScoreUpdate += HandleScoreUpdate;
                 JudgeManager.Instance.OnComboUpdate += HandleComboUpdate;
-                JudgeManager.Instance.OnJudgeResult += HandleJudgeResult;
-                JudgeManager.Instance.OnJudgeBias += HandleJudgeBias;
+                // 判定文字 / 早·晚描述已交给 JudgmentTextView（对照上游 JudgmentView / JudgmentDescriptionView，
+                // 动画与显示门控都照抄）——这里不再订阅，避免两套逻辑抢同一个文本对象。
             }
             if (GameManager.Instance != null)
             {
@@ -94,8 +94,6 @@ namespace FallenAngel.UI
             {
                 JudgeManager.Instance.OnScoreUpdate -= HandleScoreUpdate;
                 JudgeManager.Instance.OnComboUpdate -= HandleComboUpdate;
-                JudgeManager.Instance.OnJudgeResult -= HandleJudgeResult;
-                JudgeManager.Instance.OnJudgeBias -= HandleJudgeBias;
             }
             if (GameManager.Instance != null)
             {

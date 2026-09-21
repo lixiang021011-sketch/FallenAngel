@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using FallenAngel.Gameplay;
+using FallenAngel.Live;
 using UnityEditor;
 using UnityEngine;
 
@@ -213,6 +214,36 @@ namespace FallenAngel.Core
                     lines.Add(string.Format("FAIL {0,-24} 场景装配自检异常：{1}", "场景装配", e.Message));
                 }
             }
+
+            // ── 判定文字 / 描述（前端对照 OpenSekai：JudgmentView / JudgmentDescriptionView）──
+            // 动画曲线（上游 t=clamp01(time*20)、scale=1-(1-t)³、time>0.3 隐藏）
+            float s0 = UI.JudgmentTextView.ScaleAt(0f);
+            float sMid = UI.JudgmentTextView.ScaleAt(0.025f);
+            float s1 = UI.JudgmentTextView.ScaleAt(0.05f);
+            float sHide = UI.JudgmentTextView.ScaleAt(0.301f);
+            check("判定文字·动画曲线照抄上游",
+                Mathf.Abs(s0) < 1e-4f && Mathf.Abs(sMid - 0.875f) < 1e-3f
+                && Mathf.Abs(s1 - 1f) < 1e-4f && Mathf.Abs(sHide) < 1e-4f,
+                string.Format("t=0→{0:0.###}、0.025s→{1:0.###}、0.05s→{2:0.###}、0.301s→{3:0.###}",
+                    s0, sMid, s1, sHide));
+
+            // 结果 → 文案（JustPerfect 复用 PERFECT；Auto 不显示）
+            bool words = UI.JudgmentTextView.WordKeyFor(NoteResult.JustPerfect) == "judge.perfect"
+                         && UI.JudgmentTextView.WordKeyFor(NoteResult.Perfect) == "judge.perfect"
+                         && UI.JudgmentTextView.WordKeyFor(NoteResult.Miss) == "judge.miss"
+                         && UI.JudgmentTextView.WordKeyFor(NoteResult.Auto) == null;
+            // 描述门控（上游：只有 Bad/Good/Great 档显示；Perfect 的 Fast/Late 不显示；Just 无描述）
+            bool descGate = UI.JudgmentTextView.DescriptionKeyFor(NoteResult.Great, NoteResultDescription.Fast) == "judge.desc.fast"
+                            && UI.JudgmentTextView.DescriptionKeyFor(NoteResult.Bad, NoteResultDescription.FlickMiss) == "judge.desc.flickMiss"
+                            && UI.JudgmentTextView.DescriptionKeyFor(NoteResult.Perfect, NoteResultDescription.Late) == null
+                            && UI.JudgmentTextView.DescriptionKeyFor(NoteResult.Great, NoteResultDescription.Just) == null;
+            check("判定文字·结果与描述映射（含门控）",
+                words && descGate,
+                string.Format("JustPerfect→PERFECT={0}、Perfect+Late 不显示={1}、Great+Fast 显示={2}、Bad+FlickMiss 显示={3}",
+                    UI.JudgmentTextView.WordKeyFor(NoteResult.JustPerfect),
+                    UI.JudgmentTextView.DescriptionKeyFor(NoteResult.Perfect, NoteResultDescription.Late) == null,
+                    UI.JudgmentTextView.DescriptionKeyFor(NoteResult.Great, NoteResultDescription.Fast),
+                    UI.JudgmentTextView.DescriptionKeyFor(NoteResult.Bad, NoteResultDescription.FlickMiss)));
 
             string summary = string.Format(
                 "演奏界面视觉基准自检：{0} 项通过 / {1} 项异常（判定：判定线视觉位置 == 音符判定位置，且按键区不越过判定线）",

@@ -564,6 +564,12 @@ namespace FallenAngel.Core
                 "", 36, TextAlignmentOptions.Center);
             judgeBias.fontStyle = FontStyles.Bold;
 
+            // 判定文字 + 描述（前端对照 OpenSekai：JudgmentView / JudgmentDescriptionView 的动画与门控照抄）
+            JudgmentTextView judgmentText = hudGO.AddComponent<JudgmentTextView>();
+            SetPrivateField(judgmentText, "resultText", judge);
+            SetPrivateField(judgmentText, "descriptionText", judgeBias);
+            SetPrivateField(judgmentText, "showDescription", true);
+
             // Song Title
             TextMeshProUGUI title = CreateText("SongTitle", hudGO.transform,
                 new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(40, -40), new Vector2(800, 60),

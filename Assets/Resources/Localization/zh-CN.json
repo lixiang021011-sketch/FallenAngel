@@ -191,6 +191,38 @@
     {
       "key": "cal.noTap",
       "value": "没有采集到点击，请重试"
+    },
+    {
+      "key": "judge.miss",
+      "value": "MISS"
+    },
+    {
+      "key": "judge.bad",
+      "value": "BAD"
+    },
+    {
+      "key": "judge.good",
+      "value": "GOOD"
+    },
+    {
+      "key": "judge.great",
+      "value": "GREAT"
+    },
+    {
+      "key": "judge.perfect",
+      "value": "PERFECT"
+    },
+    {
+      "key": "judge.desc.fast",
+      "value": "FAST"
+    },
+    {
+      "key": "judge.desc.late",
+      "value": "LATE"
+    },
+    {
+      "key": "judge.desc.flickMiss",
+      "value": "FLICK MISS"
     }
   ]
 }
