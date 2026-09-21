@@ -289,7 +289,10 @@ namespace FallenAngel.Core
             // 这是"长条很容易断"的修法：按住/跟手时手指一定会飘
             bool slideShape = builtSlide is LiveLongNote && builtSlide.NoteList.Count == 2
                 && Mathf.Abs(builtSlide.NoteList[1].JudgeLaneEnd - (3f + LiveNoteBuilder.LaneOffsetFor(DataNoteType.Slide))) < 1e-3f
-                && LiveNoteBuilder.LaneOffsetFor(DataNoteType.Slide) > LiveNoteBuilder.LaneOffsetFor(DataNoteType.Normal);
+                // 横向政策（2026-09-21 作者定）：普通/drag/甩键**铺满整屏**（位置不罚），
+                // 长按/滑条保留有限跨度（1.5 轨），滑条跟手才有意义
+                && LiveNoteBuilder.LaneOffsetFor(DataNoteType.Normal) >= LiveNoteBuilder.FullWidthLaneOffset - 1e-3f
+                && LiveNoteBuilder.LaneOffsetFor(DataNoteType.Slide) < LiveNoteBuilder.LaneOffsetFor(DataNoteType.Normal);
             bool wideShape = builtWide != null && builtWide.JudgeLaneStart <= -0.5f && builtWide.JudgeLaneEnd >= 3.5f;
             bool dragShape = builtDrag is LiveFrictionNote;
             bool flickShape = builtFlick is LiveFlickNote && builtFlick.Direction == NoteDirection.Down;

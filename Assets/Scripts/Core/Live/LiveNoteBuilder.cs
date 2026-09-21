@@ -38,14 +38,30 @@ namespace FallenAngel.Live
             switch (type)
             {
                 case Data.NoteType.Flick:
-                    return 0.60f;
+                    return FullWidthLaneOffset;      // 甩键也只看时间（方向仍要滑对）
                 case Data.NoteType.LongStart:
                 case Data.NoteType.Slide:
-                    return 0.85f;
+                    return HoldLaneOffset;            // 长按/滑条：宽但有界（滑条跟手还要有意义）
                 default:
-                    return DefaultLaneOffset;
+                    return FullWidthLaneOffset;       // 普通/drag：横向上不设位置门槛
             }
         }
+
+        /// <summary>
+        /// 普通音符的横向判定跨度：**铺满整屏宽**。
+        ///
+        /// 作者口径（2026-09-21）："这个游戏对时间精准度有要求，而不要对按压的位置要求过高；
+        /// 竖屏横向空间本来就很小"。所以位置不再决定成败，只用于**分派**（同一时刻有多个候选时，
+        /// 移植层的"离手指最近者得"仍然生效——两个音符同刻时，手指更靠近谁就判谁）。
+        /// 数值 = (轨道数-1)/2 + 0.5：5 键 → 2.5 轨，任何轨的跨度都覆盖整个宽度。
+        /// </summary>
+        public static float FullWidthLaneOffset
+        {
+            get { return (LaneLayout.ActiveLaneCount - 1) * 0.5f + 0.5f; }
+        }
+
+        /// <summary>长按/滑条的横向跨度：宽（1.5 轨）但有界——滑条的"跟手"还需要位置有意义</summary>
+        public const float HoldLaneOffset = 1.5f;
 
         /// <summary>
         /// 甩键判定幅度（像素）：与旧行为同口径（max(18px, 屏高×1.2%)）。
