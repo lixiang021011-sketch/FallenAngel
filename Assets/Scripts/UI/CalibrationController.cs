@@ -24,6 +24,10 @@ namespace FallenAngel.UI
         [Header("引用（SceneBuilder 注入）")]
         [SerializeField] private GameObject panelRoot;
         [SerializeField] private RectTransform pulseRing;       // 中央脉冲（贝塞尔放大+淡出）
+        [SerializeField] private RectTransform lanePlayfield;   // 下落区（音符在这里从顶落到底）
+        [SerializeField] private RectTransform laneNote;        // 下落音符（复用游戏透视曲线）
+        [SerializeField] private float laneSpawnY = 300f;       // 下落区内的出生 Y（局部）
+        [SerializeField] private float laneJudgeY = -300f;      // 下落区内的判定线 Y（局部）
         [SerializeField] private TextMeshProUGUI statusText;    // 提示 / 第 N 拍
         [SerializeField] private TextMeshProUGUI valueText;     // 当前偏移（ms + 帧）
         [SerializeField] private TextMeshProUGUI resultText;    // 本次测量结果
@@ -75,17 +79,17 @@ namespace FallenAngel.UI
 
         private void Update()
         {
-            // 中央脉冲：t 0→1 放大淡出（纯视觉，随节拍刷新）
-            if (pulseRing != null)
+            // 判定线闪光（音符到线 / 滴答时 pulseT 归零 → 放大淡出）
+            if (pulseRing != null && pulseT < 1f)
             {
                 pulseT = Mathf.Min(1f, pulseT + Time.unscaledDeltaTime / 0.35f);
-                float s = Mathf.Lerp(0.6f, 1.35f, pulseT);
+                float s = Mathf.Lerp(0.75f, 1.15f, pulseT);
                 pulseRing.localScale = new Vector3(s, s, 1f);
                 Image img = pulseRing.GetComponent<Image>();
                 if (img != null)
                 {
                     Color c = img.color;
-                    c.a = 0.55f * (1f - pulseT);
+                    c.a = 0.5f * (1f - pulseT);
                     img.color = c;
                 }
             }
@@ -150,17 +154,33 @@ namespace FallenAngel.UI
             for (int i = 0; i < beatCount; i++)
             {
                 if (!measuring) yield break;
-                double beat = start + i * beatInterval;
-                beatTimes.Add(beat);
-                while (Time.unscaledTimeAsDouble < beat - 0.05) yield return null;
-                PlayTick();
+                // 模拟真实下落：音符从 laneSpawnY 沿**游戏的透视曲线**落到 laneJudgeY（= 判定线），
+                // 玩家在音符落到线上时点屏幕。音（滴答）在音符到线的那一刻响 —— 与真实演奏同构。
+                double spawn = start + i * beatInterval;
+                double arrival = spawn + laneFallSeconds;
+                beatTimes.Add(arrival);
+
+                if (laneNote != null) laneNote.gameObject.SetActive(true);
+                while (Time.unscaledTimeAsDouble < arrival)
+                {
+                    double p = (Time.unscaledTimeAsDouble - spawn) / laneFallSeconds;
+                    SetNoteProgress((float)p);
+                    yield return null;
+                }
+                SetNoteProgress(1f);
+                PlayTick();                                  // 到线：声音 + 闪光
                 if (statusText != null)
                     statusText.text = Loc.T("cal.beatOf", i + 1, beatCount, tapOffsets.Count);
-                while (Time.unscaledTimeAsDouble < beat + beatInterval - 0.05) yield return null;
+                if (laneNote != null) laneNote.gameObject.SetActive(false);
+
+                while (Time.unscaledTimeAsDouble < spawn + beatInterval + laneFallSeconds - beatInterval * 0.5)
+                    yield return null;
             }
 
             measuring = false;
-            suggestedFrames = CalibrationMeasure.SuggestedFrames(tapOffsets);
+            // 符号：测量值 Δ>0 = 你**打得晚**（音符到线之后才点）→ 要让音符晚点到线，
+            // 即 `TimingAdjustData` 取负（上游口径：正数 = 音符提前）。所以建议值 = −Δ。
+            suggestedFrames = -CalibrationMeasure.SuggestedFrames(tapOffsets);
             hasSuggestion = tapOffsets.Count > 0;
             if (statusText != null) statusText.text = Loc.T("cal.hint");
             if (resultText != null)
@@ -172,6 +192,21 @@ namespace FallenAngel.UI
             Debug.Log(string.Format("[Calibration] 跟拍测量：{0} 次点击 → 建议 {1:0.1} 帧（{2}ms）",
                 tapOffsets.Count, suggestedFrames, CalibrationMeasure.FramesToMs(suggestedFrames)));
         }
+
+        /// <summary>音符在落下区里的位置/缩放：与游戏同一套透视曲线（PlayPerspective）</summary>
+        private void SetNoteProgress(float progress01)
+        {
+            if (laneNote == null) return;
+            float v = PlayPerspective.ViewProgress01(progress01);
+            float y = Mathf.Lerp(laneSpawnY, laneJudgeY, v);
+            laneNote.anchoredPosition = new Vector2(laneNote.anchoredPosition.x, y);
+            float s = PlayPerspective.SizeScale(progress01);
+            laneNote.localScale = new Vector3(s, s, 1f);
+        }
+
+        /// <summary>下落时长（秒）：音符从出生到判定线</summary>
+        [Header("下落参数")]
+        [SerializeField] private float laneFallSeconds = 1.0f;
 
         private void ApplySuggestion()
         {

@@ -818,10 +818,51 @@ namespace FallenAngel.Core
             ringImg.color = new Color(0.44f, 0.88f, 0.84f, 0.55f);
             ringImg.raycastTarget = false;
 
+            // 下落区：竖轨 + 判定线（圆环中心）+ 下落音符（与真实演奏同一套透视曲线）
+            GameObject playfield = new GameObject("CalLanePlayfield", typeof(RectTransform));
+            playfield.transform.SetParent(panel.transform, false);
+            RectTransform pf = (RectTransform)playfield.transform;
+            pf.anchorMin = pf.anchorMax = new Vector2(0.5f, 0.62f);
+            pf.pivot = new Vector2(0.5f, 0.5f);
+            pf.sizeDelta = new Vector2(420, 1100);
+
+            GameObject laneBG = new GameObject("CalLaneBG", typeof(RectTransform), typeof(Image));
+            laneBG.transform.SetParent(playfield.transform, false);
+            RectTransform lbr = (RectTransform)laneBG.transform;
+            lbr.anchorMin = new Vector2(0.5f, 0f);
+            lbr.anchorMax = new Vector2(0.5f, 1f);
+            lbr.pivot = new Vector2(0.5f, 0.5f);
+            lbr.sizeDelta = new Vector2(240, 0);
+            Image lbg = laneBG.GetComponent<Image>();
+            lbg.color = new Color(1f, 1f, 1f, 0.05f);
+            lbg.raycastTarget = false;
+
+            GameObject judgeBar = new GameObject("CalJudgeLine", typeof(RectTransform), typeof(Image));
+            judgeBar.transform.SetParent(playfield.transform, false);
+            RectTransform jbr = (RectTransform)judgeBar.transform;
+            jbr.anchorMin = jbr.anchorMax = new Vector2(0.5f, 0.5f);
+            jbr.pivot = new Vector2(0.5f, 0.5f);
+            jbr.anchoredPosition = Vector2.zero;
+            jbr.sizeDelta = new Vector2(420, 6);
+            Image jbi = judgeBar.GetComponent<Image>();
+            jbi.color = new Color(0.81f, 0.94f, 0.92f, 0.95f);
+            jbi.raycastTarget = false;
+
+            GameObject laneNoteGO = new GameObject("CalLaneNote", typeof(RectTransform), typeof(Image));
+            laneNoteGO.transform.SetParent(playfield.transform, false);
+            RectTransform lnr = (RectTransform)laneNoteGO.transform;
+            lnr.anchorMin = lnr.anchorMax = new Vector2(0.5f, 0.5f);
+            lnr.pivot = new Vector2(0.5f, 0.5f);
+            lnr.sizeDelta = new Vector2(228, 40);
+            Image lni = laneNoteGO.GetComponent<Image>();
+            lni.color = new Color(0.44f, 0.88f, 0.84f, 0.95f);
+            lni.raycastTarget = false;
+            laneNoteGO.SetActive(false);
+
             TextMeshProUGUI tapHint = CreateText("CalTapHint", panel.transform,
                 new Vector2(0.5f, 0.62f), new Vector2(0.5f, 0.62f), Vector2.zero, new Vector2(400, 80),
                 "cal.tap", 44, TextAlignmentOptions.Center);
-            tapHint.color = new Color(0.89f, 0.96f, 0.95f, 0.9f);
+            tapHint.color = new Color(0.89f, 0.96f, 0.95f, 0f);      // 只在需要时显示（当前恒隐藏）
 
             // 数值卡：当前值 / 本次测量结果
             GameObject card = new GameObject("CalCard", typeof(RectTransform), typeof(Image));
@@ -868,6 +909,11 @@ namespace FallenAngel.Core
             CalibrationController controller = panel.AddComponent<CalibrationController>();
             SetPrivateField(controller, "panelRoot", panel);
             SetPrivateField(controller, "pulseRing", rr);
+            SetPrivateField(controller, "lanePlayfield", pf);
+            SetPrivateField(controller, "laneNote", lnr);
+            SetPrivateField(controller, "laneSpawnY", 520f);
+            SetPrivateField(controller, "laneJudgeY", 0f);
+            SetPrivateField(controller, "laneFallSeconds", 1.0f);
             SetPrivateField(controller, "statusText", status);
             SetPrivateField(controller, "valueText", value);
             SetPrivateField(controller, "resultText", result);
