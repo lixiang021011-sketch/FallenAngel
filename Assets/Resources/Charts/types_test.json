@@ -6,7 +6,7 @@
     "difficulty": 2,
     "level": 1,
     "bpm": 120.0,
-    "offset": -0.0,
+    "offset": 4.426,
     "audioFileName": "demo_song",
     "previewStartTime": 0.0,
     "previewDuration": 10.0,
