@@ -66,6 +66,8 @@ namespace FallenAngel.Gameplay
         private NoteBandGraphic slidePathGraphic;        // Slide 轨迹带（运行时自生成，与长按身体同一把尺子）
         private RectTransform slidePathRect;
         private float slideEndCanvasY;                   // 轨迹终点相对头部的画布高度（按住时按剩余量收缩）
+        private float lastRibbonProgress = -1f;          // 轨迹重建节流：上次重建时的进度/头部 x
+        private float lastRibbonHeadX = float.NaN;
         // 逐帧重算轨迹用的复用缓冲（滑条按住期间每帧都会重写，别每次新建 List）
         private readonly List<Vector2> slidePointBuffer = new List<Vector2>(16);
         // ===== 部件化（pjsk 风）：head / tail 部件（运行时自生成，零纹理）=====
@@ -299,6 +301,8 @@ namespace FallenAngel.Gameplay
             }
             slidePathGraphic.SetPathPoints(slidePointBuffer);
             slidePathGraphic.gameObject.SetActive(true);
+            lastRibbonProgress = -1f;      // 重置节流（池复用时也要重置）
+            lastRibbonHeadX = float.NaN;
             // 轨迹终点相对头部的画布高度（= 谱面路径的总时长对应的下落距离），
             // 按住时按剩余比例收缩，尾部标记也用它（两边同源，尾部件才会正好落在轨迹末端）
             slideEndCanvasY = slidePointBuffer[slidePointBuffer.Count - 1].y;
@@ -316,6 +320,12 @@ namespace FallenAngel.Gameplay
         private void UpdateSlideRibbon(float from01, float headX)
         {
             if (slidePathGraphic == null || Data.path == null || Data.path.Count < 2) return;
+            // 节流：滑条按住时每帧重建轨迹 = 整块 Canvas 每帧重建。进度或头部位移没到阈值就不重算
+            //（1% 进度 / 4px 位移在 1080 宽下肉眼看不到，但省掉绝大部分重算）。
+            if (Mathf.Abs(from01 - lastRibbonProgress) < 0.01f &&
+                Mathf.Abs(headX - lastRibbonHeadX) < 4f) return;
+            lastRibbonProgress = from01;
+            lastRibbonHeadX = headX;
             const int samples = 12;
             slidePointBuffer.Clear();
             for (int i = 0; i <= samples; i++)

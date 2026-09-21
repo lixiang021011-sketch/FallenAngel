@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace FallenAngel.UI
 {
@@ -16,6 +17,8 @@ namespace FallenAngel.UI
         private float accum;
         private int frames;
         private float worstMs;
+        private readonly List<float> samples = new List<float>(256);
+        private float rebuildRate;
 
         public static DebugFpsOverlay Install(RectTransform parent, TMP_FontAsset font)
         {
@@ -57,8 +60,14 @@ namespace FallenAngel.UI
 
             var overlay = go.AddComponent<DebugFpsOverlay>();
             overlay.text = t;
+            // 每秒 Canvas 重建次数：这是"每帧重建网格"最直接的指标（HUD 文本/轨迹/带子都会触发）
+            Canvas.willRenderCanvases += CountCanvasRebuild;
             return overlay;
         }
+
+        private static int canvasRebuilds;
+        private static int canvasRebuildsAtSample;
+        private static void CountCanvasRebuild() { canvasRebuilds++; }
 
         private void Update()
         {
@@ -66,11 +75,19 @@ namespace FallenAngel.UI
             frames++;
             float ms = Time.unscaledDeltaTime * 1000f;
             if (ms > worstMs) worstMs = ms;
+            samples.Add(ms);
             if (accum < 0.5f) return;
 
+            samples.Sort();
+            float p95 = samples.Count > 0 ? samples[Mathf.Clamp((int)(samples.Count * 0.95f), 0, samples.Count - 1)] : 0f;
+            rebuildRate = (canvasRebuilds - canvasRebuildsAtSample) / accum;
+            canvasRebuildsAtSample = canvasRebuilds;
+
             if (text != null)
-                text.text = string.Format("{0:0} fps  {1:0.0} ms 峰值", frames / accum, worstMs);
+                text.text = string.Format("{0:0} fps  P95 {1:0.0}ms  峰值 {2:0.0}ms  重建 {3:0.0}/s",
+                    frames / accum, p95, worstMs, rebuildRate);
             accum = 0f; frames = 0; worstMs = 0f;
+            samples.Clear();
         }
     }
 

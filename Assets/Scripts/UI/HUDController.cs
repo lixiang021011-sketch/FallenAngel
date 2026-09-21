@@ -124,8 +124,16 @@ namespace FallenAngel.UI
             if (progressText != null) progressText.text = "00:00 / 00:00";
         }
 
+        // 进度条/进度文本节流用
+        private float lastProgressUpdateTime = -1f;
+        private string lastProgressString;
+
         private void Update()
         {
+            // **每帧刷新进度会强制整块 Canvas 每帧重建**：Image.fillAmount 与 TMP 文本都会标脏。
+            // "分钟:秒"级进度 4Hz 足够，省下的是每帧一次网格重建（真机按键→画面延迟与丢帧的直接来源）。
+            if (Time.unscaledTime - lastProgressUpdateTime < 0.25f) return;
+            lastProgressUpdateTime = Time.unscaledTime;
             UpdateProgress();
         }
 
@@ -143,14 +151,19 @@ namespace FallenAngel.UI
             if (total <= 0f) return;
 
             float progress = Mathf.Clamp01(GameManager.Instance.SongTime / total);
-            if (progressFillImage != null)
+            if (progressFillImage != null && !Mathf.Approximately(progressFillImage.fillAmount, progress))
                 progressFillImage.fillAmount = progress;
 
             if (progressText != null)
             {
                 string cur = FormatTime(GameManager.Instance.SongTime);
                 string tot = FormatTime(total);
-                progressText.text = $"{cur} / {tot}";
+                string next = $"{cur} / {tot}";
+                if (next != lastProgressString)   // 文本没变就别 set（TMP 会重建网格）
+                {
+                    lastProgressString = next;
+                    progressText.text = next;
+                }
             }
         }
 

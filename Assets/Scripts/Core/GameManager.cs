@@ -82,6 +82,9 @@ namespace FallenAngel.Core
             // 关 vSync 是错的取舍，这里还原。移动端 vSync 开启时 targetFrameRate 会被忽略，
             // 但桌面/编辑器仍需要它，所以保留。
             QualitySettings.vSyncCount = 1;
+            // 呈现延迟：限制排队帧数。默认值会让引擎多攒一帧再呈现，直接多出一整帧输入→画面延迟；
+            // 1 帧 = 算完就交，代价是更容易掉帧，所以与"每帧开销"一起看（FPS 读数已带 P95）。
+            QualitySettings.maxQueuedFrames = 1;
             int screenRefresh = (int)Mathf.Max(60f, Screen.currentResolution.refreshRate);
             Application.targetFrameRate = Mathf.Clamp(screenRefresh, 60, 120);
         }
