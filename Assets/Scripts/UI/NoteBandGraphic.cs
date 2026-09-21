@@ -39,6 +39,12 @@ namespace FallenAngel.UI
         public Color bottomColor = new Color(1f, 1f, 1f, 0.9f);
         public Color topColor = new Color(1f, 1f, 1f, 0.18f);
 
+        [Header("双线夹轨（滑条引导线 V2，2026-09-21 作者选型）")]
+        [Tooltip("两条边线的宽度（画布单位）；0 = 不画（退化成原来的渐变带）")]
+        public float edgeLineWidth = 0f;
+        [Tooltip("边线颜色（沿高度按 bottomColor→topColor 同一条淡出曲线）")]
+        public Color edgeLineColor = new Color(0.66f, 0.89f, 0.86f, 0.95f);
+
         [Header("重建节流")]
         [Tooltip("音符位置变化超过这个像素数才重算网格（带子宽度按画布高度取值）。" +
                  "4px 在 1080 宽下折合宽度误差 <0.3px，肉眼不可见，但能省掉绝大部分每帧重算。")]
@@ -181,6 +187,44 @@ namespace FallenAngel.UI
                 vh.AddVert(new Vector3(bx - halfB, by, 0f), cb, Vector2.zero);
                 vh.AddTriangle(start, start + 1, start + 2);
                 vh.AddTriangle(start, start + 2, start + 3);
+            }
+
+            // 双线夹轨（V2）：贴着带子两侧各画一条细线，**向带内**偏移，所以外轮廓不变
+            // （NotePartChecks 的"不溢出轨道"断言按外轮廓量，仍然成立）。
+            if (edgeLineWidth > 0.001f)
+            {
+                float lineW = edgeLineWidth / scale;
+                for (int i = 0; i < samples.Count - 1; i++)
+                {
+                    BandSample a = samples[i];
+                    BandSample b = samples[i + 1];
+                    float halfA = HalfWidthAtCanvasY(originY + a.y, laneHalf) / scale;
+                    float halfB = HalfWidthAtCanvasY(originY + b.y, laneHalf) / scale;
+                    float ax = a.x / scale, ay = a.y / scale;
+                    float bx = b.x / scale, by = b.y / scale;
+
+                    float fade = Mathf.Clamp01((a.t + b.t) * 0.5f);
+                    Color lineColor = Color.Lerp(edgeLineColor, topColor, fade);
+                    lineColor = Premultiply(lineColor);
+
+                    // 左边线
+                    int left = vh.currentVertCount;
+                    vh.AddVert(new Vector3(ax - halfA, ay, 0f), lineColor, Vector2.zero);
+                    vh.AddVert(new Vector3(ax - halfA + lineW, ay, 0f), lineColor, Vector2.zero);
+                    vh.AddVert(new Vector3(bx - halfB + lineW, by, 0f), lineColor, Vector2.zero);
+                    vh.AddVert(new Vector3(bx - halfB, by, 0f), lineColor, Vector2.zero);
+                    vh.AddTriangle(left, left + 1, left + 2);
+                    vh.AddTriangle(left, left + 2, left + 3);
+
+                    // 右边线
+                    int right = vh.currentVertCount;
+                    vh.AddVert(new Vector3(ax + halfA - lineW, ay, 0f), lineColor, Vector2.zero);
+                    vh.AddVert(new Vector3(ax + halfA, ay, 0f), lineColor, Vector2.zero);
+                    vh.AddVert(new Vector3(bx + halfB, by, 0f), lineColor, Vector2.zero);
+                    vh.AddVert(new Vector3(bx + halfB - lineW, by, 0f), lineColor, Vector2.zero);
+                    vh.AddTriangle(right, right + 1, right + 2);
+                    vh.AddTriangle(right, right + 2, right + 3);
+                }
             }
         }
 

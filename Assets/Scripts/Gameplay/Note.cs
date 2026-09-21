@@ -324,6 +324,10 @@ namespace FallenAngel.Gameplay
             }
             slidePathGraphic.SetPathPoints(slidePointBuffer);
             slidePathGraphic.gameObject.SetActive(true);
+            // 引导线样式：V2 双线夹轨（2026-09-21 作者选型）——两条边线标出"判定跨度"的宽度，
+            // 中间填充压到很淡，避免和音符抢视觉。
+            slidePathGraphic.edgeLineWidth = 10f;
+            slidePathGraphic.edgeLineColor = new Color(0.66f, 0.89f, 0.86f, 0.95f);
             lastRibbonProgress = -1f;      // 重置节流（池复用时也要重置）
             lastRibbonHeadX = float.NaN;
             // 轨迹终点相对头部的画布高度（= 谱面路径的总时长对应的下落距离），
@@ -597,8 +601,10 @@ namespace FallenAngel.Gameplay
 
             if (slidePathGraphic != null && slidePathGraphic.gameObject.activeSelf)
             {
-                slidePathGraphic.bottomColor = new Color(c.r, c.g, c.b, Mathf.Clamp01(c.a * 0.55f));
+                // V2 双线夹轨：中间填充很淡（靠两条边线表达跨度宽度）
+                slidePathGraphic.bottomColor = new Color(c.r, c.g, c.b, Mathf.Clamp01(c.a * 0.22f));
                 slidePathGraphic.topColor = new Color(c.r, c.g, c.b, 0f);
+                slidePathGraphic.edgeLineColor = new Color(c.r, c.g, c.b, Mathf.Clamp01(c.a * 0.95f));
                 slidePathGraphic.SetVerticesDirty();
             }
 

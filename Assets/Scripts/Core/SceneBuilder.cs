@@ -201,8 +201,9 @@ namespace FallenAngel.Core
             CreateLaneAndNotesUI(gamePanel.transform, out NoteSpawner spawner);
 
             // 触点涟漪层：盖在 GamePanel 之上、MenuPanel 之下（层级顺序即渲染顺序）
+            // 2026-09-21 作者定案（5 键拆墙方案 B + "只保留命中反馈"）：**不挂触点涟漪**——
+            // 涟漪是"按下"的反馈，本方案里按下不再给视觉反馈，命中反馈仍由音符自身的命中环/爆点承担。
             GameObject rippleLayer = CreatePanel("HitFeedbackLayer", canvasRect);
-            rippleLayer.AddComponent<HitFeedbackController>();
             // 判定特效（Miss 轨道压暗）：需要五条轨道柱的 Image，按 SceneBuilder 自己创建的命名取
             HitEffectController hitFx = rippleLayer.AddComponent<HitEffectController>();
             SetPrivateField(hitFx, "laneColumns", CollectLaneColumns(gamePanel.transform));
@@ -469,11 +470,12 @@ namespace FallenAngel.Core
                 lRT.pivot = new Vector2(0.5f, 0.5f);
                 lRT.anchoredPosition = new Vector2(laneX[i], 0);
                 lRT.sizeDelta = new Vector2(laneWidth, 0);
-                Color laneC = LaneColors.GetLaneColor(i); laneC.a = 0.12f;
+                // 方案 B（全无墙）：轨道条不可见（alpha 0），只作 Miss 压暗特效的载体与键数重定位的锚点
+                Color laneC = LaneColors.GetLaneColor(i); laneC.a = 0f;
                 lane.GetComponent<Image>().color = laneC;
                 lane.GetComponent<Image>().raycastTarget = false;
 
-                // 按键视觉（下半屏按键区域）
+                // 按键区容器列（同样不可见：拆墙后下半屏不再画列）
                 GameObject keyArea = new GameObject($"Lane{i}_Key", typeof(RectTransform), typeof(Image));
                 keyArea.transform.SetParent(keyContainer.transform, false);
                 RectTransform kRT = (RectTransform)keyArea.transform;
@@ -483,7 +485,7 @@ namespace FallenAngel.Core
                 kRT.anchoredPosition = new Vector2(laneX[i], 0);
                 kRT.sizeDelta = new Vector2(laneWidth, 0);
                 Image keyImg = keyArea.GetComponent<Image>();
-                Color c = LaneColors.GetLaneColor(i); c.a = 0.3f;
+                Color c = LaneColors.GetLaneColor(i); c.a = 0f;
                 keyImg.color = c;
                 keyImg.raycastTarget = false;
 
@@ -497,7 +499,8 @@ namespace FallenAngel.Core
                 kiRT.anchoredPosition = new Vector2(0, -100);
                 kiRT.sizeDelta = new Vector2(100, 100);
                 Image kiImg = keyIcon.GetComponent<Image>();
-                kiImg.color = LaneColors.GetLaneColor(i);
+                Color kic = LaneColors.GetLaneColor(i); kic.a = 0f;   // 按键图标也不画（瞄准靠音符本身）
+                kiImg.color = kic;
                 kiImg.raycastTarget = false;
 
                 // 判定线发光效果（放按键顶部）
@@ -514,11 +517,7 @@ namespace FallenAngel.Core
                 gImg.color = gc;
                 gImg.raycastTarget = false;
 
-                LaneKeyVisual lkv = keyArea.AddComponent<LaneKeyVisual>();
-                SetPrivateField(lkv, "laneIndex", i);
-                SetPrivateField(lkv, "keyAreaImage", keyImg);
-                SetPrivateField(lkv, "judgeLineGlow", gImg);
-                SetPrivateField(lkv, "keyVisual", kiRT);
+                // 2026-09-21 作者定案：取消按压反馈 → 不再挂 LaneKeyVisual（按键变亮/缩放/判定线闪光都去掉）
             }
         }
 

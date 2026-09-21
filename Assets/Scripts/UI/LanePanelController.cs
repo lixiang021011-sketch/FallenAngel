@@ -124,7 +124,8 @@ namespace FallenAngel.UI
                     if (active)
                     {
                         laneBGs[i].anchoredPosition = new Vector2(x, laneBGs[i].anchoredPosition.y);
-                        if (laneBGImages[i] != null) { Color cc = c; cc.a = 0.12f; laneBGImages[i].color = cc; }
+                        // 方案 B（全无墙）：轨道条与按键列都不可见（alpha 0），只保留对象作为特效载体/重定位锚点
+                        if (laneBGImages[i] != null) { Color cc = c; cc.a = 0f; laneBGImages[i].color = cc; }
                     }
                 }
 
@@ -134,8 +135,8 @@ namespace FallenAngel.UI
                     if (active)
                     {
                         laneKeys[i].anchoredPosition = new Vector2(x, laneKeys[i].anchoredPosition.y);
-                        if (laneKeyImages[i] != null) { Color cc = c; cc.a = 0.3f; laneKeyImages[i].color = cc; }
-                        if (laneKeyIcons[i] != null) laneKeyIcons[i].color = c;
+                        if (laneKeyImages[i] != null) { Color cc = c; cc.a = 0f; laneKeyImages[i].color = cc; }
+                        if (laneKeyIcons[i] != null) { Color cc = c; cc.a = 0f; laneKeyIcons[i].color = cc; }
                     }
                 }
             }

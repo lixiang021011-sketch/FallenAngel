@@ -256,9 +256,16 @@ namespace FallenAngel.Core
                 if (ribbon == null || !ribbon.gameObject.activeSelf) { ok = false; notes.Add("slide 轨迹未显示"); }
                 else
                 {
-                    if (!Approx(ribbon.bottomColor, new Color(laneColor.r, laneColor.g, laneColor.b, 0.55f)))
-                    { ok = false; notes.Add("slide 轨迹未取轨道色"); }
+                    // 引导线 V2 双线夹轨（2026-09-21 作者选型）：中间填充很淡、靠两条边线表达跨度宽度，
+                    // 两条边线取轨道色。这里断言"填充足够淡 + 边线取轨道色 + 边线宽度 > 0"。
+                    Color faint = new Color(laneColor.r, laneColor.g, laneColor.b, 0.22f);
+                    if (!Approx(ribbon.bottomColor, faint))
+                    { ok = false; notes.Add("slide 轨迹填充色不对（V2 应为 0.22 轨道色）"); }
                     if (ribbon.topColor.a > 0.01f) { ok = false; notes.Add("slide 轨迹远端应完全透明（收尾渐隐）"); }
+                    if (ribbon.edgeLineWidth <= 0f)
+                    { ok = false; notes.Add("slide 引导线未启用 V2 双线夹轨（edgeLineWidth=0）"); }
+                    if (!Approx(ribbon.edgeLineColor, new Color(laneColor.r, laneColor.g, laneColor.b, 0.95f)))
+                    { ok = false; notes.Add("slide 双线未取轨道色"); }
 
                     // 轨迹也是带子：宽度逐高度贴合轨道；尾部件要落在轨迹末端（不是"照公式抄一遍"）
                     if (!InspectBandAndTail(ribbon, noteRect, tailRect, "轨迹", notes, metrics)) ok = false;
