@@ -329,10 +329,26 @@ namespace FallenAngel.Core
                 sb.JudgeUpdate();
                 bool releasedAtTail = !hold.IsHolding;
 
-                check("长按绑发起手指", started && survived,
+            check("长按绑发起手指", started && survived,
                     string.Format("起长按={0}、另一指抬起后仍在按={1}（期望 True）、发起者松开后结束={2}",
                         started, survived, releasedAtTail));
             }
+
+            // ⑫ 音频时钟平滑：原始采样抖动/回跳时，输出必须单调不回跳、幅度不跳变；
+            //    真跳转（seek）则立即重同步，不做平滑。
+            AudioClock.Enabled = true;
+            AudioClock.Reset(10.000f, 100.000);
+            float a = AudioClock.Update(10.010f, 100.010);
+            float b = AudioClock.Update(10.005f, 100.020);   // 原始值回跳 5ms
+            float c = AudioClock.Update(10.030f, 100.030);
+            float seek = AudioClock.Update(20.000f, 100.040); // 大跳 → 立即重同步
+            bool monotonic = b >= a - 0.0001f && c >= b - 0.0001f;
+            bool noJump = Mathf.Abs(b - a) <= 0.030f && Mathf.Abs(c - b) <= 0.030f;
+            bool nearRaw = Mathf.Abs(c - 10.030f) <= 0.050f;  // 平滑后仍贴近真实播放位置
+            bool seekOk = Mathf.Abs(seek - 20.000f) <= 0.001f;
+            check("音频时钟平滑", monotonic && noJump && nearRaw && seekOk,
+                string.Format("抖动序列 {0:0.###}/{1:0.###}/{2:0.###}（单调={3} 不跳变={4}）→ seek 后 {5:0.###}",
+                    a, b, c, monotonic, noJump, seek));
         }
 
         /// <summary>

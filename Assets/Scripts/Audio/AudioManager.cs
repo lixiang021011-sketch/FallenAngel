@@ -71,7 +71,27 @@ namespace FallenAngel.Audio
         /// 当前权威游戏时间（秒）：
         /// 真实音频播放中返回播放位置；否则返回虚拟钟时间（无音频兜底）
         /// </summary>
-        public float CurrentTime => audioStarted ? bgmSource.time : virtualTime;
+        // 平滑后的音频时间（每帧只喂一次 AudioClock；属性可安全重复读）
+        private float smoothedTime;
+        private int smoothedFrame = -1;
+
+        /// <summary>
+        /// 当前音乐时间：音频模式走**平滑时钟**（AudioSource.time 有缓冲粒度抖动、偶尔回跳），
+        /// 虚拟钟模式直接用累加值。AudioClock.Enabled=false 时回到原始采样（可回退对比）。
+        /// </summary>
+        public float CurrentTime
+        {
+            get
+            {
+                if (!audioStarted) return virtualTime;
+                if (smoothedFrame != Time.frameCount)
+                {
+                    smoothedFrame = Time.frameCount;
+                    smoothedTime = AudioClock.Update(bgmSource.time, Time.realtimeSinceStartupAsDouble);
+                }
+                return smoothedTime;
+            }
+        }
 
         private bool isInitialized;
         private bool audioStarted;   // 真实音频是否已开始播放（clip 已装载且 Play 成功）
