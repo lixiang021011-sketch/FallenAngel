@@ -41,7 +41,19 @@ foreach ($t in 'Voxel Revolution','Electro Sketch','Ouroboros','Bit Shift','Pinb
 python -X utf8 chart_tools/cc_song_import.py --all $dl --level 6 --max-notes 380
 # 3) 体检
 python -X utf8 chart_tools/audit_charts.py
+# 4) 对齐诊断（只读；--apply 才写回，且第三方谱面有节拍周期歧义，见脚本注释）
+python -X utf8 chart_tools/align_charts.py Assets/Resources/Charts/cc_*.json
 ```
+
+## 第三方谱面的对齐现状（实测）
+
+`chart_tools/align_charts.py`（互相关测整体偏移）在**按构造对齐**的 cc 曲包上读数为 +4.5~+7.5ms
+（方法自身的残差），说明方法可用；但在 PJSK 测试谱上读出 −37.9 / +76.1 / +135.2 / −65.0 ms，
+相关系数只有 0.26~0.39 —— 明显是锁到了**另一拍**（周期歧义），不是可信的偏移量。
+
+所以：第三方谱面的残余对齐误差，交给两条路解决：
+① 它们的 `metadata.offset` 由谱师工具（如 osu! 的 timing 界面）逐拍听校；
+② 玩家侧的 osu! 式统计校准（实战命中误差中位数 → 建议偏移）会把残余偏差吸收掉。
 
 ## 对齐怎么保证的
 
