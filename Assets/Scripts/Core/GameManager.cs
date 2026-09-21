@@ -76,9 +76,12 @@ namespace FallenAngel.Core
             DontDestroyOnLoad(gameObject);
             CurrentState = GameState.Menu;
             // 适配高刷新率屏（120Hz 跑满；60Hz 屏自动锁 60，不产生副作用）
-            // 帧率策略：跟随屏幕刷新率（下限 60、上限 120）并关掉 vSync，让 targetFrameRate 真正生效。
-            // 真机 120Hz 屏 + 中端 SoC 吃不满 120 时，硬拉 120 只会更烫、更抖，所以取"屏幕刷新率"为准。
-            QualitySettings.vSyncCount = 0;
+            // 帧率/延迟策略：**保持平台默认的 vSync**（=1）。
+            // 真机实测"按键后的视觉反馈与触感不在同一瞬间"，而关掉 vSync 后 Unity 可能在
+            // 刚错过一次 vsync 之后才呈现画面，白多出一整帧（16.6ms @60Hz）延迟——上一步为性能
+            // 关 vSync 是错的取舍，这里还原。移动端 vSync 开启时 targetFrameRate 会被忽略，
+            // 但桌面/编辑器仍需要它，所以保留。
+            QualitySettings.vSyncCount = 1;
             int screenRefresh = (int)Mathf.Max(60f, Screen.currentResolution.refreshRate);
             Application.targetFrameRate = Mathf.Clamp(screenRefresh, 60, 120);
         }
