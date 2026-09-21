@@ -79,3 +79,5 @@ _refs/
 _archive/
 /Assets/Resources/Charts/cc_*.json
 /Assets/Resources/Charts/cc_*.json.meta
+/Assets/Resources/Charts/phira_*.json
+/Assets/Resources/Charts/phira_*.json.meta

@@ -27,7 +27,11 @@ namespace FallenAngel.Core
         /// 本地曲包的前缀：`pjsk_`（版权素材，不入库，仅作者本机）与 `cc_`（CC-BY 可再分发，
         /// 由 `chart_tools/cc_song_import.py` 从音频自动成谱，见 chart_tools/cc_song_pack.md）。
         /// </summary>
-        private static readonly string[] Prefixes = { "pjsk_", "cc_" };
+        /// <remarks>
+        /// `phira_`：Phira 社区谱（`chart_tools/phira_import.py` 转成 v2），
+        /// 谱面站对象模型没有 license 字段 → 默认保留所有权利，只当**本地测试素材**，不进发行包。
+        /// </remarks>
+        private static readonly string[] Prefixes = { "pjsk_", "cc_", "phira_" };
 
         [MenuItem("Tools/FallenAngel/Validate Local Song Pack")]
         public static void Run()
