@@ -512,7 +512,11 @@ namespace FallenAngel.Gameplay
                 if (pendingInputs.ContainsKey(finger)) continue;
 
                 input.TryGetFingerScreenPosition(finger, lane, out Vector2 pos);
-                frameTouches.Add(MakeTouch(finger, lane, LiveTouchPhase.Stationary, songTime, pos, false, songTime));
+                // 触屏手指（fingerId ≥ 0）仍然要按"触屏语义"装配：位置可信 → 走小数轨道解析、
+                // 甩键方向校验也生效。键盘（-(lane+2)）/鼠标（-1）才是键鼠语义。
+                bool isTouchFinger = finger >= 0;
+                frameTouches.Add(MakeTouch(finger, lane, LiveTouchPhase.Stationary, songTime, pos,
+                    isTouchFinger, songTime));
             }
         }
 

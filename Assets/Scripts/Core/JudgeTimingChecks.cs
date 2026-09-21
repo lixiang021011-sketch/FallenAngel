@@ -322,6 +322,172 @@ namespace FallenAngel.Core
                     string.Format("生成={0}、判定落到视图={1}、映射一致={2}、反馈期间保留={3}、收尾后活跃={4}",
                         spawned, hitShown, linked, keptDuringFx, sb.Spawner.ActiveNotes.Count));
             }
+
+            // ── ⑪–⑯ 按音符类型过一遍"产品期望"（每类都有自己的语义，最容易错的就是这几条）──
+            // ⑪ 普通点击：窗内 = 档位正确、计数 1
+            using (var sb = new Sandbox())
+            {
+                sb.AddChartNote(new NoteData(2, 10.000f, DataNoteType.Normal));
+                sb.BuildScore();
+                sb.SetSongTime(9.950f);
+                sb.JudgeUpdate();
+                sb.SetSongTime(10.060f);
+                sb.PressAt(2, 10.060f);          // 晚 60ms
+                sb.JudgeUpdate();
+                var live = sb.Live(0);
+                check("普通·晚 60ms = Great",
+                    live.State == NoteState.Done && live.Result == NoteResult.Great
+                    && sb.Judge.GreatCount == 1 && sb.Judge.MissCount == 0,
+                    string.Format("{0}/{1}、Great={2}", live.Result, live.Description, sb.Judge.GreatCount));
+            }
+
+            // ⑫ drag（摩擦）碰即判：按住的手指在窗内触到就**当帧**结算（不等过线）
+            using (var sb = new Sandbox())
+            {
+                sb.AddChartNote(new NoteData(2, 10.000f, DataNoteType.Drag));
+                sb.BuildScore();
+                sb.SetSongTime(9.950f);
+                sb.JudgeUpdate();
+                sb.SetSongTime(9.920f);
+                sb.PressAt(2, 9.920f);           // 音符前 80ms 触到
+                sb.JudgeUpdate();
+                var live = sb.Live(0);
+                check("drag·碰即判（当帧结算）",
+                    live.State == NoteState.Done && live.Result == NoteResult.JustPerfect
+                    && sb.Judge.PerfectCount == 1,
+                    string.Format("{0}（音符 10.000 / 触到 9.920）Perfect={1}",
+                        live.Result, sb.Judge.PerfectCount));
+            }
+
+            // ⑬ 甩键：**累计**滑动幅度够大就要算（慢甩 5px×6 帧 = 30px 也该判）
+            using (var sb = new Sandbox())
+            {
+                sb.AddChartNote(new NoteData(2, 10.000f, DataNoteType.Flick, 0f, -1, FlickDirection.Up));
+                sb.BuildScore();
+                sb.SetSongTime(9.980f);
+                sb.PressAt(2, 9.980f);
+                sb.JudgeUpdate();
+                for (int i = 1; i <= 6; i++)
+                {
+                    sb.SetSongTime(9.980f + i * 0.008f);
+                    sb.SwipeAt(2, 9.980f + i * 0.008f, 0f, 5f * i);   // 每帧 5px 上滑（传累计位置）
+                    sb.JudgeUpdate();
+                }
+                var live = sb.Live(0);
+                check("甩键·慢甩累计幅度也算",
+                    live.State == NoteState.Done && live.Result > NoteResult.Pass,
+                    string.Format("6 帧累计 30px 上滑 → {0}/{1}", live.Result, live.Description));
+            }
+
+            // ⑭ 甩键方向错：不判 Miss，走 FlickMiss 分支（Great）
+            using (var sb = new Sandbox())
+            {
+                sb.AddChartNote(new NoteData(2, 10.000f, DataNoteType.Flick, 0f, -1, FlickDirection.Down));
+                sb.BuildScore();
+                sb.SetSongTime(9.995f);
+                sb.PressAt(2, 9.995f);
+                sb.JudgeUpdate();
+                for (int i = 1; i <= 4; i++)
+                {
+                    sb.SetSongTime(9.995f + i * 0.008f);
+                    sb.SwipeAt(2, 9.995f + i * 0.008f, 0f, 10f * i);  // 上滑（与需要的下划相反）
+                    sb.JudgeUpdate();
+                }
+                var live = sb.Live(0);
+                check("甩键·方向错 = Great/FlickMiss",
+                    live.State == NoteState.Done && live.Result == NoteResult.Great
+                    && live.Description == NoteResultDescription.FlickMiss,
+                    string.Format("需要下划、实际上滑 → {0}/{1}", live.Result, live.Description));
+            }
+
+            // ⑮ 长按**按住到尾巴**（不松手）：产品语义 = 成功；绝不能因为"没在窗口内松手"判 Miss
+            using (var sb = new Sandbox())
+            {
+                sb.AddChartNote(new NoteData(2, 10.000f, DataNoteType.LongStart, 0.500f, 21));
+                sb.AddChartNote(new NoteData(2, 10.500f, DataNoteType.LongEnd, 0f, 21));
+                sb.BuildScore();
+                sb.SetSongTime(9.500f);
+                sb.JudgeUpdate();
+                sb.SetSongTime(10.000f);
+                sb.PressAt(2, 10.000f);
+                sb.JudgeUpdate();
+                for (float t = 10.100f; t <= 10.800f; t += 0.100f)
+                {
+                    sb.SetSongTime(t);
+                    sb.JudgeUpdate();            // 一直按着（Stationary），直到尾巴之后 0.3s 也不松
+                }
+                var head = sb.Live(0);
+                var tail = head.NoteList[head.NoteList.Count - 1];
+                check("长按·按住过尾 = 成功",
+                    tail.State == NoteState.Done && tail.Result > NoteResult.Pass
+                    && head.State == NoteState.Done && head.Result > NoteResult.Pass
+                    && sb.Judge.MissCount == 0,
+                    string.Format("尾={0}、整条={1}、Miss={2}（按住不松手到 10.8s）",
+                        tail.Result, head.Result, sb.Judge.MissCount));
+            }
+
+            // ⑯ 长按掉指后重拾：中途松手再按回来，尾部仍能判（"掉段不断整条"）
+            using (var sb = new Sandbox())
+            {
+                sb.AddChartNote(new NoteData(2, 10.000f, DataNoteType.LongStart, 0.500f, 22));
+                sb.AddChartNote(new NoteData(2, 10.500f, DataNoteType.LongEnd, 0f, 22));
+                sb.BuildScore();
+                sb.SetSongTime(9.500f);
+                sb.JudgeUpdate();
+                sb.SetSongTime(10.000f);
+                sb.PressAt(2, 10.000f);
+                sb.JudgeUpdate();
+                sb.SetSongTime(10.150f);
+                sb.ReleaseAt(2, 10.150f);        // 中途松手（在尾部窗口之外）
+                sb.JudgeUpdate();
+                sb.SetSongTime(10.480f);
+                sb.PressAt(2, 10.480f);          // 尾部窗口内按回来
+                sb.JudgeUpdate();
+                sb.SetSongTime(10.500f);
+                sb.ReleaseAt(2, 10.500f);
+                sb.JudgeUpdate();
+                var head = sb.Live(0);
+                var tail = head.NoteList[head.NoteList.Count - 1];
+                check("长按·掉指重拾后尾部成功",
+                    tail.State == NoteState.Done && tail.Result > NoteResult.Pass
+                    && sb.Judge.MissCount == 0,
+                    string.Format("（10.15 松手 → 10.48 按回 → 10.50 松手）尾={0}、Miss={1}",
+                        tail.Result, sb.Judge.MissCount));
+            }
+
+            // ⑰ 滑条：沿路径跟到尾部再松手 = 成功；且跨度跟谱面 path（弯道不脱手）
+            using (var sb = new Sandbox())
+            {
+                var path = new System.Collections.Generic.List<SlidePathPoint>
+                {
+                    new SlidePathPoint { t = 0f, x = 1f },
+                    new SlidePathPoint { t = 0.3f, x = 2f },
+                    new SlidePathPoint { t = 0.6f, x = 3f },
+                };
+                sb.AddChartNote(new NoteData(1, 10.000f, DataNoteType.Slide, 0.600f, 31,
+                    FlickDirection.Up, path));
+                sb.AddChartNote(new NoteData(3, 10.600f, DataNoteType.LongEnd, 0f, 31));
+                sb.BuildScore();
+                sb.SetSongTime(9.500f);
+                sb.JudgeUpdate();
+                sb.SetSongTime(10.000f);
+                sb.PressAt(1, 10.000f);
+                sb.JudgeUpdate();
+                sb.SetSongTime(10.300f);
+                sb.SwipeAt(2, 10.300f, 0f, 0f);   // 跟到轨 2（路径中点）
+                sb.JudgeUpdate();
+                sb.SetSongTime(10.600f);
+                sb.SwipeAt(3, 10.600f, 0f, 0f);   // 跟到轨 3（路径终点）
+                sb.JudgeUpdate();
+                sb.ReleaseAt(3, 10.600f);
+                sb.JudgeUpdate();
+                var head = sb.Live(0);
+                var tail = head.NoteList[head.NoteList.Count - 1];
+                check("滑条·沿路径跟到尾部 = 成功",
+                    tail.State == NoteState.Done && tail.Result > NoteResult.Pass
+                    && sb.Judge.MissCount == 0,
+                    string.Format("尾={0}、Miss={1}", tail.Result, sb.Judge.MissCount));
+            }
         }
 
         /// <summary>晚 90ms 按下（同一个音符），返回判定档——用来验窗口倍率是否进表</summary>
@@ -495,6 +661,14 @@ namespace FallenAngel.Core
             public void PressAtAs(int lane, float musicTime, int fingerId)
             {
                 Input.SimulateLaneInputAt(lane, true, musicTime, fingerId);
+            }
+
+            /// <summary>把手指移到「轨道中心 + (dx,dy)」（触屏语义；连续调用传累计位移）</summary>
+            public void SwipeAt(int lane, float musicTime, float dx, float dy)
+            {
+                // 只更新位置、不发事件：判定层会为"仍按住"的轨道生成持续输入（Stationary），
+                // 这样才会走进"手指已按住、这一帧移动"的分支（甩键累计幅度）。
+                Input.SetFingerPosition(lane + 1, Input.FingerPositionOf(lane, dx, dy));
             }
 
             /// <summary>四个单例是否都指向本沙箱的实例（指向别人 = 后面测的不是这套对象）</summary>

@@ -38,6 +38,16 @@ namespace FallenAngel.Live
         /// </summary>
         public Func<float, float> PathLaneSampler;
 
+        /// <summary>
+        /// 本工程产品语义：**按住到尾巴就算完成**（不必在 Long_End 窗口内正好松手）。
+        ///
+        /// 上游要求"在尾部窗口内抬起"：漏松手（一直按住到尾巴之后）会走成 Miss。
+        /// 我们的鼓/吉他谱是"按住打到尾"，照搬会出现**按住不放反而判 Miss** 的 bug（真机已复现）。
+        /// 开启后：到尾部时刻若仍按住 → 以尾部时刻结算该条（JustPerfect）；
+        /// 窗口内的正常松手/提前松手/掉指重拾语义都不变。
+        /// </summary>
+        public bool CompleteTailWhileHolding { get; set; }
+
         public float JudgedLaneEnd
         {
             get { return LaneEndF + LaneOffset; }
@@ -303,6 +313,23 @@ namespace FallenAngel.Live
                 float center = PathLaneSampler(progress01);
                 LaneStartF = center - laneSpan * 0.5f;
                 LaneEndF = center + laneSpan * 0.5f;
+            }
+
+            // 按住到尾巴 = 完成（本工程语义；见 CompleteTailWhileHolding 注释）
+            if (CompleteTailWhileHolding && childNote != null && State != NoteState.Done
+                && (State == NoteState.InputBegan || State == NoteState.Input)
+                && childNote.State != NoteState.Done
+                && currentFrameInfo.time >= childNote.MusicScoreInfo.time)
+            {
+                var tailTouch = new LiveTouch(0, 0, Vector2.zero, Vector3.zero,
+                    LiveTouchPhase.Ended, childNote.MusicScoreInfo.time,
+                    (LaneStartF + LaneEndF) * 0.5f, Vector2.zero, false);
+                float tailLane = (LaneStartF + LaneEndF) * 0.5f;
+                if (childNote.IsJudgment(ref tailTouch, tailLane)
+                    && childNote.Judgment(ref tailTouch, tailLane))
+                {
+                    State = NoteState.Done;
+                }
             }
 
             if (State == NoteState.Playing && currentFrameInfo.time - MusicScoreInfo.time > LiveConfig.JudgeTime)

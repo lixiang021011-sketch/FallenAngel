@@ -19,6 +19,13 @@ namespace FallenAngel.Live
 
         private readonly (int id, bool distance, bool trueDirection)[] inputResults;
 
+        /// <summary>
+        /// 每根手指从按下起的**累计**滑动量（按 60fps 归一的口径）。
+        /// 为什么需要：上游只看"单帧位移够不够大"，慢甩（每帧几 px、累计几十 px）会被当成"没滑"——
+        /// 实机就是"甩键时灵时不灵"。本工程按累计幅度判，方向也取累计向量（单帧抖动不会翻向）。
+        /// </summary>
+        private readonly Vector2[] accumulatedDeltas;
+
         /// <summary>判定"够得上甩"的最小滑动距离（像素；由构造方按屏幕高度算）</summary>
         private readonly float flickDistance;
 
@@ -50,6 +57,7 @@ namespace FallenAngel.Live
         public LiveFlickNote()
         {
             inputResults = new (int id, bool distance, bool trueDirection)[8];
+            accumulatedDeltas = new Vector2[8];
             Category = NoteCategory.Flick;
         }
 
@@ -59,6 +67,7 @@ namespace FallenAngel.Live
             : base(info, id, laneStart, laneEnd, category, speedRatio, laneOffset, type)
         {
             inputResults = new (int id, bool distance, bool trueDirection)[8];
+            accumulatedDeltas = new Vector2[8];
             this.flickDistance = flickDistance;
             Direction = direction;
         }
@@ -184,7 +193,8 @@ namespace FallenAngel.Live
             {
                 if (touch.phase == LiveTouchPhase.Began)
                 {
-                    AddInputResult(ref touch, ref isUpdatedDelta, ref isTrueDirection);
+                    int beganSlot = AddInputResult(ref touch, ref isUpdatedDelta, ref isTrueDirection);
+                    if (beganSlot >= 0) accumulatedDeltas[beganSlot] = Vector2.zero;   // 新按下：累计量归零
                     return false;
                 }
 
@@ -193,7 +203,8 @@ namespace FallenAngel.Live
                     return false;
                 }
 
-                UpdateDelta(touch.delta, ref isUpdatedDelta, ref isTrueDirection, touch.isDirectionTrusted);
+                UpdateDelta(SlotOf(touch.touchId), touch.delta,
+                    ref isUpdatedDelta, ref isTrueDirection, touch.isDirectionTrusted);
                 if (!isUpdatedDelta)
                 {
                     return false;
@@ -203,7 +214,8 @@ namespace FallenAngel.Live
                 return JudgmentFlick(touch.musicTime);
             }
 
-            UpdateDelta(touch.delta, ref isUpdatedDelta, ref isTrueDirection, touch.isDirectionTrusted);
+            UpdateDelta(SlotOf(touch.touchId), touch.delta,
+                ref isUpdatedDelta, ref isTrueDirection, touch.isDirectionTrusted);
             if (isUpdatedDelta)
             {
                 AddInputResult(ref touch, ref isUpdatedDelta, ref isTrueDirection);
@@ -219,19 +231,32 @@ namespace FallenAngel.Live
             return false;
         }
 
-        private void AddInputResult(ref LiveTouch touch, ref bool isUpdatedDelta, ref bool isTrueDirection)
+        /// <summary>写入该手指的输入结果，返回它占用的槽位（-1 = 槽满）</summary>
+        private int AddInputResult(ref LiveTouch touch, ref bool isUpdatedDelta, ref bool isTrueDirection)
         {
             for (var i = 0; i < inputResults.Length; i++)
             {
                 if (inputResults[i].id == 0 || inputResults[i].id == touch.touchId)
                 {
                     inputResults[i] = (touch.touchId, isUpdatedDelta, isTrueDirection);
-                    return;
+                    return i;
                 }
             }
+
+            return -1;
         }
 
-        private void UpdateDelta(Vector2 touchDelta, ref bool isUpdatedDelta, ref bool isTrueDirection,
+        /// <summary>该手指占用的槽位（没有则 -1）</summary>
+        private int SlotOf(int touchId)
+        {
+            for (var i = 0; i < inputResults.Length; i++)
+            {
+                if (inputResults[i].id == touchId) return i;
+            }
+            return -1;
+        }
+
+        private void UpdateDelta(int slot, Vector2 touchDelta, ref bool isUpdatedDelta, ref bool isTrueDirection,
             bool isDirectionTrusted)
         {
             if (touchDelta == LiveUtility.Vector2Zero)
@@ -245,7 +270,16 @@ namespace FallenAngel.Live
                 touchDelta /= frameScale;
             }
 
-            isUpdatedDelta = touchDelta.sqrMagnitude > flickDistance * flickDistance;
+            Vector2 accumulated = touchDelta;
+            if (slot >= 0)
+            {
+                accumulatedDeltas[slot] += touchDelta;
+                accumulated = accumulatedDeltas[slot];
+            }
+
+            // 幅度：单帧够大 **或** 累计够大（慢甩也算）
+            isUpdatedDelta = touchDelta.sqrMagnitude > flickDistance * flickDistance
+                             || accumulated.sqrMagnitude > flickDistance * flickDistance;
             if (!isUpdatedDelta)
             {
                 isTrueDirection = false;
@@ -267,7 +301,9 @@ namespace FallenAngel.Live
                 _ => Vector2.up
             };
 
-            var dot = Vector2.Dot(touchDelta.normalized, requiredDirection.normalized);
+            // 方向取累计向量（单帧抖动不会把方向翻过去）
+            var directionVector = accumulated.sqrMagnitude > 0.0001f ? accumulated : touchDelta;
+            var dot = Vector2.Dot(directionVector.normalized, requiredDirection.normalized);
             isTrueDirection = dot >= 0f || Direction == NoteDirection.Default;
         }
 
@@ -282,6 +318,7 @@ namespace FallenAngel.Live
         {
             base.ResetNote();
             Array.Clear(inputResults, 0, inputResults.Length);
+            Array.Clear(accumulatedDeltas, 0, accumulatedDeltas.Length);
             lastInputFrame = 0;
         }
 

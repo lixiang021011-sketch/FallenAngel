@@ -607,6 +607,37 @@ namespace FallenAngel.InputSystem
             SetLaneStateAt(lane, pressed, pos, false, musicTime, fingerId < 0 ? lane + 1 : fingerId);
         }
 
+        /// <summary>
+        /// 自检用：把某根手指的**当前屏幕位置**设为「轨道中心 + (dx,dy)」（触屏语义，方向可信）。
+        /// 判定层每帧用"这次位置 − 上次位置"算滑动增量，所以连续调用时传**累计位移**即可复现
+        /// "每帧滑 5px 的慢甩 / 一次滑 40px 的快甩"，也用来验甩键方向。
+        /// </summary>
+        public void SimulateFingerAt(int lane, float musicTime, float dx, float dy, int fingerId = -1)
+        {
+            int count = Mathf.Max(1, LanePressStates.Length);
+            Vector2 basePos = new Vector2(Screen.width * (lane + 0.5f) / count, Screen.height * 0.5f);
+            Vector2 pos = basePos + new Vector2(dx, dy);
+            int finger = fingerId < 0 ? lane + 1 : fingerId;
+            fingerScreenPos[finger] = pos;
+            SetLaneStateAt(lane, true, pos, true, musicTime, finger);
+        }
+
+        /// <summary>
+        /// 自检用：**只更新**手指的屏幕位置，不产生按下/抬起事件（模拟"手指已经按住、这一帧移动了"）。
+        /// 判定层每帧会为仍按住的轨道生成持续输入（Stationary），位置取自这里——甩键的累计幅度就是这么验的。
+        /// </summary>
+        public void SetFingerPosition(int fingerId, Vector2 screenPos)
+        {
+            fingerScreenPos[fingerId] = screenPos;
+        }
+
+        /// <summary>自检用：取"轨道中心 + (dx,dy)"的合成屏幕坐标（配合 <see cref="SetFingerPosition"/>）</summary>
+        public Vector2 FingerPositionOf(int lane, float dx, float dy)
+        {
+            int count = Mathf.Max(1, LanePressStates.Length);
+            return new Vector2(Screen.width * (lane + 0.5f) / count, Screen.height * 0.5f) + new Vector2(dx, dy);
+        }
+
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;

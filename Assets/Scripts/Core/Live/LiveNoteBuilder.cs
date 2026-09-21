@@ -107,6 +107,7 @@ namespace FallenAngel.Live
         {
             var head = new LiveLongNote(info, id, laneStart, laneEnd,
                 NoteCategory.Long, NoteType.Default, 1f, DefaultLaneOffset);
+            head.CompleteTailWhileHolding = true;   // 本工程语义：按住到尾巴 = 成功（见 LiveLongNote 注释）
             var endTime = data.time + Mathf.Max(0f, data.duration);
             var tail = new LiveNormalNote(Info(endTime), id, laneStart, laneEnd,
                 NoteCategory.Normal, 1f, NoteType.Default, DefaultLaneOffset);
@@ -119,6 +120,7 @@ namespace FallenAngel.Live
         {
             var head = new LiveLongNote(info, id, laneStart, laneEnd,
                 NoteCategory.Long, NoteType.Default, 1f, DefaultLaneOffset, NoteLineType.Linear);
+            head.CompleteTailWhileHolding = true;   // 滑条同样：跟到尾巴就算成功
 
             var path = data.path;
             var endTime = data.time + Mathf.Max(0f, data.duration);
