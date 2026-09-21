@@ -4,23 +4,48 @@ using System.Collections.Generic;
 namespace FallenAngel.Live
 {
     /// <summary>
-    /// 判定音符的行为基类。对应 OpenSekai Sekai/Live/NoteBase.cs 的判定面
-    /// （IsJudgment / Judgment / CalcNoteResult / LaneDistance / IsJudgmentTime），
-    /// 加上各音符子类的覆盖点：
+    /// 判定音符的行为基类。逐字对应 OpenSekai Sekai/Live/NoteBase.cs（判定面），
+    /// 只把类型名换成 Live* 前缀（NoteBase → LiveNoteBase、LongNote → LiveLongNote、
+    /// NoteBase[] 子表 → LiveNoteBase 子表），语义不变：
     ///
-    /// - <see cref="LiveNormalNote"/>  = NormalNote：普通音符必须"按下边沿"（Began）；
-    ///   作为长按尾（Category=Long）时只认"抬起/取消"。
-    /// - <see cref="LiveFrictionNote"/> = FrictionNote：**不要求按下边沿**——手指落在跨度内、
-    ///   时机在窗口内就是候选；正在进行中的手指会被 PickUpNotBeginInputNotes 拾取。
-    ///   这条就是 PJSK"跟手"的核心语义。
-    /// - <see cref="LiveLongNote"/>     = LongNote：头 + 子音符链，子音符挂在 NoteList 上。
+    /// · 状态机：Wait → Playing →（Last）→ Done，最后一步统一判 Miss（原作 Excute 的 State &gt;= Last 分支）；
+    /// · 视图进度 Progress 由 offsetTime（音符在屏时长）算出，0 = 生成点、1 = 判定线；
+    /// · 判定窗口一律查 LiveConfig/LiveUtility，音符自己不算窗口；
+    /// · State 落到 Playing 触发 OnSpawnNote、落到 Done 触发 OnUnSpawnNote（原作回调面，
+    ///   本工程的视图与计分层通过它拿到"音符开始/结束"事件）。
+    ///
+    /// 与上游的两处**接线级**差异（不是语义差异）：
+    /// 1. CalcProgress 的当前时刻取 <see cref="MusicScoreInfo.time"/>（我们传进来的 currentFrameInfo），
+    ///    与原作同一条公式；
+    /// 2. 需要"当前帧号"的地方（长按 MissMesh / flick 的 lastInputFrame）读
+    ///    <see cref="LiveJudgeClock.FrameCount"/> —— 由宿主每帧推进一步（原作直接读 Time.frameCount，
+    ///    但批处理自检里帧号不推进，改成可注入的时钟才能既照抄语义又能无头验证）。
     /// </summary>
     public abstract class LiveNoteBase : INote
     {
-        protected NoteState state = NoteState.Wait;
-        protected float offsetTime;
+        // ── 原作回调面（判定事件、计分、连击、伤害、生成/回收、结果改写）──
+        protected Action<LiveNoteBase> onUpdateScore;
+        protected Action<LiveNoteBase> onUpdateCombo;
+        protected Action<LiveNoteBase> onDamage;
+        protected Action<LiveNoteBase> onSpawn;
+        protected Action<LiveNoteBase> onJudgment;
+        protected Action<LiveNoteBase> onUnspawn;
+        protected Func<(NoteResult result, NoteResultDescription description),
+            (NoteResult result, NoteResultDescription description)> onUpdateResult;
 
-        private readonly List<INote> viewNoteList = new List<INote>();
+        /// <summary>原作 CalcTimeOffset 委托：由宿主给出"这个音符应该在屏多久"</summary>
+        public Func<LiveNoteBase, float> CalcTimeOffset;
+
+        protected NoteState state;
+        protected LiveLongNote parentNote;
+        protected LiveNoteBase childNote;
+
+        /// <summary>原作 NoteBase() 的空构造（派生类的默认构造走这里）</summary>
+        protected LiveNoteBase()
+        {
+            NoteList = new List<LiveNoteBase> { this };
+            ViewNoteList = new List<INote> { this };
+        }
 
         protected LiveNoteBase(
             MusicScoreInfo info,
@@ -28,53 +53,65 @@ namespace FallenAngel.Live
             int laneStart,
             int laneEnd,
             NoteCategory category,
-            NoteType type,
-            float laneOffset)
+            float speedRatio,
+            float laneOffset,
+            NoteType type = NoteType.Default)
         {
             MusicScoreInfo = info;
             Id = id;
+            DefaultLeftLane = laneStart;
+            DefaultRightLane = laneEnd;
             LaneStart = laneStart;
             LaneEnd = laneEnd;
             LaneStartF = laneStart;
             LaneEndF = laneEnd;
             JudgeLaneStart = laneStart - laneOffset;
             JudgeLaneEnd = laneEnd + laneOffset;
+            state = NoteState.Wait;
             Category = category;
             Type = type;
-            Direction = NoteDirection.Default;
-            LineType = NoteLineType.Linear;
-            NoteList = new List<LiveNoteBase>();
-            // 上游的普通音符 NoteList 恒为 1 个元素（它自己）；判定循环按 Count==1 区分
-            // "单个音符" 与 "长按/链"（见 LiveJudgeCore.AllocateInputJudgableEachNotes）。
-            NoteList.Add(this);
+            this.speedRatio = speedRatio;
+            NoteList = new List<LiveNoteBase> { this };
+            ViewNoteList = new List<INote> { this };
         }
 
-        public MusicScoreInfo MusicScoreInfo { get; protected set; }
+        public MusicScoreInfo MusicScoreInfo { get; set; }
 
-        public float OffsetJudgeTime { get; protected set; }
+        public float OffsetJudgeTime { get; set; }
 
         public int DefaultLeftLane { get; set; }
 
         public int DefaultRightLane { get; set; }
 
-        public int LaneStart { get; set; }
+        public virtual int LaneStart { get; set; }
 
-        public int LaneEnd { get; set; }
+        public virtual int LaneEnd { get; set; }
 
-        public float LaneStartF { get; set; }
+        public virtual float LaneStartF { get; set; }
 
-        public float LaneEndF { get; set; }
+        public virtual float LaneEndF { get; set; }
 
-        public float JudgeLaneStart { get; set; }
+        public virtual float JudgeLaneStart { get; set; }
 
-        public float JudgeLaneEnd { get; set; }
+        public virtual float JudgeLaneEnd { get; set; }
 
         public float Progress { get; protected set; }
 
         public virtual NoteState State
         {
             get { return state; }
-            protected set { state = value; }
+            protected set
+            {
+                state = value;
+                if (value == NoteState.Playing)
+                {
+                    OnSpawnNote();
+                }
+                else if (value == NoteState.Done)
+                {
+                    OnUnSpawnNote();
+                }
+            }
         }
 
         public (NoteResult result, NoteResultDescription description) JudgeInfo { get; protected set; }
@@ -84,114 +121,121 @@ namespace FallenAngel.Live
             get { return JudgeInfo.result; }
         }
 
-        public NoteCategory Category { get; protected set; }
+        public NoteResultDescription Description
+        {
+            get { return JudgeInfo.description; }
+        }
 
-        public NoteType Type { get; protected set; }
+        public virtual NoteCategory Category { get; protected set; }
+
+        public NoteType Type { get; set; }
 
         public NoteDirection Direction { get; set; }
 
-        public NoteLineType LineType { get; protected set; }
+        public NoteLineType LineType { get; set; }
 
-        public INote ParentNote { get; protected set; }
-
-        public INote ChildNote { get; protected set; }
-
-        public INote PairNote { get; set; }
-
-        public List<INote> ViewNoteList
+        public INote ParentNote
         {
-            get { return viewNoteList; }
-            set
-            {
-                viewNoteList.Clear();
-                if (value != null)
-                {
-                    viewNoteList.AddRange(value);
-                }
-            }
+            get { return parentNote; }
         }
 
-        public bool IsSkip { get; protected set; }
+        public INote ChildNote
+        {
+            get { return childNote; }
+        }
 
-        public int Id { get; protected set; }
+        public INote PairNote { get; private set; }
 
-        /// <summary>子音符链（长按/摩擦链用；普通音符只有一个元素或为空）。</summary>
-        public List<LiveNoteBase> NoteList { get; private set; }
+        public List<INote> ViewNoteList { get; set; }
+
+        public List<LiveNoteBase> NoteList { get; set; }
 
         public virtual bool HasJudgment
         {
-            get { return !IsSkip; }
+            get { return true; }
         }
 
-        public virtual void SetParentNote(LiveNoteBase note)
+        public virtual bool FinishFirstAction
         {
-            ParentNote = note;
-            if (note != null)
+            get { return true; }
+        }
+
+        public virtual bool IsSkip { get; set; }
+
+        public virtual int Id { get; set; }
+
+        public float speedRatio { get; set; }
+
+        public float offsetTime { get; set; }
+
+        // ── 原作回调属性（长按子类会覆写以向下传播）──
+        public virtual Action<LiveNoteBase> OnUpdateScore
+        {
+            set { onUpdateScore = value; }
+        }
+
+        public virtual Action<LiveNoteBase> OnUpdateCombo
+        {
+            set { onUpdateCombo = value; }
+        }
+
+        public virtual Action<LiveNoteBase> OnDamage
+        {
+            set { onDamage = value; }
+        }
+
+        public virtual Action<LiveNoteBase> OnJudgment
+        {
+            set { onJudgment = value; }
+        }
+
+        public virtual Action<LiveNoteBase> OnSpawn
+        {
+            set { onSpawn = value; }
+        }
+
+        public virtual Action<LiveNoteBase> OnUnspawn
+        {
+            set { onUnspawn = value; }
+        }
+
+        public virtual Func<(NoteResult result, NoteResultDescription description),
+            (NoteResult result, NoteResultDescription description)> OnUpdateResult
+        {
+            set { onUpdateResult = value; }
+        }
+
+        /// <summary>原作 SetStateUnnotice：改状态但不触发回调（用于从存档/中途恢复）</summary>
+        public void SetStateUnnotice(NoteState newState)
+        {
+            state = newState;
+        }
+
+        public virtual void SetParentNote(LiveLongNote note)
+        {
+            parentNote = note;
+            if (note != null && note.Type == NoteType.Critical)
             {
-                Type = note.Type == NoteType.Critical || Type == NoteType.Critical
-                    ? NoteType.Critical
-                    : NoteType.Default;
+                Type = note.Type;
             }
         }
 
-        public void SetSkip(bool skip)
+        public void SetChildNote(LiveNoteBase note)
+        {
+            childNote = note;
+        }
+
+        public void SetPairNote(LiveNoteBase note)
+        {
+            PairNote = note;
+        }
+
+        public virtual void SetSkip(bool skip)
         {
             IsSkip = skip;
         }
 
-        public LiveNoteBase FirstNote
-        {
-            get { return NoteList != null && NoteList.Count > 0 ? NoteList[0] : this; }
-        }
-
-        public LiveNoteBase LastNote
-        {
-            get { return NoteList != null && NoteList.Count > 0 ? NoteList[NoteList.Count - 1] : this; }
-        }
-
-        /// <summary>逐字对应 NoteBase.IsJudgmentTime：OffsetJudgeTime 是否落在 Bad 窗口内。</summary>
-        public virtual bool IsJudgmentTime()
-        {
-            var data = LiveJudgeWindows.GetJudgeTime(LiveJudgeWindows.GetINoteToJudgeFrameType(this));
-            return OffsetJudgeTime >= -data.BadBeforeJudgeTime
-                && OffsetJudgeTime <= data.BadAfterJudgeTime;
-        }
-
-        /// <summary>逐字对应 NoteBase.LaneDistance：到音符跨度中心的平方距离。</summary>
-        public virtual float LaneDistance(float inputLane)
-        {
-            float centerLane = (LaneStartF + LaneEndF) * 0.5f;
-            float distance = centerLane - inputLane;
-            return distance * distance;
-        }
-
-        public virtual bool IsJudgment(ref LiveTouch touch, float lane)
-        {
-            if (State == NoteState.Done || JudgeLaneStart > lane || JudgeLaneEnd < lane)
-            {
-                return false;
-            }
-
-            return LiveJudgeWindows.IsJudgmentTiming(
-                LiveJudgeWindows.GetINoteToJudgeFrameType(this),
-                MusicScoreInfo.time - touch.musicTime);
-        }
-
-        public virtual bool Judgment(ref LiveTouch touch, float lane)
-        {
-            return true;
-        }
-
-        public virtual NoteResult CalcNoteResult(float musicTime)
-        {
-            return LiveJudgeWindows
-                .CalculateDefaultNoteResult(
-                    LiveJudgeWindows.GetINoteToJudgeFrameType(this),
-                    MusicScoreInfo.time - musicTime)
-                .result;
-        }
-
-        /// <summary>判定推进（时间推进；Miss 在这里发生）。</summary>
+        /// <summary>逐字对应原作 NoteBase.Excute（时间推进；过窗 → Last → 下一步判 Miss）。</summary>
         public virtual void Excute(MusicScoreInfo currentFrameInfo, float offsetTime)
         {
             this.offsetTime = offsetTime;
@@ -200,216 +244,143 @@ namespace FallenAngel.Live
                 return;
             }
 
-            OffsetJudgeTime = currentFrameInfo.time - MusicScoreInfo.time;
-            if (State == NoteState.Wait)
-            {
-                State = NoteState.Playing;
-            }
-
-            if (State == NoteState.Last)
+            if (State >= NoteState.Last)
             {
                 JudgeInfo = (NoteResult.Miss, NoteResultDescription.None);
                 State = NoteState.Done;
                 return;
             }
 
-            var data = LiveJudgeWindows.GetJudgeTime(LiveJudgeWindows.GetINoteToJudgeFrameType(this));
-            if (OffsetJudgeTime > data.BadAfterJudgeTime)
+            OffsetJudgeTime = currentFrameInfo.time - MusicScoreInfo.time;
+            var progress = CalcProgress(currentFrameInfo, offsetTime);
+            if (progress < 0f && state != NoteState.Playing)
+            {
+                return;
+            }
+
+            if (State == NoteState.Wait)
+            {
+                State = NoteState.Playing;
+            }
+
+            Progress = progress;
+            if (OffsetJudgeTime > LiveConfig.JudgeTimeAfter)
             {
                 State = NoteState.Last;
             }
         }
 
-        public void ResetNote()
+        /// <summary>逐字对应原作 NoteBase.CalcProgress：offsetTime = 音符在屏时长。</summary>
+        protected float CalcProgress(MusicScoreInfo currentFrameInfo, float offsetTime)
         {
-            state = NoteState.Wait;
-            JudgeInfo = (NoteResult.None, NoteResultDescription.None);
+            if (offsetTime.Equals(0f))
+            {
+                return 1f;
+            }
+
+            return (currentFrameInfo.time + offsetTime - MusicScoreInfo.time) / offsetTime;
+        }
+
+        /// <summary>原作 Terminate：外部强制收尾（默认什么都不做，子类覆写）</summary>
+        public virtual void Terminate()
+        {
+        }
+
+        public virtual bool Judgment(ref LiveTouch touch, float lane)
+        {
+            return true;
+        }
+
+        protected virtual void OnSpawnNote()
+        {
+            onSpawn?.Invoke(this);
+        }
+
+        protected virtual void OnUnSpawnNote()
+        {
+            onJudgment?.Invoke(this);
+            onUpdateCombo?.Invoke(this);
+            onUpdateScore?.Invoke(this);
+            onDamage?.Invoke(this);
+            onUnspawn?.Invoke(this);
+        }
+
+        /// <summary>逐字对应原作 NoteBase.LaneDistance：到判定跨度中心的平方距离。</summary>
+        public virtual float LaneDistance(ref MusicScoreInfo currentFrameInfo, float inputLane)
+        {
+            var centerLane = (LaneStartF + LaneEndF) * 0.5f;
+            var distance = centerLane - inputLane;
+            return distance * distance;
+        }
+
+        public virtual NoteResult CalcNoteResult(float musicTime)
+        {
+            return NoteResult.None;
+        }
+
+        public virtual bool IsJudgment(ref LiveTouch touch, float lane)
+        {
+            return true;
+        }
+
+        /// <summary>逐字对应原作 NoteBase.IsJudgmentTime。</summary>
+        public virtual bool IsJudgmentTime()
+        {
+            return OffsetJudgeTime >= -LiveConfig.JudgeTimeBefore
+                && OffsetJudgeTime <= LiveConfig.JudgeTimeAfter;
+        }
+
+        /// <summary>逐字对应原作 NoteBase.AutoJudgment（自动演奏用）。</summary>
+        public virtual bool AutoJudgment(MusicScoreInfo currentFrameInfo)
+        {
+            if (State == NoteState.Done || MusicScoreInfo.time > currentFrameInfo.time)
+            {
+                return false;
+            }
+
+            JudgeInfo = (NoteResult.Auto, NoteResultDescription.None);
+            State = NoteState.Done;
+            return true;
+        }
+
+        public virtual void ResetNote()
+        {
+            State = NoteState.Wait;
             OffsetJudgeTime = 0f;
             Progress = 0f;
+            JudgeInfo = (NoteResult.None, NoteResultDescription.None);
         }
 
-        protected void ApplyResult((NoteResult result, NoteResultDescription description) judgeInfo)
+        /// <summary>把判定结果写进 JudgeInfo（含原作的 OnUpdateResult 改写口）</summary>
+        protected void ApplyJudgeInfo((NoteResult result, NoteResultDescription description) judgeInfo)
         {
-            JudgeInfo = judgeInfo;
-        }
-    }
-
-    /// <summary>逐字对应 OpenSekai Sekai/Live/NormalNote.cs 的判定分支。</summary>
-    public class LiveNormalNote : LiveNoteBase
-    {
-        public LiveNormalNote(MusicScoreInfo info, int id, int laneStart, int laneEnd,
-            NoteCategory category, NoteType type, float laneOffset)
-            : base(info, id, laneStart, laneEnd, category, type, laneOffset)
-        {
-        }
-
-        /// <summary>
-        /// 逐字对应 NormalNote.SetParentNote：挂到长按之后变成"长按尾"（只认抬起/取消）。
-        /// 必须是 override —— AddChild 是经由 NoteBase 引用调用它的。
-        /// </summary>
-        public override void SetParentNote(LiveNoteBase note)
-        {
-            base.SetParentNote(note);
-            if (note is LiveLongNote)
-            {
-                Category = NoteCategory.Long;
-            }
-        }
-
-        private static bool IsEndedOrCanceled(LiveTouchPhase phase)
-        {
-            return phase == LiveTouchPhase.Ended || phase == LiveTouchPhase.Canceled;
-        }
-
-        public override bool IsJudgment(ref LiveTouch touch, float lane)
-        {
-            if (State == NoteState.Done || JudgeLaneStart > lane || JudgeLaneEnd < lane)
-            {
-                return false;
-            }
-
-            float offset = MusicScoreInfo.time - touch.musicTime;
-            if (!LiveJudgeWindows.IsJudgmentTiming(
-                    LiveJudgeWindows.GetINoteToJudgeFrameType(this), offset))
-            {
-                return false;
-            }
-
-            // 普通音符只认按下边沿；作为长按尾（Category=Long）时只认抬起/取消。
-            return (Category == NoteCategory.Normal && touch.phase == LiveTouchPhase.Began)
-                || (Category == NoteCategory.Long && IsEndedOrCanceled(touch.phase));
-        }
-
-        public override bool Judgment(ref LiveTouch touch, float lane)
-        {
-            if (State == NoteState.Done)
-            {
-                return false;
-            }
-
-            if ((Category == NoteCategory.Normal && touch.phase != LiveTouchPhase.Began)
-                || (Category == NoteCategory.Long && !IsEndedOrCanceled(touch.phase)))
-            {
-                return false;
-            }
-
-            var frameType = LiveJudgeWindows.GetINoteToJudgeFrameType(this);
-            var judgeInfo = ParentNote != null
-                ? LiveJudgeWindows.CalculateLongEndNoteResult(frameType, MusicScoreInfo.time - touch.musicTime)
-                : LiveJudgeWindows.CalculateDefaultNoteResult(frameType, MusicScoreInfo.time - touch.musicTime);
-
-            ApplyResult(judgeInfo);
-            State = NoteState.Done;
-            return true;
-        }
-
-        public override NoteResult CalcNoteResult(float musicTime)
-        {
-            var frameType = LiveJudgeWindows.GetINoteToJudgeFrameType(this);
-            return (ParentNote != null
-                ? LiveJudgeWindows.CalculateLongEndNoteResult(frameType, MusicScoreInfo.time - musicTime)
-                : LiveJudgeWindows.CalculateDefaultNoteResult(frameType, MusicScoreInfo.time - musicTime)).result;
+            JudgeInfo = onUpdateResult != null ? onUpdateResult(judgeInfo) : judgeInfo;
         }
     }
 
     /// <summary>
-    /// 逐字对应 OpenSekai Sekai/Live/FrictionNote.cs：**不要求按下边沿**。
-    /// 手指落在跨度内 + 时机在窗口内即可成为候选/被拾取；<see cref="Judgment"/> 时标记 isTouched。
+    /// 判定用"帧号"来源。原作直接读 Time.frameCount；本工程把它抽成可注入的时钟：
+    /// 宿主（LiveScoreRuntime/JudgeManager）每帧推进一步，自检也能显式推进，
+    /// 语义与原作一致（长按的 MissMesh 释放判定、flick 的 lastInputFrame 都读它）。
     /// </summary>
-    public class LiveFrictionNote : LiveNoteBase
+    public static class LiveJudgeClock
     {
-        private bool isTouched;
+        private static int frameCount;
 
-        public LiveFrictionNote(MusicScoreInfo info, int id, int laneStart, int laneEnd,
-            NoteCategory category, NoteType type, float laneOffset)
-            : base(info, id, laneStart, laneEnd, category, type, laneOffset)
+        public static int FrameCount
         {
+            get { return frameCount; }
         }
 
-        public LiveFrictionNote() : base(default, 0, 0, 0, NoteCategory.Friction, NoteType.Default, 0f)
+        /// <summary>每帧开始时推进（等价于引擎的 Time.frameCount++）</summary>
+        public static void Advance()
         {
+            frameCount++;
         }
 
-        public bool IsTouched { get { return isTouched; } }
-
-        public override bool IsJudgment(ref LiveTouch touch, float lane)
+        public static void Reset()
         {
-            if (State == NoteState.Done)
-            {
-                return false;
-            }
-
-            if (JudgeLaneStart > lane || JudgeLaneEnd < lane)
-            {
-                return false;
-            }
-
-            return LiveJudgeWindows.IsJudgmentTiming(
-                LiveJudgeWindows.GetINoteToJudgeFrameType(this),
-                MusicScoreInfo.time - touch.musicTime);
-        }
-
-        public override bool Judgment(ref LiveTouch touch, float lane)
-        {
-            if (State == NoteState.Last)
-            {
-                OffsetJudgeTime = 0f;
-                Progress = 1f;
-            }
-            else if (Progress < 1f)
-            {
-                // 只是"按上了"：继续按住，等进度走完 → JustPerfect。
-                isTouched = true;
-                State = NoteState.Input;
-                return false;
-            }
-
-            ApplyResult((NoteResult.JustPerfect, NoteResultDescription.None));
-            State = NoteState.Done;
-            return true;
-        }
-
-        public override void Excute(MusicScoreInfo currentFrameInfo, float offsetTime)
-        {
-            base.Excute(currentFrameInfo, offsetTime);
-            if (State == NoteState.Done)
-            {
-                return;
-            }
-
-            if ((State == NoteState.Input || isTouched) && Progress >= 1f)
-            {
-                OffsetJudgeTime = 0f;
-                Progress = 1f;
-                ApplyResult((NoteResult.JustPerfect, NoteResultDescription.None));
-                State = NoteState.Done;
-            }
-        }
-    }
-
-    /// <summary>
-    /// 逐字对应 OpenSekai Sekai/Live/LongNote.cs 的判定面：长按头 + 子音符链。
-    /// 头判成功后子音符依次挂在 NoteList 上；尾判走 Long_End 窗口。
-    /// </summary>
-    public class LiveLongNote : LiveNoteBase
-    {
-        public LiveLongNote(MusicScoreInfo info, int id, int laneStart, int laneEnd,
-            NoteCategory category, NoteType type, float laneOffset)
-            : base(info, id, laneStart, laneEnd, category, type, laneOffset)
-        {
-        }
-
-        public void AddChild(LiveNoteBase child)
-        {
-            child.SetParentNote(this);
-            NoteList.Add(child);
-        }
-
-        /// <summary>头判成功：头进入"按住中"状态。</summary>
-        public void MarkHeadJudged()
-        {
-            ApplyResult((NoteResult.Perfect, NoteResultDescription.None));
-            State = NoteState.Input;
+            frameCount = 0;
         }
     }
 }
