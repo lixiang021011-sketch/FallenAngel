@@ -66,7 +66,7 @@ namespace FallenAngel.Core
             string summary = string.Format(
                 "判定时序自检：{0} 项通过 / {1} 项异常"
                 + "（一次按下只判一个 / 真双押 / 只认按下边沿 / 宽音符任意轨 / 时间戳参与判定 / "
-                + "长按端到端 / 自动 Miss 收口 / modifier 倍率 / 空按不判）",
+                + "长按端到端 / 自动 Miss 收口 / modifier 倍率 / 空按不判 / 视图接线）",
                 pass, fail);
             foreach (string line in lines) Debug.Log("[JudgeTiming] " + line);
             Debug.Log("[JudgeTiming] " + summary);
@@ -292,6 +292,36 @@ namespace FallenAngel.Core
                     string.Format("远处音符状态={0}、Perfect={1}、Miss={2}",
                         sb.Live(0).State, sb.Judge.PerfectCount, sb.Judge.MissCount));
             }
+
+            // ⑩ 视图接线：NoteSpawner 作为纯视图——按谱面生成 → 判定结果落 FX → 收尾后回收（不泄漏）
+            using (var sb = new Sandbox())
+            {
+                sb.AddChartNote(new NoteData(2, 10.000f, DataNoteType.Normal));
+                sb.BuildScore();
+                sb.StartSong();                       // NoteSpawner.OnGameStart：清空 + 开始生成
+
+                sb.SetSongTime(8.500f);               // 生成阈值 = SongTime + 下落时长 → 音符该出生了
+                sb.SpawnerView();
+                var view = sb.Spawner.FindViewNote(sb.Live(0));
+                bool spawned = sb.Spawner.ActiveNotes.Count == 1 && view != null;
+
+                sb.SetSongTime(10.000f);
+                sb.PressAt(2, 10.000f);
+                sb.JudgeUpdate();
+                bool linked = sb.Spawner.FindViewNote(sb.Live(0)) == view;
+                bool hitShown = view != null && view.IsJudged && view.JudgeResult == JudgeResultType.Perfect;
+
+                sb.SpawnerView();
+                bool keptDuringFx = sb.Spawner.FindViewNote(sb.Live(0)) == view;   // 反馈期间不回收
+
+                sb.SetSongTime(12.000f);              // 收尾超过兜底保留时长 → 回池
+                sb.SpawnerView();
+
+                check("视图接线（纯视图·生成/反馈/回收）",
+                    spawned && hitShown && linked && keptDuringFx && sb.Spawner.ActiveNotes.Count == 0,
+                    string.Format("生成={0}、判定落到视图={1}、映射一致={2}、反馈期间保留={3}、收尾后活跃={4}",
+                        spawned, hitShown, linked, keptDuringFx, sb.Spawner.ActiveNotes.Count));
+            }
         }
 
         /// <summary>晚 90ms 按下（同一个音符），返回判定档——用来验窗口倍率是否进表</summary>
@@ -358,6 +388,19 @@ namespace FallenAngel.Core
                 typeof(JudgeManager).GetMethod("ResetScoreForNewSong", Priv);
             private static readonly MethodInfo MInputEnsureLanes =
                 typeof(InputManager).GetMethod("EnsureLaneArrays", Priv);
+            private static readonly PropertyInfo PSpawnerInstance =
+                typeof(NoteSpawner).GetProperty("Instance", Priv | BindingFlags.Public | BindingFlags.Static);
+            private static readonly FieldInfo FSpawnerContainer =
+                typeof(NoteSpawner).GetField("notesContainer", Priv);
+            private static readonly FieldInfo FSpawnerPrefab =
+                typeof(NoteSpawner).GetField("notePrefab", Priv);
+            private static readonly FieldInfo FNoteImage = typeof(Note).GetField("noteImage", Priv);
+            private static readonly MethodInfo MCreateDefaultPrefab =
+                typeof(NoteSpawner).GetMethod("CreateDefaultNotePrefab", Priv);
+            private static readonly MethodInfo MInitializePool =
+                typeof(NoteSpawner).GetMethod("InitializePool", Priv);
+            private static readonly MethodInfo MSpawnerUpdate = typeof(NoteSpawner).GetMethod("Update", Priv);
+            private static readonly MethodInfo MSpawnerOnGameStart = typeof(NoteSpawner).GetMethod("OnGameStart", Priv);
 
             private readonly GameObject host;
             private readonly ChartData chart = new ChartData();
@@ -366,6 +409,7 @@ namespace FallenAngel.Core
             public readonly JudgeManager Judge;
             public readonly InputManager Input;
             public readonly GameManager Game;
+            public readonly NoteSpawner Spawner;
 
             public Sandbox()
             {
@@ -374,11 +418,23 @@ namespace FallenAngel.Core
                 Input = host.AddComponent<InputManager>();
                 Game = host.AddComponent<GameManager>();
                 Judge = host.AddComponent<JudgeManager>();
+
+                // NoteSpawner 也是"纯视图"的一环：这里现装一个（容器 + 默认预制体 + 对象池）
+                var notesGo = new GameObject("Notes", typeof(RectTransform));
+                var notesRoot = (RectTransform)notesGo.transform;
+                notesRoot.SetParent(host.transform, false);
+                Spawner = host.AddComponent<NoteSpawner>();
+                FSpawnerContainer.SetValue(Spawner, notesRoot);
+                Note defaultNote = (Note)MCreateDefaultPrefab.Invoke(Spawner, null);
+                FSpawnerPrefab.SetValue(Spawner, defaultNote);
+                MInitializePool.Invoke(Spawner, null);
+
                 host.SetActive(true);
 
                 // 批处理（非播放模式）不会自己跑 Awake/OnEnable：这里显式补上
                 if (GameManager.Instance == null) PGameInstance.SetValue(null, Game);
                 if (InputManager.Instance == null) PInputInstance.SetValue(null, Input);
+                if (NoteSpawner.Instance == null) PSpawnerInstance.SetValue(null, Spawner);
                 if (JudgeManager.Instance == null) PJudgeInstance.SetValue(null, Judge);
 
                 PlayRules.SetBaseWindows(JudgeWindows.Default);
@@ -409,6 +465,18 @@ namespace FallenAngel.Core
                 MJudgeBuildScore.Invoke(Judge, null);
             }
 
+            /// <summary>视图开演（NoteSpawner.OnGameStart：清空 + 允许生成）</summary>
+            public void StartSong()
+            {
+                MSpawnerOnGameStart.Invoke(Spawner, null);
+            }
+
+            /// <summary>显式跑一次 NoteSpawner.Update（生成/定位/回收）</summary>
+            public void SpawnerView()
+            {
+                MSpawnerUpdate.Invoke(Spawner, null);
+            }
+
             /// <summary>判定音符（按谱面判定顺序：长按尾/身体条目没有独立判定，不在表里）</summary>
             public LiveNoteBase Live(int index)
             {
@@ -435,7 +503,8 @@ namespace FallenAngel.Core
                 {
                     return GameManager.Instance == Game
                         && InputManager.Instance == Input
-                        && JudgeManager.Instance == Judge;
+                        && JudgeManager.Instance == Judge
+                        && NoteSpawner.Instance == Spawner;
                 }
             }
 

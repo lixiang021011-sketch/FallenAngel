@@ -33,6 +33,13 @@ namespace FallenAngel.Core
         {
             checks = 0;
             results.Clear();
+
+            // 成长服务里有几处从 UnityEngine.Random 抽签（掉落 roll、可购买路线 roll）。
+            // UnityEngine.Random 由进程启动时的时间播种，于是同一套断言会随运行时间随机翻车
+            //（2026-09-21 实测：连跑 4 次会在用例「Optional route flag without E08 keeps F0 price」上失败 1 次）。
+            // 自检必须可复现：这里固定种子，只影响本次检查进程内的随机序列。
+            UnityEngine.Random.InitState(20260921);
+
             string temporary = Path.Combine(Path.GetTempPath(), "FA_Portfolio_Check_" + Guid.NewGuid().ToString("N"));
             try
             {
