@@ -128,6 +128,9 @@ namespace FallenAngel.Live
             {
                 // 路径终点 = 判定跨度的终点（跨度由 CalcExcuteNoteLane 沿头→尾插值推进，见 LiveLongNote）
                 endLane = Mathf.Clamp(Mathf.RoundToInt(path[path.Count - 1].x), 0, laneCount - 1);
+
+                // 判定跨度按谱面 path 采样：玩家看到的引导线与判定用的跨度是同一条曲线（弯道不脱手）
+                head.PathLaneSampler = progress01 => SamplePathLane(path, progress01);
             }
 
             var tail = new LiveNormalNote(Info(endTime), id, endLane, endLane,
@@ -140,6 +143,26 @@ namespace FallenAngel.Live
         public static MusicScoreInfo Info(float time)
         {
             return new MusicScoreInfo(0, 0f, time, 120f, 4f, 1f, 1f);
+        }
+
+        /// <summary>按进度（0..1 映射到路径总时长）线性插值采样路径的轨道坐标</summary>
+        private static float SamplePathLane(IReadOnlyList<SlidePathPoint> path, float progress01)
+        {
+            if (path == null || path.Count == 0) return 0f;
+            if (path.Count == 1) return path[0].x;
+
+            float total = Mathf.Max(0.0001f, path[path.Count - 1].t);
+            float t = Mathf.Clamp01(progress01) * total;
+            for (var i = 0; i < path.Count - 1; i++)
+            {
+                var t0 = path[i].t;
+                var t1 = path[i + 1].t;
+                if (t >= t0 && t <= t1)
+                {
+                    return t1 > t0 ? Mathf.Lerp(path[i].x, path[i + 1].x, (t - t0) / (t1 - t0)) : path[i].x;
+                }
+            }
+            return path[path.Count - 1].x;
         }
 
         private static NoteDirection DirectionOf(FlickDirection direction)

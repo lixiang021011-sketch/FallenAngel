@@ -92,6 +92,12 @@ namespace FallenAngel.Gameplay
 
         // ── 真机排查用的诊断日志（只在开发版打；release 静默）──
         private float lastOutsideLogTime = -10f;
+        // 每秒一行的性能/延迟读数（帧率 + 显示模式 Hz + 输入滞后）
+        private float perfWindowStart;
+        private int perfFrames;
+        private float perfStaleSum;
+        private int perfStaleCount;
+        private float perfStaleMax;
 
         /// <summary>判定簇的谱面运行时（只读；自检/视图要按音符查状态时用）</summary>
         public LiveScoreRuntime Runtime { get { return runtime; } }
@@ -180,6 +186,30 @@ namespace FallenAngel.Gameplay
             extraInputs.Clear();
 
             UpdateSlideFollow(songTime);
+            PerfTick(songTime);
+        }
+
+        /// <summary>真机排查：每秒一行"帧率 / 显示模式 Hz / 输入滞后(ms)"。</summary>
+        private void PerfTick(float songTime)
+        {
+            if (!Debug.isDebugBuild) return;
+
+            perfFrames++;
+            if (perfWindowStart <= 0f) perfWindowStart = Time.unscaledTime;
+            float elapsed = Time.unscaledTime - perfWindowStart;
+            if (elapsed < 1f) return;
+
+            float fps = perfFrames / elapsed;
+            float avg = perfStaleCount > 0 ? perfStaleSum / perfStaleCount : 0f;
+            Debug.Log(string.Format(
+                "[Perf] fps={0:0.0}（显示 {1}Hz / target {2}） 输入滞后 avg={3:0.0}ms max={4:0.0}ms（{5} 次事件输入）",
+                fps, HighRefreshRate.SampleCurrentHz(), Application.targetFrameRate, avg, perfStaleMax, perfStaleCount));
+
+            perfWindowStart = Time.unscaledTime;
+            perfFrames = 0;
+            perfStaleSum = 0f;
+            perfStaleCount = 0;
+            perfStaleMax = 0f;
         }
 
 #if DEVELOPMENT_BUILD || UNITY_EDITOR
@@ -343,6 +373,9 @@ namespace FallenAngel.Gameplay
 
             int laneCount = Mathf.Max(1, chart.LaneCount);
             laneResolver = LiveLaneResolver.CreateFromLaneLayout(PlayVisualSpec.JudgeLineY, laneCount);
+            // 输入区闸门由 InputManager（屏幕下半部）负责；这里不再用"判定线"做第二道闸门，
+            // 否则滑条/drag 的手指一越过判定线就整段失效（实机表现 = 不跟手）。
+            laneResolver.EnforceJudgmentYGate = false;
 
             var notes = LiveNoteBuilder.Build(
                 chart.notes, laneCount, LiveNoteBuilder.DefaultFlickDistancePixels, laneCount == 4);
@@ -458,6 +491,7 @@ namespace FallenAngel.Gameplay
             {
                 frameTouches.Add(MakeTouch(pair.Key, pair.Value.lane, pair.Value.phase, pair.Value.musicTime,
                     pair.Value.screenPos, pair.Value.fromTouch, songTime));
+                RecordInputStaleness(songTime, pair.Value);
             }
             // 同帧的"按下 → 抬起"补发（顺序在按下之后，移植层才会先判头、再判尾）
             for (int i = 0; i < extraInputs.Count; i++)
@@ -465,6 +499,7 @@ namespace FallenAngel.Gameplay
                 var extra = extraInputs[i];
                 frameTouches.Add(MakeTouch(extra.Key, extra.Value.lane, extra.Value.phase, extra.Value.musicTime,
                     extra.Value.screenPos, extra.Value.fromTouch, songTime));
+                RecordInputStaleness(songTime, extra.Value);
             }
 
             // 仍按住、且本帧没有事件的轨道 → 持续输入（移植层靠这些帧维持长按/摩擦的"按住中"）
@@ -530,6 +565,23 @@ namespace FallenAngel.Gameplay
 
             return new LiveTouch(fingerId, touchId, delta, new Vector3(laneCoord, PlayVisualSpec.JudgeLineY, 0f),
                 phase, musicTime, laneCoord, screenPos, fromTouch);
+        }
+
+        /// <summary>
+        /// 输入滞后 = 判定时刻的歌曲时间 − 该事件自己的时间戳（毫秒）。
+        /// 这是"跟手"的直接指标：≈0 表示判定用的是触摸**发生**的时刻（上游的做法），
+        /// 明显偏大说明我们读到的输入比手指晚（丢帧、或帧率不足）。
+        /// </summary>
+        private void RecordInputStaleness(float songTime, PendingInput input)
+        {
+            if (!Debug.isDebugBuild) return;
+            if (input.phase != LiveTouchPhase.Began && input.phase != LiveTouchPhase.Ended) return;
+
+            float ms = (songTime - input.musicTime) * 1000f;
+            if (ms < 0f) ms = 0f;
+            perfStaleSum += ms;
+            perfStaleCount++;
+            if (ms > perfStaleMax) perfStaleMax = ms;
         }
 
         /// <summary>左向甩键的"重新取轨道"入口（移植层 ConvertLaneBy 用得到）</summary>

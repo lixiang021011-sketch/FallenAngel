@@ -124,6 +124,19 @@ namespace FallenAngel.Live
 
         public override bool Judgment(ref LiveTouch touch, float lane)
         {
+            // 本工程协议（v2 chart：drag = 碰即 Perfect、永不 MISS）：
+            // 单点摩擦音符**触到即结算**，不像上游那样"标记 isTouched、等过线才完成"——
+            // 等过线会让 drag 的反馈比手指晚最多一个 Bad 窗口（实机表现为"拖沓"）。
+            // 长按链上的摩擦点（parentNote != null）仍走上游的累积语义。
+            if (parentNote == null && State != NoteState.Done)
+            {
+                JudgeInfo = (NoteResult.JustPerfect, NoteResultDescription.None);
+                Progress = 1f;
+                OffsetJudgeTime = 0f;
+                State = NoteState.Done;
+                return true;
+            }
+
             if (State == NoteState.Last)
             {
                 OffsetJudgeTime = 0f;

@@ -62,7 +62,14 @@ namespace FallenAngel.Live
         /// <summary>有输入但没有判到任何音符（对应 LiveViewExt.Unpicked：按键反馈）</summary>
         public event Action<int, LiveTouch> OnUnpicked;
 
-        private readonly List<LiveTouchInput> activeInputList = new List<LiveTouchInput>();
+        /// <summary>上游 LiveLogic.InputTmpCount：每帧输入对象池容量（超过的输入直接丢弃，与上游一致）</summary>
+        private const int InputPoolCount = 128;
+
+        // 输入对象池：**每帧零分配**（上游 LiveLogic 就是这么做的：预造 128 个 InputTmp 反复用）。
+        // 为什么重要：每帧 new 一个输入对象 + 它的候选表，会在密集段落制造 GC 尖峰 → 掉帧 → "拖沓"。
+        private readonly LiveTouchInput[] inputPool = new LiveTouchInput[InputPoolCount];
+        private int inputPoolUsed;
+        private readonly List<LiveTouchInput> activeInputList = new List<LiveTouchInput>(InputPoolCount);
         private readonly List<LiveNoteBase> connectionNoteList = new List<LiveNoteBase>();
         private readonly List<int> usedFingerList = new List<int>();
 
@@ -88,15 +95,29 @@ namespace FallenAngel.Live
         public void Reset()
         {
             activeInputList.Clear();
+            inputPoolUsed = 0;
             connectionNoteList.Clear();
             usedFingerList.Clear();
             inputedNormalNoteTouch.Clear();
         }
 
-        /// <summary>登记本帧的一次输入（按下/移动/按住/抬起）。</summary>
+        /// <summary>登记本帧的一次输入（按下/移动/按住/抬起）。对象来自池，不分配。</summary>
         public LiveTouchInput PushInput(in LiveTouch touch)
         {
-            var input = new LiveTouchInput();
+            // 与上游一致：池满则丢弃这次输入（多于 128 根手指/帧 的场景不存在，但要有兜底）
+            if (inputPoolUsed >= inputPool.Length)
+            {
+                return null;
+            }
+
+            var input = inputPool[inputPoolUsed];
+            if (input == null)
+            {
+                input = new LiveTouchInput();
+                inputPool[inputPoolUsed] = input;
+            }
+            inputPoolUsed++;
+
             input.Reset(touch, touch.lane);
             activeInputList.Add(input);
             return input;
@@ -122,6 +143,7 @@ namespace FallenAngel.Live
         public void EndFrame()
         {
             activeInputList.Clear();
+            inputPoolUsed = 0;
         }
 
         // ── ① 候选分配 ────────────────────────────────────────────────

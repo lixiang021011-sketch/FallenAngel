@@ -85,8 +85,12 @@ namespace FallenAngel.Core
             // 呈现延迟：限制排队帧数。默认值会让引擎多攒一帧再呈现，直接多出一整帧输入→画面延迟；
             // 1 帧 = 算完就交，代价是更容易掉帧，所以与"每帧开销"一起看（FPS 读数已带 P95）。
             QualitySettings.maxQueuedFrames = 1;
-            int screenRefresh = (int)Mathf.Max(60f, Screen.currentResolution.refreshRate);
-            Application.targetFrameRate = Mathf.Clamp(screenRefresh, 60, 120);
+            // 目标帧率写死 120（**不要**按 Screen.currentResolution 去 clamp：设备当前若是 60Hz 模式，
+            // 读到的就是 60 → 自己把自己锁在 60，永远上不去）。真正的开关是显示模式，由下面这次请求决定。
+            Application.targetFrameRate = 120;
+            // 请求设备最高刷新率（Android；60Hz 设备上无副作用）。MIUI 默认把应用当 60Hz 内容，
+            // 不主动请求就永远跑 60——"帧率不够"的根因就在这里。
+            HighRefreshRate.Request();
         }
 
         /// <summary>

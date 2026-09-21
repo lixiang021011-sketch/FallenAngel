@@ -79,16 +79,17 @@ namespace FallenAngel.Core
                     normalBegan, normalHeld, frictionHeld));
 
             // ④ 拾取：手指已经按住，摩擦音符"随后进窗"时被它拾到（PickUpNotBeginInputNotes / 跟手核心）
+            //    本工程协议：drag 碰即 Perfect → 拾到的当帧就结算（不等过线）
             var pickupNote = MakeFriction(2f, 3f, 0.5f, 1f, 1f);
             var pickupRunner = new FrameRunner(new List<LiveNoteBase> { pickupNote });
             int beforeWindow = pickupRunner.Step(0.80f, new TestInput(11, 11, LiveTouchPhase.Moved, 0.80f, 2f));
             pickupRunner.Step(0.90f, new TestInput(11, 11, LiveTouchPhase.Moved, 0.90f, 2f));
-            bool touchedInWindow = pickupNote.IsTouched;
+            bool judgedInWindow = pickupNote.State == NoteState.Done && pickupNote.Result == NoteResult.JustPerfect;
             pickupRunner.Step(1.00f, new TestInput(11, 11, LiveTouchPhase.Moved, 1.00f, 2f));
             check("拾取（已按住的手指）",
-                beforeWindow == 0 && touchedInWindow && pickupNote.Result == NoteResult.JustPerfect,
-                string.Format("0.80s 窗外判定数={0}；0.90s 进窗被拾取={1}；过线结果={2}",
-                    beforeWindow, touchedInWindow, pickupNote.Result));
+                beforeWindow == 0 && judgedInWindow && pickupNote.Result == NoteResult.JustPerfect,
+                string.Format("0.80s 窗外判定数={0}；0.90s 进窗被拾取即结算={1}；结果={2}",
+                    beforeWindow, judgedInWindow, pickupNote.Result));
 
             // ⑤ 重叠归属：两指夹同一个音符 → 按轨道距离归属，只判一次
             var overlapNote = MakeNormal(1f, 3f, 0.5f, 1f, 1f);
@@ -261,6 +262,15 @@ namespace FallenAngel.Core
                 && beforeLane0 < 0f && aboveLine < 0f && Mathf.Abs(belowLine - 1f) < 1e-3f,
                 string.Format("轨1中心={0:0.###}、轨0/1 中点={1:0.###}、越左={2}、线上方={3}、线下={4:0.###}",
                     atCenter, atMiddle, beforeLane0, aboveLine, belowLine));
+
+            // ⑨b 接线层的产品决定：**不启用**判定线的 Y 闸门（闸门交给输入层"屏幕下半部"），
+            //     否则滑条/drag 的手指一越过判定线就整段失效（实机表现 = 不跟手）。
+            var wired = LiveLaneResolver.CreateFromLaneLayout(PlayVisualSpec.JudgeLineY, 4);
+            wired.EnforceJudgmentYGate = false;
+            float aboveLineNoGate = wired.Resolve(new Vector3(center1, PlayVisualSpec.JudgeLineY + 900f, 0f), true);
+            check("接线层关掉判定线 Y 闸门",
+                Mathf.Abs(aboveLineNoGate - 1f) < 1e-3f,
+                string.Format("判定线上方 900px 的触摸仍解析为轨 {0:0.###}（区域闸门由输入层负责）", aboveLineNoGate));
 
             // ── ⑩ 适配层：谱面数据 → 判定音符树 ───────────────────────────
             var chart = BuildTestChart();

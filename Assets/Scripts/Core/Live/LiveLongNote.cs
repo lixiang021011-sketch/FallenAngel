@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 namespace FallenAngel.Live
 {
@@ -28,6 +29,14 @@ namespace FallenAngel.Live
 
         /// <summary>结束时手指是否还按着（ForceTerminate 的判据之一）</summary>
         public bool WasHoldingWhenTerminated { get; set; }
+
+        /// <summary>
+        /// 可选：判定跨度的"路径采样器"（本工程滑条用）。
+        /// 输入 = 本条音符的进度 0..1，输出 = 该进度处的**小数轨道中心**。
+        /// 为什么需要：上游用"连接点"（ConnectionNote）串出弯曲的判定跨度，我们的谱面自带 path，
+        /// 直接按 path 采样，保证**判定跨度和玩家看到的引导线是同一条曲线**（否则弯道处会"不跟手"）。
+        /// </summary>
+        public Func<float, float> PathLaneSampler;
 
         public float JudgedLaneEnd
         {
@@ -285,6 +294,16 @@ namespace FallenAngel.Live
 
             LiveUtility.CalcExcuteNoteLane(
                 this, ref currentNote, ref nextNote, ref currentFrameInfo, MusicScoreInfo, childNote);
+
+            // 滑条：跨度按谱面 path 采样（与视图引导线同一条曲线）
+            if (PathLaneSampler != null)
+            {
+                float laneSpan = Mathf.Max(0f, LaneEndF - LaneStartF);
+                float progress01 = Mathf.Clamp01(CalcProgress(currentFrameInfo, offsetTime));
+                float center = PathLaneSampler(progress01);
+                LaneStartF = center - laneSpan * 0.5f;
+                LaneEndF = center + laneSpan * 0.5f;
+            }
 
             if (State == NoteState.Playing && currentFrameInfo.time - MusicScoreInfo.time > LiveConfig.JudgeTime)
             {

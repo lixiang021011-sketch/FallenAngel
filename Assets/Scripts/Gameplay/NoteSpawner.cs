@@ -300,7 +300,12 @@ namespace FallenAngel.Gameplay
             nextNoteIndex = 0;
         }
 
-        private void Update()
+        /// <summary>
+        /// 视图更新放在 LateUpdate：判定（JudgeManager.Update）与歌曲时钟（GameManager.Update）都跑在 Update 里，
+        /// 放在 LateUpdate 才能保证"这一帧判掉的结果，这一帧就落到画面上"——否则命中特效/回收会晚一帧
+        /// （实机手感就是"点下去隔一下才响"）。位置更新也用同一帧的 SongTime，不受组件顺序影响。
+        /// </summary>
+        private void LateUpdate()
         {
             if (!isPlaying || GameManager.Instance == null) return;
             if (GameManager.Instance.CurrentState != GameState.Playing) return;

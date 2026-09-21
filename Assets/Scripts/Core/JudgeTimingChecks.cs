@@ -399,7 +399,8 @@ namespace FallenAngel.Core
                 typeof(NoteSpawner).GetMethod("CreateDefaultNotePrefab", Priv);
             private static readonly MethodInfo MInitializePool =
                 typeof(NoteSpawner).GetMethod("InitializePool", Priv);
-            private static readonly MethodInfo MSpawnerUpdate = typeof(NoteSpawner).GetMethod("Update", Priv);
+            // 视图每帧工作在 LateUpdate（保证与判定同帧落到画面）
+            private static readonly MethodInfo MSpawnerUpdate = typeof(NoteSpawner).GetMethod("LateUpdate", Priv);
             private static readonly MethodInfo MSpawnerOnGameStart = typeof(NoteSpawner).GetMethod("OnGameStart", Priv);
 
             private readonly GameObject host;

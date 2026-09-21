@@ -30,6 +30,17 @@ namespace FallenAngel.Live
         /// <summary>判定线上方的容差（Canvas 像素；0 = 必须落在判定线上或下方，上游默认）</summary>
         public float JudgmentOffsetY;
 
+        /// <summary>
+        /// 是否启用"判定线上方的触摸不算"这道闸门（上游默认 true）。
+        ///
+        /// 本工程把它关掉（由接线层显式设置）：上游的 JudgmentOffsetY 来自 AB 包里的 BuildData，
+        /// 实际值通常足以覆盖整个玩法区，所以"手指在滑条/drag 上往上游走"不会被判成"出区"；
+        /// 我们按 0 照搬会把判定线当成硬墙——实机表现就是**滑条一往上滑就失去手指、drag 碰不到**
+        /// （玩家口中的"不跟手/拖沓"）。我们的输入层已经用"屏幕下半部"做区域闸门了，
+        /// 这一层只负责把 X 换算成小数轨道。
+        /// </summary>
+        public bool EnforceJudgmentYGate = true;
+
         /// <summary>按当前 LaneLayout 造一个解析器（判定线 Y 取 Core/PlayVisualSpec）。</summary>
         public static LiveLaneResolver CreateFromLaneLayout(float judgeLineY,
             int laneCount = 0, float judgmentOffsetY = 0f)
@@ -67,7 +78,7 @@ namespace FallenAngel.Live
                 return -1f;
             }
 
-            if (checkJudgmentY && touchPosition.y - positions[0].y > JudgmentOffsetY)
+            if (EnforceJudgmentYGate && checkJudgmentY && touchPosition.y - positions[0].y > JudgmentOffsetY)
             {
                 return -1f;
             }
