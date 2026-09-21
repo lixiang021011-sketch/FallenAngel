@@ -16,8 +16,10 @@ namespace FallenAngel.UI
     {
         [SerializeField] private GameObject panelRoot;
         [SerializeField] private List<Button> languageButtons = new List<Button>();
-        [Tooltip("判定偏移输入（帧，±20；对应上游 LiveSettingData.TimingAdjustData 的设置行）")]
-        [SerializeField] private TMP_InputField timingAdjustInput;
+        [Tooltip("打开节奏校准（玩家界面：跟拍点击 + 大按钮细调，不出现键盘）")]
+        [SerializeField] private Button openCalibrationButton;
+        [SerializeField] private CalibrationController calibrationController;
+        [SerializeField] private GameObject calibrationPanel;          // ESC 层叠判断（SceneBuilder 注入）
         [SerializeField] private Button sfxMinusButton;
         [SerializeField] private Button sfxPlusButton;
         [SerializeField] private TextMeshProUGUI sfxVolumeText;        // 动态文本
@@ -29,6 +31,7 @@ namespace FallenAngel.UI
         {
             // 面板首次激活时执行（同 LanguagePanelController 模式）
             if (closeButton != null) closeButton.onClick.AddListener(Close);
+            if (openCalibrationButton != null) openCalibrationButton.onClick.AddListener(OpenCalibration);
             if (sfxMinusButton != null) sfxMinusButton.onClick.AddListener(() => AdjustSfxVolume(-0.1f));
             if (sfxPlusButton != null) sfxPlusButton.onClick.AddListener(() => AdjustSfxVolume(0.1f));
             if (hitEffectButton != null) hitEffectButton.onClick.AddListener(ToggleHitEffect);
@@ -57,7 +60,9 @@ namespace FallenAngel.UI
 
         private void Update()
         {
-            if (Input.GetKeyDown(KeyCode.Escape) && panelRoot != null && panelRoot.activeSelf)
+            // ESC 层叠：校准面板盖在本页上时，ESC 由校准层处理
+            if (Input.GetKeyDown(KeyCode.Escape) && panelRoot != null && panelRoot.activeSelf
+                && !(calibrationPanel != null && calibrationPanel.activeSelf))
                 Close();
         }
 
@@ -69,34 +74,18 @@ namespace FallenAngel.UI
             RefreshLanguageButtons();
             RefreshSfxText();
             RefreshHitEffect();
-            RefreshTimingAdjust();          // 对应上游 settingsOverlay 打开时 SetTextWithoutNotify
         }
 
         public void Close()
         {
             AudioManager.Instance?.PlayButtonClick();
-            SaveTimingAdjust();             // 对应上游 SaveSettings()：离开设置页时解析+夹取+持久化
             if (panelRoot != null) panelRoot.SetActive(false);
         }
 
-        /// <summary>对应上游 settingsOverlay 显示时：把当前值格式化进输入框（不触发回调）</summary>
-        private void RefreshTimingAdjust()
+        private void OpenCalibration()
         {
-            if (timingAdjustInput == null) return;
-            timingAdjustInput.SetTextWithoutNotify(CalibrationSettings.Format(CalibrationSettings.TimingAdjustData));
-        }
-
-        /// <summary>对应上游 ParseClampedSetting(text, MinNoteTiming, MaxNoteTiming, 旧值)</summary>
-        private void SaveTimingAdjust()
-        {
-            if (timingAdjustInput == null) return;
-            float value = CalibrationSettings.ParseClamped(
-                timingAdjustInput.text, CalibrationSettings.TimingAdjustData);
-            CalibrationSettings.TimingAdjustData = value;
-            timingAdjustInput.SetTextWithoutNotify(CalibrationSettings.Format(value));
-            Debug.Log(string.Format(
-                "[Settings] 判定偏移 = {0} 帧（{1:0.0}ms；上游口径：正数 = 音符提前）",
-                value, CalibrationSettings.TimingAdjustSeconds * 1000f));
+            AudioManager.Instance?.PlayButtonClick();
+            if (calibrationController != null) calibrationController.Open();
         }
 
         private void SelectLanguage(Language lang)

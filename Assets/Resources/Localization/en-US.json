@@ -169,8 +169,72 @@
       "value": "Timing adjust"
     },
     {
-      "key": "settings.timingAdjustHint",
-      "value": "-20.0 - 20.0"
+      "key": "settings.calibration",
+      "value": "Timing adjust"
+    },
+    {
+      "key": "cal.title",
+      "value": "Timing adjust"
+    },
+    {
+      "key": "cal.hint",
+      "value": "Tap along with the beat; the game suggests an offset"
+    },
+    {
+      "key": "cal.tap",
+      "value": "TAP"
+    },
+    {
+      "key": "cal.tapAlong",
+      "value": "Get ready… {0} beats, tap along"
+    },
+    {
+      "key": "cal.beatOf",
+      "value": "Beat {0}/{1} · {2} taps"
+    },
+    {
+      "key": "cal.tapCount",
+      "value": "{0} taps"
+    },
+    {
+      "key": "cal.measured",
+      "value": "{0} taps → suggested {1:+0;-0;0} ms"
+    },
+    {
+      "key": "cal.noTap",
+      "value": "No taps captured — try again"
+    },
+    {
+      "key": "cal.current",
+      "value": "Offset {0:+0;-0;0} ms ({1} frames)"
+    },
+    {
+      "key": "cal.start",
+      "value": "Start"
+    },
+    {
+      "key": "cal.apply",
+      "value": "Apply suggestion"
+    },
+    {
+      "key": "cal.preview",
+      "value": "Preview"
+    },
+    {
+      "key": "cal.close",
+      "value": "Done"
+    },
+    {
+      "key": "cal.minus",
+      "value": "-"
+    },
+    {
+      "key": "cal.plus",
+      "value": "+"
+    },
+    {
+      "key": "cal.step",
+      "value": "±5ms fine-tune"
     }
   ]
 }

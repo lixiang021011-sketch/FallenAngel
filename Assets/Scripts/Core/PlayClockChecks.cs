@@ -103,6 +103,30 @@ namespace FallenAngel.Core
                     string.Format("{0:0.###}/{1:0.###}/{2:0.###}（回跳不退）→ seek {3:0.###}",
                         a, b, c, seek));
 
+                // ⑦ 跟拍测量（玩家界面用）：剔极值后取平均——点歪的那两下不该把结果带跑
+                var samples = new List<double> { 0.010, 0.012, 0.008, 0.011, -0.30, -0.31, 0.009, 0.013 };
+                double trimmed = CalibrationMeasure.TrimmedMeanSeconds(samples);
+                double sum = 0.0;
+                for (int i = 0; i < samples.Count; i++) sum += samples[i];
+                double naive = sum / samples.Count;
+                check("跟拍测量·修剪平均抗离群",
+                    Mathf.Abs((float)trimmed - 0.0105f) < 0.003f
+                    && Mathf.Abs((float)(naive - trimmed)) > 0.02f,
+                    string.Format("8 次含 -300/-310ms 误点：修剪平均={0:0.0}ms、不剔极值={1:0.0}ms",
+                        trimmed * 1000.0, naive * 1000.0));
+
+                // ⑧ 半拍之外的点击不计；毫秒↔帧换算与上游口径一致（1 帧=16.67ms）
+                double off;
+                bool nearBeat = CalibrationMeasure.TryAssignToBeat(10.02, 10.00, 0.6, out off)
+                                && Mathf.Abs((float)off - 0.02f) < 1e-4f;
+                bool farBeat = !CalibrationMeasure.TryAssignToBeat(10.40, 10.00, 0.6, out off);
+                bool msFrames = CalibrationMeasure.FramesToMs(20f) == 333
+                                && Mathf.Abs(CalibrationMeasure.MsToFrames(5f) - 0.3f) < 1e-4f;
+                check("跟拍测量·半拍门控 + 毫秒↔帧",
+                    nearBeat && farBeat && msFrames,
+                    string.Format("+20ms 计入={0}、+400ms(>半拍)计入={1}、20 帧={2}ms、5ms={3:0.0} 帧",
+                        nearBeat, !farBeat, CalibrationMeasure.FramesToMs(20f), CalibrationMeasure.MsToFrames(5f)));
+
             }
             finally
             {

@@ -247,6 +247,24 @@ namespace FallenAngel.Gameplay
 
             string mode = System.IO.File.ReadAllText(path).Trim();
             var starter = FindObjectOfType<FallenAngel.UI.GameStarter>();
+
+            // 校准界面自测模式：直接打开节奏校准面板（MIUI 拦 adb 注入，菜单点不准）
+            if (mode == "calibration")
+            {
+                // 注意 includeInactive：校准面板初始 SetActive(false)，只找激活对象会找不到
+                var cal = FindObjectOfType<FallenAngel.UI.CalibrationController>(true);
+                if (cal != null)
+                {
+                    Debug.Log("[JudgeManager] 开发版自测：直接打开节奏校准面板");
+                    cal.Open();
+                }
+                else
+                {
+                    Debug.LogWarning("[JudgeManager] 开发版自测：场景里没有 CalibrationController");
+                }
+                return;
+            }
+
             if (starter == null)
             {
                 Debug.LogWarning("[JudgeManager] 开发版自动开局失败：场景里没有 GameStarter");

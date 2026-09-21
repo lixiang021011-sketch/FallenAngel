@@ -169,8 +169,72 @@
       "value": "判定偏移"
     },
     {
-      "key": "settings.timingAdjustHint",
-      "value": "-20.0 - 20.0"
+      "key": "settings.calibration",
+      "value": "节奏校准"
+    },
+    {
+      "key": "cal.title",
+      "value": "节奏校准"
+    },
+    {
+      "key": "cal.hint",
+      "value": "跟着节拍点屏幕，系统自动给出建议偏移"
+    },
+    {
+      "key": "cal.tap",
+      "value": "点"
+    },
+    {
+      "key": "cal.tapAlong",
+      "value": "准备……共 {0} 拍，跟着节拍点屏幕"
+    },
+    {
+      "key": "cal.beatOf",
+      "value": "第 {0}/{1} 拍 · 已记录 {2} 次点击"
+    },
+    {
+      "key": "cal.tapCount",
+      "value": "已记录 {0} 次点击"
+    },
+    {
+      "key": "cal.measured",
+      "value": "本次 {0} 次点击 → 建议 {1:+0;-0;0} ms"
+    },
+    {
+      "key": "cal.noTap",
+      "value": "这次没记录到点击，请再试一次"
+    },
+    {
+      "key": "cal.current",
+      "value": "当前偏移 {0:+0;-0;0} ms（{1} 帧）"
+    },
+    {
+      "key": "cal.start",
+      "value": "开始测量"
+    },
+    {
+      "key": "cal.apply",
+      "value": "应用建议值"
+    },
+    {
+      "key": "cal.preview",
+      "value": "试听"
+    },
+    {
+      "key": "cal.close",
+      "value": "完成"
+    },
+    {
+      "key": "cal.minus",
+      "value": "−"
+    },
+    {
+      "key": "cal.plus",
+      "value": "＋"
+    },
+    {
+      "key": "cal.step",
+      "value": "±5ms 微调"
     }
   ]
 }

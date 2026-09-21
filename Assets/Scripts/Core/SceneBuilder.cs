@@ -292,6 +292,9 @@ namespace FallenAngel.Core
 
 
             // 正式存档选择面板（选中档后出现"进入游戏"/"天赋"按钮；盖在设置页之上）
+            // 节奏校准面板：入口在设置页；反向注入控制器/面板引用给设置页（ESC 层叠与打开按钮）
+            CreateCalibrationPanel(canvasRect, canvasRect, starter, settingsController);
+
             SaveSelectPanelController saveSelectController = CreateSaveSelectPanel(canvasRect);
             SetPrivateField(starter, "saveSelectPanelController", saveSelectController);
 
@@ -778,6 +781,109 @@ namespace FallenAngel.Core
         /// 音效音量 ±0.1 / 按键特效占位开关。面板初始非激活；入口按钮（menu.settings）由
         /// CreateGameStarter 创建，GameStarter 接线打开本页。
         /// </summary>
+        /// <summary>
+        /// 节奏校准面板（玩家界面；过稿稿 art_tools/review/calibration_screen/ 变体 A 中央脉冲）。
+        /// 玩家只点屏幕：8 拍跟拍 → 自动建议值 → 大按钮细调/应用/试听。
+        /// </summary>
+        private static CalibrationController CreateCalibrationPanel(RectTransform canvasRect, Transform menuParent,
+            GameStarter starter, SettingsPanelController settingsController)
+        {
+            GameObject panel = new GameObject("CalibrationPanel", typeof(RectTransform), typeof(Image));
+            panel.transform.SetParent(canvasRect, false);
+            RectTransform rt = (RectTransform)panel.transform;
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            panel.GetComponent<Image>().color = new Color(0.02f, 0.05f, 0.07f, 0.96f);
+
+            TextMeshProUGUI title = CreateText("CalTitle", panel.transform,
+                new Vector2(0.5f, 0.90f), new Vector2(0.5f, 0.90f), Vector2.zero, new Vector2(800, 90),
+                "cal.title", 56, TextAlignmentOptions.Center);
+            title.fontStyle = FontStyles.Bold;
+
+            TextMeshProUGUI status = CreateText("CalStatus", panel.transform,
+                new Vector2(0.5f, 0.83f), new Vector2(0.5f, 0.83f), Vector2.zero, new Vector2(900, 60),
+                "cal.hint", 30, TextAlignmentOptions.Center);
+            status.color = new Color(1f, 1f, 1f, 0.75f);
+
+            // 中央脉冲（节拍到达时放大淡出）
+            GameObject ring = new GameObject("CalPulseRing", typeof(RectTransform), typeof(Image));
+            ring.transform.SetParent(panel.transform, false);
+            RectTransform rr = (RectTransform)ring.transform;
+            rr.anchorMin = rr.anchorMax = new Vector2(0.5f, 0.62f);
+            rr.pivot = new Vector2(0.5f, 0.5f);
+            rr.sizeDelta = new Vector2(340, 340);
+            Image ringImg = ring.GetComponent<Image>();
+            ringImg.color = new Color(0.44f, 0.88f, 0.84f, 0.55f);
+            ringImg.raycastTarget = false;
+
+            TextMeshProUGUI tapHint = CreateText("CalTapHint", panel.transform,
+                new Vector2(0.5f, 0.62f), new Vector2(0.5f, 0.62f), Vector2.zero, new Vector2(400, 80),
+                "cal.tap", 44, TextAlignmentOptions.Center);
+            tapHint.color = new Color(0.89f, 0.96f, 0.95f, 0.9f);
+
+            // 数值卡：当前值 / 本次测量结果
+            GameObject card = new GameObject("CalCard", typeof(RectTransform), typeof(Image));
+            card.transform.SetParent(panel.transform, false);
+            RectTransform cr = (RectTransform)card.transform;
+            cr.anchorMin = cr.anchorMax = new Vector2(0.5f, 0.40f);
+            cr.pivot = new Vector2(0.5f, 0.5f);
+            cr.sizeDelta = new Vector2(900, 260);
+            card.GetComponent<Image>().color = new Color(0.055f, 0.10f, 0.125f, 1f);
+
+            TextMeshProUGUI value = CreateText("CalValue", card.transform,
+                new Vector2(0.5f, 0.72f), new Vector2(0.5f, 0.72f), Vector2.zero, new Vector2(860, 70),
+                "", 36, TextAlignmentOptions.Center);
+            value.color = new Color(0.44f, 0.88f, 0.84f, 1f);
+            value.fontStyle = FontStyles.Bold;
+
+            TextMeshProUGUI result = CreateText("CalResult", card.transform,
+                new Vector2(0.5f, 0.30f), new Vector2(0.5f, 0.30f), Vector2.zero, new Vector2(860, 60),
+                "", 28, TextAlignmentOptions.Center);
+            result.color = new Color(1f, 1f, 1f, 0.7f);
+
+            // 细调 ±5ms
+            GameObject minus = CreateButton("CalMinusButton", panel.transform,
+                new Vector2(0.28f, 0.28f), new Vector2(220, 100), "cal.minus", 40);
+            GameObject plus = CreateButton("CalPlusButton", panel.transform,
+                new Vector2(0.72f, 0.28f), new Vector2(220, 100), "cal.plus", 40);
+            TextMeshProUGUI stepLabel = CreateText("CalStepLabel", panel.transform,
+                new Vector2(0.5f, 0.28f), new Vector2(0.5f, 0.28f), Vector2.zero, new Vector2(300, 60),
+                "cal.step", 26, TextAlignmentOptions.Center);
+            stepLabel.color = new Color(1f, 1f, 1f, 0.45f);
+
+            // 主操作：开始测量 / 应用建议值 / 试听 / 关闭
+            GameObject start = CreateButton("CalStartButton", panel.transform,
+                new Vector2(0.5f, 0.185f), new Vector2(720, 110), "cal.start", 40);
+            GameObject apply = CreateButton("CalApplyButton", panel.transform,
+                new Vector2(0.5f, 0.115f), new Vector2(720, 100), "cal.apply", 36);
+            GameObject preview = CreateButton("CalPreviewButton", panel.transform,
+                new Vector2(0.5f, 0.048f), new Vector2(340, 88), "cal.preview", 32);
+            GameObject close = CreateButton("CalCloseButton", panel.transform,
+                new Vector2(0.5f, 0.048f), new Vector2(340, 88), "cal.close", 32);
+            ((RectTransform)preview.transform).anchoredPosition = new Vector2(-190f, 0f);
+            ((RectTransform)close.transform).anchoredPosition = new Vector2(190f, 0f);
+
+            CalibrationController controller = panel.AddComponent<CalibrationController>();
+            SetPrivateField(controller, "panelRoot", panel);
+            SetPrivateField(controller, "pulseRing", rr);
+            SetPrivateField(controller, "statusText", status);
+            SetPrivateField(controller, "valueText", value);
+            SetPrivateField(controller, "resultText", result);
+            SetPrivateField(controller, "startButton", start.GetComponent<Button>());
+            SetPrivateField(controller, "applyButton", apply.GetComponent<Button>());
+            SetPrivateField(controller, "previewButton", preview.GetComponent<Button>());
+            SetPrivateField(controller, "minusButton", minus.GetComponent<Button>());
+            SetPrivateField(controller, "plusButton", plus.GetComponent<Button>());
+            SetPrivateField(controller, "closeButton", close.GetComponent<Button>());
+            panel.SetActive(false);
+
+            SetPrivateField(settingsController, "calibrationController", controller);
+            SetPrivateField(settingsController, "calibrationPanel", panel);
+            return controller;
+        }
+
         private static SettingsPanelController CreateSettingsPanel(RectTransform canvasRect, GameStarter starter, FallSpeedController fsc)
         {
             GameObject panel = new GameObject("SettingsPanel", typeof(RectTransform), typeof(Image));
@@ -812,34 +918,11 @@ namespace FallenAngel.Core
                 langButtons.Add(b.GetComponent<Button>());
             }
 
-            // 判定偏移行：标签 + 数值输入（**照抄上游**：设置页里一行
-            // CreateInputField("判定偏移", "-20.0 - 20.0")，离开页面时 ParseClampedSetting 解析+夹取）
-            TextMeshProUGUI timingLabel = CreateText("SettingsTimingLabel", panel.transform,
-                new Vector2(0.5f, 0.635f), new Vector2(0.5f, 0.635f), Vector2.zero, new Vector2(600, 50),
-                "settings.timingAdjust", 34, TextAlignmentOptions.Center);
-            timingLabel.color = new Color(1, 1, 1, 0.8f);
+            // 节奏校准行：按钮（面板本体在 CreateCalibrationPanel，后建盖在本页上）
+            // 玩家向界面：跟拍点击 + 大按钮细调，不出现键盘（上游只有工程向的数字输入，见 docs/live_front_checklist.md）
+            GameObject calBtn = CreateButton("SettingsCalibrationButton", panel.transform,
+                new Vector2(0.5f, 0.605f), new Vector2(560, 96), "settings.calibration", 38);
 
-            GameObject timingField = new GameObject("SettingsTimingField",
-                typeof(RectTransform), typeof(Image), typeof(TMP_InputField));
-            timingField.transform.SetParent(panel.transform, false);
-            RectTransform tfr = (RectTransform)timingField.transform;
-            tfr.anchorMin = tfr.anchorMax = new Vector2(0.5f, 0.578f);
-            tfr.pivot = new Vector2(0.5f, 0.5f);
-            tfr.sizeDelta = new Vector2(380, 78);
-            timingField.GetComponent<Image>().color = new Color(0.075f, 0.095f, 0.14f, 1f);
-            TMP_InputField timingInput = timingField.GetComponent<TMP_InputField>();
-            TextMeshProUGUI timingText = CreateText("SettingsTimingFieldText", timingField.transform,
-                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(360, 68),
-                "", 30, TextAlignmentOptions.Center);
-            TextMeshProUGUI timingHint = CreateText("SettingsTimingFieldHint", timingField.transform,
-                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(360, 68),
-                "settings.timingAdjustHint", 26, TextAlignmentOptions.Center);
-            timingHint.color = new Color(0.5f, 0.57f, 0.66f);
-            timingInput.textViewport = tfr;
-            timingInput.textComponent = timingText;
-            timingInput.placeholder = timingHint;
-            timingInput.characterLimit = 8;
-            timingInput.contentType = TMP_InputField.ContentType.DecimalNumber;
             // 下落速度行：±按钮 + 动态数值（监听由 FallSpeedController 双组绑定）
             TextMeshProUGUI speedLabel = CreateText("SettingsFallSpeedLabel", panel.transform,
                 new Vector2(0.5f, 0.53f), new Vector2(0.5f, 0.53f), Vector2.zero, new Vector2(600, 60),
@@ -882,7 +965,7 @@ namespace FallenAngel.Core
             SettingsPanelController controller = panel.AddComponent<SettingsPanelController>();
             SetPrivateField(controller, "panelRoot", panel);
             SetPrivateField(controller, "languageButtons", langButtons);
-            SetPrivateField(controller, "timingAdjustInput", timingInput);   // 判定偏移行（上游形态）
+            SetPrivateField(controller, "openCalibrationButton", calBtn.GetComponent<Button>());
             SetPrivateField(controller, "sfxMinusButton", sfxMinus.GetComponent<Button>());
             SetPrivateField(controller, "sfxPlusButton", sfxPlus.GetComponent<Button>());
             SetPrivateField(controller, "sfxVolumeText", sfxText);
