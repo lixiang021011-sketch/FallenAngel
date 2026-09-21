@@ -97,6 +97,10 @@ namespace FallenAngel.Gameplay
         private Color linkBaseRight = Color.clear;
         // Slide 剩余轨迹重算用（生成时记录，避免每帧重取）
         private float slideStartX;                       // slide 起点 Canvas X（尾部件定位用）
+        // 生成时用过的下落时长 + 生成/判定位置：变速（FallSpeedController 实时生效）后要按新时长重建
+        private float builtFallTime = -1f;
+        private Vector2 builtSpawnPos;
+        private Vector2 builtJudgePos;
         private readonly List<HitRingEntry> hitRingPool = new List<HitRingEntry>(8); // 命中扩散环池
 
         /// <summary>轨道 → 鼓件图标类型（对齐 Moonscraper 鼓件语义：0底鼓/1军鼓/2踩镲/3吊镲）</summary>
@@ -217,6 +221,7 @@ namespace FallenAngel.Gameplay
             // 修复：此前 body = 轨道全长 + 按住距离，远超屏幕高度，观感像无限长
             float fallDistance = Mathf.Abs(spawnPos.y - judgeLinePos.y); // 轨道全长（下落距离）
             float fallTime = GameManager.Instance != null ? GameManager.Instance.ActualFallTime : 2f;
+            builtFallTime = fallTime; builtSpawnPos = spawnPos; builtJudgePos = judgeLinePos;
             float holdDistance = fallDistance * (Data.duration / fallTime); // 按住期间下落距离
             // 上限 = 一屏下落距离：长条再长，身体也只画到"生成点"为止——
             // 否则 4s 的条身体就有 1.8 屏高（15.6s 时 7 屏），会把后面来的音符整个盖住
@@ -315,6 +320,7 @@ namespace FallenAngel.Gameplay
 
             float fallDistance = Mathf.Abs(spawnPos.y - judgeLinePos.y); // 轨道全长（下落距离）
             float fallTime = GameManager.Instance != null ? GameManager.Instance.ActualFallTime : 2f;
+            builtFallTime = fallTime; builtSpawnPos = spawnPos; builtJudgePos = judgeLinePos;   // 变速重建用
             float startX = LaneLayout.GetXFromLaneCoord(Data.path[0].x);
             slideStartX = startX;                    // 尾部件定位用（未按住时头部在起点）
 
@@ -646,6 +652,45 @@ namespace FallenAngel.Gameplay
         /// （尺寸随音符缩放），不换算的话长按一长，尾标记就会离开带子末端。
         /// 尺寸同样按"所在高度"收窄，尾标记才会和轨道一样宽（否则顶端那一小段会戳出轨道）。
         /// </summary>
+        /// <summary>
+        /// 变速后按新下落时长重建"长条身体"与"滑条轨迹"。
+        ///
+        /// 为什么需要：下落速度是**实时生效**的（UI/FallSpeedController 每帧改 speedMultiplier），
+        /// 而身体的长度 = 下落距离 × (duration ÷ 下落时长) 只在生成时算过一次——
+        /// 局内改速度后，长条的长度与尾巴位置就和"音符实际走的距离"对不上了（作者反馈长音没做速度适配）。
+        /// 只在速度真的变了时才重建（不是每帧），代价是一次网格重建。
+        /// </summary>
+        public void RefreshLongGeometryIfSpeedChanged()
+        {
+            if (Data == null || builtFallTime <= 0f) return;
+            float fallTime = GameManager.Instance != null ? GameManager.Instance.ActualFallTime : builtFallTime;
+            if (Mathf.Abs(fallTime - builtFallTime) < 0.01f) return;
+            builtFallTime = fallTime;
+
+            float fallDistance = Mathf.Abs(builtSpawnPos.y - builtJudgePos.y);
+            if (Data.type == NoteType.LongStart && Data.duration > 0f && bodyRect != null && bodyGraphic != null)
+            {
+                float bodyHeight = Mathf.Clamp(fallDistance * (Data.duration / fallTime), 300f, fallDistance);
+                bodyRect.sizeDelta = new Vector2(bodyRect.sizeDelta.x, bodyHeight);
+                bodyGraphic.SetStraightBand(bodyHeight);
+                bodyGraphic.SetAllDirty();
+            }
+            else if (Data.type == NoteType.Slide && Data.path != null && Data.path.Count >= 2
+                     && slidePathGraphic != null && slidePathGraphic.gameObject.activeSelf)
+            {
+                slidePointBuffer.Clear();
+                foreach (SlidePathPoint pt in Data.path)
+                {
+                    float x = LaneLayout.GetXFromLaneCoord(pt.x) - slideStartX;
+                    float y = fallDistance * pt.t / fallTime;
+                    slidePointBuffer.Add(new Vector2(x, y));
+                }
+                slidePathGraphic.SetPathPoints(slidePointBuffer);
+                slideEndCanvasY = slidePointBuffer[slidePointBuffer.Count - 1].y;
+                slidePathGraphic.SetAllDirty();
+            }
+        }
+
         private void UpdateTailPart()
         {
             if (tailRect == null || tailGraphic == null || !tailGraphic.gameObject.activeSelf) return;

@@ -449,6 +449,7 @@ namespace FallenAngel.Gameplay
             {
                 Note note = activeNotes[i];
                 if (!note.gameObject.activeSelf) continue;
+                note.RefreshLongGeometryIfSpeedChanged();   // 变速后按新下落时长重建长条身体/轨迹
                 note.UpdatePosition(songTime, spawnY, judgeLineY);
             }
         }
