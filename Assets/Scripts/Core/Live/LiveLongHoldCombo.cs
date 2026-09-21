@@ -45,8 +45,13 @@ namespace FallenAngel.Live
                 return;
             }
 
+            // 本工程适配：连击点看"长条是否还在被按住"（头在 Input/InputBegan），
+            // 而不是只看子音符状态——上游那边子音符是摩擦链的末尾点，语义不同；
+            // 照抄会出现"按住长条时连击点全 Miss"（因为尾音符还没被判过）。
             var child = parentNote?.ChildNote;
-            if (child != null && (child.Result > NoteResult.Pass || child.State == NoteState.Input))
+            bool holding = parentNote != null
+                && (parentNote.State == NoteState.Input || parentNote.State == NoteState.InputBegan);
+            if (holding || (child != null && (child.Result > NoteResult.Pass || child.State == NoteState.Input)))
             {
                 JudgeInfo = (NoteResult.JustPerfect, NoteResultDescription.None);
                 State = NoteState.Done;

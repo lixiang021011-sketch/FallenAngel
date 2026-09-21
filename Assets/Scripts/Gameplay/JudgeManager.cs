@@ -436,12 +436,38 @@ namespace FallenAngel.Gameplay
             // 判定回调（上游的 NoteBase 回调面）：头/尾/连接点都在这里汇总
             foreach (var live in notes)
             {
-                BindLiveNote(live);
+                // 顺序要紧：先把连击点挂进去，再挂回调（LongNote 的回调 setter 会向下传播到子音符，
+                // 晚挂的子音符就收不到通知 → 连击点静默不涨 combo）
                 if (live.Category == NoteCategory.Long && live.ParentNote == null)
                 {
                     slideNotes.Add(live);   // 跟手规则用（长按与滑条同族：按住期间的有效跨度）
+                    AddHoldComboTicks(live);   // 长音持续反馈（见方法注释）
                 }
+                BindLiveNote(live);
             }
+
+        /// <summary>
+        /// 给长音插"连击点"（上游 LongHoldCombo 的用法）：按住期间每 0.4s 一个点，
+        /// 子音符还活着（= 手指还在条上）就 JustPerfect、掉指就 Miss。
+        /// 计分层对这些点只涨 combo（不计分、不进判定计数），所以不会改变音符总数口径。
+        /// 为什么需要：长条头按设计不计分，尾巴在最后才结算 —— 长音按住期间原来"什么都没发生"。
+        /// </summary>
+        // 局部函数（写在 BuildScore 内）：静态 + 无访问修饰符才合法
+        static void AddHoldComboTicks(LiveNoteBase root)
+        {
+            var head = root as LiveLongNote;
+            if (head == null || head.NoteList == null || head.NoteList.Count < 2) return;
+
+            float start = head.MusicScoreInfo.time;
+            float end = head.NoteList[head.NoteList.Count - 1].MusicScoreInfo.time;
+            if (end - start < 1.2f) return;      // 短条本来就有及时反馈，不插点
+
+            for (float t = start + 0.4f; t < end - 0.15f; t += 0.4f)
+            {
+                head.AddHoldCombo(new LiveLongHoldCombo(LiveNoteBuilder.Info(t),
+                    FallenAngel.Live.NoteType.Default, 1f, LiveNoteBuilder.DefaultLaneOffset));
+            }
+        }
 
             Debug.Log(string.Format("[JudgeManager] 判定簇装配完成：谱面 {0} 条 → 判定音符树 {1} 棵（轨道 {2}，在屏 {3:0.##}s）",
                 chart.notes.Count, notes.Count, laneCount, fallTime));
@@ -676,6 +702,13 @@ namespace FallenAngel.Gameplay
             if (JudgeWindows.BreaksCombo(result))
             {
                 BreakCombo();
+            }
+            else if (note.Category == NoteCategory.Combo)
+            {
+                // 长音上的连击点：只涨 combo（不计分、不进判定计数）—— 按住长音期间的持续反馈
+                Combo++;
+                if (Combo > MaxCombo) MaxCombo = Combo;
+                OnComboUpdate?.Invoke(Combo, MissCount == 0);
             }
             ApplyViewResult(view, note, result);
             OnJudgeBias?.Invoke(bias);

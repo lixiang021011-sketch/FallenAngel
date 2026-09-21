@@ -456,6 +456,30 @@ namespace FallenAngel.Core
             }
 
             // ⑰ 滑条：沿路径跟到尾部再松手 = 成功；且跨度跟谱面 path（弯道不脱手）
+            // ⑱ 长音持续反馈：按住期间 combo 持续增长（连击点每 0.4s 一个），不再"按住 2 秒没反应"
+            using (var sb = new Sandbox())
+            {
+                sb.AddChartNote(new NoteData(2, 10.000f, DataNoteType.LongStart, 2.000f, 41));
+                sb.AddChartNote(new NoteData(2, 12.000f, DataNoteType.LongEnd, 0f, 41));
+                sb.BuildScore();
+                sb.SetSongTime(9.500f);
+                sb.JudgeUpdate();
+                sb.SetSongTime(10.000f);
+                sb.PressAt(2, 10.000f);
+                sb.JudgeUpdate();
+                int afterHead = sb.Judge.Combo;
+                for (float t = 10.400f; t <= 11.700f; t += 0.100f)
+                {
+                    sb.SetSongTime(t);
+                    sb.JudgeUpdate();      // 一直按着
+                }
+                int holding = sb.Judge.Combo;
+                check("长音·按住期间持续涨连击",
+                    afterHead == 0 && holding >= 3 && sb.Judge.MissCount == 0,
+                    string.Format("头判后 combo={0}、按住 1.7s 后 combo={1}、Miss={2}（连击点每 0.4s 一个）",
+                        afterHead, holding, sb.Judge.MissCount));
+            }
+
             using (var sb = new Sandbox())
             {
                 var path = new System.Collections.Generic.List<SlidePathPoint>
