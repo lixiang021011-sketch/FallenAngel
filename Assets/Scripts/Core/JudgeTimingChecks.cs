@@ -262,6 +262,12 @@ namespace FallenAngel.Core
                 Mathf.Abs(clamped - (10.000f + InputClock.MaxDelta)) <= 0.0005f,
                 string.Format("+20ms→{0:0.###}、+180ms→{1:0.###}、异常时钟→{2:0.###}（钳到 +{3:0.##}s）",
                     normal, late, clamped, InputClock.MaxDelta));
+
+            // ⑩ 滑条"掉段"（PJSK 语义）——**本用例暂缓**：
+            //    第一版按"松开路径轨、另按一轨维持 anyHeld"构造脱离，实测 ① 进跟手成立，
+            //    ② 但"脱离后仍在跟"为 False、且整条立刻被判 Perfect——说明**释放路径比预期更早生效**
+            //    （疑似"松开滑条所在轨即结束"，而不是此前注释里写的"由任意键维持"）。
+            //    先把结论留在这里，下一轮查清释放条件后再把这个用例补回来。
         }
 
         /// <summary>

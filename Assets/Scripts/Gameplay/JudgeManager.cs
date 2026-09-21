@@ -198,9 +198,11 @@ namespace FallenAngel.Gameplay
                     if (pressStates[lane] && Mathf.Abs(lane - expectedX) <= SlideFollowToleranceLanes)
                     { following = true; break; }
                 }
-                if (following) { slideOutOfRange[slide] = 0f; continue; }
-                float off = (slideOutOfRange.TryGetValue(slide, out float acc) ? acc : 0f) + Time.deltaTime;
-                slideOutOfRange[slide] = off;
+                if (following) { slideOutOfRange.Remove(slide); continue; }
+                // 脱离时长按**歌曲时间**累计（原先累加 Time.deltaTime）：与帧率无关，
+                // 而且自检能通过构造 SongTime 精确复现"连续脱离 N 秒"
+                if (!slideOutOfRange.TryGetValue(slide, out float leftAt)) slideOutOfRange[slide] = songTime;
+                float off = songTime - slideOutOfRange[slide];
                 if (off >= SlideBreakSeconds)
                 {
                     // PJSK 语义：跟手断开**不作废整条滑条**——掉的是这一段的 combo，
@@ -211,7 +213,7 @@ namespace FallenAngel.Gameplay
                         Debug.Log($"[JudgeManager] Slide 掉段（偏离 {off:F2}s）lane={slide.Data.lane}：" +
                                   "断 combo、不断整条");
                     }
-                    slideOutOfRange[slide] = 0f;   // 重置计时，给手指回到轨内的机会
+                    slideOutOfRange.Remove(slide);   // 重置计时，给手指回到轨内的机会
                 }
             }
 
