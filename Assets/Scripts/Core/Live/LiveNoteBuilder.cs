@@ -27,6 +27,27 @@ namespace FallenAngel.Live
         public const float DefaultLaneOffset = LiveConfig.DefaultLaneOffset;
 
         /// <summary>
+        /// 按音符类型取判定跨度外扩（轨）。
+        /// 上游是按类别从 Bundle 里取（`LiveUtility.GetLaneOffset`: flick / long / normal 各一份），
+        /// 这里用常量表达同一件事：普通/drag 半条轨；甩键略宽；**长按与滑条更宽**——
+        /// 按住/跟手时手指一定会飘，窄跨度会让长条"很容易断"（作者反馈）。
+        /// 相邻跨度因此会重叠：重叠部分由移植层的"离手指最近者得"归属规则裁决（LiveJudgeCore ②）。
+        /// </summary>
+        public static float LaneOffsetFor(Data.NoteType type)
+        {
+            switch (type)
+            {
+                case Data.NoteType.Flick:
+                    return 0.60f;
+                case Data.NoteType.LongStart:
+                case Data.NoteType.Slide:
+                    return 0.85f;
+                default:
+                    return DefaultLaneOffset;
+            }
+        }
+
+        /// <summary>
         /// 甩键判定幅度（像素）：与旧行为同口径（max(18px, 屏高×1.2%)）。
         /// 原作从 SUS 的音符距离参数来，我们按屏幕算，手感不变。
         /// </summary>
@@ -79,7 +100,7 @@ namespace FallenAngel.Live
             {
                 case Data.NoteType.Normal:
                     return new LiveNormalNote(info, id, laneStart, laneEnd,
-                        NoteCategory.Normal, 1f, NoteType.Default, DefaultLaneOffset);
+                        NoteCategory.Normal, 1f, NoteType.Default, LaneOffsetFor(data.type));
 
                 case Data.NoteType.LongStart:
                     return BuildLongNote(data, id, laneStart, laneEnd, info);
@@ -89,12 +110,12 @@ namespace FallenAngel.Live
 
                 case Data.NoteType.Drag:
                     return new LiveFrictionNote(info, id, laneStart, laneEnd,
-                        NoteCategory.Friction, NoteType.Default, 1f, DefaultLaneOffset);
+                        NoteCategory.Friction, NoteType.Default, 1f, LaneOffsetFor(data.type));
 
                 case Data.NoteType.Flick:
                     return new LiveFlickNote(info, id, laneStart, laneEnd,
                         NoteCategory.Flick, 1f, NoteType.Default, DirectionOf(data.direction),
-                        DefaultLaneOffset, flickDistancePixels);
+                        LaneOffsetFor(data.type), flickDistancePixels);
 
                 default:
                     // LongBody / LongEnd：只是长按的视图部件，不参与判定（尾由头的 duration 生成）
@@ -106,11 +127,11 @@ namespace FallenAngel.Live
             MusicScoreInfo info)
         {
             var head = new LiveLongNote(info, id, laneStart, laneEnd,
-                NoteCategory.Long, NoteType.Default, 1f, DefaultLaneOffset);
+                NoteCategory.Long, NoteType.Default, 1f, LaneOffsetFor(data.type));
             head.CompleteTailWhileHolding = true;   // 本工程语义：按住到尾巴 = 成功（见 LiveLongNote 注释）
             var endTime = data.time + Mathf.Max(0f, data.duration);
             var tail = new LiveNormalNote(Info(endTime), id, laneStart, laneEnd,
-                NoteCategory.Normal, 1f, NoteType.Default, DefaultLaneOffset);
+                NoteCategory.Normal, 1f, NoteType.Default, LaneOffsetFor(data.type));
             head.AddNoteListAndSetupChildNote(tail);
             return head;
         }
@@ -119,7 +140,7 @@ namespace FallenAngel.Live
             int laneCount, MusicScoreInfo info)
         {
             var head = new LiveLongNote(info, id, laneStart, laneEnd,
-                NoteCategory.Long, NoteType.Default, 1f, DefaultLaneOffset, NoteLineType.Linear);
+                NoteCategory.Long, NoteType.Default, 1f, LaneOffsetFor(data.type), NoteLineType.Linear);
             head.CompleteTailWhileHolding = true;   // 滑条同样：跟到尾巴就算成功
 
             var path = data.path;
@@ -136,7 +157,7 @@ namespace FallenAngel.Live
             }
 
             var tail = new LiveNormalNote(Info(endTime), id, endLane, endLane,
-                NoteCategory.Normal, 1f, NoteType.Default, DefaultLaneOffset);
+                NoteCategory.Normal, 1f, NoteType.Default, LaneOffsetFor(data.type));
             head.AddNoteListAndSetupChildNote(tail);
             return head;
         }

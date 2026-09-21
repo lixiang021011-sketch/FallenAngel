@@ -91,6 +91,9 @@ namespace FallenAngel.Core
             // 请求设备最高刷新率（Android；60Hz 设备上无副作用）。MIUI 默认把应用当 60Hz 内容，
             // 不主动请求就永远跑 60——"帧率不够"的根因就在这里。
             HighRefreshRate.Request();
+            // 音频输出延迟（真机"音画偏差非常大"的根因之一）：先把 DSP 缓冲往小压（真减延迟），
+            // 再量实际生效值并把剩余部分计入 SongTime 偏移，见 AudioLatency
+            AudioLatency.ConfigureForLowLatency();
         }
 
         /// <summary>
@@ -216,9 +219,11 @@ namespace FallenAngel.Core
                 return;
             }
 
-            // 谱面偏移 + 全局节拍校准偏移（CalibrationSettings，PlayerPrefs 持久化）
+            // 谱面偏移 + 全局节拍校准偏移（CalibrationSettings，PlayerPrefs 持久化）+ 音频输出延迟补偿
+            // （AudioLatency：AudioSource.time 给的是"送去播的位置"，真正听到还要晚一个 DSP+设备延迟）
             SongTime = Mathf.Max(0f, AudioManager.Instance.CurrentTime -
-                ((CurrentChart?.metadata.offset ?? 0f) + CalibrationSettings.OffsetSeconds));
+                ((CurrentChart?.metadata.offset ?? 0f) + CalibrationSettings.OffsetSeconds +
+                 AudioLatency.CompensationSeconds));
             // 记下"这次 SongTime 采样时的输入时钟读数"：输入事件按自己的时间戳换算歌曲时间要用
             InputClock.Sample(SongTime);
 

@@ -91,6 +91,9 @@ namespace FallenAngel.Core
             {
                 Debug.LogWarning("[IconGeometry] 报告写入失败：" + e.Message);
             }
+
+            // 同 NotePartChecks：自检必须给出进程退出码（batchmode 串行跑全量要靠它）
+            if (Application.isBatchMode) EditorApplication.Exit(fail > 0 ? 1 : 0);
         }
     }
 }

@@ -507,8 +507,10 @@ namespace FallenAngel.Gameplay
             if (rectTransform == null) rectTransform = GetComponent<RectTransform>();
 
             float dx = partnerCanvasX - rectTransform.anchoredPosition.x;
-            float width = Mathf.Abs(dx);
-            if (width < 1f) { ClearSimultaneousLink(); return; }
+            // 连线画在**两个音符的边缘之间**（原来画的是"中心到中心"，两端插进音符里 → 排版看着糊成一坨）
+            float myHalf = rectTransform.sizeDelta.x * 0.5f;
+            float width = Mathf.Abs(dx) - myHalf * 2f;
+            if (width < 4f) { ClearSimultaneousLink(); return; }
 
             EnsureLinkGraphic();
 
@@ -518,7 +520,7 @@ namespace FallenAngel.Gameplay
             linkBaseLeft = dx >= 0f ? mine : partnerColor;
             linkBaseRight = dx >= 0f ? partnerColor : mine;
 
-            linkRect.sizeDelta = new Vector2(width, Mathf.Max(6f, rectTransform.sizeDelta.y * 0.62f));
+            linkRect.sizeDelta = new Vector2(width, Mathf.Max(6f, rectTransform.sizeDelta.y * 0.45f));
             linkRect.anchoredPosition = new Vector2(dx * 0.5f, 0f);
             linkGraphic.LeftColor = linkBaseLeft;
             linkGraphic.RightColor = linkBaseRight;

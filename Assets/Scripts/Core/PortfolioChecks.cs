@@ -59,6 +59,8 @@ namespace FallenAngel.Core
                 results.Add(e.ToString());
                 WriteReport("FAIL");
                 Debug.LogError("[PortfolioChecks] FAIL: " + e);
+                // 自检必须给出进程退出码（batchmode 串行跑全量要靠它判断绿/红）
+                if (Application.isBatchMode) EditorApplication.Exit(1);
                 throw;
             }
             finally
@@ -66,6 +68,8 @@ namespace FallenAngel.Core
                 // 仅清理由本次检查创建的随机临时目录，不访问正式存档。
                 if (Directory.Exists(temporary)) Directory.Delete(temporary, true);
             }
+
+            if (Application.isBatchMode) EditorApplication.Exit(0);
         }
 
         private static void Check(bool condition, string description)

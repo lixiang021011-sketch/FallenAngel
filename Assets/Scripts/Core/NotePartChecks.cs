@@ -129,6 +129,10 @@ namespace FallenAngel.Core
             {
                 Debug.LogWarning("[NotePart] 报告写入失败：" + e.Message);
             }
+
+            // 自检必须给出**进程退出码**：否则 batchmode 下"有 FAIL 也返回 0"，
+            // 串行跑全量时会把失败当成通过（2026-09-21 发现这一洞）。
+            if (Application.isBatchMode) EditorApplication.Exit(fail > 0 ? 1 : 0);
         }
 
         /// <summary>按游戏真实装配方式造一个音符（根节点 Image + Note，与 NoteSpawner 默认预制体一致）</summary>
@@ -481,7 +485,9 @@ namespace FallenAngel.Core
 
                 float partnerX = LaneLayout.GetCenterXForActive(3);
                 float myX = ((RectTransform)leftGO.transform).anchoredPosition.x;
-                float expectWidth = Mathf.Abs(partnerX - myX);
+                // 连线是"边缘到边缘"（2026-09-21 排版修正）：宽度 = 中心距 − 两个音符的半宽
+                float noteHalf = ((RectTransform)leftGO.transform).sizeDelta.x * 0.5f;
+                float expectWidth = Mathf.Abs(partnerX - myX) - noteHalf * 2f;
                 left.SetSimultaneousLink(partnerX, LaneColors.GetLaneColor(3));
 
                 var link = (NoteLinkGraphic)Field("linkGraphic").GetValue(left);
@@ -496,11 +502,13 @@ namespace FallenAngel.Core
 
                 if (Mathf.Abs(linkRect.sizeDelta.x - expectWidth) > TolerancePx)
                 { ok = false; notes.Add($"连线宽度 {linkRect.sizeDelta.x:0.0} 期望 {expectWidth:0.0}"); }
-                if (Mathf.Abs(linkRect.anchoredPosition.x - expectWidth * 0.5f) > TolerancePx ||
+                // 连线居中在"两个音符中心之间"（宽度是边缘到边缘，所以不能用 expectWidth/2 当中心）
+                float expectCenterX = Mathf.Abs(partnerX - myX) * 0.5f;
+                if (Mathf.Abs(linkRect.anchoredPosition.x - expectCenterX) > TolerancePx ||
                     Mathf.Abs(linkRect.anchoredPosition.y) > TolerancePx)
-                { ok = false; notes.Add($"连线中心 {Fmt(linkRect.anchoredPosition)} 期望 ({expectWidth * 0.5f:0.0},0)"); }
+                { ok = false; notes.Add($"连线中心 {Fmt(linkRect.anchoredPosition)} 期望 ({expectCenterX:0.0},0)"); }
 
-                float expectHeight = Mathf.Max(6f, ((RectTransform)leftGO.transform).sizeDelta.y * 0.62f);
+                float expectHeight = Mathf.Max(6f, ((RectTransform)leftGO.transform).sizeDelta.y * 0.45f);
                 if (Mathf.Abs(linkRect.sizeDelta.y - expectHeight) > TolerancePx)
                 { ok = false; notes.Add($"连线高度 {linkRect.sizeDelta.y:0.0} 期望 {expectHeight:0.0}"); }
 

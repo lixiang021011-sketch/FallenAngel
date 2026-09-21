@@ -78,8 +78,8 @@ namespace FallenAngel.Gameplay
         // 滑条跟手（FallenAngel 自有规则）
         private readonly Dictionary<LiveNoteBase, float> slideOutOfRange = new Dictionary<LiveNoteBase, float>();
         private readonly HashSet<LiveNoteBase> slideSegmentBroken = new HashSet<LiveNoteBase>();
-        private const float SlideFollowToleranceLanes = 1.0f;   // 与判定跨度中心的允许偏差（轨）
-        private const float SlideBreakSeconds = 0.25f;         // 连续脱离多久算断开
+        private const float SlideFollowToleranceLanes = 1.4f;   // 与判定跨度中心的允许偏差（轨；放宽：拆墙后手指更容易飘）
+        private const float SlideBreakSeconds = 0.32f;         // 连续脱离多久算断开（放宽：拆墙后手指更容易飘）
 
         private struct PendingInput
         {
@@ -178,6 +178,9 @@ namespace FallenAngel.Gameplay
             float songTime = GameManager.Instance.SongTime;
             // 局内 modifier 的判定窗口倍率（基础值 × 倍率；移植层查表时套用）
             LiveConfig.SetJudgeTimeScale(PlayRules.JudgeWindowScale);
+            // 下落速度可能在开局后被改（设置面板/调速）；每帧同步一次，
+            // 否则判定层还在用开局时的在屏时长 → "调整下落速度后的体验很奇怪"。
+            runtime.NoteDisplayTimeOffset = Mathf.Max(0.1f, GameManager.Instance.ActualFallTime);
 
             runtime.Update(LiveNoteBuilder.Info(songTime));
             BuildFrameTouches(songTime);

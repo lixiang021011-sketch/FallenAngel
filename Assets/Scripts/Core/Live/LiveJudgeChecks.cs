@@ -285,8 +285,11 @@ namespace FallenAngel.Core
             bool holdShape = builtHold is LiveLongNote
                 && builtHold.NoteList.Count == 2
                 && Mathf.Abs(builtHold.NoteList[1].MusicScoreInfo.time - 1.75f) < 1e-3f;
+            // 长按/滑条的判定跨度比普通音符更宽（LaneOffsetFor：long/slide 0.85 轨）——
+            // 这是"长条很容易断"的修法：按住/跟手时手指一定会飘
             bool slideShape = builtSlide is LiveLongNote && builtSlide.NoteList.Count == 2
-                && Mathf.Abs(builtSlide.NoteList[1].JudgeLaneEnd - 3.5f) < 1e-3f;
+                && Mathf.Abs(builtSlide.NoteList[1].JudgeLaneEnd - (3f + LiveNoteBuilder.LaneOffsetFor(DataNoteType.Slide))) < 1e-3f
+                && LiveNoteBuilder.LaneOffsetFor(DataNoteType.Slide) > LiveNoteBuilder.LaneOffsetFor(DataNoteType.Normal);
             bool wideShape = builtWide != null && builtWide.JudgeLaneStart <= -0.5f && builtWide.JudgeLaneEnd >= 3.5f;
             bool dragShape = builtDrag is LiveFrictionNote;
             bool flickShape = builtFlick is LiveFlickNote && builtFlick.Direction == NoteDirection.Down;
