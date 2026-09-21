@@ -263,11 +263,52 @@ namespace FallenAngel.Core
                 string.Format("+20ms→{0:0.###}、+180ms→{1:0.###}、异常时钟→{2:0.###}（钳到 +{3:0.##}s）",
                     normal, late, clamped, InputClock.MaxDelta));
 
-            // ⑩ 滑条"掉段"（PJSK 语义）——**本用例暂缓**：
-            //    第一版按"松开路径轨、另按一轨维持 anyHeld"构造脱离，实测 ① 进跟手成立，
-            //    ② 但"脱离后仍在跟"为 False、且整条立刻被判 Perfect——说明**释放路径比预期更早生效**
-            //    （疑似"松开滑条所在轨即结束"，而不是此前注释里写的"由任意键维持"）。
-            //    先把结论留在这里，下一轮查清释放条件后再把这个用例补回来。
+            // ⑩ 滑条"掉段"（PJSK 语义）：手指连续脱离路径超过 SlideBreakSeconds 时只断 combo、不作废整条。
+            //    第二版带**逐步状态快照**：上一版在"松 1 轨、按 3 轨"后看到滑条已结束，
+            //    这里把每一步的 pressStates / IsHolding / IsJudged 都写进结果，用来分清是
+            //    "沙箱输入簿记" 还是 "判定路径" 的问题。
+            using (var sb = new Sandbox())
+            {
+                var path = new List<SlidePathPoint>
+                {
+                    new SlidePathPoint { t = 0f,   x = 1f },
+                    new SlidePathPoint { t = 1.0f, x = 1f },   // 直线滑条：期望轨恒为 1
+                };
+                Note slide = sb.AddNote(new NoteData(1, 10.000f, NoteType.Slide, 1.0f, -1, FlickDirection.Up, path));
+
+                sb.SetSongTime(10.000f);
+                sb.Press(1);
+                string s1 = string.Format("①按1轨: held={0} holding={1}", sb.LaneHeld(1), slide.IsHolding);
+
+                sb.Release(1);
+                sb.SetSongTime(10.500f);
+                sb.Press(3);
+                string s2 = string.Format("②松1按3: held1={0} held3={1} holding={2}",
+                    sb.LaneHeld(1), sb.LaneHeld(3), slide.IsHolding);
+
+                sb.JudgeUpdate();
+                sb.SetSongTime(10.900f);     // 脱离时长按歌曲时间累计，要跨两次轮询才超 0.25s 宽限
+                sb.JudgeUpdate();
+                string s3 = string.Format("③脱离0.5s后: holding={0} judged={1}",
+                    slide.IsHolding, slide.IsJudged);
+
+                // 判定"有没有被掉段作废"：滑条的 IsJudged 在**头判**时就已经是 true（语义是"头判过了"），
+                // 所以要看 ① 是否还在跟（IsHolding）② 头判结果有没有被改写成 Miss。
+                bool survived = slide.IsHolding && slide.JudgeResult == JudgeResultType.Perfect;
+
+                // 回到路径轨、走到尾巴：应当能正常收尾（不是被掉段提前作废）
+                sb.Release(3);
+                sb.SetSongTime(11.000f);     // 尾巴时刻
+                sb.Press(1);
+                sb.JudgeUpdate();            // 仍在跟 → 不释放
+                sb.Release(1);
+                sb.JudgeUpdate();            // 全松 → 在尾巴时刻结算
+                bool tailOk = !slide.IsHolding && slide.JudgeResult != JudgeResultType.Miss;
+
+                check("滑条掉段不断整条", survived && tailOk,
+                    string.Format("{0}；{1}；{2}；④回到路径并走到尾巴: holding={3} result={4}",
+                        s1, s2, s3, slide.IsHolding, slide.JudgeResult));
+            }
         }
 
         /// <summary>
@@ -364,6 +405,13 @@ namespace FallenAngel.Core
 
             /// <summary>指定手指 id 注入一次按下（模拟"多指同时输入"）</summary>
             public void PressAs(int lane, int fingerId) { Input.SimulateLaneInputAt(lane, true, sandboxSongTime, fingerId); }
+
+            /// <summary>该轨当前是否处于按下状态（判定轮询读的就是这个）</summary>
+            public bool LaneHeld(int lane)
+            {
+                var states = Input.LanePressStates;
+                return states != null && lane >= 0 && lane < states.Length && states[lane];
+            }
 
             /// <summary>四个单例是否都指向本沙箱的实例（指向别人 = 后面测的不是这套对象）</summary>
             public bool InstancesMatch
