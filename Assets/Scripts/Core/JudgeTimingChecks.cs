@@ -277,12 +277,12 @@ namespace FallenAngel.Core
                 Note slide = sb.AddNote(new NoteData(1, 10.000f, NoteType.Slide, 1.0f, -1, FlickDirection.Up, path));
 
                 sb.SetSongTime(10.000f);
-                sb.Press(1);
+                sb.PressAs(1, 10);                          // 手指 10 按下滑条头
                 string s1 = string.Format("①按1轨: held={0} holding={1}", sb.LaneHeld(1), slide.IsHolding);
 
-                sb.Release(1);
+                sb.ReleaseAs(1, 10);
                 sb.SetSongTime(10.500f);
-                sb.Press(3);
+                sb.PressAs(3, 10);                          // 同一根手指跨到 3 轨：脱离路径，但仍由它维持
                 string s2 = string.Format("②松1按3: held1={0} held3={1} holding={2}",
                     sb.LaneHeld(1), sb.LaneHeld(3), slide.IsHolding);
 
@@ -297,17 +297,41 @@ namespace FallenAngel.Core
                 bool survived = slide.IsHolding && slide.JudgeResult == JudgeResultType.Perfect;
 
                 // 回到路径轨、走到尾巴：应当能正常收尾（不是被掉段提前作废）
-                sb.Release(3);
+                sb.ReleaseAs(3, 10);
                 sb.SetSongTime(11.000f);     // 尾巴时刻
-                sb.Press(1);
+                sb.PressAs(1, 10);
                 sb.JudgeUpdate();            // 仍在跟 → 不释放
-                sb.Release(1);
+                sb.ReleaseAs(1, 10);
                 sb.JudgeUpdate();            // 全松 → 在尾巴时刻结算
                 bool tailOk = !slide.IsHolding && slide.JudgeResult != JudgeResultType.Miss;
 
                 check("滑条掉段不断整条", survived && tailOk,
                     string.Format("{0}；{1}；{2}；④回到路径并走到尾巴: holding={3} result={4}",
                         s1, s2, s3, slide.IsHolding, slide.JudgeResult));
+            }
+
+            // ⑪ 长按绑定"发起它的那根手指"：同轨另一根手指抬起，不该把长按判掉。
+            using (var sb = new Sandbox())
+            {
+                Note hold = sb.AddNote(new NoteData(1, 10.000f, NoteType.LongStart, 1.0f, 7));
+
+                sb.SetSongTime(10.000f);
+                sb.PressAs(1, 10);          // 手指 10 起长按
+                bool started = hold.IsHolding;
+
+                sb.PressAs(1, 20);          // 另一根手指也按同轨
+                sb.ReleaseAs(1, 20);        // 它抬起 → 长按不该被释放
+                sb.JudgeUpdate();
+                bool survived = hold.IsHolding;
+
+                sb.SetSongTime(11.000f);    // 尾巴时刻
+                sb.ReleaseAs(1, 10);        // 发起者松开才算释放
+                sb.JudgeUpdate();
+                bool releasedAtTail = !hold.IsHolding;
+
+                check("长按绑发起手指", started && survived,
+                    string.Format("起长按={0}、另一指抬起后仍在按={1}（期望 True）、发起者松开后结束={2}",
+                        started, survived, releasedAtTail));
             }
         }
 
@@ -405,6 +429,9 @@ namespace FallenAngel.Core
 
             /// <summary>指定手指 id 注入一次按下（模拟"多指同时输入"）</summary>
             public void PressAs(int lane, int fingerId) { Input.SimulateLaneInputAt(lane, true, sandboxSongTime, fingerId); }
+
+            /// <summary>指定手指 id 注入一次抬起（模拟"同一根手指跨轨移动"）</summary>
+            public void ReleaseAs(int lane, int fingerId) { Input.SimulateLaneInputAt(lane, false, sandboxSongTime, fingerId); }
 
             /// <summary>该轨当前是否处于按下状态（判定轮询读的就是这个）</summary>
             public bool LaneHeld(int lane)

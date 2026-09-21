@@ -87,6 +87,16 @@ namespace FallenAngel.InputSystem
                 ? laneFinger[lane] : -1;
         }
 
+        /// <summary>这根手指现在是否还按在某个轨道上（手势是否由它维持）</summary>
+        public bool IsFingerHeld(int fingerId)
+        {
+            if (fingerId < 0 || laneFinger == null || LanePressStates == null) return false;
+            int n = Mathf.Min(laneFinger.Length, LanePressStates.Length);
+            for (int i = 0; i < n; i++)
+                if (LanePressStates[i] && laneFinger[i] == fingerId) return true;
+            return false;
+        }
+
         // 用于跟踪触屏ID与音轨的对应关系
         private Dictionary<int, int> touchIdToLane = new Dictionary<int, int>();
         // 真实触摸事件时间戳（EnhancedTouch，装 Input System 后才有；没装则回退帧时间）

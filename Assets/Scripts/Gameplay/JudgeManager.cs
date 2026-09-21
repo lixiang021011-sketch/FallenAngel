@@ -84,6 +84,9 @@ namespace FallenAngel.Gameplay
         // 长按按下时的开始时间（用于长按释放判定）
         private float[] laneHoldStartTime = new float[0];
         private int[] laneHoldLongId = new int[0];
+        // 发起长按/滑条的那根手指（PJSK 语义：手势由它维持，别的指头按着不算数）
+        private int[] laneHoldFingerId = new int[0];
+        private readonly Dictionary<Note, int> slideFinger = new Dictionary<Note, int>();
         // 按住中的宽长按头（kick 语义：任意键维持、全松即释放；单槽位）
         private Note activeWideHold;
         // 按住中的 Slide 头部（任意键维持、全松即释放；跨轨拖动不中断，见 Update）
@@ -217,9 +220,7 @@ namespace FallenAngel.Gameplay
                 }
             }
 
-            // Slide 与宽长按同语义：由任意键维持——触屏跨轨拖动（输入层
-            // 松旧轨+按新轨）时只要还有键按住就不会中断。
-            // 修复：此前 Slide 挂在单轨释放事件上（HandleRelease），跨行即被释放，slide 中途停止。
+            // 宽长按：仍按"任意键维持"（kick 语义本来就是任意键）
             if (!anyHeld)
             {
                 if (activeWideHold != null && activeWideHold.IsHolding)
@@ -228,17 +229,33 @@ namespace FallenAngel.Gameplay
                     ApplyHoldRelease(activeWideHold, songTime - endTime, activeWideHold.Data.lane);
                 }
                 activeWideHold = null;
+            }
 
-                if (activeSlides.Count > 0)
+            // Slide：由**发起它的那根手指**维持（PJSK 语义）——别的指头按着不算数、
+            // 它一路跨轨移动也不中断；它松开的瞬间在尾巴时刻结算。
+            // 键盘/鼠标没有手指身份（fingerId < 0）时退回"任意键维持"的旧行为。
+            if (activeSlides.Count > 0)
+            {
+                for (int i = activeSlides.Count - 1; i >= 0; i--)
                 {
-                    for (int i = 0; i < activeSlides.Count; i++)
+                    Note slide = activeSlides[i];
+                    if (slide == null || !slide.IsHolding)
                     {
-                        Note slide = activeSlides[i];
-                        if (slide == null || !slide.IsHolding) continue; // 防双判（兜底清扫已判过）
-                        float endTime = slide.Data.time + slide.Data.duration;
-                        ApplyHoldRelease(slide, songTime - endTime, slide.Data.lane);
+                        if (slide != null) slideFinger.Remove(slide);
+                        activeSlides.RemoveAt(i);
+                        continue;
                     }
-                    activeSlides.Clear();
+
+                    int owner = slideFinger.TryGetValue(slide, out int f) ? f : -1;
+                    bool maintained = owner >= 0
+                        ? (InputManager.Instance != null && InputManager.Instance.IsFingerHeld(owner))
+                        : anyHeld;
+                    if (maintained) continue;
+
+                    float endTime = slide.Data.time + slide.Data.duration;
+                    ApplyHoldRelease(slide, songTime - endTime, slide.Data.lane);
+                    slideFinger.Remove(slide);
+                    activeSlides.RemoveAt(i);
                 }
             }
         }
@@ -254,7 +271,9 @@ namespace FallenAngel.Gameplay
             int count = Mathf.Max(1, LaneLayout.ActiveLaneCount);
             laneHoldStartTime = new float[count];
             laneHoldLongId = new int[count];
-            for (int i = 0; i < count; i++) laneHoldLongId[i] = -1;
+            laneHoldFingerId = new int[count];
+            for (int i = 0; i < count; i++) { laneHoldLongId[i] = -1; laneHoldFingerId[i] = -1; }
+            slideFinger.Clear();
             activeWideHold = null;
             activeSlides.Clear();
             slideSegmentBroken.Clear();
@@ -276,7 +295,7 @@ namespace FallenAngel.Gameplay
             if (e.isPressed)
                 HandlePress(e.laneIndex, e.swipeY, e.swipeKnown, e.musicTime, e.fingerId);
             else
-                HandleRelease(e.laneIndex, e.musicTime);
+                HandleRelease(e.laneIndex, e.musicTime, e.fingerId);
         }
 
         /// <summary>
@@ -418,23 +437,29 @@ namespace FallenAngel.Gameplay
                 {
                     laneHoldStartTime[lane] = songTime;
                     laneHoldLongId[lane] = note.Data.longNoteId;
+                    laneHoldFingerId[lane] = fingerId;
                 }
             }
 
             // Slide 头部命中进入按住：登记到活动列表，由 Update 全松统一释放
             // （跨轨拖动不中断，见 Update 释放块）
             if (note.Data.type == NoteType.Slide && !activeSlides.Contains(note))
+            {
                 activeSlides.Add(note);
+                slideFinger[note] = fingerId;
+            }
         }
 
-        private void HandleRelease(int lane, float musicTime = -1f)
+        private void HandleRelease(int lane, float musicTime = -1f, int fingerId = -1)
         {
             // 释放时刻同样按事件时间戳算（长按尾判定 20ms 量级，差一帧就是档位差）
             float songTime = musicTime >= 0f ? musicTime : GameManager.Instance.SongTime;
 
-            // 检查是否是长按的释放
+            // 检查是否是长按的释放：只有**发起它的那根手指**松开才算释放
+            // （同轨两指交替时，另一根指头抬起不该把长按判掉）
             int longId = laneHoldLongId[lane];
-            if (longId >= 0 && NoteSpawner.Instance != null)
+            bool fingerMatches = fingerId < 0 || laneHoldFingerId[lane] < 0 || laneHoldFingerId[lane] == fingerId;
+            if (longId >= 0 && fingerMatches && NoteSpawner.Instance != null)
             {
                 Note longHead = NoteSpawner.Instance.GetLongNoteHead(longId);
                 if (longHead != null && longHead.IsHolding)
@@ -444,6 +469,7 @@ namespace FallenAngel.Gameplay
                     ApplyHoldRelease(longHead, songTime - longEndTime, lane);
                 }
                 laneHoldLongId[lane] = -1;
+                laneHoldFingerId[lane] = -1;
             }
             // Slide 头部不在此释放：由任意键维持、全部松开时才结束（见 Update 释放块）。
             // 修复：此前挂在单轨释放事件上——触屏跨轨拖动（输入层先松旧轨再按新轨）
