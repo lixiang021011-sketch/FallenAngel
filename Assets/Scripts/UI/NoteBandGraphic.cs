@@ -39,6 +39,11 @@ namespace FallenAngel.UI
         public Color bottomColor = new Color(1f, 1f, 1f, 0.9f);
         public Color topColor = new Color(1f, 1f, 1f, 0.18f);
 
+        [Header("重建节流")]
+        [Tooltip("音符位置变化超过这个像素数才重算网格（带子宽度按画布高度取值）。" +
+                 "4px 在 1080 宽下折合宽度误差 <0.3px，肉眼不可见，但能省掉绝大部分每帧重算。")]
+        [SerializeField] private float rebuildMoveThreshold = 4f;
+
         /// <summary>采样点：x/y 为画布单位（相对音符中心），t 是颜色参数（0 近端 → 1 远端）</summary>
         private struct BandSample
         {
@@ -94,9 +99,14 @@ namespace FallenAngel.UI
             if (rectTransform == null) return;
             float originX, originY, scale;
             ReadCanvasMapping(out originX, out originY, out scale);
-            if (Mathf.Approximately(originX, builtOriginX) &&
-                Mathf.Approximately(originY, builtOriginY) &&
-                Mathf.Approximately(scale, builtScale)) return;
+            // 首次尚未生成过网格（built* 是 NaN）→ 必须重建
+            if (float.IsNaN(builtScale)) { SetVerticesDirty(); return; }
+
+            // 缩放变了（透视/命中特效）必须马上重算；纯位移则量化到 rebuildMoveThreshold 再重算。
+            bool scaleChanged = !Mathf.Approximately(scale, builtScale);
+            bool moved = Mathf.Abs(originY - builtOriginY) > rebuildMoveThreshold
+                      || Mathf.Abs(originX - builtOriginX) > rebuildMoveThreshold;
+            if (!scaleChanged && !moved) return;
             SetVerticesDirty();
         }
 

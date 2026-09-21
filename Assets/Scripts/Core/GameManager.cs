@@ -76,7 +76,11 @@ namespace FallenAngel.Core
             DontDestroyOnLoad(gameObject);
             CurrentState = GameState.Menu;
             // 适配高刷新率屏（120Hz 跑满；60Hz 屏自动锁 60，不产生副作用）
-            Application.targetFrameRate = 120;
+            // 帧率策略：跟随屏幕刷新率（下限 60、上限 120）并关掉 vSync，让 targetFrameRate 真正生效。
+            // 真机 120Hz 屏 + 中端 SoC 吃不满 120 时，硬拉 120 只会更烫、更抖，所以取"屏幕刷新率"为准。
+            QualitySettings.vSyncCount = 0;
+            int screenRefresh = (int)Mathf.Max(60f, Screen.currentResolution.refreshRate);
+            Application.targetFrameRate = Mathf.Clamp(screenRefresh, 60, 120);
         }
 
         /// <summary>
