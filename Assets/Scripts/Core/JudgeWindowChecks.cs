@@ -147,16 +147,19 @@ namespace FallenAngel.Core
                 string.Format("1.5×：Flick.badAfter={0:0.###}、HoldEnd.badBefore={1:0.###}、Normal.perfect={2:0.###}",
                     scaledFlick.badAfter, scaledHoldEnd.badBefore, scaled.perfectWindow));
 
-            // ⑥ 长按尾走**有效**窗口（回归：此前 JudgeLongRelease 读 JudgeWindows.Default，modifier 不生效）
-            float releaseDiff = 0.250f;   // 基础口径 0.20 之外、1.5× 之后的 0.30 之内
+            // ⑥ 长按尾走**有效**窗口（回归：此前 JudgeLongRelease 读死表，modifier 不生效）
+            // 数值口径已换成移植层的 Long_End 行（Perfect 3.5/4 帧、Great 6.5/8、Good/Bad 7.5/8.5 帧）：
+            // 晚 100ms 基础=Great；150ms 基础=Miss、1.5× 放宽=Great。
+            float releaseDiff = 0.150f;
             PlayRules.ResetModifiers();
             JudgeResultType atBase = JudgeLongReleaseResult(releaseDiff);
             PlayRules.SetModifierState(1.5f, true, true);
             JudgeResultType atScaled = JudgeLongReleaseResult(releaseDiff);
             PlayRules.ResetModifiers();
             check("长按尾吃 modifier",
-                atBase == JudgeResultType.Miss && atScaled == JudgeResultType.Good,
-                string.Format("释放偏差 250ms：基础口径={0}、1.5× 后={1}（长按至少按到 Good）", atBase, atScaled));
+                atBase == JudgeResultType.Miss && atScaled == JudgeResultType.Great,
+                string.Format("释放偏差 150ms：基础口径={0}、1.5× 后={1}（移植层 Long_End 行：后 8 帧=133ms）",
+                    atBase, atScaled));
 
             // ⑦ 退化行回退对称口径（防序列化丢表导致判定全 Miss）
             var broken = new JudgeWindows();

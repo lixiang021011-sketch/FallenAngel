@@ -9,12 +9,19 @@ using NoteObjectPool = FallenAngel.Compat.SimpleObjectPool<FallenAngel.Gameplay.
 #endif
 using FallenAngel.Data;
 using FallenAngel.Core;
+using FallenAngel.Live;
+// 同上：谱面 NoteType 优先（判定簇的同名枚举只在 Core/Live 内部使用）
+using NoteType = FallenAngel.Data.NoteType;
 
 namespace FallenAngel.Gameplay
 {
     /// <summary>
-    /// 音符生成器 - 管理音符的创建、回收、下落更新
-    /// 使用对象池复用音符以减少GC
+    /// 音符生成器 —— **纯视图**。判定规则不在这里（见 Core/Live 判定簇 + JudgeManager 薄壳）；
+    /// 本类只负责：按谱面时刻生成音符对象（对象池）、每帧更新位置、在判定层给出结果后播放反馈并回收。
+    ///
+    /// 与判定层的接口：<see cref="FindViewNote"/>（判定音符 → 视图音符，判定结果落 FX 用）、
+    /// <see cref="RegisterViewNote"/>（生成视图时登记）。判定音符由 JudgeManager 在建谱时按同一谱面顺序生成，
+    /// 这里按 NoteData 取回对应关系。
     /// </summary>
     public class NoteSpawner : MonoBehaviour
     {
@@ -47,6 +54,8 @@ namespace FallenAngel.Gameplay
         private List<Note> activeNotes = new List<Note>();
         // 按音轨和ID索引的音符字典（用于快速查找长按匹配）
         private Dictionary<int, Note> activeLongNotesById = new Dictionary<int, Note>();
+        // 判定音符 → 视图音符（判定结果落 FX 用）
+        private readonly Dictionary<LiveNoteBase, Note> viewByLive = new Dictionary<LiveNoteBase, Note>();
 
         // 对象池（兼容型：Unity 2021+ 用官方，否则回退）
         private NoteObjectPool notePool;
@@ -55,11 +64,11 @@ namespace FallenAngel.Gameplay
         private int nextNoteIndex;
         private bool isPlaying;
 
-        // 自动Miss阈值（音符过判定窗口多久后强制Miss，开局计算一次，避免热路径每帧分配）
-        private float missThreshold;
-
         /// <summary>同刻判定容差（秒）：与规则引擎 chord_split 的 ±1ms 同刻分组对齐</summary>
         private const float SimultaneousLinkTolerance = 0.0015f;
+
+        /// <summary>判定层给出结果后，视图最多再留多久（FX 兜底回收；正常路径是 FX 自己隐藏）</summary>
+        private const float JudgeKeepSeconds = 1.2f;
 
         public float JudgeLineY => judgeLineY;
         public float SpawnY => spawnY;
@@ -100,18 +109,8 @@ namespace FallenAngel.Gameplay
 
             InitializePool();
 
-            RefreshMissThreshold();
             // 登记演奏几何：轨道透视（PerspectiveLaneGraphic）与音符共用同一组 spawn/judge Y
             PlayPerspective.SetGeometry(spawnY, judgeLineY);
-        }
-
-        /// <summary>
-        /// 自动 Miss 阈值随局内 modifier 的判定窗口走（基础值 + 修改器，见 docs/architecture.md §9）。
-        /// 每帧刷新成本只是几个浮点运算，换来"窗口放宽时自动 Miss 同步放宽"。
-        /// </summary>
-        private void RefreshMissThreshold()
-        {
-            missThreshold = PlayRules.Windows.badWindow + 0.1f;
         }
 
         /// <summary>
@@ -292,10 +291,12 @@ namespace FallenAngel.Gameplay
         {
             for (int i = activeNotes.Count - 1; i >= 0; i--)
             {
+                UnlinkView(activeNotes[i]);
                 ReleaseNote(activeNotes[i]);
             }
             activeNotes.Clear();
             activeLongNotesById.Clear();
+            viewByLive.Clear();
             nextNoteIndex = 0;
         }
 
@@ -303,8 +304,6 @@ namespace FallenAngel.Gameplay
         {
             if (!isPlaying || GameManager.Instance == null) return;
             if (GameManager.Instance.CurrentState != GameState.Playing) return;
-
-            RefreshMissThreshold();   // 判定窗口可能被 modifier 改了，自动 Miss 阈值要跟着走
 
             float songTime = GameManager.Instance.SongTime;
             float fallTime = GameManager.Instance.ActualFallTime;
@@ -315,8 +314,8 @@ namespace FallenAngel.Gameplay
             // 2. 更新所有活动音符位置
             UpdateAllNotePositions(songTime);
 
-            // 3. 回收超出判定窗口太久的Miss音符
-            CleanupMissedNotes(songTime);
+            // 3. 回收：判定层已给出结果 / 特效播完隐藏 / 长按跟随结束
+            CleanupFinishedNotes(songTime);
         }
 
         /// <summary>
@@ -352,11 +351,18 @@ namespace FallenAngel.Gameplay
             Vector2 spawnPos = new Vector2(x, spawnY);
             Vector2 judgePos = new Vector2(x, judgeLineY);
 
+            // 判定音符（长按尾/身体条目返回 null：它们共用头的判定）
+            LiveNoteBase live = JudgeManager.Instance != null
+                ? JudgeManager.Instance.LiveNoteFor(data)
+                : null;
+
             // 每个音符随机取一版配色（LaneColors.NoteMode 决定策略）
             note.Palette = LaneColors.PickNotePalette(data.lane, data.time);
-            note.Initialize(data, spawnPos, judgePos);
+            note.Initialize(data, live, spawnPos, judgePos);
 
-            // 宽音符视觉：横跨全键的全宽横条（任意键触发，见 JudgeManager 宽音符轮询）。
+            if (live != null) viewByLive[live] = note;
+
+            // 宽音符视觉：横跨全键的全宽横条（判定上就是"跨度铺满所有轨道"的音符）
             // 4 键鼓谱 lane 0（历史 kick 语义）或 v2 wide 标记（任意轨道）
             bool isDrumChart = GameManager.Instance != null && GameManager.Instance.CurrentChart != null &&
                                GameManager.Instance.CurrentChart.LaneCount == 4;
@@ -381,7 +387,7 @@ namespace FallenAngel.Gameplay
 
             activeNotes.Add(note);
 
-            // 长按音符加入字典
+            // 长按音符加入字典（长按尾/身体的视图跟随头部）
             if (data.type == NoteType.LongStart && data.longNoteId >= 0)
             {
                 activeLongNotesById[data.longNoteId] = note;
@@ -440,220 +446,94 @@ namespace FallenAngel.Gameplay
             }
         }
 
-        private void CleanupMissedNotes(float songTime)
+        /// <summary>
+        /// 回收视图对象。判定层已经在移植层里判完（含自动 Miss），这里只按"视图是否还需要"回收：
+        /// ① 特效播完隐藏的 → 回池；② 判定层已收尾且没有特效在播（如 drag 静默过窗）→ 回池；
+        /// ③ 长按尾/身体：头部不再按住 → 回池（跟随头部生命周期）。
+        /// </summary>
+        private void CleanupFinishedNotes(float songTime)
         {
             for (int i = activeNotes.Count - 1; i >= 0; i--)
             {
                 Note note = activeNotes[i];
-
-                // 长按尾/身体不独立判定：跟随头部生命周期。
-                // 头部结束（释放判定完成）后静默回收，不产生任何判定事件。
-                // 修复：此前 LongEnd 会被自动Miss——正确完成的长按也会凭空蹦出 MISS、
-                // 断连击、计 Miss 数，曲终无音符时也会跳 MISS。
-                // 修复2：此前回收标记时会一并删除字典条目——标记在头部按下前就被
-                // 回收（headHolding=false 是按下前的常态），导致释放时
-                // GetLongNoteHead 查不到头、释放链断裂，命中头永久堆积在判定线。
-                // 字典条目只由头部自身的清理路径删除（自动Miss/动画结束两处）。
-                if (note.Data.type == NoteType.LongEnd || note.Data.type == NoteType.LongBody)
+                if (note == null)
                 {
-                    bool headHolding = note.Data.longNoteId >= 0
-                        && activeLongNotesById.TryGetValue(note.Data.longNoteId, out Note head)
+                    activeNotes.RemoveAt(i);
+                    continue;
+                }
+
+                NoteData data = note.Data;
+                bool bookkeeping = data != null && (data.type == NoteType.LongEnd || data.type == NoteType.LongBody);
+                if (bookkeeping)
+                {
+                    bool headHolding = data.longNoteId >= 0
+                        && activeLongNotesById.TryGetValue(data.longNoteId, out Note head)
                         && head != null && head.IsHolding;
                     if (!headHolding)
                     {
-                        ReleaseNote(note);
-                        activeNotes.RemoveAt(i);
+                        ReleaseView(note, i);
                     }
                     continue;
                 }
 
-                // Drag：过窗静默回收（碰即 Perfect、永不 MISS 语义——不计 Miss、不发事件、不断连击）
-                if (note.Data.type == NoteType.Drag)
+                if (!note.gameObject.activeSelf && !note.FxPlaying)
                 {
-                    if (!note.IsJudged && songTime - note.Data.time > missThreshold)
-                    {
-                        ReleaseNote(note);
-                        activeNotes.RemoveAt(i);
-                    }
+                    ReleaseView(note, i);
                     continue;
                 }
 
-                // 超窗自动 Miss：普通音符与"未按住的头部"（LongStart/Slide）。
-                // 修复：此前 LongStart 无论是否按住都永不自动 Miss——漏按/按晚的
-                // hold 头永久停在判定线堆积；现在仅"按住中"的头部才豁免
-                // （提前松手由输入事件判定），未按住的超窗走自动 Miss。
-                bool isHoldHead = note.Data.type == NoteType.LongStart || note.Data.type == NoteType.Slide;
-                if (!note.IsJudged || (isHoldHead && note.IsHolding))
+                // 判定层已收尾且没有特效在播（例：drag 协议内静默过窗）→ 直接回池
+                if (note.Live != null && note.Live.State == NoteState.Done && !note.FxPlaying)
                 {
-                    bool heldHoldHead = isHoldHead && note.IsHolding;
-
-                    // 兜底清扫：按住态但轨道早已松开、且已过结束时间+窗口
-                    // （判定链断开的残留头），按 Miss 释放防堆积。
-                    // 宽长按与 Slide 均由"任意键"维持（触屏跨轨拖动会切换轨道，
-                    // 按单轨判断会误断），按任意键状态判断是否仍按住。
-                    bool isWideNote = note.Data.wide ||
-                        (GameManager.Instance != null && GameManager.Instance.CurrentChart != null &&
-                         GameManager.Instance.CurrentChart.LaneCount == 4 && note.Data.lane == 0);
-                    bool isSlideNote = note.Data.type == NoteType.Slide;
-                    bool stillHeld = (isWideNote || isSlideNote) ? AnyLaneHeld() : IsLaneHeld(note.Data.lane);
-                    if (heldHoldHead && !stillHeld &&
-                        songTime > note.Data.time + note.Data.duration + missThreshold)
-                    {
-                        if (JudgeManager.Instance != null)
-                            JudgeManager.Instance.HandleAutoMiss(note);
-                        note.JudgeMiss();
-                        if (note.Data.longNoteId >= 0)
-                            activeLongNotesById.Remove(note.Data.longNoteId);
-                        ReleaseNote(note);
-                        activeNotes.RemoveAt(i);
-                        continue;
-                    }
-
-                    if (!heldHoldHead)
-                    {
-                        float timeDiff = songTime - note.Data.time;
-                        if (timeDiff > missThreshold)
-                        {
-                            // 通知JudgeManager
-                            if (JudgeManager.Instance != null)
-                                JudgeManager.Instance.HandleAutoMiss(note);
-
-                            note.JudgeMiss();
-                            if (note.Data.longNoteId >= 0)
-                                activeLongNotesById.Remove(note.Data.longNoteId);
-                            ReleaseNote(note);
-                            activeNotes.RemoveAt(i);
-                        }
-                    }
-                    // 按住中的头部（LongStart/Slide）：提前松手由输入事件判定
+                    ReleaseView(note, i);
+                    continue;
                 }
-                else if (!note.gameObject.activeSelf)
+
+                // 兜底：判定层已收尾很久仍未消失（异常路径）→ 强制回收，避免堆积
+                if (note.Live != null && note.Live.State == NoteState.Done &&
+                    songTime - note.JudgedAtSongTime > JudgeKeepSeconds)
                 {
-                    // 已经隐藏的音符（被判定后动画结束）
-                    if (note.Data.longNoteId >= 0)
-                        activeLongNotesById.Remove(note.Data.longNoteId);
-                    ReleaseNote(note);
-                    activeNotes.RemoveAt(i);
+                    ReleaseView(note, i);
                 }
             }
         }
 
-        /// <summary>
-        /// 检查某音轨是否处于按住状态（由InputManager更新）
-        /// </summary>
-        private bool IsLaneHeld(int lane)
+        private void ReleaseView(Note note, int index)
         {
-            if (InputSystem.InputManager.Instance == null) return false;
-            return InputSystem.InputManager.Instance.LanePressStates[lane];
-        }
-
-        /// <summary>任意轨道是否按住（宽音符 kick 语义用）</summary>
-        private bool AnyLaneHeld()
-        {
-            if (InputSystem.InputManager.Instance == null) return false;
-            bool[] states = InputSystem.InputManager.Instance.LanePressStates;
-            for (int i = 0; i < states.Length; i++)
-                if (states[i]) return true;
-            return false;
-        }
-
-        /// <summary>
-        /// 获取某音轨最靠近判定线、且未被判定的音符（用于命中判定）
-        /// </summary>
-        /// <param name="lane">音轨索引</param>
-        /// <param name="includeLongEnds">是否包含长按尾部</param>
-        /// <param name="onlyType">限定类型（null=不限；kick 轮询传 Normal，避免抢判长按头）</param>
-        public Note GetClosestJudgableNote(int lane, bool includeLongEnds = true, NoteType? onlyType = null)
-        {
-            Note best = null;
-            float songTime = GameManager.Instance != null ? GameManager.Instance.SongTime : 0f;
-            float minDiff = float.MaxValue;
-
-            for (int i = 0; i < activeNotes.Count; i++)
+            UnlinkView(note);
+            if (note.Data != null && note.Data.longNoteId >= 0 &&
+                (note.Data.type == NoteType.LongStart || note.Data.type == NoteType.Slide))
             {
-                Note note = activeNotes[i];
-                if (note == null || note.Data == null) continue;
-                if (note.Data.lane != lane) continue;
-                if (onlyType.HasValue && note.Data.type != onlyType.Value) continue;
-
-                // 只处理可判定的类型
-                if (note.Data.type == NoteType.LongEnd)
-                {
-                    if (!includeLongEnds) continue;
-                    // LongEnd只有在对应LongStart处于Holding状态时才应判定
-                    if (note.Data.longNoteId >= 0 && activeLongNotesById.TryGetValue(note.Data.longNoteId, out Note head))
-                    {
-                        if (!head.IsHolding) continue;
-                    }
-                    else
-                    {
-                        continue;
-                    }
-                }
-                else if (note.Data.type == NoteType.LongBody)
-                {
-                    continue; // LongBody不可直接判定
-                }
-                else // Normal / LongStart / Drag / Flick / Slide 等可点判定类型
-                {
-                    if (note.IsJudged) continue;
-                }
-
-                float diff = Mathf.Abs(songTime - note.Data.time);
-                if (diff < minDiff)
-                {
-                    minDiff = diff;
-                    best = note;
-                }
+                activeLongNotesById.Remove(note.Data.longNoteId);
             }
-            return best;
+            ReleaseNote(note);
+            activeNotes.RemoveAt(index);
         }
 
-        /// <summary>
-        /// 获取最靠近判定线、未被判定的宽音符（kick 语义目标，JudgeManager 轮询用）：
-        /// 4K 谱 lane 0 的音符（历史 kick 语义）或 data.wide 标记的音符（v2 协议扩展）。
-        /// 仅 Normal/LongStart（长按尾/身体不独立判定；drag/flick/slide 无 kick 语义）。
-        /// </summary>
-        public Note GetClosestWideJudgableNote()
+        private void UnlinkView(Note note)
         {
-            return GetClosestWideTo(-1f, -1f);
-        }
-
-        /// <summary>
-        /// 取最靠近 targetTime 的未判定宽音符（kick 语义：4K 谱 lane 0 或 data.wide）。
-        /// targetTime &lt; 0 → 用当前歌曲时间；tolerance ≥ 0 → 只接受 |note.time − targetTime| ≤ tolerance 的候选。
-        /// 用于"伪双押"：横条与普通音符真同刻时，按 targetTime = 普通音符时刻 + 小容差 找到那条横条。
-        /// </summary>
-        public Note GetClosestWideTo(float targetTime, float tolerance)
-        {
-            bool isDrumChart = GameManager.Instance != null && GameManager.Instance.CurrentChart != null &&
-                               GameManager.Instance.CurrentChart.LaneCount == 4;
-            if (targetTime < 0f) targetTime = GameManager.Instance != null ? GameManager.Instance.SongTime : 0f;
-            Note best = null;
-            float minDiff = float.MaxValue;
-
-            for (int i = 0; i < activeNotes.Count; i++)
+            if (note == null || note.Live == null) return;
+            if (viewByLive.TryGetValue(note.Live, out Note mapped) && mapped == note)
             {
-                Note note = activeNotes[i];
-                if (note == null || note.Data == null || note.IsJudged) continue;
-                if (note.Data.type != NoteType.Normal && note.Data.type != NoteType.LongStart) continue;
-                bool isWide = note.Data.wide || (isDrumChart && note.Data.lane == 0);
-                if (!isWide) continue;
-
-                float diff = Mathf.Abs(targetTime - note.Data.time);
-                if (tolerance >= 0f && diff > tolerance) continue;
-                if (diff < minDiff)
-                {
-                    minDiff = diff;
-                    best = note;
-                }
+                viewByLive.Remove(note.Live);
             }
-            return best;
         }
 
-        /// <summary>
-        /// 获取指定longNoteId对应的头部音符
-        /// </summary>
+        /// <summary>判定音符 → 视图音符（判定层落判定结果用）</summary>
+        public Note FindViewNote(LiveNoteBase live)
+        {
+            if (live == null) return null;
+            return viewByLive.TryGetValue(live, out Note note) ? note : null;
+        }
+
+        /// <summary>登记"判定音符 ↔ 视图音符"（视图自行生成时也可调用）</summary>
+        public void RegisterViewNote(LiveNoteBase live, Note note)
+        {
+            if (live == null || note == null) return;
+            viewByLive[live] = note;
+        }
+
+        /// <summary>获取指定longNoteId对应的头部音符</summary>
         public Note GetLongNoteHead(int longNoteId)
         {
             if (activeLongNotesById.TryGetValue(longNoteId, out Note head))
@@ -661,9 +541,7 @@ namespace FallenAngel.Gameplay
             return null;
         }
 
-        /// <summary>
-        /// 释放音符回对象池
-        /// </summary>
+        /// <summary>释放音符回对象池</summary>
         public void ReleaseNote(Note note)
         {
             if (notePool != null && note != null)
@@ -672,9 +550,7 @@ namespace FallenAngel.Gameplay
             }
         }
 
-        /// <summary>
-        /// 获取音轨X坐标（anchoredPosition，动态布局）
-        /// </summary>
+        /// <summary>获取音轨X坐标（anchoredPosition，动态布局）</summary>
         public float GetLaneX(int lane)
         {
             return LaneLayout.GetCenterXForActive(lane);

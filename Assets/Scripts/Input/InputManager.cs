@@ -97,6 +97,42 @@ namespace FallenAngel.InputSystem
             return false;
         }
 
+        /// <summary>
+        /// 取某根手指当前的屏幕坐标（判定层把它换算成"小数轨道"）。
+        /// 键盘没有坐标：按 laneHint 返回该轨中点（等价于整数轨道）。找不到返回 false。
+        /// </summary>
+        public bool TryGetFingerScreenPosition(int fingerId, int laneHint, out Vector2 screenPos)
+        {
+            if (fingerScreenPos.TryGetValue(fingerId, out screenPos)) return true;
+
+            if (laneHint >= 0)
+            {
+                int count = Mathf.Max(1, LanePressStates != null ? LanePressStates.Length : 4);
+                screenPos = new Vector2(Screen.width * (laneHint + 0.5f) / count, Screen.height * 0.3f);
+                return true;
+            }
+
+            screenPos = Vector2.zero;
+            return false;
+        }
+
+        /// <summary>屏幕坐标 → Canvas 本地坐标（与 LaneLayout / 判定轨道同一坐标系）</summary>
+        public bool TryGetCanvasPosition(Vector2 screenPos, out Vector2 canvasPos)
+        {
+            canvasPos = Vector2.zero;
+            if (canvasForLaneMapping == null)
+            {
+                canvasForLaneMapping = FindObjectOfType<Canvas>();
+                if (canvasForLaneMapping == null) return false;
+            }
+
+            RectTransform canvasRect = canvasForLaneMapping.transform as RectTransform;
+            if (canvasRect == null) return false;
+
+            return RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                canvasRect, screenPos, null, out canvasPos);
+        }
+
         // 用于跟踪触屏ID与音轨的对应关系
         private Dictionary<int, int> touchIdToLane = new Dictionary<int, int>();
         // 真实触摸事件时间戳（EnhancedTouch，装 Input System 后才有；没装则回退帧时间）
@@ -104,6 +140,8 @@ namespace FallenAngel.InputSystem
         // flick 方向判定用：每根手指上次位置 + 每轨累计纵向滑动（屏幕 y 向上为正 = 上滑）
         private Dictionary<int, Vector2> touchPrev = new Dictionary<int, Vector2>();
         private Dictionary<int, float> laneSwipeY = new Dictionary<int, float>();
+        // 每根手指最近一次的屏幕坐标（判定层算小数轨道用）
+        private readonly Dictionary<int, Vector2> fingerScreenPos = new Dictionary<int, Vector2>();
         // 上一帧的键盘按下状态
         private bool[] lastKeyStates = new bool[4];
 
@@ -297,6 +335,7 @@ namespace FallenAngel.InputSystem
                 SetLaneState(lane, true, mousePos);
                 editorMouseLane = lane;
             }
+            fingerScreenPos[-1] = mousePos;
         }
 
         /// <summary>
@@ -307,6 +346,7 @@ namespace FallenAngel.InputSystem
             if (editorMouseLane < 0) return;
             SetLaneState(editorMouseLane, false, UnityEngine.Input.mousePosition);
             editorMouseLane = -1;
+            fingerScreenPos.Remove(-1);
         }
 #endif
 
@@ -350,6 +390,7 @@ namespace FallenAngel.InputSystem
                         {
                             touchIdToLane[touchId] = lane;
                             touchPrev[touchId] = touchPos;
+                            fingerScreenPos[touchId] = touchPos;
                             laneSwipeY[lane] = 0f;                 // 新按下：该轨滑动量归零
                             SetLaneState(lane, true, touchPos, true, touchId, TouchEventTime(touchId));
                         }
@@ -357,6 +398,7 @@ namespace FallenAngel.InputSystem
 
                     case TouchPhase.Moved:
                     case TouchPhase.Stationary:
+                        fingerScreenPos[touchId] = touchPos;
                         // 累计纵向滑动（flick 方向判定用）：同一根手指跨轨时，位移记到当前轨
                         if (touchPrev.TryGetValue(touchId, out Vector2 prev))
                         {
@@ -383,6 +425,7 @@ namespace FallenAngel.InputSystem
         {
             if (!touchIdToLane.TryGetValue(touchId, out int releaseLane)) return;
             touchIdToLane.Remove(touchId);
+            fingerScreenPos.Remove(touchId);
             if (!IsLaneHeldByAnyTouch(releaseLane))
                 SetLaneState(releaseLane, false, touchPos, false, touchId);
         }
@@ -393,6 +436,7 @@ namespace FallenAngel.InputSystem
             if (touchIdToLane.Count == 0) return;
             var lanes = new HashSet<int>(touchIdToLane.Values);
             touchIdToLane.Clear();
+            fingerScreenPos.Clear();
             foreach (int lane in lanes)
             {
                 bool keyHeld = lane >= 0 && lane < lastKeyStates.Length && lastKeyStates[lane];

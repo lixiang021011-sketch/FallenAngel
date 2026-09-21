@@ -234,6 +234,15 @@ namespace FallenAngel.Live
                 true);
         }
 
+        /// <summary>
+        /// 本工程扩展（视图/自检用）：手上没有音符对象时，只按偏移换算长按尾档位（非 critical 行）。
+        /// 正式判定路径一律走 INote 重载。
+        /// </summary>
+        public static (NoteResult, NoteResultDescription) CalculateLongEndNoteResult(float offsetJudgeTime)
+        {
+            return GetJudgeResultInternal(offsetJudgeTime, JudgeFrameType.Long_End, true);
+        }
+
         public static (NoteResult, NoteResultDescription) CalculateFlickNoteResult(INote note, float time, bool isDirection)
         {
             return GetJudgeResultInternal(

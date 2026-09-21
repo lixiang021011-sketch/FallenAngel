@@ -1,71 +1,52 @@
+using System;
 using System.Collections.Generic;
-using UnityEngine;
-using FallenAngel.Data;
 using FallenAngel.Core;
+using FallenAngel.Data;
 using FallenAngel.InputSystem;
-using FallenAngel.Audio;
+using FallenAngel.Live;
+using UnityEngine;
 
 namespace FallenAngel.Gameplay
 {
     /// <summary>
-    /// 判定管理器 - 监听输入事件，执行命中判定、计分、连击
-    /// 协调 NoteSpawner、ScoreManager、AudioManager
+    /// 判定管理器 —— **薄壳**。判定规则本身全部在 <c>Assets/Scripts/Core/Live/</c>
+    /// （OpenSekai 判定簇移植）。本类只做四件事：
+    ///
+    /// 1. **接线**：开局把谱面（<see cref="NoteData"/>）喂给 <see cref="LiveNoteBuilder"/> 建成判定音符树，
+    ///    交给 <see cref="LiveScoreRuntime"/>；
+    /// 2. **输入**：每帧把 <see cref="InputManager"/> 的按下状态 + 事件时间戳 + 手指坐标
+    ///    装配成 <see cref="LiveTouch"/>（含 fingerId / musicTime / **小数轨道**），推给判定五步；
+    /// 3. **口径**：把移植层的判定结果翻译成本工程的计分/连击/HUD 事件（Keep 原有事件签名，UI 不用改）；
+    /// 4. **FallenAngel 自有规则**：滑条"跟手"（按住期间偏离判定跨度太久只断 combo、不作废整条）。
+    ///    这是本工程的产品规则，不属于移植范围，单独放在 <see cref="UpdateSlideFollow"/>。
+    ///
+    /// 计分口径（与移植前保持一致，属于本工程的计分层而非判定层）：
+    /// · 长按的**头**只做视觉与连击判断，不计分、不进判定计数；**尾**才计一首（所以一条长按 = 1 个音符）；
+    /// · 连接点 / 连击点（滑条路径点）只影响 combo；
+    /// · Drag 的判定完全走移植层（未触碰 → Miss），但按本工程协议"碰即 Perfect、永不 MISS"
+    ///   在计分层被吸收为"只做视觉、不计 Miss"。
     /// </summary>
     public class JudgeManager : MonoBehaviour
     {
         public static JudgeManager Instance { get; private set; }
 
-        [Header("判定窗口")]
+        [Header("判定窗口（基础值，局内 modifier 只改倍率，见 docs/architecture.md §9）")]
         [SerializeField] private JudgeWindows judgeWindows = new JudgeWindows();
 
-        /// <summary>有效判定窗口（基础值 × 局内 modifier 倍率）；热路径读缓存实例，不分配</summary>
-        private JudgeWindows EffectiveWindows { get { return PlayRules.Windows; } }
-
-        /// <summary>
-        /// 本帧是否已因"按下"判掉过一个音符。
-        /// 用途：一次按下只能判掉**一个**音符——此前"按下事件（轨道音符）"与"Update 轮询（横条/拖键）"
-        /// 会在同一帧各判一个，两个音符挨得近时表现为"点一次同时判两个"。
-        /// </summary>
-        // 每根手指各自记账（PJSK 语义）：一根手指的按下只封住它自己这一次，
-        // 别的按下的手指/按住中的手势不受影响。见 fingerJudgeFrame。
-        private readonly Dictionary<int, int> fingerJudgeFrame = new Dictionary<int, int>();
-
-        /// <summary>
-        /// 同刻判定容差（秒）：一次按下可以同时判掉**真同刻**的多个音符（伪双押：横条 + 普通音符）。
-        /// 只是"挨得近"（间隔超过此值）的音符仍需分别输入——两者不要混为一谈。
-        /// </summary>
-        private const float ChordPressTolerance = 0.02f;
-
-        /// <summary>标记这根手指本帧已经判掉过音符</summary>
-        private void MarkPressJudged(int fingerId)
-        {
-            fingerJudgeFrame[fingerId] = Time.frameCount;
-        }
-
-        /// <summary>这根手指本帧是否已经判掉过音符</summary>
-        private bool PressJudgedThisFrameFor(int fingerId)
-        {
-            return fingerJudgeFrame.TryGetValue(fingerId, out int frame) && frame == Time.frameCount;
-        }
-
         /// <summary>当前判定结果（供UI订阅显示）</summary>
-        public event System.Action<JudgeResultType, int> OnJudgeResult; // (result, lane)
+        public event Action<JudgeResultType, int> OnJudgeResult; // (result, lane)
 
-        /// <summary>
-        /// 判定偏差事件（秒，正=按早了，负=按晚了），供 HUD 显示"早/晚"指示（Phigros 手感参考）。
-        /// 仅非 Miss 判定触发。
-        /// </summary>
-        public event System.Action<float> OnJudgeBias;
+        /// <summary>判定偏差事件（秒，正=按早了，负=按晚了），供 HUD 显示"早/晚"指示</summary>
+        public event Action<float> OnJudgeBias;
 
         /// <summary>连击数更新事件</summary>
-        public event System.Action<int, bool> OnComboUpdate; // (combo, isFullComboNow)
+        public event Action<int, bool> OnComboUpdate; // (combo, isFullComboNow)
 
         /// <summary>分数更新事件</summary>
-        public event System.Action<int> OnScoreUpdate; // (totalScore)
+        public event Action<int> OnScoreUpdate; // (totalScore)
 
-        /// <summary>各判定计数更新</summary>
-        public event System.Action<int, int, int, int, int> OnJudgeCountsUpdate;
-        // (perfect, great, good, bad, miss)
+        /// <summary>各判定计数更新事件</summary>
+        public event Action<int, int, int, int, int> OnJudgeCountsUpdate; // (perfect, great, good, bad, miss)
 
         // 判定计数
         public int PerfectCount { get; private set; }
@@ -81,22 +62,47 @@ namespace FallenAngel.Gameplay
         /// <summary>当前总分</summary>
         public int Score { get; private set; }
 
-        // 长按按下时的开始时间（用于长按释放判定）
-        private float[] laneHoldStartTime = new float[0];
-        private int[] laneHoldLongId = new int[0];
-        // 发起长按/滑条的那根手指（PJSK 语义：手势由它维持，别的指头按着不算数）
-        private int[] laneHoldFingerId = new int[0];
-        private readonly Dictionary<Note, int> slideFinger = new Dictionary<Note, int>();
-        // 按住中的宽长按头（kick 语义：任意键维持、全松即释放；单槽位）
-        private Note activeWideHold;
-        // 按住中的 Slide 头部（任意键维持、全松即释放；跨轨拖动不中断，见 Update）
-        private readonly List<Note> activeSlides = new List<Note>();
-        // Slide 跟手：记录每个按住中的滑条"脱离路径"的累计秒数（回到容差内清零）
-        private readonly Dictionary<Note, float> slideOutOfRange = new Dictionary<Note, float>();
-        // 已经掉过段的滑条（只管 combo，不作废整条；见 Update 的跟手段）
-        private readonly HashSet<Note> slideSegmentBroken = new HashSet<Note>();
-        private const float SlideFollowToleranceLanes = 1.0f;   // 与路径当前 x 的允许偏差（轨）
+        // ── 判定簇（移植层）──
+        private LiveScoreRuntime runtime;
+        private LiveLaneResolver laneResolver;
+        private readonly Dictionary<NoteData, LiveNoteBase> liveByChartNote = new Dictionary<NoteData, LiveNoteBase>();
+        private readonly Dictionary<LiveNoteBase, NoteData> chartNoteByLive = new Dictionary<LiveNoteBase, NoteData>();
+        private readonly List<LiveNoteBase> slideNotes = new List<LiveNoteBase>();
+
+        // 本帧输入装配
+        private readonly List<LiveTouch> frameTouches = new List<LiveTouch>(12);
+        private readonly Dictionary<int, PendingInput> pendingInputs = new Dictionary<int, PendingInput>();
+        private readonly List<KeyValuePair<int, PendingInput>> extraInputs = new List<KeyValuePair<int, PendingInput>>(4);
+        private readonly Dictionary<int, Vector2> lastScreenPos = new Dictionary<int, Vector2>();
+
+        // 滑条跟手（FallenAngel 自有规则）
+        private readonly Dictionary<LiveNoteBase, float> slideOutOfRange = new Dictionary<LiveNoteBase, float>();
+        private readonly HashSet<LiveNoteBase> slideSegmentBroken = new HashSet<LiveNoteBase>();
+        private const float SlideFollowToleranceLanes = 1.0f;   // 与判定跨度中心的允许偏差（轨）
         private const float SlideBreakSeconds = 0.25f;         // 连续脱离多久算断开
+
+        private struct PendingInput
+        {
+            public LiveTouchPhase phase;
+            public float musicTime;
+            public Vector2 screenPos;
+            public bool fromTouch;
+            public int lane;
+        }
+
+        /// <summary>判定簇的谱面运行时（只读；自检/视图要按音符查状态时用）</summary>
+        public LiveScoreRuntime Runtime { get { return runtime; } }
+
+        /// <summary>
+        /// 谱面条目 → 判定音符（视图生成时登记用）。
+        /// 长按尾/身体条目返回 null：它们没有独立判定（尾巴由头的 duration 生成），视图共用头的反馈。
+        /// </summary>
+        public LiveNoteBase LiveNoteFor(NoteData data)
+        {
+            if (data == null) return null;
+            if (data.type == Data.NoteType.LongEnd || data.type == Data.NoteType.LongBody) return null;
+            return liveByChartNote.TryGetValue(data, out LiveNoteBase live) ? live : null;
+        }
 
         private void Awake()
         {
@@ -106,22 +112,27 @@ namespace FallenAngel.Gameplay
                 return;
             }
             Instance = this;
-            // 判定窗口走「基础值 + 修改器」：基础值登记给 PlayRules，局内 modifier 只改倍率，
-            // 不直接改这里的序列化字段（docs/architecture.md §9）
             PlayRules.SetBaseWindows(judgeWindows);
         }
 
         private void OnEnable()
         {
-            if (InputManager.Instance != null)
-                InputManager.Instance.OnLaneInput += HandleLaneInput;
-            if (GameManager.Instance != null)
-                GameManager.Instance.OnGameStart += ResetStats;
+            Subscribe();
         }
 
         private void Start()
         {
-            // 防止 Awake 执行顺序导致漏订阅
+            // 先退订再订阅，防止 Awake 执行顺序导致漏订/重订
+            Subscribe();
+        }
+
+        private void OnDisable()
+        {
+            Unsubscribe();
+        }
+
+        private void Subscribe()
+        {
             if (InputManager.Instance != null)
             {
                 InputManager.Instance.OnLaneInput -= HandleLaneInput;
@@ -129,135 +140,46 @@ namespace FallenAngel.Gameplay
             }
             if (GameManager.Instance != null)
             {
-                GameManager.Instance.OnGameStart -= ResetStats;
-                GameManager.Instance.OnGameStart += ResetStats;
+                GameManager.Instance.OnGameStart -= ResetScoreForNewSong;
+                GameManager.Instance.OnGameStart += ResetScoreForNewSong;
             }
         }
 
-        private void OnDisable()
+        private void Unsubscribe()
         {
             if (InputManager.Instance != null)
+            {
                 InputManager.Instance.OnLaneInput -= HandleLaneInput;
+            }
             if (GameManager.Instance != null)
-                GameManager.Instance.OnGameStart -= ResetStats;
+            {
+                GameManager.Instance.OnGameStart -= ResetScoreForNewSong;
+            }
         }
 
         private void Update()
         {
-            // 宽音符（kick 语义）轮询：4K 谱 lane 0 或 v2 谱 wide 标记的音符，
-            // 任意键触发——"按着任意键即可"语义。每帧轮询天然覆盖两种情况：
-            // ① 按下瞬间恰好到线；② 按住期间才落到线（例如长按其他轨时 kick 到达）。
-            // 宽长按头：按住任意键维持；全部键松开时按释放时刻判定。
-            // 已判定（IsJudged）的音符会被 GetClosestWideJudgableNote 跳过，不重复计分。
-            if (GameManager.Instance == null ||
-                GameManager.Instance.CurrentState != GameState.Playing) return;
-            if (NoteSpawner.Instance == null || InputManager.Instance == null) return;
-            if (GameManager.Instance.CurrentChart == null) return;
-
-            bool anyHeld = false;
-            bool[] pressStates = InputManager.Instance.LanePressStates;
-            for (int i = 0; i < pressStates.Length; i++)
-            {
-                if (pressStates[i]) { anyHeld = true; break; }
-            }
+            if (GameManager.Instance == null || GameManager.Instance.CurrentState != GameState.Playing) return;
+            if (runtime == null || runtime.Notes.Count == 0) return;
 
             float songTime = GameManager.Instance.SongTime;
+            // 局内 modifier 的判定窗口倍率（基础值 × 倍率；移植层查表时套用）
+            LiveConfig.SetJudgeTimeScale(PlayRules.JudgeWindowScale);
 
-            // 宽音符（横条）的判定已移到 HandlePress（TryJudgeWideOnPress）。
-            // 放在按下事件里，"一次按下一个音符"才成立；留在 Update 轮询会与按下事件在同一帧各判一个。
+            runtime.Update(LiveNoteBuilder.Info(songTime));
+            BuildFrameTouches(songTime);
+            runtime.Judge(frameTouches);
+            pendingInputs.Clear();
+            extraInputs.Clear();
 
-            // Drag：按住该轨穿过判定窗即 Perfect（碰即 Perfect）。
-            // 只认按下边沿时，「按住等 Drag 经过」会被 NoteSpawner 静默回收，0 分。
-            for (int lane = 0; lane < pressStates.Length; lane++)
-            {
-                if (!pressStates[lane]) continue;
-                // 这根手指本帧已经判掉过一个音符 → 它不再补刀；其它手指/按住中的手势照常
-                int holder = InputManager.Instance != null ? InputManager.Instance.FingerIdForLane(lane) : -1;
-                if (holder >= 0 && PressJudgedThisFrameFor(holder)) continue;
-                Note drag = NoteSpawner.Instance.GetClosestJudgableNote(lane, false, NoteType.Drag);
-                if (drag == null) continue;
-                float dragDiff = songTime - drag.Data.time;
-                if (EffectiveWindows.Judge(dragDiff, JudgeNoteKind.Drag) == JudgeResultType.Miss) continue;
-                ApplyJudge(drag, JudgeResultType.Perfect, lane);
-            }
+            UpdateSlideFollow(songTime);
+        }
 
-            // 宽长按 / Slide 释放：全部键松开即结束（释放时刻对结束时间判定）。
-            // Slide 跟手（pjsk 语义）：按住期间手指要停在路径当前 x 附近；
-            // 连续脱离超过 SlideBreakSeconds 才判断开（按 Miss），短暂偏离不惩罚。
-            for (int i = activeSlides.Count - 1; i >= 0; i--)
-            {
-                Note slide = activeSlides[i];
-                if (slide == null || !slide.IsHolding)
-                {
-                    if (slide != null) slideOutOfRange.Remove(slide);
-                    activeSlides.RemoveAt(i);
-                    continue;
-                }
-                float progress = Mathf.Clamp01((songTime - slide.Data.time) / Mathf.Max(.01f, slide.Data.duration));
-                float expectedX = SampleSlidePathX(slide.Data, progress);
-                bool following = false;
-                for (int lane = 0; lane < pressStates.Length; lane++)
-                {
-                    if (pressStates[lane] && Mathf.Abs(lane - expectedX) <= SlideFollowToleranceLanes)
-                    { following = true; break; }
-                }
-                if (following) { slideOutOfRange.Remove(slide); continue; }
-                // 脱离时长按**歌曲时间**累计（原先累加 Time.deltaTime）：与帧率无关，
-                // 而且自检能通过构造 SongTime 精确复现"连续脱离 N 秒"
-                if (!slideOutOfRange.TryGetValue(slide, out float leftAt)) slideOutOfRange[slide] = songTime;
-                float off = songTime - slideOutOfRange[slide];
-                if (off >= SlideBreakSeconds)
-                {
-                    // PJSK 语义：跟手断开**不作废整条滑条**——掉的是这一段的 combo，
-                    // 手指回到轨内就能继续跟；整条的成败最终由"松手时刻 vs 尾巴时刻"决定。
-                    if (slideSegmentBroken.Add(slide))
-                    {
-                        BreakCombo();
-                        Debug.Log($"[JudgeManager] Slide 掉段（偏离 {off:F2}s）lane={slide.Data.lane}：" +
-                                  "断 combo、不断整条");
-                    }
-                    slideOutOfRange.Remove(slide);   // 重置计时，给手指回到轨内的机会
-                }
-            }
-
-            // 宽长按：仍按"任意键维持"（kick 语义本来就是任意键）
-            if (!anyHeld)
-            {
-                if (activeWideHold != null && activeWideHold.IsHolding)
-                {
-                    float endTime = activeWideHold.Data.time + activeWideHold.Data.duration;
-                    ApplyHoldRelease(activeWideHold, songTime - endTime, activeWideHold.Data.lane);
-                }
-                activeWideHold = null;
-            }
-
-            // Slide：由**发起它的那根手指**维持（PJSK 语义）——别的指头按着不算数、
-            // 它一路跨轨移动也不中断；它松开的瞬间在尾巴时刻结算。
-            // 键盘/鼠标没有手指身份（fingerId < 0）时退回"任意键维持"的旧行为。
-            if (activeSlides.Count > 0)
-            {
-                for (int i = activeSlides.Count - 1; i >= 0; i--)
-                {
-                    Note slide = activeSlides[i];
-                    if (slide == null || !slide.IsHolding)
-                    {
-                        if (slide != null) slideFinger.Remove(slide);
-                        activeSlides.RemoveAt(i);
-                        continue;
-                    }
-
-                    int owner = slideFinger.TryGetValue(slide, out int f) ? f : -1;
-                    bool maintained = owner >= 0
-                        ? (InputManager.Instance != null && InputManager.Instance.IsFingerHeld(owner))
-                        : anyHeld;
-                    if (maintained) continue;
-
-                    float endTime = slide.Data.time + slide.Data.duration;
-                    ApplyHoldRelease(slide, songTime - endTime, slide.Data.lane);
-                    slideFinger.Remove(slide);
-                    activeSlides.RemoveAt(i);
-                }
-            }
+        // ── 开局：建谱 + 挂回调 ─────────────────────────────────────────
+        private void ResetScoreForNewSong()
+        {
+            ResetStats();
+            BuildScore();
         }
 
         private void ResetStats()
@@ -266,18 +188,11 @@ namespace FallenAngel.Gameplay
             Combo = 0;
             MaxCombo = 0;
             Score = 0;
-
-            // 按当前活动键数分配轨道状态（4K/5K 切换时重建）
-            int count = Mathf.Max(1, LaneLayout.ActiveLaneCount);
-            laneHoldStartTime = new float[count];
-            laneHoldLongId = new int[count];
-            laneHoldFingerId = new int[count];
-            for (int i = 0; i < count; i++) { laneHoldLongId[i] = -1; laneHoldFingerId[i] = -1; }
-            slideFinger.Clear();
-            activeWideHold = null;
-            activeSlides.Clear();
-            slideSegmentBroken.Clear();
+            pendingInputs.Clear();
+            extraInputs.Clear();
+            lastScreenPos.Clear();
             slideOutOfRange.Clear();
+            slideSegmentBroken.Clear();
 
             OnScoreUpdate?.Invoke(0);
             OnComboUpdate?.Invoke(0, true);
@@ -285,281 +200,385 @@ namespace FallenAngel.Gameplay
         }
 
         /// <summary>
-        /// 输入事件处理
+        /// 谱面 → 判定音符树 → 运行时。旋律时间统一取 SongTime，通过 MusicScoreInfo.time 传给判定簇。
+        /// </summary>
+        private void BuildScore()
+        {
+            ChartData chart = GameManager.Instance != null ? GameManager.Instance.CurrentChart : null;
+            if (chart == null || chart.notes == null)
+            {
+                runtime = null;
+                Debug.LogWarning("[JudgeManager] 谱面为空，判定簇未装配");
+                return;
+            }
+
+            int laneCount = Mathf.Max(1, chart.LaneCount);
+            laneResolver = LiveLaneResolver.CreateFromLaneLayout(PlayVisualSpec.JudgeLineY, laneCount);
+
+            var notes = LiveNoteBuilder.Build(
+                chart.notes, laneCount, LiveNoteBuilder.DefaultFlickDistancePixels, laneCount == 4);
+
+            liveByChartNote.Clear();
+            chartNoteByLive.Clear();
+            slideNotes.Clear();
+
+            var headByLongId = new Dictionary<int, LiveNoteBase>();
+            int liveIndex = 0;
+            foreach (NoteData data in chart.notes)
+            {
+                if (data == null) continue;
+                if (data.type == Data.NoteType.LongEnd || data.type == Data.NoteType.LongBody)
+                {
+                    continue;   // 长按的尾/身体只是视图条目，第二个循环里挂到头
+                }
+
+                if (liveIndex < notes.Count)
+                {
+                    var live = notes[liveIndex];
+                    liveByChartNote[data] = live;
+                    chartNoteByLive[live] = data;
+                    if (data.type == Data.NoteType.LongStart && data.longNoteId >= 0)
+                    {
+                        headByLongId[data.longNoteId] = live;
+                    }
+                    liveIndex++;
+                }
+            }
+
+            float fallTime = Mathf.Max(0.1f, GameManager.Instance.ActualFallTime);
+            runtime = new LiveScoreRuntime { NoteDisplayTimeOffset = fallTime };
+            runtime.Setup(notes);
+            runtime.JudgeCore.LaneResolver = ResolveLaneFromCanvas;
+            runtime.JudgeCore.OnUnpicked += HandleUnpicked;
+
+            foreach (NoteData data in chart.notes)
+            {
+                if (data == null) continue;
+                if (data.type == Data.NoteType.LongEnd || data.type == Data.NoteType.LongBody)
+                {
+                    if (headByLongId.TryGetValue(data.longNoteId, out var head))
+                    {
+                        liveByChartNote[data] = head;
+                        chartNoteByLive[head] = data;
+                    }
+                    continue;
+                }
+            }
+
+            // 判定回调（上游的 NoteBase 回调面）：头/尾/连接点都在这里汇总
+            foreach (var live in notes)
+            {
+                BindLiveNote(live);
+                if (live.Category == NoteCategory.Long && live.ParentNote == null)
+                {
+                    slideNotes.Add(live);   // 跟手规则用（长按与滑条同族：按住期间的有效跨度）
+                }
+            }
+
+            Debug.Log(string.Format("[JudgeManager] 判定簇装配完成：谱面 {0} 条 → 判定音符树 {1} 棵（轨道 {2}，在屏 {3:0.##}s）",
+                chart.notes.Count, notes.Count, laneCount, fallTime));
+        }
+
+        private void BindLiveNote(LiveNoteBase note)
+        {
+            if (note == null) return;
+            note.OnJudgment = HandleLiveJudgment;
+            note.OnDamage = _ => { };
+            note.OnUpdateCombo = _ => { };
+            note.OnUpdateScore = _ => { };
+        }
+
+        // ── 输入装配：InputManager → LiveTouch ─────────────────────────
+        /// <summary>
+        /// 输入事件先记账（带事件时间戳与手指坐标），Update 里统一装配成这一帧的输入表。
+        /// 为什么不在事件里直接判：移植层的判定是"每帧一次"的批处理（候选 → 归属 → 去重 → 拾取 → 应用），
+        /// 事件里判会丢掉"同一帧多指竞争"的信息。
         /// </summary>
         private void HandleLaneInput(object sender, LaneInputArgs e)
         {
-            if (GameManager.Instance == null ||
-                GameManager.Instance.CurrentState != GameState.Playing) return;
+            if (GameManager.Instance == null) return;
+            if (GameManager.Instance.CurrentState != GameState.Playing) return;
 
-            if (e.isPressed)
-                HandlePress(e.laneIndex, e.swipeY, e.swipeKnown, e.musicTime, e.fingerId);
-            else
-                HandleRelease(e.laneIndex, e.musicTime, e.fingerId);
-        }
-
-        /// <summary>
-        /// 宽键（横条）：任意键**按下**可触发，但是"一次按下一个音符"中的那一个。
-        /// 只在本次按下**没有**判到轨道音符时调用（空按 / 窗口外）。
-        /// 返回是否判掉了宽键。
-        /// </summary>
-        private bool TryJudgeWideOnPress(int fingerId)
-        {
-            if (NoteSpawner.Instance == null || GameManager.Instance == null) return false;
-            Note wide = NoteSpawner.Instance.GetClosestWideJudgableNote();
-            if (wide == null) return false;
-
-            float timeDiff = GameManager.Instance.SongTime - wide.Data.time;
-            JudgeResultType result = EffectiveWindows.Judge(timeDiff, JudgeNoteKind.Wide);
-            if (result == JudgeResultType.Miss) return false;   // 窗口外：交给 auto-miss，不误判
-
-            if (wide.Data.type == NoteType.LongStart)
+            var pending = new PendingInput
             {
-                // 宽长按头：已有按住中的宽长按时不抢占（单槽位，防重叠宽长按互相覆盖）
-                if (activeWideHold != null) return false;
-                ApplyJudge(wide, result, wide.Data.lane);
-                activeWideHold = wide;
-            }
-            else
+                phase = e.isPressed ? LiveTouchPhase.Began : LiveTouchPhase.Ended,
+                musicTime = e.musicTime,
+                screenPos = e.touchPos,
+                fromTouch = e.swipeKnown,
+                lane = e.laneIndex
+            };
+
+            // 同一帧内"按下又抬起"（极短点按）：两条都得发，否则这次点按整条丢掉
+            if (pendingInputs.TryGetValue(e.fingerId, out PendingInput existing)
+                && existing.phase == LiveTouchPhase.Began && !e.isPressed)
             {
-                ApplyJudge(wide, result, wide.Data.lane);   // Normal 宽音符（kick 单击）
-            }
-            MarkPressJudged(fingerId);
-            return true;
-        }
-
-        /// <summary>
-        /// 伪双押：把与 judgedTime **同刻**（±ChordPressTolerance）的横条一并判掉。
-        /// 只在本次按下已经判掉一个轨道音符之后调用——"一次按下一个"针对的是**不同时刻**的音符，
-        /// 同刻的横条本来就该被这一次按下覆盖（kick 语义：任意键触发）。
-        /// </summary>
-        private int JudgeCoincidentWide(float judgedTime)
-        {
-            if (NoteSpawner.Instance == null || GameManager.Instance == null) return 0;
-            int judged = 0;
-            for (int guard = 0; guard < 4; guard++)
-            {
-                Note wide = NoteSpawner.Instance.GetClosestWideTo(judgedTime, ChordPressTolerance);
-                if (wide == null) break;
-
-                float timeDiff = GameManager.Instance.SongTime - wide.Data.time;
-                JudgeResultType result = EffectiveWindows.Judge(timeDiff, JudgeNoteKind.Wide);
-                if (result == JudgeResultType.Miss) break;   // 同刻但已过窗（极端情况）：不误判
-
-                if (wide.Data.type == NoteType.LongStart)
-                {
-                    if (activeWideHold != null) break;
-                    ApplyJudge(wide, result, wide.Data.lane);
-                    activeWideHold = wide;
-                }
-                else
-                {
-                    ApplyJudge(wide, result, wide.Data.lane);
-                }
-                judged++;
-            }
-            return judged;
-        }
-
-        private void HandlePress(int lane, float swipeY = 0f, bool swipeKnown = false, float musicTime = -1f,
-                                 int fingerId = -1)
-        {
-            if (NoteSpawner.Instance == null)
-            {
-                Debug.LogWarning("[JudgeManager] NoteSpawner.Instance is null!");
-                return;
-            }
-            // 判定时刻 = 输入事件自己的时刻（时间戳管线见 InputManager.LaneInputArgs.musicTime）：
-            // 引擎晚读到的触摸要按它真实发生的时刻判；没有时间戳的调用者回退到本帧 SongTime。
-            float songTime = musicTime >= 0f ? musicTime : GameManager.Instance.SongTime;
-
-            Note note = NoteSpawner.Instance.GetClosestJudgableNote(lane, false);
-
-            if (note == null)
-            {
-                // 没找到音符 — 空按
-#if UNITY_EDITOR
-                Debug.Log($"[JudgeManager] Press lane={lane} songTime={songTime:F2} -> No note found (air press)");
-#endif
-                TryJudgeWideOnPress(fingerId);   // 该轨没有音符：这次按下可以给横条
+                extraInputs.Add(new KeyValuePair<int, PendingInput>(e.fingerId, pending));
                 return;
             }
 
-            float timeDiff = songTime - note.Data.time;
-            JudgeResultType result = EffectiveWindows.Judge(timeDiff, JudgeWindowTable.KindOf(note.Data, IsWideNote(note)));
-
-#if UNITY_EDITOR
-            Debug.Log($"[JudgeManager] Press lane={lane} songTime={songTime:F2} noteTime={note.Data.time:F2} diff={timeDiff:F3} result={result}");
-#endif
-
-            if (result == JudgeResultType.Miss)
-            {
-                // 太远不判定（空按）；drag 音符保留等后续按（永不 MISS 语义）
-                TryJudgeWideOnPress(fingerId);   // 轨道音符在窗口外：这次按下可以给横条
-                return;
-            }
-
-            // Drag：窗口内碰到即强制 Perfect（碰即 Perfect 语义）
-            if (note.Data.type == NoteType.Drag)
-                result = JudgeResultType.Perfect;
-
-            // Flick：触屏要有方向正确的滑动才判（上下真方向判定）；
-            // 幅度不足或方向错误 → 本次不判定，留给后续正确的滑动，超时由清扫按 Miss 处理。
-            // 键盘/编辑器鼠标没有滑动向量（swipeKnown=false）→ 放宽为单击，保证 PC 可玩。
-            if (note.Data.type == NoteType.Flick && swipeKnown)
-            {
-                float minSwipe = Mathf.Max(18f, Screen.height * .012f);
-                bool up = swipeY > 0f;
-                bool wantUp = note.Data.direction == FlickDirection.Up;
-                if (Mathf.Abs(swipeY) < minSwipe || up != wantUp)
-                {
-#if UNITY_EDITOR
-                    Debug.Log($"[JudgeManager] Flick 方向不符：swipe={swipeY:F1}px 需要{(wantUp ? "上" : "下")}滑");
-#endif
-                    return;
-                }
-            }
-
-            // 命中
-            ApplyJudge(note, result, lane);
-            MarkPressJudged(fingerId);
-            JudgeCoincidentWide(note.Data.time);   // 伪双押：同刻的横条一起判掉
-
-            // 长按：普通轨跟单轨松开；宽键/kick 跟 Slide 一样由任意键维持
-            if (note.Data.type == NoteType.LongStart)
-            {
-                if (IsWideNote(note))
-                {
-                    if (activeWideHold == null)
-                        activeWideHold = note;
-                }
-                else
-                {
-                    laneHoldStartTime[lane] = songTime;
-                    laneHoldLongId[lane] = note.Data.longNoteId;
-                    laneHoldFingerId[lane] = fingerId;
-                }
-            }
-
-            // Slide 头部命中进入按住：登记到活动列表，由 Update 全松统一释放
-            // （跨轨拖动不中断，见 Update 释放块）
-            if (note.Data.type == NoteType.Slide && !activeSlides.Contains(note))
-            {
-                activeSlides.Add(note);
-                slideFinger[note] = fingerId;
-            }
+            pendingInputs[e.fingerId] = pending;
         }
 
-        private void HandleRelease(int lane, float musicTime = -1f, int fingerId = -1)
+        private void BuildFrameTouches(float songTime)
         {
-            // 释放时刻同样按事件时间戳算（长按尾判定 20ms 量级，差一帧就是档位差）
-            float songTime = musicTime >= 0f ? musicTime : GameManager.Instance.SongTime;
+            frameTouches.Clear();
+            var input = InputManager.Instance;
+            if (input == null) return;
 
-            // 检查是否是长按的释放：只有**发起它的那根手指**松开才算释放
-            // （同轨两指交替时，另一根指头抬起不该把长按判掉）
-            int longId = laneHoldLongId[lane];
-            bool fingerMatches = fingerId < 0 || laneHoldFingerId[lane] < 0 || laneHoldFingerId[lane] == fingerId;
-            if (longId >= 0 && fingerMatches && NoteSpawner.Instance != null)
+            foreach (var pair in pendingInputs)
             {
-                Note longHead = NoteSpawner.Instance.GetLongNoteHead(longId);
-                if (longHead != null && longHead.IsHolding)
-                {
-                    // 释放时间点 vs LongEnd的时间点
-                    float longEndTime = longHead.Data.time + longHead.Data.duration;
-                    ApplyHoldRelease(longHead, songTime - longEndTime, lane);
-                }
-                laneHoldLongId[lane] = -1;
-                laneHoldFingerId[lane] = -1;
+                frameTouches.Add(MakeTouch(pair.Key, pair.Value.lane, pair.Value.phase, pair.Value.musicTime,
+                    pair.Value.screenPos, pair.Value.fromTouch, songTime));
             }
-            // Slide 头部不在此释放：由任意键维持、全部松开时才结束（见 Update 释放块）。
-            // 修复：此前挂在单轨释放事件上——触屏跨轨拖动（输入层先松旧轨再按新轨）
-            // 会立即释放 Slide，跨行即中断。
+            // 同帧的"按下 → 抬起"补发（顺序在按下之后，移植层才会先判头、再判尾）
+            for (int i = 0; i < extraInputs.Count; i++)
+            {
+                var extra = extraInputs[i];
+                frameTouches.Add(MakeTouch(extra.Key, extra.Value.lane, extra.Value.phase, extra.Value.musicTime,
+                    extra.Value.screenPos, extra.Value.fromTouch, songTime));
+            }
+
+            // 仍按住、且本帧没有事件的轨道 → 持续输入（移植层靠这些帧维持长按/摩擦的"按住中"）
+            bool[] press = input.LanePressStates;
+            if (press == null) return;
+            for (int lane = 0; lane < press.Length; lane++)
+            {
+                if (!press[lane]) continue;
+                int finger = input.FingerIdForLane(lane);
+                if (pendingInputs.ContainsKey(finger)) continue;
+
+                input.TryGetFingerScreenPosition(finger, lane, out Vector2 pos);
+                frameTouches.Add(MakeTouch(finger, lane, LiveTouchPhase.Stationary, songTime, pos, false, songTime));
+            }
         }
 
-        /// <summary>
-        /// 长按/Slide 释放判定：尾部才计分（头部不计分，见 ApplyJudge 门控），
-        /// 计分/计数/事件与长按释放语义一致。
-        /// </summary>
-        private void ApplyHoldRelease(Note head, float releaseDiff, int lane)
+        private LiveTouch MakeTouch(int fingerId, int lane, LiveTouchPhase phase, float musicTime,
+            Vector2 screenPos, bool fromTouch, float songTime)
         {
-            JudgeResultType releaseResult = head.JudgeLongRelease(releaseDiff);
-            GameManager.Instance?.Portfolio?.ReportJudge(head.Data, releaseResult);
+            // touchId：触屏用 fingerId（InputManager 的 fingerId 就是 touchId）；键盘/鼠标每轨一个合成 id
+            int touchId = fingerId >= 0 ? fingerId : -(lane + 1) * 100 - 7;
 
-            // 计数
-            if (releaseResult == JudgeResultType.Miss)
+            // 小数轨道：触屏按手指坐标解析（含"判定线上方不算"的闸门）；键盘/鼠标退化为整数轨道
+            float laneCoord = lane;
+            if (fromTouch && InputManager.Instance != null &&
+                InputManager.Instance.TryGetCanvasPosition(screenPos, out Vector2 canvasPos))
             {
-                ProcessMiss(lane);
+                float resolved = laneResolver != null
+                    ? laneResolver.Resolve(new Vector3(canvasPos.x, canvasPos.y, 0f), true)
+                    : -1f;
+                laneCoord = resolved;   // <0 = 判定区之外（移植层会拒绝这次输入）
             }
-            else
+
+            Vector2 delta = Vector2.zero;
+            if (lastScreenPos.TryGetValue(touchId, out Vector2 previous))
             {
-                if (JudgeWindows.BreaksCombo(releaseResult))
-                    BreakCombo();
-                else
-                    AddScoreAndCombo(JudgeWindows.GetScore(releaseResult, true));
-                AddJudgeCount(releaseResult);
-                OnJudgeResult?.Invoke(releaseResult, lane);
-                OnJudgeBias?.Invoke(-releaseDiff); // 正=早，负=晚
-                PlayAudioJudge(releaseResult);
+                delta = screenPos - previous;
             }
+            lastScreenPos[touchId] = screenPos;
+            if (phase == LiveTouchPhase.Ended || phase == LiveTouchPhase.Canceled)
+            {
+                lastScreenPos.Remove(touchId);
+            }
+
+            return new LiveTouch(fingerId, touchId, delta, new Vector3(laneCoord, PlayVisualSpec.JudgeLineY, 0f),
+                phase, musicTime, laneCoord, screenPos, fromTouch);
         }
 
-        /// <summary>
-        /// 应用一次判定结果（非长按头部）
-        /// </summary>
-        private void ApplyJudge(Note note, JudgeResultType result, int lane)
+        /// <summary>左向甩键的"重新取轨道"入口（移植层 ConvertLaneBy 用得到）</summary>
+        private float ResolveLaneFromCanvas(Vector3 position, bool checkJudgmentY)
         {
-            GameManager.Instance?.Portfolio?.ReportJudge(note.Data, result);
-            note.JudgeHit(result);
-
-            if (result == JudgeResultType.Miss)
-            {
-                ProcessMiss(lane);
-                return;
-            }
-
-            // 长按/Slide 头部仅触发视觉：不计分、不进判定计数（尾部才算一首）。
-            // Good/Bad 头部仍断连击（Phigros 语义）。
-            bool isHoldHead = note.Data.type == NoteType.LongStart || note.Data.type == NoteType.Slide;
-            if (isHoldHead)
-            {
-                if (JudgeWindows.BreaksCombo(result))
-                    BreakCombo();
-            }
-            else
-            {
-                if (JudgeWindows.BreaksCombo(result))
-                    BreakCombo();
-                else
-                    AddScoreAndCombo(JudgeWindows.GetScore(result));
-                AddJudgeCount(result);
-            }
-            OnJudgeResult?.Invoke(result, lane);
-            OnJudgeBias?.Invoke(-(GameManager.Instance.SongTime - note.Data.time)); // 正=早，负=晚
-            PlayAudioJudge(result);
+            return laneResolver != null ? laneResolver.Resolve(position, checkJudgmentY) : -1f;
         }
 
+        private void HandleUnpicked(int lane, LiveTouch touch)
+        {
+            // 空按反馈（移植层 Unpicked）：留给 HUD 的按键涟漪，不参与计分
+        }
+
+        // ── 判定结果 → 计分/连击/HUD/视图 ──────────────────────────────
         /// <summary>
-        /// 处理自动Miss（音符走过未击中）。
-        /// 所有类型（含漏按的 LongStart/Slide 头）都计 Miss 并触发 HUD 事件；
-        /// 此前 LongStart 永不自动 Miss，事件被刻意抑制——现已统一。
+        /// 移植层的判定回调：音符产生结果时触发（输入判掉、过窗 Miss、长按收口都走这里）。
         /// </summary>
-        public void HandleAutoMiss(Note note)
+        private void HandleLiveJudgment(LiveNoteBase note)
         {
             if (note == null) return;
-            GameManager.Instance?.Portfolio?.ReportJudge(note.Data, JudgeResultType.Miss);
-            ProcessMiss(note.Data.lane);
-            OnJudgeResult?.Invoke(JudgeResultType.Miss, note.Data.lane);
-            PlayAudioJudge(JudgeResultType.Miss);
+
+            bool isHoldHead = note.ParentNote == null && note.Category == NoteCategory.Long;
+            bool isFriction = note.Category == NoteCategory.Friction || note.Category == NoteCategory.FrictionHide;
+            JudgeResultType result = MapResult(note);
+
+            // 本工程协议：drag（摩擦）碰即 Perfect、永不 MISS —— 判定层照上游给你结果，
+            // 计分层把它的 Miss 吸收掉（不计 Miss、不出特效，交给视图静默回收）。
+            if (isFriction && result == JudgeResultType.Miss) return;
+
+            bool counts = !isHoldHead
+                && note.Category != NoteCategory.Connection
+                && note.Category != NoteCategory.Combo;
+
+            float bias = BiasOf(note);
+            int lane = Mathf.RoundToInt((note.LaneStartF + note.LaneEndF) * 0.5f);
+            Note view = ViewOf(note);
+
+            GameManager.Instance?.Portfolio?.ReportJudge(ChartDataOf(note), result);
+
+            if (counts)
+            {
+                if (result == JudgeResultType.Miss)
+                {
+                    ProcessMiss(lane);
+                    view?.JudgeMiss();
+                    OnJudgeResult?.Invoke(result, lane);
+                    PlayAudioJudge(result);
+                    return;
+                }
+
+                if (JudgeWindows.BreaksCombo(result))
+                {
+                    BreakCombo();
+                }
+                else
+                {
+                    AddScoreAndCombo(JudgeWindows.GetScore(result));
+                }
+                AddJudgeCount(result);
+                ApplyViewResult(view, note, result);
+                OnJudgeResult?.Invoke(result, lane);
+                OnJudgeBias?.Invoke(bias);
+                PlayAudioJudge(result);
+                return;
+            }
+
+            // 长按头 / 连接点：只做视觉与连击（不计分、不进判定计数）
+            if (result == JudgeResultType.Miss)
+            {
+                ApplyViewResult(view, note, result);
+                return;
+            }
+
+            if (JudgeWindows.BreaksCombo(result))
+            {
+                BreakCombo();
+            }
+            ApplyViewResult(view, note, result);
+            OnJudgeBias?.Invoke(bias);
         }
 
-        private static bool IsWideNote(Note note)
+        /// <summary>判定结果落到视图：长按尾走"收尾"特效，其余走命中/漏掉</summary>
+        private static void ApplyViewResult(Note view, LiveNoteBase note, JudgeResultType result)
         {
-            if (note?.Data == null) return false;
-            if (note.Data.wide) return true;
-            var chart = GameManager.Instance != null ? GameManager.Instance.CurrentChart : null;
-            return chart != null && chart.LaneCount == 4 && note.Data.lane == 0;
+            if (view == null) return;
+            if (note.ParentNote != null && note.Category == NoteCategory.Long)
+            {
+                view.JudgeHoldEnd(result);
+            }
+            else if (result == JudgeResultType.Miss)
+            {
+                view.JudgeMiss();
+            }
+            else
+            {
+                view.JudgeHit(result);
+            }
         }
 
+        private Note ViewOf(LiveNoteBase note)
+        {
+            var spawner = NoteSpawner.Instance;
+            if (spawner == null) return null;
+            var root = note;
+            while (root != null && root.ParentNote is LiveNoteBase parent)
+            {
+                root = parent;
+            }
+            return spawner.FindViewNote(root);
+        }
+
+        private NoteData ChartDataOf(LiveNoteBase note)
+        {
+            NoteData data;
+            return note != null && chartNoteByLive.TryGetValue(note, out data) ? data : null;
+        }
+
+        /// <summary>移植层结果 → 本工程的判定档（JustPerfect 折成 Perfect；Pass/Auto 不当判定用）</summary>
+        private static JudgeResultType MapResult(LiveNoteBase note)
+        {
+            switch (note.Result)
+            {
+                case NoteResult.JustPerfect:
+                case NoteResult.Perfect:
+                    return JudgeResultType.Perfect;
+                case NoteResult.Great:
+                    return JudgeResultType.Great;
+                case NoteResult.Good:
+                    return JudgeResultType.Good;
+                case NoteResult.Bad:
+                    return JudgeResultType.Bad;
+                case NoteResult.Miss:
+                    return JudgeResultType.Miss;
+                default:
+                    return JudgeResultType.None;
+            }
+        }
+
+        /// <summary>早/晚指示：移植层的描述就是档位（Just/Fast/Late），幅度不可得时为 0</summary>
+        private static float BiasOf(LiveNoteBase note)
+        {
+            switch (note.Description)
+            {
+                case NoteResultDescription.Fast:
+                    return 0.02f;
+                case NoteResultDescription.Late:
+                    return -0.02f;
+                default:
+                    return 0f;
+            }
+        }
+
+        // ── 滑条跟手（FallenAngel 自有规则：脱离不断整条，只断 combo）────────
+        private void UpdateSlideFollow(float songTime)
+        {
+            if (slideNotes.Count == 0 || InputManager.Instance == null) return;
+            bool[] press = InputManager.Instance.LanePressStates;
+            if (press == null) return;
+
+            for (int i = 0; i < slideNotes.Count; i++)
+            {
+                var slide = slideNotes[i];
+                if (slide == null || slide.State == NoteState.Done) continue;
+                if (slide.State != NoteState.InputBegan && slide.State != NoteState.Input
+                    && slide.State != NoteState.Release) continue;
+
+                // 判定跨度由移植层沿"头 → 尾"推进（LiveUtility.CalcExcuteNoteLane）
+                float center = (slide.LaneStartF + slide.LaneEndF) * 0.5f;
+                bool following = false;
+                for (int lane = 0; lane < press.Length; lane++)
+                {
+                    if (press[lane] && Mathf.Abs(lane - center) <= SlideFollowToleranceLanes)
+                    {
+                        following = true;
+                        break;
+                    }
+                }
+
+                if (following)
+                {
+                    slideOutOfRange.Remove(slide);
+                    continue;
+                }
+
+                if (!slideOutOfRange.ContainsKey(slide)) slideOutOfRange[slide] = songTime;
+                if (songTime - slideOutOfRange[slide] < SlideBreakSeconds) continue;
+
+                if (slideSegmentBroken.Add(slide))
+                {
+                    BreakCombo();
+                    Debug.Log($"[JudgeManager] 滑条掉段（偏离 {songTime - slideOutOfRange[slide]:F2}s）：断 combo、不断整条");
+                }
+                slideOutOfRange.Remove(slide);   // 重置计时，给手指回到跨度内的机会
+            }
+        }
+
+        // ── 计分/连击/计数 ─────────────────────────────────────────────
         private void ProcessMiss(int lane)
         {
             MissCount++;
@@ -567,9 +586,7 @@ namespace FallenAngel.Gameplay
             OnJudgeCountsUpdate?.Invoke(PerfectCount, GreatCount, GoodCount, BadCount, MissCount);
         }
 
-        /// <summary>
-        /// 断连击（Miss/Good/Bad 共用；不增加 Miss 计数）
-        /// </summary>
+        /// <summary>断连击（Miss/Good/Bad 共用；不增加 Miss 计数）</summary>
         private void BreakCombo()
         {
             Combo = 0;
@@ -605,13 +622,12 @@ namespace FallenAngel.Gameplay
 
         private void PlayAudioJudge(JudgeResultType result)
         {
-            if (AudioManager.Instance != null)
-                AudioManager.Instance.PlayHitSfx(result);
+            if (Audio.AudioManager.Instance != null)
+                Audio.AudioManager.Instance.PlayHitSfx(result);
         }
 
         /// <summary>
-        /// 计算当前的达成率（百分比，0~100）
-        /// 权重与计分语义一致（Phigros 对齐）：Great≈65%，Good/Bad 0
+        /// 计算当前的达成率（百分比，0~100）。权重与计分语义一致（Phigros 对齐）：Great≈65%，Good/Bad 0
         /// </summary>
         public float CalculateAccuracy()
         {
@@ -627,26 +643,7 @@ namespace FallenAngel.Gameplay
             return weightSum / total;
         }
 
-        /// <summary>
-        /// 获取评级字符串 (S~D)
-        /// </summary>
-        /// <summary>按进度 t01 采样 slide 路径的轨道坐标 x（分段线性；异常时回退到轨道号）。</summary>
-        private static float SampleSlidePathX(NoteData data, float t01)
-        {
-            var pts = data.path;
-            if (pts == null || pts.Count == 0) return data.lane;
-            if (pts.Count == 1) return pts[0].x;
-            float total = Mathf.Max(.001f, pts[pts.Count - 1].t);
-            float time = t01 * total;
-            for (int i = 0; i < pts.Count - 1; i++)
-            {
-                float t0 = pts[i].t, t1 = pts[i + 1].t;
-                if (time >= t0 && time <= t1)
-                    return Mathf.Lerp(pts[i].x, pts[i + 1].x, t1 > t0 ? (time - t0) / (t1 - t0) : 0f);
-            }
-            return pts[pts.Count - 1].x;
-        }
-
+        /// <summary>获取评级字符串 (S~D)</summary>
         public string GetRank()
         {
             float acc = CalculateAccuracy();
@@ -657,8 +654,19 @@ namespace FallenAngel.Gameplay
             return "D";
         }
 
+        /// <summary>兼容旧调用：已经由移植层自动 Miss，这里只做计分侧登记</summary>
+        public void HandleAutoMiss(Note note)
+        {
+            if (note == null) return;
+            ProcessMiss(note.Data != null ? note.Data.lane : -1);
+            OnJudgeResult?.Invoke(JudgeResultType.Miss, note.Data != null ? note.Data.lane : -1);
+            PlayAudioJudge(JudgeResultType.Miss);
+        }
+
         private void OnDestroy()
         {
+            if (runtime != null && runtime.JudgeCore != null)
+                runtime.JudgeCore.OnUnpicked -= HandleUnpicked;
             if (Instance == this) Instance = null;
         }
     }

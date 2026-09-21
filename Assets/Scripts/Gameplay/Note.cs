@@ -3,7 +3,10 @@ using UnityEngine;
 using UnityEngine.UI;
 using FallenAngel.Data;
 using FallenAngel.Core;
+using FallenAngel.Live;
 using FallenAngel.UI;
+// 本工程的谱面 NoteType 与判定簇 NoteType 同名：这里以谱面协议为准（判定簇的枚举只在 Core/Live 内部使用）
+using NoteType = FallenAngel.Data.NoteType;
 
 namespace FallenAngel.Gameplay
 {
@@ -22,6 +25,18 @@ namespace FallenAngel.Gameplay
 
         /// <summary>是否已被判定（非Miss）</summary>
         public bool IsJudged { get; private set; }
+
+        /// <summary>
+        /// 对应的判定音符（Core/Live 判定簇；长按尾/身体条目共用头部的判定音符）。
+        /// 视图只读它拿"按住中/进度/最终结果"，不再自己算判定。
+        /// </summary>
+        public LiveNoteBase Live { get; private set; }
+
+        /// <summary>命中/漏掉特效是否正在播（判定层用它判断"结果已给、FX 还没完"）</summary>
+        public bool FxPlaying { get; private set; }
+
+        /// <summary>判定层给出结果的时刻（歌曲时间；FX 兜底回收用）</summary>
+        public float JudgedAtSongTime { get; private set; }
 
         /// <summary>判定结果</summary>
         public JudgeResultType JudgeResult { get; private set; } = JudgeResultType.None;
@@ -107,11 +122,19 @@ namespace FallenAngel.Gameplay
 
         public void Initialize(NoteData data, Vector2 spawnPos, Vector2 judgeLinePos)
         {
+            Initialize(data, null, spawnPos, judgeLinePos);
+        }
+
+        public void Initialize(NoteData data, LiveNoteBase live, Vector2 spawnPos, Vector2 judgeLinePos)
+        {
             Data = data;
+            Live = live;
             IsJudged = false;
             JudgeResult = JudgeResultType.None;
             IsHolding = false;
             HoldProgress = 0f;
+            FxPlaying = false;
+            JudgedAtSongTime = 0f;
             isLongNoteConfigured = false;
 
             // 重置缩放和颜色（从对象池复用时必须重置）
@@ -743,6 +766,7 @@ namespace FallenAngel.Gameplay
             if (IsJudged) return;
             IsJudged = true;
             JudgeResult = result;
+            JudgedAtSongTime = SongTimeNow();
 
             if (Data.type == NoteType.LongStart || Data.type == NoteType.Slide)
             {
@@ -761,25 +785,53 @@ namespace FallenAngel.Gameplay
         }
 
         /// <summary>
-        /// 长按释放判定
+        /// 长按收尾（判定层已经把结果算好：移植层 Long_End 窗口 + modifier 倍率）。
+        /// 视图只负责表现，不再查窗口。
+        /// </summary>
+        public void JudgeHoldEnd(JudgeResultType result)
+        {
+            if (Data.type != NoteType.LongStart && Data.type != NoteType.Slide) return;
+            IsHolding = false;
+            JudgeResult = result;
+            IsJudged = true;
+            JudgedAtSongTime = SongTimeNow();
+            PlayHitEffect(result);
+            SpawnHitRing(result);
+        }
+
+        /// <summary>
+        /// 长按收尾的**窗口换算**（保留给自检/调试：走移植层 Long_End 行 × 局内倍率）。
+        /// 正式的收尾路径是判定层给结果 → <see cref="JudgeHoldEnd"/>。
         /// </summary>
         public JudgeResultType JudgeLongRelease(float releaseTimeDiff)
         {
             if (Data.type != NoteType.LongStart && Data.type != NoteType.Slide) return JudgeResultType.None;
-            IsHolding = false;
-
-            // 释放判定必须走**有效**窗口（基础值 × 局内 modifier 倍率）：
-            // 此前读 JudgeWindows.Default，"判定窗口放宽/收紧"对长按尾完全没生效。
-            // 长按尾在窗口表里是独立的 HoldEnd 行（原作同样给尾判更宽的窗口）。
-            JudgeNoteKind kind = Data.type == NoteType.Slide ? JudgeNoteKind.Slide : JudgeNoteKind.HoldEnd;
-            JudgeResultType result = PlayRules.Windows.Judge(releaseTimeDiff, kind);
+            LiveConfig.SetJudgeTimeScale(PlayRules.JudgeWindowScale);
+            JudgeResultType result = MapWindowResult(LiveConfig.CalculateLongEndNoteResult(releaseTimeDiff).Item1);
             // 长按至少按到Good才算成功
             if (result == JudgeResultType.Bad) result = JudgeResultType.Good;
-            JudgeResult = result;
-            IsJudged = true;
-            PlayHitEffect(result);
-            SpawnHitRing(result);
+            JudgeHoldEnd(result);
             return result;
+        }
+
+        /// <summary>移植层结果 → 本工程判定档（与 JudgeManager 同一口径）</summary>
+        private static JudgeResultType MapWindowResult(NoteResult result)
+        {
+            switch (result)
+            {
+                case NoteResult.JustPerfect:
+                case NoteResult.Perfect: return JudgeResultType.Perfect;
+                case NoteResult.Great: return JudgeResultType.Great;
+                case NoteResult.Good: return JudgeResultType.Good;
+                case NoteResult.Bad: return JudgeResultType.Bad;
+                case NoteResult.Miss: return JudgeResultType.Miss;
+                default: return JudgeResultType.None;
+            }
+        }
+
+        private static float SongTimeNow()
+        {
+            return GameManager.Instance != null ? GameManager.Instance.SongTime : 0f;
         }
 
         /// <summary>
@@ -791,6 +843,7 @@ namespace FallenAngel.Gameplay
             IsJudged = true;
             IsHolding = false;
             JudgeResult = JudgeResultType.Miss;
+            JudgedAtSongTime = SongTimeNow();
             PlayMissEffect();
         }
 
@@ -800,6 +853,7 @@ namespace FallenAngel.Gameplay
         private void PlayHitEffect(JudgeResultType result)
         {
             StopAllCoroutines();
+            FxPlaying = true;
             StartCoroutine(HitEffectCoroutine(result));
         }
 
@@ -822,11 +876,13 @@ namespace FallenAngel.Gameplay
             }
             hitScale = to; // 定格放大态，回收时由 Recycle/Initialize 重置
             gameObject.SetActive(false);
+            FxPlaying = false;
         }
 
         private void PlayMissEffect()
         {
             StopAllCoroutines();
+            FxPlaying = true;
             StartCoroutine(MissEffectCoroutine());
         }
 
@@ -848,6 +904,7 @@ namespace FallenAngel.Gameplay
                 yield return null;
             }
             gameObject.SetActive(false);
+            FxPlaying = false;
         }
 
         /// <summary>
@@ -858,6 +915,7 @@ namespace FallenAngel.Gameplay
             StopAllCoroutines();
             // 重置缩放和颜色，防止从对象池复用时残留
             hitScale = 1f;
+            FxPlaying = false;
             transform.localScale = originalScale;
             gameObject.SetActive(false);
         }
