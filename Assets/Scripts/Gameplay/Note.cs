@@ -218,7 +218,10 @@ namespace FallenAngel.Gameplay
             float fallDistance = Mathf.Abs(spawnPos.y - judgeLinePos.y); // 轨道全长（下落距离）
             float fallTime = GameManager.Instance != null ? GameManager.Instance.ActualFallTime : 2f;
             float holdDistance = fallDistance * (Data.duration / fallTime); // 按住期间下落距离
-            float bodyHeight = Mathf.Max(holdDistance, 300f);               // 最短拖尾保证可辨识
+            // 上限 = 一屏下落距离：长条再长，身体也只画到"生成点"为止——
+            // 否则 4s 的条身体就有 1.8 屏高（15.6s 时 7 屏），会把后面来的音符整个盖住
+            //（作者反馈"长音符拖到后来的音符，双指打不了"，根因就是这个视觉遮挡）。
+            float bodyHeight = Mathf.Clamp(holdDistance, 300f, fallDistance);
             // 宽度只是矩形参考值：实际画出来的宽度由带子按轨道曲线逐高度取值（kick 全宽条走 SetKickVisual）
             float bodyWidth = Mathf.Max(24f, rectTransform.sizeDelta.x - 2f);
             bodyRect.sizeDelta = new Vector2(bodyWidth, bodyHeight);
@@ -716,7 +719,8 @@ namespace FallenAngel.Gameplay
                 if (head != null && head.IsHolding && head.Data.type == NoteType.LongStart)
                 {
                     float fallDistance = Mathf.Abs(spawnPosY - judgePosY);
-                    float holdDistance = fallDistance * (head.Data.duration / fallTime); // 与身体长度同公式
+                    // 与身体长度同公式（含"一屏上限"）：尾部标记跟着被截断后的末端，才不会飘到屏外
+                    float holdDistance = Mathf.Clamp(fallDistance * (head.Data.duration / fallTime), 300f, fallDistance);
                     float y = judgePosY + holdDistance * (1f - Mathf.Clamp01(head.HoldProgress));
                     rectTransform.anchoredPosition = new Vector2(rectTransform.anchoredPosition.x, y);
                 }
