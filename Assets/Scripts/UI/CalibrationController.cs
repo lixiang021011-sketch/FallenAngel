@@ -46,16 +46,23 @@ namespace FallenAngel.UI
         [Tooltip("清空统计（对应 osu! 的 ClearHistory）")]
         [SerializeField] private Button clearStatsButton;
 
-        [Header("节拍设置（与上游无关，属界面参数）")]
-        [Tooltip("每拍间隔（秒）")]
-        [SerializeField] private float beatInterval = 0.60f;
-        [Tooltip("测量拍数")]
-        [SerializeField] private int beatCount = 8;
+        [Header("节拍设置（每个参数的出处见下方注释，不是我随手定的）")]
+        [Tooltip("节拍器 BPM。osu! 偏移向导用「最后选择的歌曲」的 BPM（osu-wiki: Client/Options/Offset_Wizard），" +
+                 "我们优先用当前谱面 BPM，取不到才回落到这个默认值")]
+        [SerializeField] private float bpm = 120f;
+        [Tooltip("每小节拍数（4/4）")]
+        [SerializeField] private int beatsPerBar = 4;
+        [Tooltip("要采多少次（每小节重拍采一次）。8 = Cytoid GlobalCalibrator 的两轮 ×4")]
+        [SerializeField] private int tapCount = 8;
         [Tooltip("细调步长（毫秒）")]
         [SerializeField] private int fineStepMs = 5;
 
+        /// <summary>每拍秒数：由 BPM 推出来（osu! 向导的节拍器也是跟着 BPM 走）。</summary>
+        private float BeatSeconds { get { return 60f / Mathf.Max(30f, bpm); } }
+
         private AudioSource tickSource;
-        private AudioClip tickClip;
+        private AudioClip tickClipLow;      // 小节内其余拍：节拍器低音
+        private AudioClip tickClipHigh;     // 重拍高音（PJSK：跟着这个声音敲）
 
         private readonly List<double> beatTimes = new List<double>();
         private readonly List<double> tapOffsets = new List<double>();
@@ -78,7 +85,10 @@ namespace FallenAngel.UI
             tickSource = gameObject.AddComponent<AudioSource>();
             tickSource.playOnAwake = false;
             tickSource.loop = false;
-            tickClip = SynthesizedSfx.CreateHitClip(1200f, 0.05f, 28f);
+            // 低音 / 高音两档：PJSK 的文案就是"高い音が鳴るタイミングに合わせて"，
+            // 高音 = 击打点，低音 = 节拍器（两档音高差 ~1.5 倍，竖屏小喇叭也分得清）
+            tickClipLow = SynthesizedSfx.CreateHitClip(880f, 0.05f, 28f);
+            tickClipHigh = SynthesizedSfx.CreateHitClip(1320f, 0.05f, 28f);
 
             if (startButton != null) startButton.onClick.AddListener(() => { AudioManager.Instance?.PlayButtonClick(); StartMeasure(); });
             if (applyButton != null) applyButton.onClick.AddListener(() => { AudioManager.Instance?.PlayButtonClick(); ApplySuggestion(); });
@@ -130,7 +140,7 @@ namespace FallenAngel.UI
                 if (System.Math.Abs(now - beat) < System.Math.Abs(now - best)) best = beat;
 
             double offset;
-            if (CalibrationMeasure.TryAssignToBeat(now, best, beatInterval, out offset))
+            if (CalibrationMeasure.TryAssignToBeat(now, best, BeatSeconds, out offset))
             {
                 tapOffsets.Add(offset);
                 if (resultText != null)
@@ -141,12 +151,28 @@ namespace FallenAngel.UI
         public void Open()
         {
             openRequested = true;
+            ApplyChartBpm();
             if (panelRoot != null) panelRoot.SetActive(true);
             // ESC 由本层处理（SettingsPanelController 不再拦截）
             RefreshValueText();
             RefreshSuggestion();
             if (resultText != null) resultText.text = "";
             if (statusText != null) statusText.text = Loc.T("cal.hint");
+        }
+
+        /// <summary>
+        /// 节拍器 BPM 跟着**当前谱面**走：osu! 偏移向导就是"打开向导后播放最后选择的歌曲，
+        /// 节拍器按这首歌的 BPM 滴答"（osu-wiki: Client/Options/Offset_Wizard）。
+        /// 没有谱面（或谱面没写 BPM）时回落到 120。
+        /// </summary>
+        private void ApplyChartBpm()
+        {
+            float chartBpm = 0f;
+            GameManager gm = GameManager.Instance;
+            if (gm != null && gm.CurrentChart != null && gm.CurrentChart.metadata != null)
+                chartBpm = gm.CurrentChart.metadata.bpm;
+
+            bpm = chartBpm >= 40f ? chartBpm : 120f;
         }
 
         public void Close()
@@ -163,38 +189,73 @@ namespace FallenAngel.UI
             hasSuggestion = false;
             tapOffsets.Clear();
             beatTimes.Clear();
-            if (statusText != null) statusText.text = Loc.T("cal.tapAlong", beatCount);
+            if (statusText != null) statusText.text = Loc.T("cal.tapAlong", tapCount, Mathf.RoundToInt(bpm));
             if (resultText != null) resultText.text = "";
             loop = StartCoroutine(MeasureLoop());
         }
 
+        /// <summary>
+        /// 跟拍测量。节奏形状不是我自己定的，逐条对得上来源：
+        ///
+        /// | 我们的做法 | 出处 |
+        /// | --- | --- |
+        /// | 4/4 节拍器，**每小节第一拍是重音（高音）**，玩家在重音上敲 | PJSK 原版文案 `MSG_ADJUST_WITH_TAP_BODY`：<br>「判定タイミングを調整できます。\n**高い音が鳴るタイミングに合わせて**\n下のボタンをタップしてください。」<br>（高音 = 击打点，低音只是节拍器） |
+        /// | BPM 取**当前谱面**的 BPM，取不到回落 120 | osu! 偏移向导："打开设置向导后会出现一个滴答作响的节拍器…游戏将开始播放最后选择的歌曲"<br>（osu-wiki：`Client/Options/Offset_Wizard`），即节拍器跟歌走 |
+        /// | 拍点**落到判定线时闪白**并出声，作为视觉参考 | 同一篇 osu-wiki："屏幕上滚动的绿色条是'拍点'。当它们通过屏幕中央的垂直线时，它们会闪烁白色并发出滴答声" |
+        /// | 采 **8 次**（8 个小节的重音） | Cytoid `GlobalCalibrator.cs`：两轮 ×4 次采样，取平均 |
+        /// | 剔除极值后取平均（现有 `CalibrationMeasure`） | 抗离群；Cytoid 用"单点偏差 &gt;80ms 整轮作废"，我们保留修剪平均（更宽容） |
+        ///
+        /// 手势：玩家敲的是**屏幕下半部的任意位置**（不是某个小按钮）——
+        /// 竖屏手机上把敲击点限制成一个 60px 的按钮既不现实也不符合"跟着音乐敲"的直觉。
+        /// </summary>
         private IEnumerator MeasureLoop()
         {
-            double start = Time.unscaledTimeAsDouble + 1.0;      // 前导 1 秒
-            for (int i = 0; i < beatCount; i++)
+            float beat = BeatSeconds;
+            int beatsPerBarLocal = Mathf.Max(1, beatsPerBar);
+            double start = Time.unscaledTimeAsDouble + 1.0 + laneFallSeconds;   // 前导 1 秒 + 让第一个重拍落到线
+
+            for (int bar = 0; bar < tapCount; bar++)
             {
                 if (!measuring) yield break;
-                // 模拟真实下落：音符从 laneSpawnY 沿**游戏的透视曲线**落到 laneJudgeY（= 判定线），
-                // 玩家在音符落到线上时点屏幕。音（滴答）在音符到线的那一刻响 —— 与真实演奏同构。
-                double spawn = start + i * beatInterval;
-                double arrival = spawn + laneFallSeconds;
-                beatTimes.Add(arrival);
 
-                if (laneNote != null) laneNote.gameObject.SetActive(true);
-                while (Time.unscaledTimeAsDouble < arrival)
+                double barStart = start + bar * beatsPerBarLocal * beat;
+                for (int b = 0; b < beatsPerBarLocal; b++)
                 {
-                    double p = (Time.unscaledTimeAsDouble - spawn) / laneFallSeconds;
-                    SetNoteProgress((float)p);
-                    yield return null;
-                }
-                SetNoteProgress(1f);
-                PlayTick();                                  // 到线：声音 + 闪光
-                if (statusText != null)
-                    statusText.text = Loc.T("cal.beatOf", i + 1, beatCount, tapOffsets.Count);
-                if (laneNote != null) laneNote.gameObject.SetActive(false);
+                    if (!measuring) yield break;
 
-                while (Time.unscaledTimeAsDouble < spawn + beatInterval + laneFallSeconds - beatInterval * 0.5)
-                    yield return null;
+                    double at = barStart + b * beat;
+                    bool accent = b == 0;                       // 重拍 = 高音 = 击打点
+
+                    if (accent)
+                    {
+                        // 重拍：音符从 laneSpawnY 沿**游戏的透视曲线**落到判定线，落到线的那一刻响高音。
+                        double spawn = at - laneFallSeconds;
+                        beatTimes.Add(at);
+                        if (laneNote != null) laneNote.gameObject.SetActive(true);
+                        while (Time.unscaledTimeAsDouble < at)
+                        {
+                            if (!measuring) yield break;
+                            double p = (Time.unscaledTimeAsDouble - spawn) / laneFallSeconds;
+                            SetNoteProgress(Mathf.Clamp01((float)p));
+                            yield return null;
+                        }
+                        SetNoteProgress(1f);
+                        PlayTick(true);
+                        if (laneNote != null) laneNote.gameObject.SetActive(false);
+                        if (statusText != null)
+                            statusText.text = Loc.T("cal.beatOf", bar + 1, tapCount, tapOffsets.Count);
+                    }
+                    else
+                    {
+                        // 小节内的其余拍：只有节拍器低音（PJSK：跟着"高音"敲，低音只给节奏感）
+                        while (Time.unscaledTimeAsDouble < at)
+                        {
+                            if (!measuring) yield break;
+                            yield return null;
+                        }
+                        PlayTick(false);
+                    }
+                }
             }
 
             measuring = false;
@@ -321,21 +382,31 @@ namespace FallenAngel.UI
         private IEnumerator PreviewLoop()
         {
             double next = Time.unscaledTimeAsDouble + 0.3;
+            int beatIndex = 0;
             while (previewing)
             {
                 // 偏移为正（音符提前）→ 声音也提前同样的量
                 double at = next - CalibrationSettings.TimingAdjustSeconds;
                 while (Time.unscaledTimeAsDouble < at) yield return null;
-                PlayTick();
-                next += beatInterval;
+                // 试听也走 4/4：每小节第一拍高音，方便对照"重拍应该落在哪"
+                PlayTick(beatIndex % Mathf.Max(1, beatsPerBar) == 0);
+                beatIndex++;
+                next += BeatSeconds;
                 while (Time.unscaledTimeAsDouble < next) yield return null;
             }
         }
 
         private void PlayTick()
         {
-            if (tickSource != null && tickClip != null) tickSource.PlayOneShot(tickClip, 0.8f);
-            pulseT = 0f;                     // 视觉脉冲与滴答同步
+            PlayTick(false);
+        }
+
+        /// <summary>响一声节拍器：重拍用高音（击打点），其余用低音。</summary>
+        private void PlayTick(bool accent)
+        {
+            AudioClip clip = accent ? tickClipHigh : tickClipLow;
+            if (tickSource != null && clip != null) tickSource.PlayOneShot(clip, accent ? 0.9f : 0.5f);
+            if (accent) pulseT = 0f;         // 视觉脉冲只在重拍闪（与"高音 = 击打点"一致）
         }
 
         private void StopLoops()

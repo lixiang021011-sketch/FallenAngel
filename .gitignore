@@ -77,3 +77,5 @@ art_tools/note_perspective/out/
 # _archive/：被替换/归档的旧实现
 _refs/
 _archive/
+/Assets/Resources/Charts/cc_*.json
+/Assets/Resources/Charts/cc_*.json.meta

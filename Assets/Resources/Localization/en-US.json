@@ -178,7 +178,7 @@
     },
     {
       "key": "cal.hint",
-      "value": "Tap along to measure, or use Apply suggestion (from your real plays)"
+      "value": "Tap on the high tone (the low tone is just the metronome); or use Apply suggestion"
     },
     {
       "key": "cal.tap",
@@ -186,11 +186,11 @@
     },
     {
       "key": "cal.tapAlong",
-      "value": "Get ready… {0} beats, tap along"
+      "value": "Get ready… {0} taps on the high tone ({1} BPM, 4/4, first beat accented)"
     },
     {
       "key": "cal.beatOf",
-      "value": "Beat {0}/{1} · {2} taps"
+      "value": "{0}/{1} · {2} taps"
     },
     {
       "key": "cal.tapCount",
@@ -263,6 +263,26 @@
     {
       "key": "settings.offsetNow",
       "value": "Offset {0:+0;-0;0} ms ({1} frames)"
+    },
+    {
+      "key": "settings.fallPreview",
+      "value": "Preview"
+    },
+    {
+      "key": "fallPreview.title",
+      "value": "Note speed"
+    },
+    {
+      "key": "fallPreview.hint",
+      "value": "Adjust the speed and watch when notes reach the judgement line (same fall curve as gameplay)"
+    },
+    {
+      "key": "fallPreview.time",
+      "value": "Notes reach the line in {0}s"
+    },
+    {
+      "key": "fallPreview.close",
+      "value": "Done"
     }
   ]
 }

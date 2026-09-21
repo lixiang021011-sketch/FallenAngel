@@ -294,6 +294,8 @@ namespace FallenAngel.Core
             // 正式存档选择面板（选中档后出现"进入游戏"/"天赋"按钮；盖在设置页之上）
             // 节奏校准面板：入口在设置页；反向注入控制器/面板引用给设置页（ESC 层叠与打开按钮）
             CreateCalibrationPanel(canvasRect, canvasRect, starter, settingsController);
+            // 下落速度预览面板（同上：入口在设置页，后建盖在设置页上）
+            CreateFallSpeedPreviewPanel(canvasRect, settingsController, fsc);
 
             SaveSelectPanelController saveSelectController = CreateSaveSelectPanel(canvasRect);
             SetPrivateField(starter, "saveSelectPanelController", saveSelectController);
@@ -943,6 +945,114 @@ namespace FallenAngel.Core
             return controller;
         }
 
+        /// <summary>
+        /// 下落速度预览面板（照 PJSK 前端：调速度时能直接看音符怎么落）。
+        /// 用的就是游戏本体的下落曲线与判定线（`PlayPerspective` + `PlayVisualSpec.JudgeLineY`），
+        /// 速度源与设置页/暂停页同一个 `FallSpeedController`（同源同步）。
+        /// </summary>
+        private static FallSpeedPreviewController CreateFallSpeedPreviewPanel(RectTransform canvasRect,
+            SettingsPanelController settingsController, FallSpeedController fsc)
+        {
+            GameObject panel = new GameObject("FallSpeedPreviewPanel", typeof(RectTransform), typeof(Image));
+            panel.transform.SetParent(canvasRect, false);
+            RectTransform rt = (RectTransform)panel.transform;
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            panel.GetComponent<Image>().color = new Color(0.02f, 0.05f, 0.07f, 0.96f);
+
+            TextMeshProUGUI title = CreateText("FallPreviewTitle", panel.transform,
+                new Vector2(0.5f, 0.90f), new Vector2(0.5f, 0.90f), Vector2.zero, new Vector2(800, 90),
+                "fallPreview.title", 56, TextAlignmentOptions.Center);
+            title.fontStyle = FontStyles.Bold;
+
+            TextMeshProUGUI hint = CreateText("FallPreviewHint", panel.transform,
+                new Vector2(0.5f, 0.845f), new Vector2(0.5f, 0.845f), Vector2.zero, new Vector2(900, 60),
+                "fallPreview.hint", 28, TextAlignmentOptions.Center);
+            hint.color = new Color(1f, 1f, 1f, 0.7f);
+
+            // 下落区：与演奏页同源（音符沿透视曲线从出生点落到判定线）
+            GameObject playfield = new GameObject("FallPreviewPlayfield", typeof(RectTransform));
+            playfield.transform.SetParent(panel.transform, false);
+            RectTransform pf = (RectTransform)playfield.transform;
+            pf.anchorMin = pf.anchorMax = new Vector2(0.5f, 0.52f);
+            pf.pivot = new Vector2(0.5f, 0.5f);
+            pf.sizeDelta = new Vector2(420, 1300);
+
+            GameObject laneBG = new GameObject("FallPreviewLaneBG", typeof(RectTransform), typeof(Image));
+            laneBG.transform.SetParent(playfield.transform, false);
+            RectTransform lbr = (RectTransform)laneBG.transform;
+            lbr.anchorMin = new Vector2(0.5f, 0f);
+            lbr.anchorMax = new Vector2(0.5f, 1f);
+            lbr.pivot = new Vector2(0.5f, 0.5f);
+            lbr.sizeDelta = new Vector2(240, 0);
+            Image lbg = laneBG.GetComponent<Image>();
+            lbg.color = new Color(1f, 1f, 1f, 0.05f);
+            lbg.raycastTarget = false;
+
+            GameObject judgeBar = new GameObject("FallPreviewJudgeLine", typeof(RectTransform), typeof(Image));
+            judgeBar.transform.SetParent(playfield.transform, false);
+            RectTransform jbr = (RectTransform)judgeBar.transform;
+            jbr.anchorMin = jbr.anchorMax = new Vector2(0.5f, 0.5f);
+            jbr.pivot = new Vector2(0.5f, 0.5f);
+            jbr.anchoredPosition = Vector2.zero;
+            jbr.sizeDelta = new Vector2(420, 6);
+            Image jbi = judgeBar.GetComponent<Image>();
+            jbi.color = new Color(0.81f, 0.94f, 0.92f, 0.95f);
+            jbi.raycastTarget = false;
+
+            // 4 个循环下落的音符（密度 = 一屏 4 个；真正的"快慢"由速度倍率决定）
+            var notes = new RectTransform[4];
+            for (int i = 0; i < notes.Length; i++)
+            {
+                GameObject noteGO = new GameObject($"FallPreviewNote{i}", typeof(RectTransform), typeof(Image));
+                noteGO.transform.SetParent(playfield.transform, false);
+                RectTransform nr = (RectTransform)noteGO.transform;
+                nr.anchorMin = nr.anchorMax = new Vector2(0.5f, 0.5f);
+                nr.pivot = new Vector2(0.5f, 0.5f);
+                nr.sizeDelta = new Vector2(228, 40);
+                Image ni = noteGO.GetComponent<Image>();
+                ni.color = new Color(0.44f, 0.88f, 0.84f, 0.95f);
+                ni.raycastTarget = false;
+                notes[i] = nr;
+            }
+
+            TextMeshProUGUI speedText = CreateText("FallPreviewSpeedText", panel.transform,
+                new Vector2(0.5f, 0.255f), new Vector2(0.5f, 0.255f), Vector2.zero, new Vector2(600, 90),
+                "", 56, TextAlignmentOptions.Center);
+            speedText.color = new Color(0.44f, 0.88f, 0.84f, 1f);
+            speedText.fontStyle = FontStyles.Bold;
+
+            TextMeshProUGUI fallTimeText = CreateText("FallPreviewFallTimeText", panel.transform,
+                new Vector2(0.5f, 0.205f), new Vector2(0.5f, 0.205f), Vector2.zero, new Vector2(900, 60),
+                "", 28, TextAlignmentOptions.Center);
+            fallTimeText.color = new Color(1f, 1f, 1f, 0.65f);
+
+            GameObject minus = CreateButton("FallPreviewMinusButton", panel.transform,
+                new Vector2(0.32f, 0.14f), new Vector2(180, 96), "−", 48);
+            GameObject plus = CreateButton("FallPreviewPlusButton", panel.transform,
+                new Vector2(0.68f, 0.14f), new Vector2(180, 96), "＋", 48);
+            GameObject close = CreateButton("FallPreviewCloseButton", panel.transform,
+                new Vector2(0.5f, 0.06f), new Vector2(560, 96), "fallPreview.close", 36);
+
+            FallSpeedPreviewController controller = panel.AddComponent<FallSpeedPreviewController>();
+            SetPrivateField(controller, "panelRoot", panel);
+            SetPrivateField(controller, "lanePlayfield", pf);
+            SetPrivateField(controller, "previewNotes", notes);
+            SetPrivateField(controller, "speedText", speedText);
+            SetPrivateField(controller, "fallTimeText", fallTimeText);
+            SetPrivateField(controller, "minusButton", minus.GetComponent<Button>());
+            SetPrivateField(controller, "plusButton", plus.GetComponent<Button>());
+            SetPrivateField(controller, "closeButton", close.GetComponent<Button>());
+            SetPrivateField(controller, "fallSpeed", fsc);
+            panel.SetActive(false);
+
+            SetPrivateField(settingsController, "fallSpeedPreviewController", controller);
+            SetPrivateField(settingsController, "fallPreviewPanel", panel);
+            return controller;
+        }
+
         private static SettingsPanelController CreateSettingsPanel(RectTransform canvasRect, GameStarter starter, FallSpeedController fsc)
         {
             GameObject panel = new GameObject("SettingsPanel", typeof(RectTransform), typeof(Image));
@@ -997,12 +1107,15 @@ namespace FallenAngel.Core
                 "settings.fallSpeed", 40, TextAlignmentOptions.Center);
             speedLabel.color = new Color(1, 1, 1, 0.8f);
             GameObject speedMinus = CreateButton("SettingsFallSpeedMinusButton", panel.transform,
-                new Vector2(0.32f, 0.46f), new Vector2(160, 80), "−", 44);
+                new Vector2(0.22f, 0.46f), new Vector2(150, 80), "−", 44);
             GameObject speedPlus = CreateButton("SettingsFallSpeedPlusButton", panel.transform,
-                new Vector2(0.68f, 0.46f), new Vector2(160, 80), "＋", 44);
+                new Vector2(0.58f, 0.46f), new Vector2(150, 80), "＋", 44);
             TextMeshProUGUI speedText = CreateText("SettingsFallSpeedText", panel.transform,
-                new Vector2(0.5f, 0.46f), new Vector2(0.5f, 0.46f), Vector2.zero, new Vector2(220, 80),
+                new Vector2(0.40f, 0.46f), new Vector2(0.40f, 0.46f), Vector2.zero, new Vector2(180, 80),
                 "", 40, TextAlignmentOptions.Center);
+            // 下落速度预览入口（照 PJSK：调速度时能直接看音符怎么落；见 FallSpeedPreviewController）
+            GameObject fallPreviewBtn = CreateButton("SettingsFallPreviewButton", panel.transform,
+                new Vector2(0.80f, 0.46f), new Vector2(300, 80), "settings.fallPreview", 32);
 
             // 音效音量行：±按钮 + 百分比动态文本（监听由 SettingsPanelController 接）
             TextMeshProUGUI sfxLabel = CreateText("SettingsSfxLabel", panel.transform,
@@ -1048,6 +1161,7 @@ namespace FallenAngel.Core
             SetPrivateField(fsc, "settingsMinusButton", speedMinus.GetComponent<Button>());
             SetPrivateField(fsc, "settingsPlusButton", speedPlus.GetComponent<Button>());
             SetPrivateField(fsc, "settingsSpeedText", speedText);
+            SetPrivateField(controller, "openFallPreviewButton", fallPreviewBtn.GetComponent<Button>());
 
             // 入口由 GameStarter（始终激活）接线
             SetPrivateField(starter, "settingsPanelController", controller);

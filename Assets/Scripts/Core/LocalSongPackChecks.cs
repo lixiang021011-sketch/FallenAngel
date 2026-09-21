@@ -22,7 +22,12 @@ namespace FallenAngel.Core
     {
         private const string ChartFolder = "Assets/Resources/Charts";
         private const string AudioFolder = "Assets/Resources/Audio";
-        private const string Prefix = "pjsk_";
+
+        /// <summary>
+        /// 本地曲包的前缀：`pjsk_`（版权素材，不入库，仅作者本机）与 `cc_`（CC-BY 可再分发，
+        /// 由 `chart_tools/cc_song_import.py` 从音频自动成谱，见 chart_tools/cc_song_pack.md）。
+        /// </summary>
+        private static readonly string[] Prefixes = { "pjsk_", "cc_" };
 
         [MenuItem("Tools/FallenAngel/Validate Local Song Pack")]
         public static void Run()
@@ -45,10 +50,14 @@ namespace FallenAngel.Core
                 }
                 else
                 {
-                    string[] files = Directory.GetFiles(ChartFolder, Prefix + "*.json");
+                    var found = new List<string>();
+                    for (int p = 0; p < Prefixes.Length; p++)
+                        found.AddRange(Directory.GetFiles(ChartFolder, Prefixes[p] + "*.json"));
+                    string[] files = found.ToArray();
                     if (files.Length == 0)
                     {
-                        lines.Add("SKIP 本地曲包                   未找到 " + Prefix + "*.json（曲包未放入，属正常）");
+                        lines.Add("SKIP 本地曲包                   未找到 " + string.Join("/", Prefixes)
+                                  + "*.json（曲包未放入，属正常）");
                         skip++;
                     }
                     else

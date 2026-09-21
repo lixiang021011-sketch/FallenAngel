@@ -435,14 +435,19 @@ namespace FallenAngel.Live
                     }
 
                     var lane = ConvertLaneBy(ref note, ref input);
+                    // 顺序要紧（踩过的坑）：`Judgment()` 内部会把 State 置 Done，
+                    // 而 `LiveNoteBase.State` 的 setter **同步**触发 OnJudgment 回调 ——
+                    // JudgeManager 的命中误差采样就在那个回调里读这两个字段。
+                    // 所以必须**先写误差、再判定**；反过来（先判后写）回调永远读到默认值，
+                    // 真机表现就是"打了三局也没攒到样本、设置页没有建议值"。
+                    // 误差用**输入时间戳外推出来的触摸时刻**算，而不是 excute 里按帧量化的
+                    // OffsetJudgeTime（120Hz 下后者有约 8ms 噪声，校准关心的正是 10ms 量级）。正 = 打晚。
+                    note.JudgedErrorSeconds = input.Touch.musicTime - note.MusicScoreInfo.time;
+                    note.HasJudgedError = true;
                     note.Judgment(ref input.Touch, lane);
-                    // 命中误差采样（Core/HitErrorTracker，照抄 osu! 的 hit error 口径）：
-                    // 用**输入时间戳外推出来的触摸时刻**算，而不是 excute 里按帧量化的 OffsetJudgeTime
-                    // —— 120Hz 下后者有约 8ms 噪声，而校准关心的正是 10ms 量级。正 = 打晚。
-                    if (note.Result != NoteResult.None)
+                    if (note.Result == NoteResult.None)
                     {
-                        note.JudgedErrorSeconds = input.Touch.musicTime - note.MusicScoreInfo.time;
-                        note.HasJudgedError = true;
+                        note.HasJudgedError = false;    // 这次没判成（相位/窗口不符）→ 撤销，等真正的判定
                     }
                     if (note.Result == NoteResult.None || note.Result == NoteResult.Bad)
                     {

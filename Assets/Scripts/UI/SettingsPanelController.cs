@@ -24,6 +24,10 @@ namespace FallenAngel.UI
         [SerializeField] private TextMeshProUGUI offsetSummaryText;
         [SerializeField] private CalibrationController calibrationController;
         [SerializeField] private GameObject calibrationPanel;          // ESC 层叠判断（SceneBuilder 注入）
+        [Tooltip("打开下落速度预览（照 PJSK：调速度时能看音符怎么落）")]
+        [SerializeField] private Button openFallPreviewButton;
+        [SerializeField] private FallSpeedPreviewController fallSpeedPreviewController;
+        [SerializeField] private GameObject fallPreviewPanel;          // ESC 层叠判断（SceneBuilder 注入）
         [SerializeField] private Button sfxMinusButton;
         [SerializeField] private Button sfxPlusButton;
         [SerializeField] private TextMeshProUGUI sfxVolumeText;        // 动态文本
@@ -36,6 +40,7 @@ namespace FallenAngel.UI
             // 面板首次激活时执行（同 LanguagePanelController 模式）
             if (closeButton != null) closeButton.onClick.AddListener(Close);
             if (openCalibrationButton != null) openCalibrationButton.onClick.AddListener(OpenCalibration);
+            if (openFallPreviewButton != null) openFallPreviewButton.onClick.AddListener(OpenFallPreview);
             if (applySuggestedOffsetButton != null)
                 applySuggestedOffsetButton.onClick.AddListener(() => { AudioManager.Instance?.PlayButtonClick(); ApplySuggestedOffset(); });
             if (sfxMinusButton != null) sfxMinusButton.onClick.AddListener(() => AdjustSfxVolume(-0.1f));
@@ -69,7 +74,8 @@ namespace FallenAngel.UI
         {
             // ESC 层叠：校准面板盖在本页上时，ESC 由校准层处理
             if (Input.GetKeyDown(KeyCode.Escape) && panelRoot != null && panelRoot.activeSelf
-                && !(calibrationPanel != null && calibrationPanel.activeSelf))
+                && !(calibrationPanel != null && calibrationPanel.activeSelf)
+                && !(fallPreviewPanel != null && fallPreviewPanel.activeSelf))
                 Close();
         }
 
@@ -94,6 +100,12 @@ namespace FallenAngel.UI
         {
             AudioManager.Instance?.PlayButtonClick();
             if (calibrationController != null) calibrationController.Open();
+        }
+
+        private void OpenFallPreview()
+        {
+            AudioManager.Instance?.PlayButtonClick();
+            if (fallSpeedPreviewController != null) fallSpeedPreviewController.Open();
         }
 
         /// <summary>

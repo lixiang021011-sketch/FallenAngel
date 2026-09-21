@@ -29,6 +29,18 @@ namespace FallenAngel.UI
         private TextMeshProUGUI speedText;
         private float speed = 1f;
 
+        /// <summary>当前速度倍率（0.5–2.0）。下落速度预览面板读它显示实时数值。</summary>
+        public float CurrentSpeed { get { return speed; } }
+
+        /// <summary>速度变化通知（预览面板用它刷新文案；参数 = 新的倍率）。</summary>
+        public event System.Action<float> OnSpeedChanged;
+
+        /// <summary>给外部（预览面板）调速度的入口：与设置页/暂停页的 ± 走同一条路，同源同步。</summary>
+        public void AdjustSpeed(float delta)
+        {
+            Adjust(delta);
+        }
+
         private void Awake()
         {
             speed = Mathf.Clamp(PlayerPrefs.GetFloat(PrefsKey, 1f), MinSpeed, MaxSpeed);
@@ -90,6 +102,7 @@ namespace FallenAngel.UI
         {
             if (GameManager.Instance != null)
                 GameManager.Instance.speedMultiplier = speed;
+            if (OnSpeedChanged != null) OnSpeedChanged(speed);
         }
 
         private void UpdateText()

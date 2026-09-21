@@ -178,7 +178,7 @@
     },
     {
       "key": "cal.hint",
-      "value": "跟拍测量，或用下方“应用系统建议”（来自实战命中误差）"
+      "value": "跟着高音敲屏幕（低音只是节拍器）；也可用下方“应用系统建议”"
     },
     {
       "key": "cal.tap",
@@ -186,11 +186,11 @@
     },
     {
       "key": "cal.tapAlong",
-      "value": "准备……共 {0} 拍，跟着节拍点屏幕"
+      "value": "准备……{0} 次，跟着高音敲屏幕（{1} BPM，4/4 每小节第一拍）"
     },
     {
       "key": "cal.beatOf",
-      "value": "第 {0}/{1} 拍 · 已记录 {2} 次点击"
+      "value": "第 {0}/{1} 次 · 已记录 {2} 下"
     },
     {
       "key": "cal.tapCount",
@@ -263,6 +263,26 @@
     {
       "key": "settings.offsetNow",
       "value": "判定偏移 {0:+0;-0;0} ms（{1} 帧）"
+    },
+    {
+      "key": "settings.fallPreview",
+      "value": "预览"
+    },
+    {
+      "key": "fallPreview.title",
+      "value": "下落速度"
+    },
+    {
+      "key": "fallPreview.hint",
+      "value": "调速度看音符多久落到判定线（与演奏页同一条下落曲线）"
+    },
+    {
+      "key": "fallPreview.time",
+      "value": "音符 {0} 秒落到判定线"
+    },
+    {
+      "key": "fallPreview.close",
+      "value": "完成"
     }
   ]
 }

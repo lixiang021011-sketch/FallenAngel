@@ -66,7 +66,8 @@ namespace FallenAngel.Core
             string summary = string.Format(
                 "判定时序自检：{0} 项通过 / {1} 项异常"
                 + "（一次按下只判一个 / 真双押 / 只认按下边沿 / 宽音符任意轨 / 时间戳参与判定 / "
-                + "长按端到端 / 自动 Miss 收口 / modifier 倍率 / 空按不判 / 视图接线）",
+                + "长按端到端 / 自动 Miss 收口 / modifier 倍率 / 空按不判 / 视图接线 / "
+                + "命中误差采样端到端 + 门槛）",
                 pass, fail);
             foreach (string line in lines) Debug.Log("[JudgeTiming] " + line);
             Debug.Log("[JudgeTiming] " + summary);
@@ -512,6 +513,88 @@ namespace FallenAngel.Core
                     && sb.Judge.MissCount == 0,
                     string.Format("尾={0}、Miss={1}", tail.Result, sb.Judge.MissCount));
             }
+
+            // ⑫ 命中误差采样（osu! 式统计校准的数据源）：判定真的带上"打早/打晚"，曲终结算成样本。
+            //    作者反馈"打了三局设置页还是没建议值" → 这一条就是防回归的端到端断言。
+            string savedHistory = PlayerPrefs.GetString("FA_HitErrorHistory", string.Empty);
+            float savedTiming = CalibrationSettings.TimingAdjustData;
+            try
+            {
+                HitErrorHistory.Clear();
+                HitErrorHistory.InvalidateCache();
+
+                using (var sb = new Sandbox())
+                {
+                    const int notes = 16;                       // ≥ HitErrorTracker.MinJudgeCountPerPlay
+                    for (int i = 0; i < notes; i++)
+                        sb.AddChartNote(new NoteData(2, 10f + i * 0.4f, DataNoteType.Normal));
+                    sb.BuildScore();
+                    sb.StartSong();                             // 视图开演（真实演奏里 Manager 回调由视图回收触发）
+
+                    bool everyNoteHasError = true;
+                    int collectedAfterFirst = -1;
+                    for (int i = 0; i < notes; i++)
+                    {
+                        float t = 10f + i * 0.4f;
+                        sb.SetSongTime(t + 0.03f);              // 一律打晚 30ms
+                        sb.PressAt(2, t + 0.03f);
+                        sb.JudgeUpdate();
+                        sb.SpawnerView();                       // 生成/回收（回调面在这里触发）
+                        if (i == 0) collectedAfterFirst = sb.SessionHitErrorCount;
+                        var live = sb.Live(i);
+                        everyNoteHasError &= live != null && live.HasJudgedError
+                                             && Mathf.Abs(live.JudgedErrorSeconds - 0.03f) < 0.005f;
+                    }
+
+                    sb.SetSongTime(10f + notes * 0.4f + 3f);    // 跑完最后一段，让视图把残留音符收干净
+                    sb.SpawnerView();
+                    int collected = sb.SessionHitErrorCount;    // 本局已收多少条误差
+                    int before = HitErrorHistory.Count;
+                    sb.SetState(GameState.Result);              // 曲终
+                    sb.JudgeUpdate();
+                    int after = HitErrorHistory.Count;
+
+                    float suggested;
+                    bool has = HitErrorHistory.TrySuggestFrames(out suggested);
+                    check("命中误差采样（端到端）",
+                        everyNoteHasError && after == before + 1 && has
+                        && Mathf.Abs(HitErrorTracker.FramesToMs(suggested) + 30f) < 3f,
+                        string.Format("16 次判定都带误差={0}、首判后收集={1}、曲终前收集 {2} 条、样本 {3}→{4}、建议 {5:0.0}ms",
+                            everyNoteHasError, collectedAfterFirst, collected, before, after,
+                            has ? HitErrorTracker.FramesToMs(suggested) : 0f));
+                }
+
+                HitErrorHistory.Clear();
+                HitErrorHistory.InvalidateCache();
+                using (var sb = new Sandbox())
+                {
+                    const int few = 5;                          // < 门槛
+                    for (int i = 0; i < few; i++)
+                        sb.AddChartNote(new NoteData(2, 10f + i * 0.4f, DataNoteType.Normal));
+                    sb.BuildScore();
+                    for (int i = 0; i < few; i++)
+                    {
+                        float t = 10f + i * 0.4f;
+                        sb.SetSongTime(t);
+                        sb.PressAt(2, t);
+                        sb.JudgeUpdate();
+                    }
+                    sb.SetState(GameState.Result);
+                    sb.JudgeUpdate();
+                    check("命中误差采样·不足门槛不出样本",
+                        HitErrorHistory.Count == 0,
+                        string.Format("只判 {0} 次（< {1}）→ 样本 {2} 个",
+                            few, HitErrorTracker.MinJudgeCountPerPlay, HitErrorHistory.Count));
+                }
+            }
+            finally
+            {
+                if (string.IsNullOrEmpty(savedHistory)) PlayerPrefs.DeleteKey("FA_HitErrorHistory");
+                else PlayerPrefs.SetString("FA_HitErrorHistory", savedHistory);
+                CalibrationSettings.TimingAdjustData = savedTiming;
+                HitErrorHistory.InvalidateCache();
+                PlayerPrefs.Save();
+            }
         }
 
         /// <summary>晚 90ms 按下（同一个音符），返回判定档——用来验窗口倍率是否进表</summary>
@@ -592,6 +675,8 @@ namespace FallenAngel.Core
             // 视图每帧工作在 LateUpdate（保证与判定同帧落到画面）
             private static readonly MethodInfo MSpawnerUpdate = typeof(NoteSpawner).GetMethod("LateUpdate", Priv);
             private static readonly MethodInfo MSpawnerOnGameStart = typeof(NoteSpawner).GetMethod("OnGameStart", Priv);
+            private static readonly FieldInfo FSessionHitErrors =
+                typeof(JudgeManager).GetField("sessionHitErrorsMs", Priv);
 
             private readonly GameObject host;
             private readonly ChartData chart = new ChartData();
@@ -709,6 +794,16 @@ namespace FallenAngel.Core
 
             /// <summary>JudgeManager 是否订阅了输入事件（没订阅 = 按下事件到不了判定）</summary>
             public bool InputWired { get { return FLaneInputEvent.GetValue(Input) != null; } }
+
+            /// <summary>本局已经收集的命中误差样本数（osu! 式统计校准的数据源）</summary>
+            public int SessionHitErrorCount
+            {
+                get
+                {
+                    var list = FSessionHitErrors.GetValue(Judge) as System.Collections.ICollection;
+                    return list != null ? list.Count : -1;
+                }
+            }
 
             /// <summary>显式跑一次 JudgeManager.Update（batchmode 同步自检里不会自己跑）</summary>
             public void JudgeUpdate() { MJudgeUpdate.Invoke(Judge, null); }
