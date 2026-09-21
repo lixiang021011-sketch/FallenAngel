@@ -79,6 +79,19 @@ namespace FallenAngel.Live
 
         public float OffsetJudgeTime { get; set; }
 
+        /// <summary>
+        /// 这一下判定"打早/打晚"了多少（秒，**正 = 打晚**）：触摸时刻 − 音符时刻。
+        /// 由 LiveJudgeCore 在拿到**玩家真实触摸**时写入（`note.Judgment` 之后立刻记），
+        /// 与 excute 里那个按帧推进的 `OffsetJudgeTime` 不同 —— 后者是帧级量化（120Hz 下约 8ms 噪声），
+        /// 校准要的是输入时间戳精度（InputClock 外推），所以单独记一份。
+        /// `HasJudgedError = false` 表示这不是一次玩家计时输入（例如长按"按住到尾巴"的自动收尾），
+        /// 命中误差统计（Core/HitErrorTracker，照抄 osu!）必须跳过这种样本。
+        /// </summary>
+        public float JudgedErrorSeconds { get; set; }
+
+        /// <summary>是否记录过玩家真实输入的判定误差（见 `JudgedErrorSeconds`）</summary>
+        public bool HasJudgedError { get; set; }
+
         public int DefaultLeftLane { get; set; }
 
         public int DefaultRightLane { get; set; }
@@ -347,6 +360,9 @@ namespace FallenAngel.Live
         {
             State = NoteState.Wait;
             OffsetJudgeTime = 0f;
+            // 池化复用必须清干净：否则上一局的命中误差会被下一局的统计吃进去
+            JudgedErrorSeconds = 0f;
+            HasJudgedError = false;
             Progress = 0f;
             JudgeInfo = (NoteResult.None, NoteResultDescription.None);
         }

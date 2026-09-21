@@ -170,15 +170,15 @@
     },
     {
       "key": "settings.calibration",
-      "value": "Timing adjust"
+      "value": "Manual calibrate"
     },
     {
       "key": "cal.title",
-      "value": "Timing adjust"
+      "value": "Manual calibrate"
     },
     {
       "key": "cal.hint",
-      "value": "Tap along with the beat; the game suggests an offset"
+      "value": "Tap along to measure, or use Apply suggestion (from your real plays)"
     },
     {
       "key": "cal.tap",
@@ -235,6 +235,34 @@
     {
       "key": "cal.step",
       "value": "±5ms fine-tune"
+    },
+    {
+      "key": "cal.suggest.none",
+      "value": "No data yet — play a few songs to the end (15+ judgements each) and a suggested offset will appear here"
+    },
+    {
+      "key": "cal.suggest.correct",
+      "value": "Current offset already matches your timing ({0} play(s) analysed)"
+    },
+    {
+      "key": "cal.suggest.value",
+      "value": "Suggested {0:+0;-0;0} ms from {1} play(s), by median hit error"
+    },
+    {
+      "key": "cal.applySuggest",
+      "value": "Apply suggestion"
+    },
+    {
+      "key": "cal.clearStats",
+      "value": "Clear stats"
+    },
+    {
+      "key": "settings.applySuggest",
+      "value": "Apply suggestion"
+    },
+    {
+      "key": "settings.offsetNow",
+      "value": "Offset {0:+0;-0;0} ms ({1} frames)"
     }
   ]
 }

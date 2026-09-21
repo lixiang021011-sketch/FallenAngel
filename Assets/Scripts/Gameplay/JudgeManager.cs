@@ -88,6 +88,12 @@ namespace FallenAngel.Gameplay
         private const float SlideFollowToleranceLanes = 1.4f;   // 与判定跨度中心的允许偏差（轨；放宽：拆墙后手指更容易飘）
         private const float SlideBreakSeconds = 0.32f;         // 连续脱离多久算断开（放宽：拆墙后手指更容易飘）
 
+        // ── osu! 式命中误差采样（见 Core/HitErrorTracker）────────────────────────
+        // 每一次"玩家真实计时输入"的判定都记一笔（note.JudgedErrorSeconds，正 = 打晚），
+        // 曲终时取**中位数**作为一个样本存进跨局历史（osu! 的 SessionAverageHitErrorTracker）。
+        private readonly List<float> sessionHitErrorsMs = new List<float>(256);
+        private bool hitErrorSampleFlushed;
+
         private struct PendingInput
         {
             public LiveTouchPhase phase;
@@ -179,10 +185,15 @@ namespace FallenAngel.Gameplay
             DevAutoStartIfRequested();
 #endif
 
-            if (GameManager.Instance == null || GameManager.Instance.CurrentState != GameState.Playing) return;
+            GameManager game = GameManager.Instance;
+            if (game == null) return;
+
+            // 曲终（Playing → Result）：把这一局的命中误差结算成一个样本（osu! 是一局结束记一个 DataPoint）
+            if (game.CurrentState == GameState.Result && !hitErrorSampleFlushed) FlushHitErrorSample();
+            if (game.CurrentState != GameState.Playing) return;
             if (runtime == null || runtime.Notes.Count == 0) return;
 
-            float songTime = GameManager.Instance.SongTime;
+            float songTime = game.SongTime;
             // 局内 modifier 的判定窗口倍率（基础值 × 倍率；移植层查表时套用）
             LiveConfig.SetJudgeTimeScale(PlayRules.JudgeWindowScale);
             // 下落速度可能在开局后被改（设置面板/调速）；每帧同步一次，
@@ -223,6 +234,36 @@ namespace FallenAngel.Gameplay
             perfStaleSum = 0f;
             perfStaleCount = 0;
             perfStaleMax = 0f;
+        }
+
+        /// <summary>
+        /// 曲终结算一个命中误差样本（照抄 osu!：一局产生一个 DataPoint）。
+        /// 判定数不足 `HitErrorTracker.MinJudgeCountPerPlay` 就直接丢弃 —— 对应 osu! 里
+        /// `if (newScore.HitEvents.Count < 50) return;`（门槛来自配置，见 HitErrorTracker 类注释的差异①）。
+        /// </summary>
+        private void FlushHitErrorSample()
+        {
+            hitErrorSampleFlushed = true;
+
+            HitErrorTracker.Sample sample;
+            if (!HitErrorTracker.TryCreateSample(sessionHitErrorsMs, CalibrationSettings.TimingAdjustData, out sample))
+            {
+                if (Debug.isDebugBuild && sessionHitErrorsMs.Count > 0)
+                {
+                    Debug.Log(string.Format(
+                        "[JudgeManager] 命中误差样本不足：本局 {0} 次判定 < 门槛 {1} → 不产生建议（osu! 口径）",
+                        sessionHitErrorsMs.Count, HitErrorTracker.MinJudgeCountPerPlay));
+                }
+                return;
+            }
+
+            HitErrorHistory.Add(sample);
+            Debug.Log(string.Format(
+                "[JudgeManager] 命中误差样本：本局 {0} 次判定，中位误差 {1:0.0}ms（正 = 打晚）"
+                + " → 建议偏移 {2:0.0} 帧（{3:0.0}ms）；历史样本 {4}/{5}",
+                sessionHitErrorsMs.Count, sample.MedianErrorMs,
+                sample.SuggestedFrames, HitErrorTracker.FramesToMs(sample.SuggestedFrames),
+                HitErrorHistory.Count, HitErrorTracker.MaxHistory));
         }
 
 #if DEVELOPMENT_BUILD || UNITY_EDITOR
@@ -368,6 +409,9 @@ namespace FallenAngel.Gameplay
         // ── 开局：建谱 + 挂回调 ─────────────────────────────────────────
         private void ResetScoreForNewSong()
         {
+            // 新的一局：命中误差重新开始收（osu! 每个 ScoreInfo 独立累计）
+            sessionHitErrorsMs.Clear();
+            hitErrorSampleFlushed = false;
             ResetStats();
             BuildScore();
         }
@@ -690,6 +734,13 @@ namespace FallenAngel.Gameplay
             bool counts = !isHoldHead
                 && note.Category != NoteCategory.Connection
                 && note.Category != NoteCategory.Combo;
+
+            // osu! 式命中误差采样：只收"玩家真实计时输入（HasJudgedError）+ 计分音符 + 真判到、不是 Miss"。
+            // 长按头/连接点/连击点都不进统计，否则它们的"零误差"会把中位数拽偏。
+            if (counts && note.HasJudgedError && result != JudgeResultType.Miss)
+            {
+                sessionHitErrorsMs.Add(note.JudgedErrorSeconds * 1000f);
+            }
 
             float bias = BiasOf(note);
             Note view = ViewOf(note);

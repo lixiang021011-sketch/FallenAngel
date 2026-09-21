@@ -870,19 +870,29 @@ namespace FallenAngel.Core
             RectTransform cr = (RectTransform)card.transform;
             cr.anchorMin = cr.anchorMax = new Vector2(0.5f, 0.40f);
             cr.pivot = new Vector2(0.5f, 0.5f);
-            cr.sizeDelta = new Vector2(900, 260);
+            cr.sizeDelta = new Vector2(940, 380);      // 加高：塞下 osu! 式的"建议偏移"三段提示
             card.GetComponent<Image>().color = new Color(0.055f, 0.10f, 0.125f, 1f);
 
             TextMeshProUGUI value = CreateText("CalValue", card.transform,
-                new Vector2(0.5f, 0.72f), new Vector2(0.5f, 0.72f), Vector2.zero, new Vector2(860, 70),
+                new Vector2(0.5f, 0.85f), new Vector2(0.5f, 0.85f), Vector2.zero, new Vector2(880, 70),
                 "", 36, TextAlignmentOptions.Center);
             value.color = new Color(0.44f, 0.88f, 0.84f, 1f);
             value.fontStyle = FontStyles.Bold;
 
             TextMeshProUGUI result = CreateText("CalResult", card.transform,
-                new Vector2(0.5f, 0.30f), new Vector2(0.5f, 0.30f), Vector2.zero, new Vector2(860, 60),
+                new Vector2(0.5f, 0.63f), new Vector2(0.5f, 0.63f), Vector2.zero, new Vector2(880, 60),
                 "", 28, TextAlignmentOptions.Center);
             result.color = new Color(1f, 1f, 1f, 0.7f);
+
+            // osu! 式建议（三段：还没数据 / 已经准确 / 建议 X）+ 应用 + 清空统计
+            TextMeshProUGUI suggest = CreateText("CalSuggestText", card.transform,
+                new Vector2(0.5f, 0.34f), new Vector2(0.5f, 0.34f), Vector2.zero, new Vector2(880, 120),
+                "", 26, TextAlignmentOptions.Center);
+            suggest.color = new Color(0.85f, 0.92f, 0.95f, 0.92f);
+            GameObject applySuggest = CreateButton("CalApplySuggestButton", card.transform,
+                new Vector2(0.28f, 0.07f), new Vector2(380, 76), "cal.applySuggest", 26);
+            GameObject clearStats = CreateButton("CalClearStatsButton", card.transform,
+                new Vector2(0.72f, 0.07f), new Vector2(380, 76), "cal.clearStats", 26);
 
             // 细调 ±5ms
             GameObject minus = CreateButton("CalMinusButton", panel.transform,
@@ -923,6 +933,9 @@ namespace FallenAngel.Core
             SetPrivateField(controller, "minusButton", minus.GetComponent<Button>());
             SetPrivateField(controller, "plusButton", plus.GetComponent<Button>());
             SetPrivateField(controller, "closeButton", close.GetComponent<Button>());
+            SetPrivateField(controller, "suggestText", suggest);
+            SetPrivateField(controller, "applySuggestButton", applySuggest.GetComponent<Button>());
+            SetPrivateField(controller, "clearStatsButton", clearStats.GetComponent<Button>());
             panel.SetActive(false);
 
             SetPrivateField(settingsController, "calibrationController", controller);
@@ -964,10 +977,19 @@ namespace FallenAngel.Core
                 langButtons.Add(b.GetComponent<Button>());
             }
 
-            // 节奏校准行：按钮（面板本体在 CreateCalibrationPanel，后建盖在本页上）
-            // 玩家向界面：跟拍点击 + 大按钮细调，不出现键盘（上游只有工程向的数字输入，见 docs/live_front_checklist.md）
+            // 判定偏移行（两条路并存，作者 2026-09-22 定案）：
+            //   ① osu! 式统计校准：打歌 → 中位命中误差 → 建议值 → 一键应用（Core/HitErrorTracker）
+            //   ② 独立的手动校准窗口：跟拍点击 + ± 微调 + 试听（CalibrationPanel，后建盖在本页上）
+            // 上游 OpenSekai 只有工程向的数字输入，没有玩家界面（见 docs/live_front_checklist.md）
+            TextMeshProUGUI offsetSummary = CreateText("SettingsOffsetSummary", panel.transform,
+                new Vector2(0.5f, 0.665f), new Vector2(0.5f, 0.665f), Vector2.zero, new Vector2(960, 110),
+                "", 26, TextAlignmentOptions.Center);
+            offsetSummary.color = new Color(1f, 1f, 1f, 0.72f);
+
             GameObject calBtn = CreateButton("SettingsCalibrationButton", panel.transform,
-                new Vector2(0.5f, 0.605f), new Vector2(560, 96), "settings.calibration", 38);
+                new Vector2(0.30f, 0.605f), new Vector2(430, 96), "settings.calibration", 34);
+            GameObject applyOffsetBtn = CreateButton("SettingsApplyOffsetButton", panel.transform,
+                new Vector2(0.70f, 0.605f), new Vector2(430, 96), "settings.applySuggest", 34);
 
             // 下落速度行：±按钮 + 动态数值（监听由 FallSpeedController 双组绑定）
             TextMeshProUGUI speedLabel = CreateText("SettingsFallSpeedLabel", panel.transform,
@@ -1012,6 +1034,8 @@ namespace FallenAngel.Core
             SetPrivateField(controller, "panelRoot", panel);
             SetPrivateField(controller, "languageButtons", langButtons);
             SetPrivateField(controller, "openCalibrationButton", calBtn.GetComponent<Button>());
+            SetPrivateField(controller, "applySuggestedOffsetButton", applyOffsetBtn.GetComponent<Button>());
+            SetPrivateField(controller, "offsetSummaryText", offsetSummary);
             SetPrivateField(controller, "sfxMinusButton", sfxMinus.GetComponent<Button>());
             SetPrivateField(controller, "sfxPlusButton", sfxPlus.GetComponent<Button>());
             SetPrivateField(controller, "sfxVolumeText", sfxText);

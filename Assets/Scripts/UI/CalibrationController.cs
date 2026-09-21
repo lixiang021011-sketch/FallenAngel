@@ -38,6 +38,14 @@ namespace FallenAngel.UI
         [SerializeField] private Button plusButton;             // ＋5ms
         [SerializeField] private Button closeButton;
 
+        [Header("osu! 式统计校准（实战命中误差 → 建议偏移）")]
+        [Tooltip("三段提示：还没数据 / 已经准确 / 建议 X（见 Core/HitErrorTracker）")]
+        [SerializeField] private TextMeshProUGUI suggestText;
+        [Tooltip("应用系统建议值（对应 osu! 的 Apply suggested offset：应用后清空统计）")]
+        [SerializeField] private Button applySuggestButton;
+        [Tooltip("清空统计（对应 osu! 的 ClearHistory）")]
+        [SerializeField] private Button clearStatsButton;
+
         [Header("节拍设置（与上游无关，属界面参数）")]
         [Tooltip("每拍间隔（秒）")]
         [SerializeField] private float beatInterval = 0.60f;
@@ -58,6 +66,13 @@ namespace FallenAngel.UI
         private bool hasSuggestion;
         private float pulseT = 1f;
 
+        /// <summary>
+        /// `Open()` 在激活面板**之前**把它置位。
+        /// 为什么必须这样：面板在场景里是隐藏的，第一次 `SetActive(true)` 会立刻触发 `Awake`，
+        /// 而 Awake 里那句"默认隐藏"会把刚打开的面板又关掉 —— 真机表现就是"点开没反应"。
+        /// </summary>
+        private bool openRequested;
+
         private void Awake()
         {
             tickSource = gameObject.AddComponent<AudioSource>();
@@ -71,8 +86,11 @@ namespace FallenAngel.UI
             if (minusButton != null) minusButton.onClick.AddListener(() => { AudioManager.Instance?.PlayButtonClick(); Nudge(-fineStepMs); });
             if (plusButton != null) plusButton.onClick.AddListener(() => { AudioManager.Instance?.PlayButtonClick(); Nudge(+fineStepMs); });
             if (closeButton != null) closeButton.onClick.AddListener(Close);
-            if (panelRoot != null) panelRoot.SetActive(false);
+            if (applySuggestButton != null) applySuggestButton.onClick.AddListener(() => { AudioManager.Instance?.PlayButtonClick(); ApplySuggestedOffset(); });
+            if (clearStatsButton != null) clearStatsButton.onClick.AddListener(() => { AudioManager.Instance?.PlayButtonClick(); ClearStats(); });
+            if (panelRoot != null && !openRequested) panelRoot.SetActive(false);
             RefreshValueText();
+            RefreshSuggestion();
             if (resultText != null) resultText.text = "";
             if (statusText != null) statusText.text = Loc.T("cal.hint");
         }
@@ -122,9 +140,11 @@ namespace FallenAngel.UI
 
         public void Open()
         {
+            openRequested = true;
             if (panelRoot != null) panelRoot.SetActive(true);
             // ESC 由本层处理（SettingsPanelController 不再拦截）
             RefreshValueText();
+            RefreshSuggestion();
             if (resultText != null) resultText.text = "";
             if (statusText != null) statusText.text = Loc.T("cal.hint");
         }
@@ -213,6 +233,7 @@ namespace FallenAngel.UI
             if (!hasSuggestion) return;
             CalibrationSettings.TimingAdjustData = suggestedFrames;
             RefreshValueText();
+            RefreshSuggestion();
             Debug.Log(string.Format("[Calibration] 应用建议值：{0:0.1} 帧（{1}ms，正数 = 音符提前）",
                 CalibrationSettings.TimingAdjustData,
                 CalibrationMeasure.FramesToMs(CalibrationSettings.TimingAdjustData)));
@@ -223,6 +244,69 @@ namespace FallenAngel.UI
             float frames = CalibrationSettings.TimingAdjustData + CalibrationMeasure.MsToFrames(deltaMs);
             CalibrationSettings.TimingAdjustData = frames;
             RefreshValueText();
+            RefreshSuggestion();
+        }
+
+        // ── osu! 式统计校准（实战命中误差 → 建议偏移）────────────────────
+        /// <summary>
+        /// 三段提示（照抄 osu! `AudioOffsetAdjustControl.updateHintText` 的结构）：
+        /// 没数据 → 提示去打歌；建议与当前差异 &lt; 1ms → 「已经准确」；否则给建议值。
+        /// 同时控制「应用建议值」按钮的可用性（osu! 里是 `applySuggestion.Enabled`）。
+        /// </summary>
+        private void RefreshSuggestion()
+        {
+            float suggested;
+            bool hasSuggestion = HitErrorHistory.TrySuggestFrames(out suggested);
+            int samples = HitErrorHistory.Count;
+
+            if (suggestText != null)
+            {
+                if (!hasSuggestion)
+                {
+                    suggestText.text = Loc.T("cal.suggest.none");
+                }
+                else if (HitErrorTracker.IsAlreadyCorrect(suggested, CalibrationSettings.TimingAdjustData))
+                {
+                    suggestText.text = Loc.T("cal.suggest.correct", samples);
+                }
+                else
+                {
+                    suggestText.text = Loc.T("cal.suggest.value",
+                        HitErrorTracker.FramesToMs(suggested), samples);
+                }
+            }
+
+            if (applySuggestButton != null)
+            {
+                applySuggestButton.interactable = hasSuggestion
+                    && !HitErrorTracker.IsAlreadyCorrect(suggested, CalibrationSettings.TimingAdjustData);
+            }
+            if (clearStatsButton != null) clearStatsButton.interactable = samples > 0;
+        }
+
+        /// <summary>
+        /// 应用系统建议值（osu! `applySuggestion.Action`：`current.Value = SuggestedOffset.Value.Value;`
+        /// 且紧接着 `hitErrorTracker.ClearHistory()` —— 应用后重新累计，否则旧样本会反复"建议"同一个值）。
+        /// </summary>
+        private void ApplySuggestedOffset()
+        {
+            float suggested;
+            if (!HitErrorHistory.TrySuggestFrames(out suggested)) return;
+
+            CalibrationSettings.TimingAdjustData = suggested;
+            HitErrorHistory.Clear();
+            RefreshValueText();
+            RefreshSuggestion();
+            Debug.Log(string.Format("[Calibration] 应用系统建议偏移：{0:0.0} 帧（{1:0.0}ms，正 = 音符提前）；统计已清空",
+                CalibrationSettings.TimingAdjustData,
+                HitErrorTracker.FramesToMs(CalibrationSettings.TimingAdjustData)));
+        }
+
+        private void ClearStats()
+        {
+            HitErrorHistory.Clear();
+            RefreshSuggestion();
+            Debug.Log("[Calibration] 已清空命中误差统计（osu! 的 ClearHistory）");
         }
 
         /// <summary>试听：用**当前偏移**循环播节拍（把偏移直接听出来：正数 = 滴答提前）</summary>

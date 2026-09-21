@@ -170,15 +170,15 @@
     },
     {
       "key": "settings.calibration",
-      "value": "节奏校准"
+      "value": "手动校准"
     },
     {
       "key": "cal.title",
-      "value": "节奏校准"
+      "value": "手动校准"
     },
     {
       "key": "cal.hint",
-      "value": "跟着节拍点屏幕，系统自动给出建议偏移"
+      "value": "跟拍测量，或用下方“应用系统建议”（来自实战命中误差）"
     },
     {
       "key": "cal.tap",
@@ -235,6 +235,34 @@
     {
       "key": "cal.step",
       "value": "±5ms 微调"
+    },
+    {
+      "key": "cal.suggest.none",
+      "value": "还没有统计数据：完整打几首歌（每局至少 15 次判定），这里会给出建议偏移"
+    },
+    {
+      "key": "cal.suggest.correct",
+      "value": "当前偏移已经和你的手感一致（{0} 局统计）"
+    },
+    {
+      "key": "cal.suggest.value",
+      "value": "系统建议 {0:+0;-0;0} ms（{1} 局统计，取命中误差中位数）"
+    },
+    {
+      "key": "cal.applySuggest",
+      "value": "应用系统建议"
+    },
+    {
+      "key": "cal.clearStats",
+      "value": "清空统计"
+    },
+    {
+      "key": "settings.applySuggest",
+      "value": "应用建议值"
+    },
+    {
+      "key": "settings.offsetNow",
+      "value": "判定偏移 {0:+0;-0;0} ms（{1} 帧）"
     }
   ]
 }

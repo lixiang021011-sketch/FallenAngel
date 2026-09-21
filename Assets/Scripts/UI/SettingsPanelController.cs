@@ -18,6 +18,10 @@ namespace FallenAngel.UI
         [SerializeField] private List<Button> languageButtons = new List<Button>();
         [Tooltip("打开节奏校准（玩家界面：跟拍点击 + 大按钮细调，不出现键盘）")]
         [SerializeField] private Button openCalibrationButton;
+        [Tooltip("应用系统建议偏移（osu! 的 Apply suggested offset：来自实战命中误差中位数）")]
+        [SerializeField] private Button applySuggestedOffsetButton;
+        [Tooltip("设置页上的偏移/建议摘要（三段：无数据 / 已准确 / 建议 X）")]
+        [SerializeField] private TextMeshProUGUI offsetSummaryText;
         [SerializeField] private CalibrationController calibrationController;
         [SerializeField] private GameObject calibrationPanel;          // ESC 层叠判断（SceneBuilder 注入）
         [SerializeField] private Button sfxMinusButton;
@@ -32,6 +36,8 @@ namespace FallenAngel.UI
             // 面板首次激活时执行（同 LanguagePanelController 模式）
             if (closeButton != null) closeButton.onClick.AddListener(Close);
             if (openCalibrationButton != null) openCalibrationButton.onClick.AddListener(OpenCalibration);
+            if (applySuggestedOffsetButton != null)
+                applySuggestedOffsetButton.onClick.AddListener(() => { AudioManager.Instance?.PlayButtonClick(); ApplySuggestedOffset(); });
             if (sfxMinusButton != null) sfxMinusButton.onClick.AddListener(() => AdjustSfxVolume(-0.1f));
             if (sfxPlusButton != null) sfxPlusButton.onClick.AddListener(() => AdjustSfxVolume(0.1f));
             if (hitEffectButton != null) hitEffectButton.onClick.AddListener(ToggleHitEffect);
@@ -51,6 +57,7 @@ namespace FallenAngel.UI
             RefreshLanguageButtons();
             RefreshSfxText();
             RefreshHitEffect();
+            RefreshOffsetSummary();
         }
 
         private void OnDisable()
@@ -74,6 +81,7 @@ namespace FallenAngel.UI
             RefreshLanguageButtons();
             RefreshSfxText();
             RefreshHitEffect();
+            RefreshOffsetSummary();
         }
 
         public void Close()
@@ -86,6 +94,49 @@ namespace FallenAngel.UI
         {
             AudioManager.Instance?.PlayButtonClick();
             if (calibrationController != null) calibrationController.Open();
+        }
+
+        /// <summary>
+        /// osu! 式建议偏移（照抄 `AudioOffsetAdjustControl` 的口径，细节见 Core/HitErrorTracker）：
+        /// 设置页直接显示建议值 + 一键应用，玩家不必进校准窗口；窗口那条路是给想手动调的人准备的。
+        /// </summary>
+        private void ApplySuggestedOffset()
+        {
+            float suggested;
+            if (!HitErrorHistory.TrySuggestFrames(out suggested)) return;
+
+            CalibrationSettings.TimingAdjustData = suggested;
+            HitErrorHistory.Clear();          // osu!：应用建议后 ClearHistory，重新累计
+            RefreshOffsetSummary();
+            Debug.Log(string.Format("[Settings] 应用系统建议偏移 {0:0.0} 帧（{1:0.0}ms）",
+                CalibrationSettings.TimingAdjustData, HitErrorTracker.FramesToMs(CalibrationSettings.TimingAdjustData)));
+        }
+
+        private void RefreshOffsetSummary()
+        {
+            float current = CalibrationSettings.TimingAdjustData;
+
+            float suggested;
+            bool has = HitErrorHistory.TrySuggestFrames(out suggested);
+            int samples = HitErrorHistory.Count;
+
+            if (offsetSummaryText != null)
+            {
+                string currentText = Loc.T("settings.offsetNow", HitErrorTracker.FramesToMs(current), CalibrationSettings.Format(current));
+                if (!has)
+                    offsetSummaryText.text = currentText + "\n" + Loc.T("cal.suggest.none");
+                else if (HitErrorTracker.IsAlreadyCorrect(suggested, current))
+                    offsetSummaryText.text = currentText + "\n" + Loc.T("cal.suggest.correct", samples);
+                else
+                    offsetSummaryText.text = currentText + "\n"
+                        + Loc.T("cal.suggest.value", HitErrorTracker.FramesToMs(suggested), samples);
+            }
+
+            if (applySuggestedOffsetButton != null)
+            {
+                applySuggestedOffsetButton.interactable = has
+                    && !HitErrorTracker.IsAlreadyCorrect(suggested, current);
+            }
         }
 
         private void SelectLanguage(Language lang)

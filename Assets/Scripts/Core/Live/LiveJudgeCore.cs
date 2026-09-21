@@ -436,6 +436,14 @@ namespace FallenAngel.Live
 
                     var lane = ConvertLaneBy(ref note, ref input);
                     note.Judgment(ref input.Touch, lane);
+                    // 命中误差采样（Core/HitErrorTracker，照抄 osu! 的 hit error 口径）：
+                    // 用**输入时间戳外推出来的触摸时刻**算，而不是 excute 里按帧量化的 OffsetJudgeTime
+                    // —— 120Hz 下后者有约 8ms 噪声，而校准关心的正是 10ms 量级。正 = 打晚。
+                    if (note.Result != NoteResult.None)
+                    {
+                        note.JudgedErrorSeconds = input.Touch.musicTime - note.MusicScoreInfo.time;
+                        note.HasJudgedError = true;
+                    }
                     if (note.Result == NoteResult.None || note.Result == NoteResult.Bad)
                     {
                         inputedNormalNoteTouch[input.Touch.touchId] = input.Touch.musicTime;
