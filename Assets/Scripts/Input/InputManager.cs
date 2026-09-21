@@ -408,8 +408,10 @@ namespace FallenAngel.InputSystem
                 int lane = inHitZone ? GetLaneFromScreenPos(touchPos) : -1;
                 if (lane < 0 || lane >= LaneLayout.ActiveLaneCount)
                 {
-                    if (touchIdToLane.ContainsKey(touchId))
-                        ReleaseTouchId(touchId, touchPos);
+                    // 已按住的手指滑到 UI 上 / 滑出判定区：**保持它原来的轨**，只有真正抬起才释放。
+                    // 以前这里直接释放 → 手指越过 HUD、或滑条跟手时稍微出界就"断触"（作者反馈
+                    // "断触频繁、打得小心翼翼"）。滑条跟手有独立容差（JudgeManager 的 SlideFollowTolerance），
+                    // 不需要在这里靠"释放"来惩罚。
                     continue;
                 }
 

@@ -381,7 +381,10 @@ namespace FallenAngel.Gameplay
             laneResolver.EnforceJudgmentYGate = false;
 
             var notes = LiveNoteBuilder.Build(
-                chart.notes, laneCount, LiveNoteBuilder.DefaultFlickDistancePixels, laneCount == 4);
+                chart.notes, laneCount, LiveNoteBuilder.DefaultFlickDistancePixels, false);
+            // 说明：以前 4 键谱的 lane 0 会被当成"全宽 kick（任意键可判）"，它的判定跨度铺满所有轨，
+            // 于是双押时同刻另一轨的音符会被归属规则挤掉 → "双押有时候判定不上"（作者反馈）。
+            // 现在只认谱面显式写的 wide 标记（v2 协议），lane 0 就是普通一条轨。
 
             liveByChartNote.Clear();
             chartNoteByLive.Clear();

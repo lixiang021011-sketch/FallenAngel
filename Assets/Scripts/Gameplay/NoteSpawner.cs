@@ -371,7 +371,9 @@ namespace FallenAngel.Gameplay
             // 4 键鼓谱 lane 0（历史 kick 语义）或 v2 wide 标记（任意轨道）
             bool isDrumChart = GameManager.Instance != null && GameManager.Instance.CurrentChart != null &&
                                GameManager.Instance.CurrentChart.LaneCount == 4;
-            if (data.wide || (isDrumChart && data.lane == 0))
+            // 只认显式 wide 标记（与判定口径一致：4 键 lane 0 不再自动当全宽 kick ——
+            // 否则视觉是横条、判定却只吃一轨，还会挤掉双押的另一个音符）
+            if (data.wide)
             {
                 float fullWidth = (LaneLayout.GetCenterXForActive(LaneLayout.ActiveLaneCount - 1) -
                                    LaneLayout.GetCenterXForActive(0)) + Note.DefaultNoteWidth;
