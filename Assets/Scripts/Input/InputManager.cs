@@ -243,6 +243,10 @@ namespace FallenAngel.InputSystem
             // 轨道数可能随谱面切换（4K/5K），每帧对齐数组
             EnsureLaneArrays();
 
+#if DEVELOPMENT_BUILD
+            LogTouchForDeviceDebug();
+#endif
+
             bool playing = GameManager.Instance != null &&
                            GameManager.Instance.CurrentState == GameState.Playing;
 
@@ -269,6 +273,31 @@ namespace FallenAngel.InputSystem
 #endif
             }
         }
+
+#if DEVELOPMENT_BUILD
+        // ── 真机排查用：任意界面都把"按下"的屏幕坐标记一行（每帧最多一条，基本无损）──
+        // 为什么要它：MIUI 拦掉了 `adb shell input`，只剩 monkey 能注入，而 monkey 不打印坐标。
+        // 有了这行日志，就能把"某个 monkey 种子"映射到"某个屏幕坐标"，从而精确点击按钮/判定区。
+        private int lastTouchLogFrame = -10;
+
+        private void LogTouchForDeviceDebug()
+        {
+            if (UnityEngine.Input.touchCount <= 0) return;
+
+            for (int i = 0; i < UnityEngine.Input.touchCount; i++)
+            {
+                Touch t = UnityEngine.Input.GetTouch(i);
+                if (t.phase != TouchPhase.Began) continue;
+                if (Time.frameCount == lastTouchLogFrame) continue;
+
+                lastTouchLogFrame = Time.frameCount;
+                Vector2 p = t.position;
+                string zone = p.y <= Screen.height * touchBottomRatio ? "判定区内" : "上半屏";
+                Debug.Log(string.Format("[InputManager] 触摸按下（真机）：屏 {0:0}×{1:0}（屏高 {2}，{3}）",
+                    p.x, p.y, Screen.height, zone));
+            }
+        }
+#endif
 
         /// <summary>
         /// 游戏恢复时按真实按键状态同步一次：

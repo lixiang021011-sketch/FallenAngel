@@ -90,6 +90,9 @@ namespace FallenAngel.Gameplay
             public int lane;
         }
 
+        // ── 真机排查用的诊断日志（只在开发版打；release 静默）──
+        private float lastOutsideLogTime = -10f;
+
         /// <summary>判定簇的谱面运行时（只读；自检/视图要按音符查状态时用）</summary>
         public LiveScoreRuntime Runtime { get { return runtime; } }
 
@@ -159,6 +162,10 @@ namespace FallenAngel.Gameplay
 
         private void Update()
         {
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+            DevAutoStartIfRequested();
+#endif
+
             if (GameManager.Instance == null || GameManager.Instance.CurrentState != GameState.Playing) return;
             if (runtime == null || runtime.Notes.Count == 0) return;
 
@@ -174,6 +181,128 @@ namespace FallenAngel.Gameplay
 
             UpdateSlideFollow(songTime);
         }
+
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+        // ── 真机自测开关（只在开发版编译进来；release 包不含这段）──────────────────
+        // 为什么需要：MIUI 拦了 `adb shell input`（只剩 monkey 能注入，而 monkey 只能随机点按），
+        // 靠随机点按走不到演奏页，判定/输入的设备验证无法复现。
+        // 用法：往 persistentDataPath/fa_autostart 写一行内容：
+        //   "dense"（或空）→ 合成密集谱（5 轨每 120ms 一个音符、无声、虚拟钟），随便点都能判到
+        //   其它内容      → 当作 Resources 谱面名（如 test_chart_silent / test_chart_5k）
+        private bool devAutoStartDone;
+        private float devHookStartTime = -1f;
+
+        private void DevAutoStartIfRequested()
+        {
+            if (devAutoStartDone) return;
+            if (devHookStartTime < 0f) devHookStartTime = Time.realtimeSinceStartup;
+            if (Time.realtimeSinceStartup - devHookStartTime < 2.5f) return;
+            devAutoStartDone = true;
+
+            string path = System.IO.Path.Combine(Application.persistentDataPath, "fa_autostart");
+            if (!System.IO.File.Exists(path)) return;
+
+            string mode = System.IO.File.ReadAllText(path).Trim();
+            var starter = FindObjectOfType<FallenAngel.UI.GameStarter>();
+            if (starter == null)
+            {
+                Debug.LogWarning("[JudgeManager] 开发版自动开局失败：场景里没有 GameStarter");
+                return;
+            }
+
+            if (mode == "dense2")
+            {
+                Debug.Log("[JudgeManager] 开发版自动开局：全类型密集谱（5 轨 / 各类型持续出现 / 无声）");
+                starter.StartChart(BuildAllTypesDeviceTestChart());
+            }
+            else if (mode.Length == 0 || mode == "dense")
+            {
+                Debug.Log("[JudgeManager] 开发版自动开局：合成密集谱（5 轨 / 120ms / 无声）");
+                starter.StartChart(BuildDenseDeviceTestChart());
+            }
+            else
+            {
+                Debug.Log("[JudgeManager] 开发版自动开局：" + mode);
+                starter.StartChartFromResources(mode);
+            }
+        }
+
+        /// <summary>合成密集谱：5 轨轮转、每 120ms 一个普通音符，共 300 个（约 36 秒）。</summary>
+        private static ChartData BuildDenseDeviceTestChart()
+        {
+            var chart = new ChartData();
+            chart.metadata.songName = "DEV dense（设备判定自测）";
+            chart.metadata.songArtist = "device-test";
+            chart.metadata.formatVersion = 2;      // ≥2 → 5 键
+            chart.metadata.bpm = 120f;
+            chart.metadata.audioFileName = "";     // 无音频 → 虚拟钟
+
+            for (int i = 0; i < 300; i++)
+            {
+                chart.notes.Add(new NoteData(i % 5, 2f + i * 0.12f, Data.NoteType.Normal));
+            }
+            chart.SortNotes();
+            return chart;
+        }
+
+        /// <summary>
+        /// 全类型密集谱：普通/宽条/长按/滑条/drag/flick 各自在自己的轨道上持续出现，
+        /// 让"随机手势 + 真机触摸"也能覆盖到每一种音符的判定分支。
+        /// </summary>
+        private static ChartData BuildAllTypesDeviceTestChart()
+        {
+            var chart = new ChartData();
+            chart.metadata.songName = "DEV all-types（设备判定自测）";
+            chart.metadata.songArtist = "device-test";
+            chart.metadata.formatVersion = 2;
+            chart.metadata.bpm = 120f;
+            chart.metadata.audioFileName = "";
+
+            const float start = 2f;
+            for (int i = 0; i < 80; i++)
+            {
+                float t = start + i * 0.30f;
+                chart.notes.Add(new NoteData(i % 5, t, Data.NoteType.Normal));          // 普通
+                chart.notes.Add(new NoteData((i + 2) % 5, t + 0.15f, Data.NoteType.Drag)); // drag（摩擦）
+            }
+
+            for (int i = 0; i < 40; i++)
+            {
+                float t = start + i * 0.60f;
+                // 甩键：上下交替（覆盖方向正确/错误两条分支）
+                chart.notes.Add(new NoteData(i % 5, t + 0.05f, Data.NoteType.Flick, 0f, -1,
+                    i % 2 == 0 ? FlickDirection.Up : FlickDirection.Down));
+                // 宽条（任意轨按下都能判）
+                if (i % 2 == 0)
+                    chart.notes.Add(new NoteData(0, t + 0.25f, Data.NoteType.Normal, 0f, -1,
+                        FlickDirection.Up, null, true));
+            }
+
+            for (int i = 0; i < 16; i++)
+            {
+                float t = start + i * 1.20f;
+                int lane = i % 5;
+                // 长按（头 + 视图尾条目）
+                chart.notes.Add(new NoteData(lane, t + 0.40f, Data.NoteType.LongStart, 0.50f, 100 + i));
+                chart.notes.Add(new NoteData(lane, t + 0.90f, Data.NoteType.LongEnd, 0f, 100 + i));
+
+                // 滑条（路径 1 轨位移，头 + 视图尾条目）
+                int slideLane = (i + 1) % 4;
+                var path = new System.Collections.Generic.List<SlidePathPoint>
+                {
+                    new SlidePathPoint { t = 0f, x = slideLane },
+                    new SlidePathPoint { t = 0.3f, x = slideLane + 0.5f },
+                    new SlidePathPoint { t = 0.6f, x = slideLane + 1f },
+                };
+                chart.notes.Add(new NoteData(slideLane, t + 0.60f, Data.NoteType.Slide, 0.60f, 200 + i,
+                    FlickDirection.Up, path));
+                chart.notes.Add(new NoteData(slideLane + 1, t + 1.20f, Data.NoteType.LongEnd, 0f, 200 + i));
+            }
+
+            chart.SortNotes();
+            return chart;
+        }
+#endif
 
         // ── 开局：建谱 + 挂回调 ─────────────────────────────────────────
         private void ResetScoreForNewSong()
@@ -367,6 +496,25 @@ namespace FallenAngel.Gameplay
                     ? laneResolver.Resolve(new Vector3(canvasPos.x, canvasPos.y, 0f), true)
                     : -1f;
                 laneCoord = resolved;   // <0 = 判定区之外（移植层会拒绝这次输入）
+
+                // 真机排查：触摸被判到"判定区之外"时留痕（节流 0.25s，避免刷屏）
+                if (laneCoord < 0f && Debug.isDebugBuild
+                    && Time.realtimeSinceStartup - lastOutsideLogTime > 0.25f)
+                {
+                    lastOutsideLogTime = Time.realtimeSinceStartup;
+                    Debug.Log(string.Format(
+                        "[JudgeManager] 触摸在判定区外（线上方或越轨）：屏 {0:0}×{1:0} / 画布 {2:0}×{3:0} / 判定线画布 Y={4:0}",
+                        screenPos.x, screenPos.y, canvasPos.x, canvasPos.y,
+                        laneResolver != null ? laneResolver.JudgeLineY : 0f));
+                }
+            }
+
+            // 真机排查：每次"按下"记一行落点（release 里不输出）
+            if (Debug.isDebugBuild && phase == LiveTouchPhase.Began)
+            {
+                Debug.Log(string.Format(
+                    "[JudgeManager] 触摸按下：屏 {0:0}×{1:0} → 轨道 {2:0.###}（{3}）",
+                    screenPos.x, screenPos.y, laneCoord, fromTouch ? "触屏" : "键鼠"));
             }
 
             Vector2 delta = Vector2.zero;
@@ -406,6 +554,15 @@ namespace FallenAngel.Gameplay
             bool isHoldHead = note.ParentNote == null && note.Category == NoteCategory.Long;
             bool isFriction = note.Category == NoteCategory.Friction || note.Category == NoteCategory.FrictionHide;
             JudgeResultType result = MapResult(note);
+            int lane = Mathf.RoundToInt((note.LaneStartF + note.LaneEndF) * 0.5f);
+
+            if (Debug.isDebugBuild)
+            {
+                Debug.Log(string.Format(
+                    "[JudgeManager] 判定 {0} lane={1} 类别={2} 头={3} 连击={4} 分={5} P/G/Gd/B/M={6}/{7}/{8}/{9}/{10}",
+                    result, lane, note.Category, isHoldHead, Combo, Score,
+                    PerfectCount, GreatCount, GoodCount, BadCount, MissCount));
+            }
 
             // 本工程协议：drag（摩擦）碰即 Perfect、永不 MISS —— 判定层照上游给你结果，
             // 计分层把它的 Miss 吸收掉（不计 Miss、不出特效，交给视图静默回收）。
@@ -416,7 +573,6 @@ namespace FallenAngel.Gameplay
                 && note.Category != NoteCategory.Combo;
 
             float bias = BiasOf(note);
-            int lane = Mathf.RoundToInt((note.LaneStartF + note.LaneEndF) * 0.5f);
             Note view = ViewOf(note);
 
             GameManager.Instance?.Portfolio?.ReportJudge(ChartDataOf(note), result);
