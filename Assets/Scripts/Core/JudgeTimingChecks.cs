@@ -65,8 +65,8 @@ namespace FallenAngel.Core
             string summary = string.Format(
                 "判定时序自检：{0} 项通过 / {1} 项异常" +
                 "（判定：伪双押同刻一起判 + 相邻音符分开判 + 容差边界 + 真双押 + 横条只认按下边沿 + " +
-                "同帧不补刀 + 输入事件时间戳参与判定）" +
-                "；注：真实触摸时间戳需接 EnhancedTouch（新输入系统），当前触摸事件的时间戳 = 本帧歌曲时间",
+                "同帧不补刀 + 输入事件时间戳参与判定 + 输入时钟换算）" +
+                "；注：真实触摸时间戳走 EnhancedTouch（装了 com.unity.inputsystem 才生效），未装时回退本帧歌曲时间",
                 pass, fail);
             foreach (string line in lines) Debug.Log("[JudgeTiming] " + line);
             Debug.Log("[JudgeTiming] " + summary);
