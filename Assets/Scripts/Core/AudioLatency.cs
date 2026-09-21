@@ -20,8 +20,12 @@ namespace FallenAngel.Core
     /// </summary>
     public static class AudioLatency
     {
-        /// <summary>设备输出延迟的保守估计（秒）。Android 真机常见 20~60ms，取中值。</summary>
-        public const float DeviceLatencyEstimateSeconds = 0.035f;
+        /// <summary>
+        /// 设备输出延迟的估计（秒）。取值有据：真机音频 HAL 的播放配置是
+        /// `period_size=256 × period_count=8 @48kHz` = **42.7ms**（`dumpsys` 里读到的深度缓冲），
+        /// 所以用 43ms 而不是拍脑袋的中值；剩余误差交给设置里的校准微调。
+        /// </summary>
+        public const float DeviceLatencyEstimateSeconds = 0.043f;
 
         /// <summary>DSP 缓冲长度（秒），由 <see cref="Measure"/> 得到</summary>
         public static float DspBufferSeconds { get; private set; }
