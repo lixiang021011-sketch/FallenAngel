@@ -113,6 +113,55 @@ def _nearest_free_lane(lane, lane_count, used):
     return None
 
 
+def apply_guardrails(chart, max_hold=4.0):
+    """把四类谱面问题一次处理干净（导入器直接调这个）：
+       去重 → flick 补 direction → 超长 hold 裁剪 → 两指化（长音静音带 / 重叠长音 / 同刻落手 ≤2）。
+       返回改动说明列表（空 = 什么都没改）。就地修改传入的 chart。"""
+    notes = chart.get("notes") or []
+    meta = chart.get("metadata") or {}
+    name = meta.get("songName") or "chart"
+    lane_count = 5 if int(meta.get("formatVersion", 0) or 0) >= 2 else 4
+    report = []
+
+    out, seen, dup, dir_fix, cut = [], set(), 0, 0, 0
+    for n in notes:
+        key = (round(n.get("time", 0), 3), n.get("lane"), n.get("type"))
+        if key in seen:
+            dup += 1
+            continue
+        seen.add(key)
+        if n.get("type") == "flick" and "direction" not in n:
+            n["direction"] = "up"
+            dir_fix += 1
+        if max_hold and n.get("type") == "hold" and n.get("duration", 0) > max_hold:
+            report.append("%s：hold t=%.2f %.2fs → %.2fs" % (name, n["time"], n["duration"], max_hold))
+            n["duration"] = max_hold
+            cut += 1
+        out.append(n)
+
+    for n in out:
+        if n.get("type") != "hold" or (n.get("longNoteId") or -1) < 0:
+            continue
+        for m in out:
+            if m.get("type") in END_TYPES and m.get("longNoteId") == n["longNoteId"]:
+                m["time"] = round(n["time"] + n["duration"], 3)
+
+    out, two_finger_changed = two_finger_pass(out, lane_count, report, name)
+
+    if isinstance(meta.get("noteCounts"), dict):
+        actual = {}
+        for n in out:
+            actual[n.get("type")] = actual.get(n.get("type"), 0) + 1
+        for k in meta["noteCounts"]:
+            meta["noteCounts"][k] = actual.get(k, 0)
+    chart["notes"] = out
+
+    if dup or dir_fix or cut or two_finger_changed:
+        report.insert(0, "%s：去重 %d、补 direction %d、裁长按 %d%s"
+                      % (name, dup, dir_fix, cut, "、两指化已处理" if two_finger_changed else ""))
+    return report
+
+
 def main():
     max_hold = 4.0
     dry = "--dry" in sys.argv

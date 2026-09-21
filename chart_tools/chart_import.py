@@ -708,6 +708,10 @@ def main(argv=None):
     parser.add_argument("--artist", help="覆盖艺术家")
     parser.add_argument("--flick-direction", default="up", choices=["up", "down", "alternate"],
                         help="Phigros/PEC 的 flick 没有方向信息，用它决定（alternate=上下交替，便于测试方向判定）")
+    parser.add_argument("--max-hold", type=float, default=4.0,
+                        help="谱面护栏：长按超过这个秒数就裁到上限（0 = 不裁；测试期默认 4s）")
+    parser.add_argument("--no-guardrails", action="store_true",
+                        help="跳过谱面护栏（去重 / flick 补 direction / 长按裁剪 / 两指化），只在需要原始输出时用")
     args = parser.parse_args(argv)
 
     chart = convert(args.input, args.difficulty, args.flick_direction)
@@ -718,10 +722,21 @@ def main(argv=None):
     if args.artist:
         chart["metadata"]["songArtist"] = args.artist
 
+    # ── 谱面护栏（2026-09-21）：导入即清洗 + 导入后体检，脏数据不进仓库 ──
+    if not args.no_guardrails:
+        from fix_charts import apply_guardrails   # 同目录模块
+        for line in apply_guardrails(chart, args.max_hold if args.max_hold > 0 else None):
+            print("  · " + line)
+
     problems = validate(chart)
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
     with open(args.out, "w", encoding="utf-8") as handle:
         json.dump(chart, handle, ensure_ascii=False, indent=2)
+
+    if not args.no_guardrails:
+        import audit_charts
+        file_issues, _ = audit_charts.audit(args.out, args.max_hold if args.max_hold > 0 else 1e9)
+        problems = problems + ["（导入后体检）" + issue for issue in file_issues]
 
     counts = chart["noteCounts"]
     print("已导出 %s：音符 %d（tap %d / hold %d）BPM %.2f 偏移 %.3fs"
