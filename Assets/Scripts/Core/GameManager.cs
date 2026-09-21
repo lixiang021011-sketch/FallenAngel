@@ -205,6 +205,8 @@ namespace FallenAngel.Core
             // 谱面偏移 + 全局节拍校准偏移（CalibrationSettings，PlayerPrefs 持久化）
             SongTime = Mathf.Max(0f, AudioManager.Instance.CurrentTime -
                 ((CurrentChart?.metadata.offset ?? 0f) + CalibrationSettings.OffsetSeconds));
+            // 记下"这次 SongTime 采样时的输入时钟读数"：输入事件按自己的时间戳换算歌曲时间要用
+            InputClock.Sample(SongTime);
 
             // 曲终检测：真实音频自然播完，或时间超过谱面总时长（虚拟钟模式兜底）。
             // 切后台时不要把暂停的 BGM 当成曲终。

@@ -248,6 +248,20 @@ namespace FallenAngel.Core
                         tap.IsJudged ? tap.JudgeResult.ToString() : "未判",
                         sb.Judge.PerfectCount, sb.Judge.GreatCount));
             }
+
+            // ⑨ 输入时钟换算：事件时刻 → 歌曲时间（"按事件时间戳判定"的地基）。
+            //    采样点 SongTime=10.000 @ 输入时钟 100.000。
+            InputClock.Reset();
+            InputClock.Sample(10.000f, 100.000);
+            float normal = InputClock.ToMusicTime(100.020);    // 事件发生在采样后 20ms
+            float late = InputClock.ToMusicTime(100.180);      // 晚 180ms（跨档位的那一段）
+            float clamped = InputClock.ToMusicTime(200.000);   // 时钟不同源 → 钳到 +0.25
+            check("输入时钟换算",
+                Mathf.Abs(normal - 10.020f) <= 0.0005f &&
+                Mathf.Abs(late - 10.180f) <= 0.0005f &&
+                Mathf.Abs(clamped - (10.000f + InputClock.MaxDelta)) <= 0.0005f,
+                string.Format("+20ms→{0:0.###}、+180ms→{1:0.###}、异常时钟→{2:0.###}（钳到 +{3:0.##}s）",
+                    normal, late, clamped, InputClock.MaxDelta));
         }
 
         /// <summary>
