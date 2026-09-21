@@ -57,7 +57,7 @@ namespace FallenAngel.Live
         /// </summary>
         public static float FullWidthLaneOffset
         {
-            get { return (LaneLayout.ActiveLaneCount - 1) * 0.5f + 0.5f; }
+            get { return (FallenAngel.Core.LaneLayout.ActiveLaneCount - 1) * 0.5f + 0.5f; }
         }
 
         /// <summary>长按/滑条的横向跨度：宽（1.5 轨）但有界——滑条的"跟手"还需要位置有意义</summary>
