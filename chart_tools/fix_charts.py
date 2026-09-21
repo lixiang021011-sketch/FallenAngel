@@ -49,11 +49,29 @@ def two_finger_pass(notes, lane_count, report, name):
 
         kept = []
         used_lanes = set(active.keys())
+        # 长音的"静音带"：±1 轨都算被它打扰（作者口径：长音不该干扰其他音符）
+        holdband = set()
+        for l in active.keys():
+            for d in (-1, 0, 1):
+                holdband.add(l + d)
         # 长音优先登记（占轨），其余音符让位
         for n in sorted(group, key=lambda x: 0 if _is_long(x) else 1):
             lane = n.get("lane", 0)
-            if lane in active and not _is_long(n):
+            if _is_long(n) and lane in holdband:
+                # 相邻轨已有长音在按住：这条长音的时长大到会重叠 → 裁到"不重叠"，裁不掉就丢
+                blocked_until = max([active[l] for l in (lane - 1, lane, lane + 1) if l in active] or [0])
+                room = blocked_until - n.get("time", 0)
+                if room > 0.35:
+                    n["duration"] = round(room, 3)
+                    report.append("%s：长音重叠 → 轨%d 的 t=%.2f 裁到 %.2fs"
+                                  % (name, lane, n["time"], n["duration"]))
+                else:
+                    dropped += 1
+                    continue
+            elif lane in holdband and not _is_long(n):
                 target = _nearest_free_lane(lane, lane_count, used_lanes)
+                if target is not None and target in holdband:
+                    target = None            # 不许挪进别的长音的静音带
                 if target is None:
                     dropped += 1
                     continue
@@ -72,6 +90,8 @@ def two_finger_pass(notes, lane_count, report, name):
             kept.append(n)
             if _is_long(n):
                 active[lane] = n.get("time", 0) + n.get("duration", 0)
+                for d in (-1, 0, 1):
+                    holdband.add(lane + d)
 
         # 手指数上限：按住中的长音各占一根手指
         budget = max(0, MAX_FINGERS - len(active) + sum(1 for n in kept if _is_long(n)))
