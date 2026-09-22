@@ -283,6 +283,50 @@
     {
       "key": "fallPreview.close",
       "value": "完成"
+    },
+    {
+      "key": "cutin.combo.icon",
+      "value": "连"
+    },
+    {
+      "key": "cutin.combo.title",
+      "value": "连击达成"
+    },
+    {
+      "key": "cutin.combo.desc",
+      "value": "保持这个节奏"
+    },
+    {
+      "key": "modifier.fever.name",
+      "value": "FEVER"
+    },
+    {
+      "key": "modifier.fever.desc",
+      "value": "得分倍率提升"
+    },
+    {
+      "key": "item.energy.name",
+      "value": "能量饮料"
+    },
+    {
+      "key": "item.energy.icon",
+      "value": "能"
+    },
+    {
+      "key": "item.energy.desc",
+      "value": "20 秒：得分提升、受伤减半、缓慢回血"
+    },
+    {
+      "key": "item.fragile.name",
+      "value": "易伤"
+    },
+    {
+      "key": "item.fragile.icon",
+      "value": "脆"
+    },
+    {
+      "key": "item.fragile.desc",
+      "value": "8 秒内受到的伤害提高 50%"
     }
   ]
 }

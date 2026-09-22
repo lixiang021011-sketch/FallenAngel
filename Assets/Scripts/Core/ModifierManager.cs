@@ -13,6 +13,12 @@ namespace FallenAngel.Core
         JudgeLineHidden = 1,
         /// <summary>谱面隐身：magnitude 忽略（位置与判定照常）</summary>
         NotesHidden = 2,
+        /// <summary>受伤倍率：magnitude = 倍率（&lt;1 抗揍，&gt;1 更脆）——局内道具/buff/debuff 的一档</summary>
+        LifeDamageScale = 3,
+        /// <summary>每秒回血：magnitude = 每秒生命值（负数 = 持续掉血）</summary>
+        LifeRegen = 4,
+        /// <summary>分数倍率：magnitude = 倍率（Fever 与局内道具都走这一档）</summary>
+        ScoreMultiplier = 5,
     }
 
     /// <summary>一条 modifier 的定义（纯数据，可由配置表生成）</summary>
@@ -246,6 +252,9 @@ namespace FallenAngel.Core
             float scale = 1f;
             bool lineVisible = true;
             bool notesVisible = true;
+            float damageScale = 1f;
+            float regen = 0f;
+            float scoreMul = 1f;
 
             for (int i = 0; i < active.Count; i++)
             {
@@ -262,9 +271,18 @@ namespace FallenAngel.Core
                     case ModifierKind.NotesHidden:
                         notesVisible = false;
                         break;
+                    case ModifierKind.LifeDamageScale:
+                        damageScale *= def.magnitude;   // 乘法叠加：两个 0.5 = 只吃 25% 伤害
+                        break;
+                    case ModifierKind.LifeRegen:
+                        regen += def.magnitude;         // 加法叠加：两条 +5/s = +10/s
+                        break;
+                    case ModifierKind.ScoreMultiplier:
+                        scoreMul *= def.magnitude;      // 乘法叠加（fever × 道具）
+                        break;
                 }
             }
-            PlayRules.SetModifierState(scale, lineVisible, notesVisible);
+            PlayRules.SetModifierState(scale, lineVisible, notesVisible, damageScale, regen, scoreMul);
         }
     }
 }

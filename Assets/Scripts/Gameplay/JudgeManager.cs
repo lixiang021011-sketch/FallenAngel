@@ -94,6 +94,9 @@ namespace FallenAngel.Gameplay
         private readonly List<float> sessionHitErrorsMs = new List<float>(256);
         private bool hitErrorSampleFlushed;
 
+        // 谱面事件派发（v2 的 events 通道）：Fever 等子系统挂在这上面（见 Core/LiveEventDriver）
+        private readonly LiveEventDriver liveEvents = new LiveEventDriver();
+
         private struct PendingInput
         {
             public LiveTouchPhase phase;
@@ -206,7 +209,10 @@ namespace FallenAngel.Gameplay
             pendingInputs.Clear();
             extraInputs.Clear();
 
+            liveEvents.Advance(songTime);    // 谱面事件（fever.* 等）按歌曲时间派发
+            CutinService.Tick(Time.unscaledDeltaTime);   // cut-in 演出（未缩放时间：暂停时不流逝）
             UpdateSlideFollow(songTime);
+            PlayLife.Tick(Time.deltaTime);   // 持续回血/掉血（来源：ModifierManager 的 LifeRegen）
             PerfTick(songTime);
         }
 
@@ -267,6 +273,17 @@ namespace FallenAngel.Gameplay
         }
 
 #if DEVELOPMENT_BUILD || UNITY_EDITOR
+        /// <summary>开发版自测：开局 3 秒后使用局内道具（模拟"演奏中使用"这条真实路径）</summary>
+        private System.Collections.IEnumerator DevUseItemInPlay(bool energyDrink)
+        {
+            while (GameManager.Instance == null || GameManager.Instance.CurrentState != GameState.Playing)
+                yield return null;
+            while (GameManager.Instance.SongTime < 3f) yield return null;
+
+            if (energyDrink) FallenAngel.Core.DemoItems.UseEnergyDrink();
+            else FallenAngel.Core.DemoItems.ApplyFragileDebuff();
+        }
+
         // ── 真机自测开关（只在开发版编译进来；release 包不含这段）──────────────────
         // 为什么需要：MIUI 拦了 `adb shell input`（只剩 monkey 能注入，而 monkey 只能随机点按），
         // 靠随机点按走不到演奏页，判定/输入的设备验证无法复现。
@@ -334,6 +351,20 @@ namespace FallenAngel.Gameplay
                 return;
             }
 
+            // 局内道具链路自测（作者：cut-in / fever 都是为局内道具、buff/debuff 服务的）
+            if (mode == "item" || mode == "debuff")
+            {
+                if (starter == null)
+                {
+                    Debug.LogWarning("[JudgeManager] 开发版自动开局失败：场景里没有 GameStarter");
+                    return;
+                }
+                Debug.Log("[JudgeManager] 开发版自动开局：合成密集谱 + 局内道具（" + mode + "，开局 3 秒后使用）");
+                starter.StartChart(BuildDenseDeviceTestChart());
+                StartCoroutine(DevUseItemInPlay(mode == "item"));
+                return;
+            }
+
             if (starter == null)
             {
                 Debug.LogWarning("[JudgeManager] 开发版自动开局失败：场景里没有 GameStarter");
@@ -371,6 +402,14 @@ namespace FallenAngel.Gameplay
             {
                 chart.notes.Add(new NoteData(i % 5, 2f + i * 0.12f, Data.NoteType.Normal));
             }
+
+            // Fever 也需要真机可验：给自测谱写一段 fever 事件（谱面事件驱动，见 Core/Fever.cs）
+            chart.events = new List<ChartEvent>
+            {
+                new ChartEvent { time = 10f, type = Core.Fever.BeginEvent, value = 0f },
+                new ChartEvent { time = 13f, type = Core.Fever.StartEvent, value = 0f },
+                new ChartEvent { time = 23f, type = Core.Fever.EndEvent, value = 0f },
+            };
             chart.SortNotes();
             return chart;
         }
@@ -440,6 +479,8 @@ namespace FallenAngel.Gameplay
             // 新的一局：命中误差重新开始收（osu! 每个 ScoreInfo 独立累计）
             sessionHitErrorsMs.Clear();
             hitErrorSampleFlushed = false;
+            PlayLife.Reset();          // 生命值回到 1000（上游 LiveConfig.Life）
+            CutinService.Reset();      // 清掉上一局残留的 cut-in 队列与连击里程碑
             ResetStats();
             BuildScore();
         }
@@ -571,6 +612,13 @@ namespace FallenAngel.Gameplay
 
             Debug.Log(string.Format("[JudgeManager] 判定簇装配完成：谱面 {0} 条 → 判定音符树 {1} 棵（轨道 {2}，在屏 {3:0.##}s）",
                 chart.notes.Count, notes.Count, laneCount, fallTime));
+
+            // 谱面事件通道：Fever 等子系统从这里收事件（v2 events；v1 谱为 null → 空表）
+            liveEvents.Load(chart.events);
+            Fever.Register(liveEvents);
+            Fever.Reset();
+            Debug.Log(string.Format("[JudgeManager] 谱面事件通道：{0} 条事件（剩余待派发 {1}）",
+                chart.events != null ? chart.events.Count : 0, liveEvents.PendingCount));
         }
 
         private void BindLiveNote(LiveNoteBase note)
@@ -779,6 +827,8 @@ namespace FallenAngel.Gameplay
             {
                 if (result == JudgeResultType.Miss)
                 {
+                    // 生命值（前端对照清单 B4）：Miss −80（上游 LiveConfig.Damages），归零不结算、继续打完
+                    PlayLife.ApplyDamage(PlayLife.DamageMiss);
                     ProcessMiss(lane);
                     view?.JudgeMiss();
                     OnJudgeResult?.Invoke(result, lane);
@@ -788,6 +838,8 @@ namespace FallenAngel.Gameplay
 
                 if (JudgeWindows.BreaksCombo(result))
                 {
+                    // Bad −60（上游 LiveConfig.Damages）
+                    if (result == JudgeResultType.Bad) PlayLife.ApplyDamage(PlayLife.DamageBad);
                     BreakCombo();
                 }
                 else
@@ -819,6 +871,7 @@ namespace FallenAngel.Gameplay
                 Combo++;
                 if (Combo > MaxCombo) MaxCombo = Combo;
                 OnComboUpdate?.Invoke(Combo, MissCount == 0);
+                CutinService.NotifyCombo(Combo);      // 连击里程碑 cut-in（对应上游 IngameComboCutin）
             }
             ApplyViewResult(view, note, result);
             OnJudgeBias?.Invoke(bias);
@@ -956,9 +1009,12 @@ namespace FallenAngel.Gameplay
 
         private void AddScoreAndCombo(int score)
         {
+            // 分数倍率：Fever 与局内道具都通过 ModifierManager 挂到 PlayRules.ScoreMultiplier（判定层不硬编码）
+            score = Mathf.RoundToInt(score * Mathf.Max(0f, PlayRules.ScoreMultiplier));
             Score += score;
             Combo++;
             if (Combo > MaxCombo) MaxCombo = Combo;
+            CutinService.NotifyCombo(Combo);          // 连击里程碑 cut-in
 
             // 连击加成（简化版）
             int comboBonus = Mathf.RoundToInt(score * (Mathf.Clamp01(Combo / 100f) * 0.2f));

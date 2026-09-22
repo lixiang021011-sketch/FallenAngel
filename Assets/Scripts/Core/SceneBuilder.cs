@@ -539,6 +539,20 @@ namespace FallenAngel.Core
             rt.offsetMin = Vector2.zero;
             rt.offsetMax = Vector2.zero;
 
+            // Fever 整屏色层（C4）：放在 HUD 的第一个子节点 → 渲染在所有 HUD 文本之下、演奏画面之上。
+            // 上游是粒子特效包（LiveConfig.FeverBundleName），我们用程序化色层等价（见 UI/FeverView）。
+            GameObject feverOverlay = new GameObject("FeverOverlay", typeof(RectTransform), typeof(Image));
+            feverOverlay.transform.SetParent(hudGO.transform, false);
+            RectTransform feverRT = (RectTransform)feverOverlay.transform;
+            feverRT.anchorMin = Vector2.zero;
+            feverRT.anchorMax = Vector2.one;
+            feverRT.offsetMin = Vector2.zero;
+            feverRT.offsetMax = Vector2.zero;
+            Image feverImg = feverOverlay.GetComponent<Image>();
+            feverImg.color = new Color(1f, 0.45f, 0.75f, 0f);
+            feverImg.raycastTarget = false;
+            feverImg.enabled = false;
+
             // ScoreText
             TextMeshProUGUI score = CreateText("ScoreText", hudGO.transform,
                 new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -60), new Vector2(800, 120),
@@ -610,6 +624,138 @@ namespace FallenAngel.Core
                 new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-20, -40), new Vector2(400, 40),
                 "00:00 / 00:00", 28, TextAlignmentOptions.TopRight);
 
+            // 生命槽（B4）：双层槽 = 残影 + 实槽（照上游 LifeView 的 lifeDamage / lifeDefault 两个 gauge）
+            GameObject lifeBG = new GameObject("LifeBarBG", typeof(RectTransform), typeof(Image));
+            lifeBG.transform.SetParent(hudGO.transform, false);
+            RectTransform lifeBGRT = (RectTransform)lifeBG.transform;
+            lifeBGRT.anchorMin = lifeBGRT.anchorMax = new Vector2(0f, 1f);
+            lifeBGRT.pivot = new Vector2(0f, 1f);
+            lifeBGRT.anchoredPosition = new Vector2(40, -112);
+            lifeBGRT.sizeDelta = new Vector2(420, 30);
+            Image lifeBGImg = lifeBG.GetComponent<Image>();
+            lifeBGImg.color = new Color(0f, 0f, 0f, 0.55f);
+            lifeBGImg.raycastTarget = false;
+
+            GameObject ghostGO = new GameObject("LifeBarGhost", typeof(RectTransform), typeof(Image));
+            ghostGO.transform.SetParent(lifeBG.transform, false);
+            RectTransform ghostRT = (RectTransform)ghostGO.transform;
+            ghostRT.anchorMin = Vector2.zero;
+            ghostRT.anchorMax = Vector2.one;
+            ghostRT.offsetMin = new Vector2(2, 2);
+            ghostRT.offsetMax = new Vector2(-2, -2);
+            Image ghostImg = ghostGO.GetComponent<Image>();
+            ghostImg.color = new Color(1f, 0.35f, 0.35f, 0.85f);   // 残影：红
+            ghostImg.type = Image.Type.Filled;
+            ghostImg.fillMethod = Image.FillMethod.Horizontal;
+            ghostImg.fillAmount = 1f;
+            ghostImg.raycastTarget = false;
+
+            GameObject lifeFillGO = new GameObject("LifeBarFill", typeof(RectTransform), typeof(Image));
+            lifeFillGO.transform.SetParent(lifeBG.transform, false);
+            RectTransform lifeFillRT = (RectTransform)lifeFillGO.transform;
+            lifeFillRT.anchorMin = Vector2.zero;
+            lifeFillRT.anchorMax = Vector2.one;
+            lifeFillRT.offsetMin = new Vector2(2, 2);
+            lifeFillRT.offsetMax = new Vector2(-2, -2);
+            Image lifeFillImg = lifeFillGO.GetComponent<Image>();
+            lifeFillImg.color = new Color(0.45f, 1f, 0.65f);
+            lifeFillImg.type = Image.Type.Filled;
+            lifeFillImg.fillMethod = Image.FillMethod.Horizontal;
+            lifeFillImg.fillAmount = 1f;
+            lifeFillImg.raycastTarget = false;
+
+            TextMeshProUGUI lifeText = CreateText("LifeText", hudGO.transform,
+                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(474, -104), new Vector2(140, 40),
+                "1000", 30, TextAlignmentOptions.Left);
+            lifeText.color = new Color(0.45f, 1f, 0.65f);
+            lifeText.fontStyle = FontStyles.Bold;
+
+            // Fever 字样 + 蓄力条（C4）：Begin 闪烁、Active 常亮（逻辑在 UI/FeverView）
+            TextMeshProUGUI feverLabel = CreateText("FeverLabel", hudGO.transform,
+                new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -74), new Vector2(360, 54),
+                "FEVER", 44, TextAlignmentOptions.Center);
+            feverLabel.color = new Color(1f, 0.55f, 0.8f);
+            feverLabel.fontStyle = FontStyles.Bold;
+            feverLabel.enabled = false;
+
+            GameObject feverChargeBG = new GameObject("FeverChargeBG", typeof(RectTransform), typeof(Image));
+            feverChargeBG.transform.SetParent(hudGO.transform, false);
+            RectTransform chargeBGRT = (RectTransform)feverChargeBG.transform;
+            chargeBGRT.anchorMin = chargeBGRT.anchorMax = new Vector2(0.5f, 1f);
+            chargeBGRT.pivot = new Vector2(0.5f, 1f);
+            chargeBGRT.anchoredPosition = new Vector2(0, -120);
+            chargeBGRT.sizeDelta = new Vector2(300, 12);
+            Image chargeBGImg = feverChargeBG.GetComponent<Image>();
+            chargeBGImg.color = new Color(0f, 0f, 0f, 0.5f);
+            chargeBGImg.raycastTarget = false;
+
+            GameObject feverChargeFill = new GameObject("FeverChargeFill", typeof(RectTransform), typeof(Image));
+            feverChargeFill.transform.SetParent(feverChargeBG.transform, false);
+            RectTransform chargeFillRT = (RectTransform)feverChargeFill.transform;
+            chargeFillRT.anchorMin = Vector2.zero;
+            chargeFillRT.anchorMax = Vector2.one;
+            chargeFillRT.offsetMin = new Vector2(1, 1);
+            chargeFillRT.offsetMax = new Vector2(-1, -1);
+            Image chargeFillImg = feverChargeFill.GetComponent<Image>();
+            chargeFillImg.color = new Color(1f, 0.55f, 0.8f);
+            chargeFillImg.type = Image.Type.Filled;
+            chargeFillImg.fillMethod = Image.FillMethod.Horizontal;
+            chargeFillImg.fillAmount = 0f;
+            chargeFillImg.raycastTarget = false;
+
+            // Cut-in 卡片（E6/E7）：初始停在屏幕右侧之外，CutinView 负责滑入/停留/淡出
+            GameObject cutinCard = new GameObject("CutinCard", typeof(RectTransform), typeof(Image),
+                typeof(CanvasGroup));
+            cutinCard.transform.SetParent(hudGO.transform, false);
+            RectTransform cutinRT = (RectTransform)cutinCard.transform;
+            cutinRT.anchorMin = cutinRT.anchorMax = new Vector2(0.5f, 0.62f);
+            cutinRT.pivot = new Vector2(0.5f, 0.5f);
+            cutinRT.sizeDelta = new Vector2(820, 170);
+            cutinRT.anchoredPosition = new Vector2(980f, 0f);      // 屏外（右侧）
+            Image cutinBg = cutinCard.GetComponent<Image>();
+            cutinBg.color = new Color(0.05f, 0.10f, 0.13f, 0.92f);
+            cutinBg.raycastTarget = false;
+
+            GameObject cutinAccent = new GameObject("CutinAccent", typeof(RectTransform), typeof(Image));
+            cutinAccent.transform.SetParent(cutinCard.transform, false);
+            RectTransform accentRT = (RectTransform)cutinAccent.transform;
+            accentRT.anchorMin = new Vector2(0f, 0f);
+            accentRT.anchorMax = new Vector2(0f, 1f);
+            accentRT.pivot = new Vector2(0f, 0.5f);
+            accentRT.sizeDelta = new Vector2(10, 0);
+            accentRT.anchoredPosition = Vector2.zero;
+            Image accentImg = cutinAccent.GetComponent<Image>();
+            accentImg.color = new Color(0.44f, 0.88f, 0.84f, 0.95f);
+            accentImg.raycastTarget = false;
+
+            GameObject iconPlate = new GameObject("CutinIcon", typeof(RectTransform), typeof(Image));
+            iconPlate.transform.SetParent(cutinCard.transform, false);
+            RectTransform iconRT = (RectTransform)iconPlate.transform;
+            iconRT.anchorMin = iconRT.anchorMax = new Vector2(0f, 0.5f);
+            iconRT.pivot = new Vector2(0f, 0.5f);
+            iconRT.sizeDelta = new Vector2(110, 110);
+            iconRT.anchoredPosition = new Vector2(40, 0);
+            Image iconImg = iconPlate.GetComponent<Image>();
+            iconImg.color = new Color(0.44f, 0.88f, 0.84f, 0.85f);
+            iconImg.raycastTarget = false;
+
+            TextMeshProUGUI cutinIconText = CreateText("CutinIconText", iconPlate.transform,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(110, 110),
+                "", 56, TextAlignmentOptions.Center);
+            cutinIconText.color = new Color(0.05f, 0.10f, 0.13f);
+            cutinIconText.fontStyle = FontStyles.Bold;
+
+            TextMeshProUGUI cutinTitle = CreateText("CutinTitle", cutinCard.transform,
+                new Vector2(0f, 0.62f), new Vector2(0f, 0.62f), new Vector2(180, 0), new Vector2(600, 60),
+                "", 40, TextAlignmentOptions.Left);
+            cutinTitle.color = Color.white;
+            cutinTitle.fontStyle = FontStyles.Bold;
+
+            TextMeshProUGUI cutinSub = CreateText("CutinSubtitle", cutinCard.transform,
+                new Vector2(0f, 0.30f), new Vector2(0f, 0.30f), new Vector2(180, 0), new Vector2(600, 44),
+                "", 26, TextAlignmentOptions.Left);
+            cutinSub.color = new Color(1f, 1f, 1f, 0.7f);
+
             HUDController hudC = hudGO.AddComponent<HUDController>();
             SetPrivateField(hudC, "scoreText", score);
             SetPrivateField(hudC, "comboText", combo);
@@ -619,6 +765,23 @@ namespace FallenAngel.Core
             SetPrivateField(hudC, "songTitleText", title);
             SetPrivateField(hudC, "progressFillImage", fillImg);
             SetPrivateField(hudC, "progressText", progressTxt);
+
+            LifeView lifeView = hudGO.AddComponent<LifeView>();
+            SetPrivateField(lifeView, "realFill", lifeFillImg);
+            SetPrivateField(lifeView, "ghostFill", ghostImg);
+            SetPrivateField(lifeView, "valueText", lifeText);
+
+            FeverView feverView = hudGO.AddComponent<FeverView>();
+            SetPrivateField(feverView, "overlay", feverImg);
+            SetPrivateField(feverView, "chargeFill", chargeFillImg);
+            SetPrivateField(feverView, "label", feverLabel);
+
+            CutinView cutinView = hudGO.AddComponent<CutinView>();
+            SetPrivateField(cutinView, "card", cutinRT);
+            SetPrivateField(cutinView, "iconPlate", iconImg);
+            SetPrivateField(cutinView, "iconText", cutinIconText);
+            SetPrivateField(cutinView, "titleText", cutinTitle);
+            SetPrivateField(cutinView, "subtitleText", cutinSub);
             return hudC;
         }
 

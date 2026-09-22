@@ -283,6 +283,50 @@
     {
       "key": "fallPreview.close",
       "value": "Done"
+    },
+    {
+      "key": "cutin.combo.icon",
+      "value": "C"
+    },
+    {
+      "key": "cutin.combo.title",
+      "value": "Combo!"
+    },
+    {
+      "key": "cutin.combo.desc",
+      "value": "Keep the rhythm"
+    },
+    {
+      "key": "modifier.fever.name",
+      "value": "FEVER"
+    },
+    {
+      "key": "modifier.fever.desc",
+      "value": "Score multiplier up"
+    },
+    {
+      "key": "item.energy.name",
+      "value": "Energy Drink"
+    },
+    {
+      "key": "item.energy.icon",
+      "value": "E"
+    },
+    {
+      "key": "item.energy.desc",
+      "value": "20s: more score, half damage taken, slow regen"
+    },
+    {
+      "key": "item.fragile.name",
+      "value": "Fragile"
+    },
+    {
+      "key": "item.fragile.icon",
+      "value": "F"
+    },
+    {
+      "key": "item.fragile.desc",
+      "value": "Take 50% more damage for 8s"
     }
   ]
 }

@@ -19,6 +19,9 @@ namespace FallenAngel.Core
         private static float judgeWindowScale = 1f;
         private static bool judgeLineVisible = true;
         private static bool notesVisible = true;
+        private static float lifeDamageScale = 1f;
+        private static float lifeRegenPerSecond;
+        private static float scoreMultiplier = 1f;
 
         /// <summary>判定窗口倍率（1 = 原始；&gt;1 更宽松，&lt;1 更严格）</summary>
         public static float JudgeWindowScale { get { return judgeWindowScale; } }
@@ -28,6 +31,15 @@ namespace FallenAngel.Core
 
         /// <summary>音符是否可见（位置与判定照常，只影响渲染）</summary>
         public static bool NotesVisible { get { return notesVisible; } }
+
+        /// <summary>受伤倍率（1 = 原始；&lt;1 抗揍，&gt;1 更脆）。来源：ModifierManager 的 LifeDamageScale。</summary>
+        public static float LifeDamageScale { get { return lifeDamageScale; } }
+
+        /// <summary>每秒回血（可负 = 持续掉血）。来源：ModifierManager 的 LifeRegen。</summary>
+        public static float LifeRegenPerSecond { get { return lifeRegenPerSecond; } }
+
+        /// <summary>分数倍率（1 = 原始）。Fever 与局内道具都走这一档，判定层不硬编码。</summary>
+        public static float ScoreMultiplier { get { return scoreMultiplier; } }
 
         /// <summary>有效判定窗口（缓存实例；调用方只读，不要改它的字段）</summary>
         public static JudgeWindows Windows
@@ -47,18 +59,22 @@ namespace FallenAngel.Core
         }
 
         /// <summary>由 ModifierManager 调用：写入当前生效的修正状态</summary>
-        internal static void SetModifierState(float windowScale, bool lineVisible, bool notesVisibleNow)
+        internal static void SetModifierState(float windowScale, bool lineVisible, bool notesVisibleNow,
+            float damageScale, float regenPerSecond, float scoreMul)
         {
             judgeWindowScale = Mathf.Max(0.05f, windowScale);
             judgeLineVisible = lineVisible;
             notesVisible = notesVisibleNow;
+            lifeDamageScale = Mathf.Max(0f, damageScale);
+            lifeRegenPerSecond = regenPerSecond;
+            scoreMultiplier = Mathf.Max(0f, scoreMul);
             dirty = true;
         }
 
         /// <summary>回到无修正状态（切歌、退出演奏、清空效果时调用）</summary>
         public static void ResetModifiers()
         {
-            SetModifierState(1f, true, true);
+            SetModifierState(1f, true, true, 1f, 0f, 1f);
         }
 
         private static void Refresh()
