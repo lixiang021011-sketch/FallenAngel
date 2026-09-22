@@ -568,7 +568,7 @@ namespace FallenAngel.Core
             combo.fontStyle = FontStyles.Bold;
 
             TextMeshProUGUI comboLabel = CreateText("ComboLabel", hudGO.transform,
-                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 180), new Vector2(400, 60),
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 165), new Vector2(400, 60),
                 "hud.comboLabel", 40, TextAlignmentOptions.Center);
 
             // JudgeResult
@@ -801,7 +801,7 @@ namespace FallenAngel.Core
             numberRT.anchorMin = numberRT.anchorMax = new Vector2(0.5f, 0.5f);
             numberRT.pivot = new Vector2(0.5f, 0.5f);
             numberRT.sizeDelta = new Vector2(900, 200);
-            numberRT.anchoredPosition = new Vector2(0, 40);
+            numberRT.anchoredPosition = Vector2.zero;      // 与旧的整块连击文本同一高度（画布中心 +250）
 
             const int comboDigits = 7;              // 上游也是 7 段数字 renderer
             const float comboDigitW = 96f;
@@ -835,7 +835,7 @@ namespace FallenAngel.Core
             effectRootRT.anchorMin = effectRootRT.anchorMax = new Vector2(0.5f, 0.5f);
             effectRootRT.pivot = new Vector2(0.5f, 0.5f);
             effectRootRT.sizeDelta = new Vector2(900, 200);
-            effectRootRT.anchoredPosition = new Vector2(0, 40);
+            effectRootRT.anchoredPosition = Vector2.zero;
 
             var comboEffectPlates = new RectTransform[comboDigits];
             for (int i = 0; i < comboDigits; i++)
@@ -860,7 +860,7 @@ namespace FallenAngel.Core
             apRootRT.anchorMin = apRootRT.anchorMax = new Vector2(0.5f, 0.5f);
             apRootRT.pivot = new Vector2(0.5f, 0.5f);
             apRootRT.sizeDelta = new Vector2(720, 210);
-            apRootRT.anchoredPosition = new Vector2(0, 40);
+            apRootRT.anchoredPosition = Vector2.zero;
 
             var apParts = new Image[4];
             string[] apNames = { "Top", "Bottom", "Left", "Right" };

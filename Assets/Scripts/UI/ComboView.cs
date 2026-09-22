@@ -131,15 +131,26 @@ namespace FallenAngel.UI
                 for (int i = 0; i < digitTexts.Length; i++)
                 {
                     TextMeshProUGUI digit = digitTexts[i];
-                    if (digit == null) continue;
+                    Image plate = (digitPlates != null && i < digitPlates.Length) ? digitPlates[i] : null;
+                    if (digit == null && plate == null) { value /= 10; continue; }
 
                     bool visible = combo > 0 && i < count;
-                    digit.gameObject.SetActive(visible);
+                    // 注意：数字位是"底板（父） + 文本（子）"，开关与定位必须作用在**底板**上。
+                    // 早先写成只动文本 → 底板始终处于禁用状态，真机表现就是"连击数字整个不见了"。
+                    GameObject target = plate != null
+                        ? plate.gameObject
+                        : (digit != null ? digit.gameObject : null);
+                    if (target != null) target.SetActive(visible);
                     if (!visible) { value /= 10; continue; }
 
-                    digit.text = (value % 10).ToString();
-                    digit.color = textColor;
-                    RectTransform rt = (RectTransform)digit.transform;
+                    if (digit != null)
+                    {
+                        digit.text = (value % 10).ToString();
+                        digit.color = textColor;
+                    }
+                    RectTransform rt = plate != null
+                        ? (RectTransform)plate.transform
+                        : (RectTransform)digit.transform;
                     // 数字位容器是居中布局：位置由"上游公式 × 数字宽"给出（i 从个位起 → 负数在左）
                     rt.anchoredPosition = new Vector2(DigitX(i, count) * digitWidth,
                         rt.anchoredPosition.y);
@@ -186,9 +197,16 @@ namespace FallenAngel.UI
                     if (i > 0) sb.Append(", ");
                     sb.Append(DigitX(i, count).ToString("0.00"));
                 }
-                Debug.Log(string.Format("[ComboView] combo={0} 位数={1} AP={2} 数字位偏移(数字宽)={3} → 像素={4}",
-                    combo, count, allPerfect, sb,
-                    (DigitX(0, count) * digitWidth).ToString("0")));
+                string pos = "?";
+                if (digitPlates != null && digitPlates.Length > 0 && digitPlates[0] != null)
+                {
+                    Vector3 p0 = digitPlates[0].transform.position;        // Screen Space Overlay → 就是屏幕像素
+                    Vector3 pLast = digitPlates[Mathf.Min(count, digitPlates.Length) - 1].transform.position;
+                    pos = string.Format("个位({0:0},{1:0}) 最高位({2:0},{3:0})",
+                        p0.x, p0.y, pLast.x, pLast.y);
+                }
+                Debug.Log(string.Format("[ComboView] combo={0} 位数={1} AP={2} 偏移(数字宽)={3} → 底板屏幕坐标 {4}",
+                    combo, count, allPerfect, sb, pos));
             }
 #endif
         }

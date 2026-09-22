@@ -3,8 +3,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using FallenAngel.UI;
+using TMPro;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace FallenAngel.Core
 {
@@ -98,6 +100,58 @@ namespace FallenAngel.Core
                 check("ap.brokenByMiss",
                     !ComboView.IsAllPerfectScore(50, 0, 0, 0, 1),
                     "1 次 Miss → AP 立即失效（与 LifeView 的扣血同源判定）");
+
+                // ⑧ 装配级：SetCombo 必须把"底板（父）"开关与定位，而不是只动文本（踩过这个 bug：
+                //    只动文本 → 底板一直禁用 → 真机上连击数字整个不见了）
+                GameObject host = new GameObject("__ComboViewSandbox", typeof(RectTransform));
+                try
+                {
+                    ComboView view = host.AddComponent<ComboView>();
+                    var plates = new Image[3];
+                    var texts = new TextMeshProUGUI[3];
+                    var numberRoot = new GameObject("Digits", typeof(RectTransform)).GetComponent<RectTransform>();
+                    numberRoot.transform.SetParent(host.transform, false);
+
+                    for (int i = 0; i < 3; i++)
+                    {
+                        GameObject plate = new GameObject("P" + i, typeof(RectTransform), typeof(Image));
+                        plate.transform.SetParent(numberRoot.transform, false);
+                        plates[i] = plate.GetComponent<Image>();
+                        GameObject text = new GameObject("T" + i, typeof(RectTransform), typeof(TextMeshProUGUI));
+                        text.transform.SetParent(plate.transform, false);
+                        texts[i] = text.GetComponent<TextMeshProUGUI>();
+                        plate.SetActive(false);
+                    }
+
+                    SetPrivate(view, "numberRoot", numberRoot);
+                    SetPrivate(view, "digitPlates", plates);
+                    SetPrivate(view, "digitTexts", texts);
+                    SetPrivate(view, "digitWidth", 96f);
+
+                    view.SetCombo(123, false);
+                    bool[] active = { plates[0].gameObject.activeSelf, plates[1].gameObject.activeSelf,
+                        plates[2].gameObject.activeSelf };
+                    float px0 = ((RectTransform)plates[0].transform).anchoredPosition.x;
+                    float px1 = ((RectTransform)plates[1].transform).anchoredPosition.x;
+                    float px2 = ((RectTransform)plates[2].transform).anchoredPosition.x;
+                    bool layoutOk = Mathf.Abs(px0 - 0.95f * 96f) < 0.5f && Mathf.Abs(px1) < 0.5f
+                                    && Mathf.Abs(px2 + 0.95f * 96f) < 0.5f;
+                    bool textOk = texts[0].text == "3" && texts[1].text == "2" && texts[2].text == "1";
+                    check("view.platesActivated",
+                        active[0] && active[1] && active[2] && layoutOk && textOk,
+                        string.Format("底板全开={0}；三位数偏移 {1:0} / {2:0} / {3:0}px；文本=123→{4}{5}{6}",
+                            active[0] && active[1] && active[2], px0, px1, px2,
+                            texts[2].text, texts[1].text, texts[0].text));
+
+                    view.SetCombo(0, false);
+                    check("view.hiddenWhenZero",
+                        !plates[0].gameObject.activeSelf && !plates[1].gameObject.activeSelf,
+                        "连击归零 → 数字位全部隐藏");
+                }
+                finally
+                {
+                    UnityEngine.Object.DestroyImmediate(host);
+                }
             }
             catch (Exception e)
             {
@@ -124,6 +178,15 @@ namespace FallenAngel.Core
             }
 
             if (Application.isBatchMode) EditorApplication.Exit(fail > 0 ? 1 : 0);
+        }
+
+        /// <summary>反射写私有 SerializeField（与 JudgeTimingChecks 的沙箱同一套做法）</summary>
+        private static void SetPrivate(object target, string field, object value)
+        {
+            System.Reflection.FieldInfo info = target.GetType().GetField(field,
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            if (info == null) throw new InvalidOperationException("找不到字段：" + field);
+            info.SetValue(target, value);
         }
     }
 }
