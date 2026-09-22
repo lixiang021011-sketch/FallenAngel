@@ -106,17 +106,18 @@ def current_layout(draw):
 def proposed_layout(draw):
     field(draw)
     # 顶部：进度条
-    draw.rectangle([20, y2px(950), W - 20, y2px(930)], fill=(30, 60, 66))
-    draw.text((26, y2px(950) + 2), "① 进度条 +950…+930", font=font(20), fill=DIM)
+    draw.rectangle([20, y2px(940), W - 20, y2px(920)], fill=(30, 60, 66))
+    draw.text((26, y2px(940) + 2), "① 进度条 +940…+920（留 20px 边距）", font=font(20), fill=DIM)
     # 第二行：左曲名 / 右分数（收窄 —— 中间让空，长分数也顶不到中心）
     # 左列三行：曲名 / 生命槽+数值 / 进度文本    右列三行：分数 / FEVER / 蓄力条
-    box(draw, -220, 898, 560, 56, "① 曲名（左列 +905）", color=TEXT)
-    box(draw, -290, 848, 420, 30, "② 生命槽 +848", color=ACCENT)
-    box(draw, -5, 848, 130, 34, "数值", color=ACCENT)
-    box(draw, -280, 800, 440, 34, "③ 进度文本 +800（左列）", color=TEXT)
-    box(draw, 290, 898, 420, 56, "① 分数（右列 +905，宽 420）", color=TEXT)
-    box(draw, 290, 840, 420, 46, "② FEVER +840（右列）", color=(255, 140, 200))
-    box(draw, 290, 800, 420, 12, "③ 蓄力条 +800（右列）", color=(255, 140, 200))
+    # 行高最终值（与 Core/HudLayout.cs 一致，逐行留 5~6px 空隙并满足 20px 安全边距）
+    box(draw, -220, 889, 560, 54, "① 曲名（左列 +889）", color=TEXT)
+    box(draw, -290, 833, 420, 30, "② 生命槽 +833", color=ACCENT)
+    box(draw, -5, 833, 130, 34, "数值", color=ACCENT)
+    box(draw, -280, 796, 440, 34, "③ 进度文本 +796（左列）", color=TEXT)
+    box(draw, 290, 889, 420, 54, "① 分数（右列 +889，宽 420）", color=TEXT)
+    box(draw, 290, 833, 420, 46, "② FEVER +833（右列）", color=(255, 140, 200))
+    box(draw, 290, 796, 420, 12, "③ 蓄力条 +796（右列）", color=(255, 140, 200))
     # 中部：cut-in 上移到 combo 上方；combo 保持；判定文字保持
     box(draw, 0, 470, 820, 150, "③ cut-in 卡片 +470（让开 combo）", color=ACCENT)
     box(draw, 0, 250, 300, 96, "④ combo 数字位 +250（不变）", color=ACCENT)

@@ -554,9 +554,12 @@ namespace FallenAngel.Core
             feverImg.enabled = false;
 
             // ScoreText
+            // HUD 总装（B5）：位置/尺寸一律从 Core/HudLayout 取（单一事实来源，自检按表验证不重叠）
+            HudElement scoreE = HudLayout.Get("分数");
             TextMeshProUGUI score = CreateText("ScoreText", hudGO.transform,
-                new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -60), new Vector2(800, 120),
-                "0", 80, TextAlignmentOptions.TopRight);
+                new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(HudLayout.RightAnchoredX(scoreE.x), HudLayout.TopAnchoredY(scoreE.y)),
+                new Vector2(scoreE.w, scoreE.h), "0", 72, TextAlignmentOptions.TopRight);
             score.color = Color.white;
             score.fontStyle = FontStyles.Bold;
 
@@ -590,9 +593,11 @@ namespace FallenAngel.Core
             SetPrivateField(judgmentText, "showDescription", true);
 
             // Song Title
+            HudElement titleE = HudLayout.Get("曲名");
             TextMeshProUGUI title = CreateText("SongTitle", hudGO.transform,
-                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(40, -40), new Vector2(800, 60),
-                "", 36, TextAlignmentOptions.TopLeft);
+                new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(titleE.x + HudLayout.CanvasWidth * 0.5f, HudLayout.TopAnchoredY(titleE.y)),
+                new Vector2(titleE.w, titleE.h), "", 34, TextAlignmentOptions.TopLeft);
 
             // Progress Bar
             GameObject barBG = new GameObject("ProgressBarBG", typeof(RectTransform), typeof(Image));
@@ -620,18 +625,24 @@ namespace FallenAngel.Core
             fillImg.fillAmount = 0f;
             fillImg.raycastTarget = false;
 
+            // 进度文本：挪到左列第三行（原来贴右上角、落在 800 宽的分数文本框里 → 重叠）
+            HudElement progressE = HudLayout.Get("进度文本");
             TextMeshProUGUI progressTxt = CreateText("ProgressText", hudGO.transform,
-                new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-20, -40), new Vector2(400, 40),
-                "00:00 / 00:00", 28, TextAlignmentOptions.TopRight);
+                new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(progressE.x + HudLayout.CanvasWidth * 0.5f, HudLayout.TopAnchoredY(progressE.y)),
+                new Vector2(progressE.w, progressE.h), "00:00 / 00:00", 26, TextAlignmentOptions.TopLeft);
 
             // 生命槽（B4）：双层槽 = 残影 + 实槽（照上游 LifeView 的 lifeDamage / lifeDefault 两个 gauge）
             GameObject lifeBG = new GameObject("LifeBarBG", typeof(RectTransform), typeof(Image));
             lifeBG.transform.SetParent(hudGO.transform, false);
             RectTransform lifeBGRT = (RectTransform)lifeBG.transform;
+            HudElement lifeE = HudLayout.Get("生命槽");
             lifeBGRT.anchorMin = lifeBGRT.anchorMax = new Vector2(0f, 1f);
-            lifeBGRT.pivot = new Vector2(0f, 1f);
-            lifeBGRT.anchoredPosition = new Vector2(40, -112);
-            lifeBGRT.sizeDelta = new Vector2(420, 30);
+            lifeBGRT.pivot = new Vector2(0f, 1f);            // 用左上角定位（左列第二行）
+            lifeBGRT.anchoredPosition = new Vector2(
+                lifeE.x - lifeE.w * 0.5f + HudLayout.CanvasWidth * 0.5f,
+                HudLayout.TopAnchoredY(lifeE.y) + lifeE.h * 0.5f);
+            lifeBGRT.sizeDelta = new Vector2(lifeE.w, lifeE.h);
             Image lifeBGImg = lifeBG.GetComponent<Image>();
             lifeBGImg.color = new Color(0f, 0f, 0f, 0.55f);
             lifeBGImg.raycastTarget = false;
@@ -664,16 +675,20 @@ namespace FallenAngel.Core
             lifeFillImg.fillAmount = 1f;
             lifeFillImg.raycastTarget = false;
 
+            HudElement lifeNumE = HudLayout.Get("生命数值");
             TextMeshProUGUI lifeText = CreateText("LifeText", hudGO.transform,
-                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(474, -104), new Vector2(140, 40),
-                "1000", 30, TextAlignmentOptions.Left);
+                new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(lifeNumE.x + HudLayout.CanvasWidth * 0.5f, HudLayout.TopAnchoredY(lifeNumE.y)),
+                new Vector2(lifeNumE.w, lifeNumE.h), "1000", 30, TextAlignmentOptions.Center);
             lifeText.color = new Color(0.45f, 1f, 0.65f);
             lifeText.fontStyle = FontStyles.Bold;
 
             // Fever 字样 + 蓄力条（C4）：Begin 闪烁、Active 常亮（逻辑在 UI/FeverView）
+            HudElement feverE = HudLayout.Get("FEVER");
             TextMeshProUGUI feverLabel = CreateText("FeverLabel", hudGO.transform,
-                new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -74), new Vector2(360, 54),
-                "FEVER", 44, TextAlignmentOptions.Center);
+                new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(HudLayout.RightAnchoredX(feverE.x), HudLayout.TopAnchoredY(feverE.y)),
+                new Vector2(feverE.w, feverE.h), "FEVER", 40, TextAlignmentOptions.Center);
             feverLabel.color = new Color(1f, 0.55f, 0.8f);
             feverLabel.fontStyle = FontStyles.Bold;
             feverLabel.enabled = false;
@@ -681,10 +696,12 @@ namespace FallenAngel.Core
             GameObject feverChargeBG = new GameObject("FeverChargeBG", typeof(RectTransform), typeof(Image));
             feverChargeBG.transform.SetParent(hudGO.transform, false);
             RectTransform chargeBGRT = (RectTransform)feverChargeBG.transform;
-            chargeBGRT.anchorMin = chargeBGRT.anchorMax = new Vector2(0.5f, 1f);
-            chargeBGRT.pivot = new Vector2(0.5f, 1f);
-            chargeBGRT.anchoredPosition = new Vector2(0, -120);
-            chargeBGRT.sizeDelta = new Vector2(300, 12);
+            HudElement chargeE = HudLayout.Get("蓄力条");
+            chargeBGRT.anchorMin = chargeBGRT.anchorMax = new Vector2(1f, 1f);
+            chargeBGRT.pivot = new Vector2(0.5f, 0.5f);
+            chargeBGRT.anchoredPosition = new Vector2(HudLayout.RightAnchoredX(chargeE.x),
+                HudLayout.TopAnchoredY(chargeE.y));
+            chargeBGRT.sizeDelta = new Vector2(chargeE.w, chargeE.h);
             Image chargeBGImg = feverChargeBG.GetComponent<Image>();
             chargeBGImg.color = new Color(0f, 0f, 0f, 0.5f);
             chargeBGImg.raycastTarget = false;
@@ -708,10 +725,12 @@ namespace FallenAngel.Core
                 typeof(CanvasGroup));
             cutinCard.transform.SetParent(hudGO.transform, false);
             RectTransform cutinRT = (RectTransform)cutinCard.transform;
-            cutinRT.anchorMin = cutinRT.anchorMax = new Vector2(0.5f, 0.62f);
+            HudElement cutinE = HudLayout.Get("cut-in卡片");
+            cutinRT.anchorMin = cutinRT.anchorMax = new Vector2(0.5f, 0.5f);
             cutinRT.pivot = new Vector2(0.5f, 0.5f);
-            cutinRT.sizeDelta = new Vector2(820, 170);
-            cutinRT.anchoredPosition = new Vector2(980f, 0f);      // 屏外（右侧）
+            cutinRT.sizeDelta = new Vector2(cutinE.w, cutinE.h);
+            // y 取表（+470，让开 combo 数字位）；x 停在屏外，由 CutinView 的滑入动画负责进入
+            cutinRT.anchoredPosition = new Vector2(980f, cutinE.y);
             Image cutinBg = cutinCard.GetComponent<Image>();
             cutinBg.color = new Color(0.05f, 0.10f, 0.13f, 0.92f);
             cutinBg.raycastTarget = false;
