@@ -24,6 +24,23 @@ namespace FallenAngel.Core
         public static bool DevelopmentBuild;
 
         /// <summary>
+        /// 竖屏锁定（作者定案）。单独暴露成 batchmode 入口，方便"只改工程设置不打包"：
+        /// -executeMethod FallenAngel.Core.BuildApk.ApplyPortraitLock
+        /// </summary>
+        public static void ApplyPortraitLock()
+        {
+            PlayerSettings.defaultInterfaceOrientation = UIOrientation.Portrait;
+            PlayerSettings.allowedAutorotateToPortrait = true;
+            PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;   // 倒竖屏（手机倒过来玩）不需要
+            PlayerSettings.allowedAutorotateToLandscapeLeft = false;
+            PlayerSettings.allowedAutorotateToLandscapeRight = false;
+            // 注：Unity 2022.3 没有 PlayerSettings.useOSAutorotation（那是 iOS 侧的设置项），
+            // 竖屏锁定靠 defaultInterfaceOrientation=Portrait + 关掉三个 autorotate 开关；
+            // 运行时再补一道 Screen.orientation（见 GameManager.Awake），双保险。
+            Debug.Log("[BuildApk] 竖屏锁定：Portrait（自动旋转关闭，倒竖屏关闭）");
+        }
+
+        /// <summary>
         /// 开发版构建入口（带日志）：真机排查用。
         /// batchmode：-executeMethod FallenAngel.Core.BuildApk.BuildAndroidApkDevelopment
         /// </summary>
@@ -63,6 +80,10 @@ namespace FallenAngel.Core
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, PackageName);
             PlayerSettings.companyName = "LorXer";
             PlayerSettings.productName = "FallenAngel";
+            // 竖屏锁定（作者 2026-09-22 定案）：本作是竖屏下落式，不能跟着手机转。
+            // 之前工程是 defaultScreenOrientation = 4（AutoRotation 四向全开），
+            // 真机上手机一横，整个演奏页就横过来了。这里每次打包都强制 Portrait。
+            ApplyPortraitLock();
             PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel24;
             PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevel33;
             // Mono 后端免 NDK（demo 用；正式版换 IL2CPP 需另装 NDK r23b）

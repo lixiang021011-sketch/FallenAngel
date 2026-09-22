@@ -75,6 +75,16 @@ namespace FallenAngel.Core
             Instance = this;
             DontDestroyOnLoad(gameObject);
             CurrentState = GameState.Menu;
+
+            // 竖屏锁定（作者 2026-09-22 定案）：本作是竖屏下落式，不能跟着手机转。
+            // 工程设置里已经改成 Portrait（见 BuildApk.ApplyPortraitLock），这里再补一道运行时保险 ——
+            // 万一包体来自旧设置或某台机器不认 manifest，也不会横过来。
+            // SafeAreaFitter 会跟着 Screen.orientation 变化重算安全区，所以这里改完它有感知。
+            if (Application.isMobilePlatform && Screen.orientation != ScreenOrientation.Portrait)
+            {
+                Screen.orientation = ScreenOrientation.Portrait;
+                Debug.Log("[GameManager] 竖屏锁定：Screen.orientation = Portrait");
+            }
             // 适配高刷新率屏（120Hz 跑满；60Hz 屏自动锁 60，不产生副作用）
             // 帧率/延迟策略：**保持平台默认的 vSync**（=1）。
             // 真机实测"按键后的视觉反馈与触感不在同一瞬间"，而关掉 vSync 后 Unity 可能在
