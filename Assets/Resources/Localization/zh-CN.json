@@ -327,6 +327,38 @@
     {
       "key": "item.fragile.desc",
       "value": "8 秒内受到的伤害提高 50%"
+    },
+    {
+      "key": "difficulty.easy",
+      "value": "EASY"
+    },
+    {
+      "key": "difficulty.normal",
+      "value": "NORMAL"
+    },
+    {
+      "key": "difficulty.hard",
+      "value": "HARD"
+    },
+    {
+      "key": "difficulty.expert",
+      "value": "EXPERT"
+    },
+    {
+      "key": "pause.retire.title",
+      "value": "退出演奏？"
+    },
+    {
+      "key": "pause.retire.body",
+      "value": "本局成绩不会保存"
+    },
+    {
+      "key": "pause.retire.cancel",
+      "value": "继续演奏"
+    },
+    {
+      "key": "pause.retire.confirm",
+      "value": "退出"
     }
   ]
 }

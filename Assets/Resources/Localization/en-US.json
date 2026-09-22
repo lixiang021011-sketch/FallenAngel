@@ -327,6 +327,38 @@
     {
       "key": "item.fragile.desc",
       "value": "Take 50% more damage for 8s"
+    },
+    {
+      "key": "difficulty.easy",
+      "value": "EASY"
+    },
+    {
+      "key": "difficulty.normal",
+      "value": "NORMAL"
+    },
+    {
+      "key": "difficulty.hard",
+      "value": "HARD"
+    },
+    {
+      "key": "difficulty.expert",
+      "value": "EXPERT"
+    },
+    {
+      "key": "pause.retire.title",
+      "value": "Retire?"
+    },
+    {
+      "key": "pause.retire.body",
+      "value": "This run will not be saved"
+    },
+    {
+      "key": "pause.retire.cancel",
+      "value": "Keep playing"
+    },
+    {
+      "key": "pause.retire.confirm",
+      "value": "Retire"
     }
   ]
 }

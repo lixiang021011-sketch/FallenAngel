@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
@@ -240,10 +241,15 @@ namespace FallenAngel.Core
             countdownText.fontStyle = FontStyles.Bold;
             countdownText.color = Color.white;
             countdownText.raycastTarget = false;
+
+            // E1 表现层：每步缩放弹出 + 淡出、GO! 强调色（节奏照上游 CountdownCore：3/2/1 各 1 秒）
+            FallenAngel.UI.CountdownView countdownView = countdownGO.AddComponent<FallenAngel.UI.CountdownView>();
+            SetPrivateField(countdownView, "label", countdownText);
             countdownGO.SetActive(false);
 
             // 将倒计时文本引用传递给 GameManager
             gm.SetCountdownText(countdownText);
+            SetPrivateField(gm, "countdownView", countdownView);
 
             // 暂停按钮（放右上角）
             GameObject pauseBtnGO = CreateButton("PauseButton", hudPanel.transform,
@@ -271,6 +277,19 @@ namespace FallenAngel.Core
                 SetPrivateField(fsc, "pauseRoot", pauseRootT.gameObject);
             SetPrivateField(hudPC, "pauseButton", pauseBtnGO.GetComponent<Button>());
             SetPrivateField(hudPC, "pausePanel", pausePanelGO);
+            // 退出确认弹窗（E3）：在 PauseRoot 里，从名字取引用
+            if (pauseRootT != null)
+            {
+                Transform retire = pauseRootT.Find("RetireConfirmPanel");
+                if (retire != null)
+                {
+                    SetPrivateField(hudPC, "retireConfirmPanel", retire.gameObject);
+                    Transform yes = retire.Find("RetireConfirmButton");
+                    if (yes != null) SetPrivateField(hudPC, "retireConfirmYesButton", yes.GetComponent<Button>());
+                    Transform no = retire.Find("RetireCancelButton");
+                    if (no != null) SetPrivateField(hudPC, "retireConfirmNoButton", no.GetComponent<Button>());
+                }
+            }
             SetPrivateField(hudPC, "gamePanel", gamePanel);
             SetPrivateField(hudPC, "menuPanel", menuPanel);
 
@@ -1015,6 +1034,32 @@ namespace FallenAngel.Core
             GameObject btnBack = CreateButton("BackButton", root.transform,
                 new Vector2(0.7f, 0.08f), new Vector2(300, 120), "result.back", 48);
 
+            // E2 演出：分数滚动 + 逐项入场（程序化等价上游 LiveResultView 的六档演出，特效不抄）。
+            // 逐项顺序 = 曲名 → 曲师 → 难度 → 评价 → 分数 → 达成率 → 最大连击 → 判定五档 → 按钮。
+            var revealGroups = new List<CanvasGroup>();
+            Transform[] revealOrder =
+            {
+                songName.transform, artist.transform, diff.transform, rank.transform,
+                score.transform, acc.transform, maxCombo.transform,
+                root.transform.Find("Label_PERFECT"), root.transform.Find("Val_PERFECT"),
+                root.transform.Find("Label_GREAT"), root.transform.Find("Val_GREAT"),
+                root.transform.Find("Label_GOOD"), root.transform.Find("Val_GOOD"),
+                root.transform.Find("Label_BAD"), root.transform.Find("Val_BAD"),
+                root.transform.Find("Label_MISS"), root.transform.Find("Val_MISS"),
+                btnRetry.transform, btnBack.transform,
+            };
+            for (int i = 0; i < revealOrder.Length; i++)
+            {
+                if (revealOrder[i] == null) continue;
+                CanvasGroup group = revealOrder[i].GetComponent<CanvasGroup>();
+                if (group == null) group = revealOrder[i].gameObject.AddComponent<CanvasGroup>();
+                revealGroups.Add(group);
+            }
+
+            ResultReveal reveal = root.AddComponent<ResultReveal>();
+            SetPrivateField(reveal, "scoreText", score);
+            SetPrivateField(reveal, "revealGroups", revealGroups);
+
             // 设置挂在 GamePanel 上的 ResultScreen 的所有引用
             // 通过 parent.parent 找到 GamePanel 上的 ResultScreen
             Transform gamePanelT = parent.parent;
@@ -1038,6 +1083,7 @@ namespace FallenAngel.Core
                     SetPrivateField(rs, "retryButton", btnRetry.GetComponent<Button>());
                     SetPrivateField(rs, "backButton", btnBack.GetComponent<Button>());
                     SetPrivateField(rs, "rootPanel", parent.gameObject);
+                    SetPrivateField(rs, "reveal", reveal);   // E2 演出（分数滚动 + 逐项入场）
                 }
             }
         }
@@ -1996,6 +2042,35 @@ namespace FallenAngel.Core
             GameObject speedPlus = CreateButton("FallSpeedPlusButton", root.transform,
                 new Vector2(0.5f, 0.5f), new Vector2(110, 70), "+", 40);
             ((RectTransform)speedPlus.transform).anchoredPosition = new Vector2(160, -350);
+
+            // 退出确认弹窗（E3，照上游 ShowConfirmRetireDialog）：点"退出"先弹这一层，确认后才退回菜单
+            GameObject retire = new GameObject("RetireConfirmPanel", typeof(RectTransform), typeof(Image));
+            retire.transform.SetParent(root.transform, false);
+            RectTransform retireRT = (RectTransform)retire.transform;
+            retireRT.anchorMin = retireRT.anchorMax = new Vector2(0.5f, 0.5f);
+            retireRT.pivot = new Vector2(0.5f, 0.5f);
+            retireRT.sizeDelta = new Vector2(860, 420);
+            retireRT.anchoredPosition = Vector2.zero;
+            Image retireBg = retire.GetComponent<Image>();
+            retireBg.color = new Color(0.05f, 0.10f, 0.13f, 0.97f);
+            retireBg.raycastTarget = true;
+
+            TextMeshProUGUI retireTitle = CreateText("RetireTitle", retire.transform,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 120), new Vector2(760, 60),
+                "pause.retire.title", 40, TextAlignmentOptions.Center);
+            retireTitle.fontStyle = FontStyles.Bold;
+
+            CreateText("RetireBody", retire.transform,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 40), new Vector2(760, 60),
+                "pause.retire.body", 26, TextAlignmentOptions.Center).color = new Color(1f, 1f, 1f, 0.7f);
+
+            GameObject retireNo = CreateButton("RetireCancelButton", retire.transform,
+                new Vector2(0.5f, 0.5f), new Vector2(320, 96), "pause.retire.cancel", 32);
+            ((RectTransform)retireNo.transform).anchoredPosition = new Vector2(-180, -90);
+            GameObject retireYes = CreateButton("RetireConfirmButton", retire.transform,
+                new Vector2(0.5f, 0.5f), new Vector2(320, 96), "pause.retire.confirm", 32);
+            ((RectTransform)retireYes.transform).anchoredPosition = new Vector2(180, -90);
+            retire.SetActive(false);
 
             // 只创建 UI 元素（PauseRoot + 按钮），不挂 PauseController
             // 真正的控制器在 HUDPanel 上

@@ -39,6 +39,10 @@ namespace FallenAngel.Core
 
         [Header("倒计时UI")]
         [SerializeField] private TextMeshProUGUI countdownText;
+        [Tooltip("倒计时表现层（E1：缩放弹出 + 淡出；未注入时退回纯文本）")]
+        [SerializeField] private FallenAngel.UI.CountdownView countdownView;
+        private AudioClip countdownTickClip;
+        private AudioClip countdownGoClip;
 
         /// <summary>当前游戏状态</summary>
         public GameState CurrentState { get; private set; }
@@ -152,33 +156,52 @@ namespace FallenAngel.Core
         {
             isCountingDown = true;
 
-            if (countdownText != null)
+            // E1：3 → 2 → 1 各 1 秒、每步一声（上游 CountdownCore：逐个激活特效 + WaitForSeconds(1f)
+            // + 每步 PlaySEOneShot(SE_LIVE_COUNT_DOWN)），最后 GO! 0.5 秒。
+            FallenAngel.UI.CountdownView view = countdownView;
+            if (view != null || countdownText != null)
             {
-                countdownText.gameObject.SetActive(true);
-                countdownText.text = "3";
-                yield return new WaitForSecondsRealtime(1f);
+                int steps = CountdownTiming.From - CountdownTiming.To + 2;   // 3/2/1 + GO!
+                for (int step = 0; step < steps; step++)
+                {
+                    if (!isCountingDown) break;
 
-                if (!isCountingDown) yield break;
-                countdownText.text = "2";
-                yield return new WaitForSecondsRealtime(1f);
+                    if (view != null) view.ShowStep(step);
+                    else if (countdownText != null)
+                    {
+                        countdownText.gameObject.SetActive(true);
+                        countdownText.text = CountdownTiming.LabelAt(step);
+                    }
+                    PlayCountdownTick(CountdownTiming.IsGo(step));
 
-                if (!isCountingDown) yield break;
-                countdownText.text = "1";
-                yield return new WaitForSecondsRealtime(1f);
+                    float wait = CountdownTiming.IsGo(step)
+                        ? CountdownTiming.GoSeconds
+                        : CountdownTiming.StepSeconds;
+                    yield return new WaitForSecondsRealtime(wait);
+                }
 
-                if (!isCountingDown) yield break;
-                countdownText.text = "GO!";
-                yield return new WaitForSecondsRealtime(0.5f);
-
-                countdownText.gameObject.SetActive(false);
+                if (view != null) view.Hide();
+                else if (countdownText != null) countdownText.gameObject.SetActive(false);
             }
             else
             {
-                yield return new WaitForSecondsRealtime(3.5f);
+                yield return new WaitForSecondsRealtime(CountdownTiming.TotalSeconds);
             }
 
             isCountingDown = false;
             StartGame();
+        }
+
+        /// <summary>倒计时每步一声：3/2/1 用中音、"GO!" 用高音（与 HUD 的节拍器音色同一套合成器）</summary>
+        private void PlayCountdownTick(bool isGo)
+        {
+            Audio.AudioManager am = Audio.AudioManager.Instance;
+            if (am == null) return;
+            if (countdownTickClip == null)
+                countdownTickClip = Audio.SynthesizedSfx.CreateHitClip(880f, 0.06f, 30f);
+            if (countdownGoClip == null)
+                countdownGoClip = Audio.SynthesizedSfx.CreateHitClip(1320f, 0.10f, 24f);
+            am.PlaySfx(isGo ? countdownGoClip : countdownTickClip, isGo ? 0.9f : 0.7f);
         }
 
         /// <summary>

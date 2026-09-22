@@ -290,6 +290,18 @@ namespace FallenAngel.Gameplay
             else FallenAngel.Core.DemoItems.ApplyFragileDebuff();
         }
 
+        /// <summary>开发版自测：开局 3 秒后打开"暂停 + 退出确认"（E3）</summary>
+        private System.Collections.IEnumerator DevShowRetireInPlay()
+        {
+            while (GameManager.Instance == null || GameManager.Instance.CurrentState != GameState.Playing)
+                yield return null;
+            while (GameManager.Instance.SongTime < 3f) yield return null;
+
+            var pause = FindObjectOfType<FallenAngel.UI.PauseController>(true);
+            if (pause != null) pause.DevShowRetireConfirm();
+            else Debug.LogWarning("[JudgeManager] 开发版自测：场景里没有 PauseController");
+        }
+
         // ── 真机自测开关（只在开发版编译进来；release 包不含这段）──────────────────
         // 为什么需要：MIUI 拦了 `adb shell input`（只剩 monkey 能注入，而 monkey 只能随机点按），
         // 靠随机点按走不到演奏页，判定/输入的设备验证无法复现。
@@ -368,6 +380,20 @@ namespace FallenAngel.Gameplay
                 Debug.Log("[JudgeManager] 开发版自动开局：合成密集谱 + 局内道具（" + mode + "，开局 3 秒后使用）");
                 starter.StartChart(BuildDenseDeviceTestChart());
                 StartCoroutine(DevUseItemInPlay(mode == "item"));
+                return;
+            }
+
+            // E3 自测：开局 3 秒后打开"暂停 + 退出确认"（弹窗类改动在 MIUI 上点不到，只能靠钩子）
+            if (mode == "retire")
+            {
+                if (starter == null)
+                {
+                    Debug.LogWarning("[JudgeManager] 开发版自动开局失败：场景里没有 GameStarter");
+                    return;
+                }
+                Debug.Log("[JudgeManager] 开发版自动开局：合成密集谱 + 3 秒后打开退出确认");
+                starter.StartChart(BuildDenseDeviceTestChart());
+                StartCoroutine(DevShowRetireInPlay());
                 return;
             }
 

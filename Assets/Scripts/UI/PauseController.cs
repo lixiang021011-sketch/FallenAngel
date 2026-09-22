@@ -20,6 +20,10 @@ namespace FallenAngel.UI
         [Header("面板（留空自动查找）")]
         [SerializeField] private GameObject pausePanel;
         [SerializeField] private GameObject pauseRoot;      // 按钮容器（创建时非激活，暂停时激活）
+        [Tooltip("退出确认弹窗（E3，照上游 ShowConfirmRetireDialog：点退出先确认，不直接退）")]
+        [SerializeField] private GameObject retireConfirmPanel;
+        [SerializeField] private Button retireConfirmYesButton;
+        [SerializeField] private Button retireConfirmNoButton;
         [SerializeField] private GameObject menuPanel;
         [SerializeField] private GameObject gamePanel;
 
@@ -119,6 +123,17 @@ namespace FallenAngel.UI
                 exitButton.onClick.RemoveAllListeners();
                 exitButton.onClick.AddListener(OnExitClicked);
             }
+            if (retireConfirmYesButton != null)
+            {
+                retireConfirmYesButton.onClick.RemoveAllListeners();
+                retireConfirmYesButton.onClick.AddListener(OnRetireConfirmed);
+            }
+            if (retireConfirmNoButton != null)
+            {
+                retireConfirmNoButton.onClick.RemoveAllListeners();
+                retireConfirmNoButton.onClick.AddListener(OnRetireCancelled);
+            }
+            if (retireConfirmPanel != null) retireConfirmPanel.SetActive(false);
         }
 
         private void OnPauseClicked()
@@ -188,6 +203,22 @@ namespace FallenAngel.UI
                 return;
             }
             try { AudioManager.Instance?.PlayButtonClick(); } catch { }
+
+            // E3：照上游 ShowConfirmRetireDialog —— 点"退出"先弹确认，不直接退回菜单
+            if (retireConfirmPanel != null)
+            {
+                retireConfirmPanel.SetActive(true);
+                return;
+            }
+
+            OnRetireConfirmed();
+        }
+
+        /// <summary>确认退出（上游确认弹窗的 OK）</summary>
+        private void OnRetireConfirmed()
+        {
+            try { AudioManager.Instance?.PlayButtonClick(); } catch { }
+            if (retireConfirmPanel != null) retireConfirmPanel.SetActive(false);
             if (pausePanel != null) pausePanel.SetActive(false);
 
             if (menuPanel != null) menuPanel.SetActive(true);
@@ -195,6 +226,26 @@ namespace FallenAngel.UI
 
             GameManager.Instance?.BackToMenu();
         }
+
+        /// <summary>取消退出（上游确认弹窗的 Cancel）：回到暂停面板</summary>
+        private void OnRetireCancelled()
+        {
+            try { AudioManager.Instance?.PlayButtonClick(); } catch { }
+            if (retireConfirmPanel != null) retireConfirmPanel.SetActive(false);
+        }
+
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+        /// <summary>开发版自测：直接打开"暂停 + 退出确认"（MIUI 拦 adb 触摸注入，点不到按钮）</summary>
+        public void DevShowRetireConfirm()
+        {
+            if (GameManager.Instance != null && GameManager.Instance.CurrentState == GameState.Playing)
+                GameManager.Instance.PauseGame();
+            if (pausePanel != null) pausePanel.SetActive(true);
+            if (pauseRoot != null) pauseRoot.SetActive(true);
+            if (retireConfirmPanel != null) retireConfirmPanel.SetActive(true);
+            Debug.Log("[PauseController] 开发版自测：显示退出确认弹窗（E3）");
+        }
+#endif
 
         private void Update()
         {

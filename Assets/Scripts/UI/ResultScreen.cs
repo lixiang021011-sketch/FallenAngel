@@ -43,6 +43,8 @@ namespace FallenAngel.UI
         [Header("按钮")]
         [SerializeField] private Button retryButton;
         [SerializeField] private Button backButton;
+        [Tooltip("E2 结算演出（分数滚动 + 逐项入场）；未注入时退回静态填充")]
+        [SerializeField] private ResultReveal reveal;
 
         [Header("面板引用（留空自动查找）")]
         [SerializeField] private GameObject menuPanel;
@@ -214,6 +216,17 @@ namespace FallenAngel.UI
                 bool isPerfect = j.MissCount == 0 && j.GoodCount == 0 && j.BadCount == 0 && j.GreatCount == 0;
                 if (fullComboMark != null) fullComboMark.SetActive(isFullCombo && !isPerfect);
                 if (perfectMark != null) perfectMark.SetActive(isPerfect);
+
+                // E2：填完最终值后交给演出层（分数从 0 滚上来、各项依次淡入）。
+                // 分级照上游 LiveResultAnimationType：AllPerfect / FullCombo / LifeZero / Clear。
+                if (reveal != null)
+                {
+                    ResultAnimationType type = ResultPresentation.Classify(
+                        isPerfect, isFullCombo, PlayLife.IsEmpty, false);
+                    Debug.Log(string.Format("[ResultScreen] 结算演出：{0}（分数 {1}，评级 {2}）",
+                        type, j.Score, rank));
+                    reveal.Play(j.Score);
+                }
             }
         }
 

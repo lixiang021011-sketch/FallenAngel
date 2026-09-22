@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using TMPro;
 using FallenAngel.Gameplay;
 using FallenAngel.Core;
+using FallenAngel.Data;   // Difficulty 枚举（谱面元数据）
 
 namespace FallenAngel.UI
 {
@@ -109,7 +110,24 @@ namespace FallenAngel.UI
             if (GameManager.Instance?.CurrentChart?.metadata != null && songTitleText != null)
             {
                 var meta = GameManager.Instance.CurrentChart.metadata;
-                songTitleText.text = $"{meta.songName} - {meta.songArtist}";
+                // E4 曲信息区：曲名 - 曲师 · 难度 Lv.等级（上游 MusicInfoView 会显示曲信息/难度/进度；
+                // 难度与等级本来就在谱面元数据里，之前只在结算页用，演奏页没显示）
+                songTitleText.text = string.Format("{0} - {1} · {2} Lv.{3}",
+                    meta.songName, meta.songArtist,
+                    DifficultyLabel(meta.difficulty), meta.level);
+            }
+        }
+
+        /// <summary>难度档位文案（对应谱面元数据的 Difficulty 枚举）</summary>
+        private static string DifficultyLabel(Difficulty difficulty)
+        {
+            switch (difficulty)
+            {
+                case Difficulty.Easy: return Loc.T("difficulty.easy");
+                case Difficulty.Normal: return Loc.T("difficulty.normal");
+                case Difficulty.Hard: return Loc.T("difficulty.hard");
+                case Difficulty.Expert: return Loc.T("difficulty.expert");
+                default: return Loc.T("difficulty.normal");
             }
         }
 
