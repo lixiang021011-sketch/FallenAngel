@@ -82,6 +82,9 @@ namespace FallenAngel.Gameplay
         private RectTransform slidePathRect;
         private float slideEndCanvasY;                   // 轨迹终点相对头部的画布高度（按住时按剩余量收缩）
         private float lastRibbonProgress = -1f;          // 轨迹重建节流：上次重建时的进度/头部 x
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+        private bool loggedFlight;                       // 开发版：每颗音符只报一次"过线继续飞"
+#endif
         private float lastRibbonHeadX = float.NaN;
         // 逐帧重算轨迹用的复用缓冲（滑条按住期间每帧都会重写，别每次新建 List）
         private readonly List<Vector2> slidePointBuffer = new List<Vector2>(16);
@@ -140,6 +143,9 @@ namespace FallenAngel.Gameplay
             FxPlaying = false;
             JudgedAtSongTime = 0f;
             isLongNoteConfigured = false;
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+            loggedFlight = false;          // 池复用：清掉"已报过过线飞行"
+#endif
 
             // 重置缩放和颜色（从对象池复用时必须重置）
             transform.localScale = originalScale;
@@ -746,7 +752,23 @@ namespace FallenAngel.Gameplay
             float fallTime = GameManager.Instance.ActualFallTime;
             // 进度 0 = 刚生成， 1 = 到达判定线
             float timeToJudge = Data.time - currentSongTime;
-            float progress = 1f - Mathf.Clamp01(timeToJudge / fallTime);
+            float rawProgress = 1f - timeToJudge / fallTime;
+            // D4 行为面：**漏掉的音符继续往下飞**（上游 `LerpUnclamped`）。
+            // 命中/长按有各自的收尾（特效或跟随），只有 Miss 需要"飞过去"；
+            // 上限 1.6 防止极端掉帧时飞太远（Miss 的淡出只有 0.3s，正常到不了）。
+            bool flyingPast = IsJudged && JudgeResult == JudgeResultType.Miss && rawProgress > 1f;
+            float progress = flyingPast ? Mathf.Min(rawProgress, 1.6f) : Mathf.Clamp01(rawProgress);
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+            // 开发版自报：漏掉的音符是否真的越过判定线继续下移（D4 行为面）。
+            // 真机没法锁竖屏（MIUI 拦 settings put），所以用日志替代像素取证。
+            if (flyingPast && !loggedFlight)
+            {
+                loggedFlight = true;
+                Debug.Log(string.Format("[Note] Miss 过线继续飞：p={0:0.###}（判定线 p=1）→ y={1:0.#}，比判定线低 {2:0.#}px",
+                    progress, PlayPerspective.PositionY(progress, spawnPosY, judgePosY),
+                    judgePosY - PlayPerspective.PositionY(progress, spawnPosY, judgePosY)));
+            }
+#endif
 
             // 先落定本帧的透视缩放：后面尾部件要按"画布单位 ÷ 当前缩放"定位，
             // 带子的网格重建也读它——放到最后会让尾标记慢一帧、跟着抖。

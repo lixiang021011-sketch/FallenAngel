@@ -105,6 +105,21 @@ namespace FallenAngel.Core
             }
             check("位置单调", monotonic, "p 从 0→1 时 y 单调下降（不会回弹）");
 
+            // ③b 过线继续飞（D4 行为面）：p > 1 时继续单调下移，且不改变 p ≤ 1 的形状
+            bool flyMonotonic = true;
+            float prevFly = PlayPerspective.PositionY(1f, SpawnPos.y, JudgePos.y);
+            for (int i = 1; i <= 12; i++)
+            {
+                float y = PlayPerspective.PositionY(1f + i * 0.05f, SpawnPos.y, JudgePos.y);
+                if (y > prevFly + Tol) { flyMonotonic = false; break; }
+                prevFly = y;
+            }
+            float past = PlayPerspective.PositionY(1.3f, SpawnPos.y, JudgePos.y);
+            float judgeY = PlayPerspective.PositionY(1f, SpawnPos.y, JudgePos.y);
+            check("过线继续下移", flyMonotonic && past < judgeY - 10f,
+                string.Format("p=1.0 → y={0:0.#}（判定线）、p=1.3 → y={1:0.#}（继续往下，下游 {2:0.#}px）",
+                    judgeY, past, judgeY - past));
+
             // ④ 严格对齐：轨道半宽（SizeScaleAtY）× 音符填充比 == 该处音符半宽
             float laneWidth = LaneLayout.GetLaneWidth(4);
             float fill = Note.DefaultNoteWidth / laneWidth;

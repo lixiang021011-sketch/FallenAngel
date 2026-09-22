@@ -77,11 +77,18 @@ namespace FallenAngel.Core
             return Enabled ? Mathf.Max(MinScale, ViewProgress01(p)) : 1f;
         }
 
-        /// <summary>进度 → 画布中心系 Y（LerpUnclamped，过判定线后继续飞）</summary>
+        /// <summary>
+        /// 进度 → 画布中心系 Y。**过线继续飞**（前端清单 D4 的行为面）：
+        /// p ≤ 1 走透视曲线；p &gt; 1 沿"判定线之后的直线"继续下移（上游是
+        /// `Vector2.LerpUnclamped(spawn, center, progress)`，这里等价成"过了 1 就按同速继续"）。
+        /// 裁剪（上游 shader 的 `_NoteShowRate`）按作者定案**不做**（属视觉项）。
+        /// </summary>
         public static float PositionY(float p, float spawnY, float judgeY)
         {
             if (!Enabled) return Mathf.Lerp(spawnY, judgeY, Mathf.Clamp01(p));
-            return Mathf.LerpUnclamped(spawnY, judgeY, ViewProgress01(p));
+            if (p <= 1f) return Mathf.LerpUnclamped(spawnY, judgeY, ViewProgress01(p));
+            // 过线：以"整段落距"为单位继续下移（judgeY - spawnY 为负 → y 继续变小 = 继续往下）
+            return judgeY + (judgeY - spawnY) * (p - 1f);
         }
 
         /// <summary>
