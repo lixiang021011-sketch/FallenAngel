@@ -162,7 +162,17 @@ namespace FallenAngel.Gameplay
                     note.gameObject.SetActive(false);
                     return note;
                 },
-                actionOnGet: (note) => { if (note != null) note.gameObject.SetActive(true); },
+                actionOnGet: (note) =>
+                {
+                    if (note == null) return;
+                    note.gameObject.SetActive(true);
+                    // 层级 = 显式的"音符恒在长条身体之上"（照抄上游：那边身体是独立 mesh、音符 sprite 带自己的 z）。
+                    // 为什么必须显式做：对象池把音符复用出去时，**绘制顺序原本等于对象最初创建的顺序**，
+                    // 与当前谱面顺序无关 —— 后出现但复用了更早对象的音符会画在长条身体（0.9 alpha 填充 +
+                    // 0.95 alpha 边线）下面，看起来就是"长条盖住了后来的音符"（作者 2026-09-21 反馈）。
+                    // 放在 Get 里而不是 SpawnNote 里：连预热/测试路径一起覆盖，且只在这里改一处。
+                    note.transform.SetAsLastSibling();
+                },
                 actionOnRelease: (note) => { if (note != null) note.Recycle(); },
                 actionOnDestroy: (note) => { if (note != null) Destroy(note.gameObject); },
                 defaultCapacity: defaultPoolSize,

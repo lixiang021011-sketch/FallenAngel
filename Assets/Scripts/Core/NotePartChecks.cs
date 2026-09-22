@@ -61,6 +61,8 @@ namespace FallenAngel.Core
                 new Case("5K drag",          new NoteData(2, 0f, NoteType.Drag), 5),
                 new Case("4K flick↑",        new NoteData(2, 0f, NoteType.Flick, 0f, -1, FlickDirection.Up), 4),
                 new Case("4K hold",          new NoteData(1, 0f, NoteType.LongStart, 1.5f, 7), 4),
+                // 长条长度 = 真值（照抄上游，不做像素 clamp）：4s 的条身体必须是 落距×4/2，不能被截成一屏
+                new Case("4K hold 4s(真值)",  new NoteData(2, 0f, NoteType.LongStart, 4.0f, 9), 4),
                 new Case("5K slide",         new NoteData(1, 0f, NoteType.Slide, 1.5f, -1, FlickDirection.Up, slidePath), 5),
                 new Case("5K wide(kick)",    new NoteData(0, 0f, NoteType.Normal, 0f, -1, FlickDirection.Up, null, true), 5, true),
                 new Case("4K longEnd(账本)", new NoteData(1, 0f, NoteType.LongEnd, 0f, 7), 4),
@@ -245,6 +247,23 @@ namespace FallenAngel.Core
                     // 带子的形状由「画布高度 → 轨道半宽」决定，所以本身不能被缩放
                     if (Mathf.Abs(bodyRect.localScale.y - 1f) > 0.001f)
                     { ok = false; notes.Add($"身体被缩放 {bodyRect.localScale.y:0.###}（带子靠画布高度取宽，缩放会让宽窄对不上轨道）"); }
+
+                    // ⑥ 身体长度 = **真值**：落距 × 时长 / 下落时长（照抄上游 NoteLineView 的"头/尾由时间推"）。
+                    //    这里刻意不做像素上下限 —— 一但夹住，"尾巴到判定线的距离 = 剩余时间 × 速度"就不成立
+                    //    （长条尾巴变慢 0.50×、短条在慢速下尾巴变快 6.82×，作者 2026-09-22 报的"长条下落速度会变慢"）。
+                    //    自检环境没有 GameManager，Generator 里用的是默认 2s 下落时长。
+                    float fallDistance = Mathf.Abs(SpawnPos.y - JudgePos.y);
+                    float expectHeight = fallDistance * (c.Data.duration / 2f);
+                    if (Mathf.Abs(bodyRect.sizeDelta.y - expectHeight) > TolerancePx)
+                    {
+                        ok = false;
+                        notes.Add($"身体长度 {bodyRect.sizeDelta.y:0.#} 期望真值 {expectHeight:0.#}" +
+                                  $"（落距 {fallDistance:0.#} × {c.Data.duration:0.##}s / 2s）");
+                    }
+                    else
+                    {
+                        metrics.Add($"身体长 {bodyRect.sizeDelta.y:0.#}=真值（落距×{c.Data.duration:0.##}/2，无 clamp）");
+                    }
 
                     // 下落中：出生点附近整条带子都在尺寸下限区，是等宽带
                     if (!InspectBandAndTail(body, noteRect, tailRect, "身体", notes, metrics)) ok = false;

@@ -725,6 +725,63 @@ namespace FallenAngel.Core
                     UnityEngine.Object.DestroyImmediate(host);
                 }
             }
+
+            // ⑳ 长条真值几何（照抄上游 NoteLineView / LongNoteView：头尾两点由**时间**推，不做像素 clamp）：
+            //    尾巴到判定线的距离必须 = 剩余时间 × 速度。旧实现把长度夹在 [300, 一屏]，长条尾巴只有
+            //    音符 50% 的速度（作者报的"长条下落速度会变慢"）—— 这条断言在旧实现上必红。
+            using (var sb = new Sandbox())
+            {
+                const float dur = 3.0f;
+                const int holdId = 51;
+                sb.AddChartNote(new NoteData(2, 10.000f, DataNoteType.LongStart, dur, holdId));
+                sb.AddChartNote(new NoteData(2, 10.000f + dur, DataNoteType.LongEnd, 0f, holdId));
+                sb.BuildScore();
+                sb.StartSong();
+                sb.SetSongTime(9.500f);
+                sb.SpawnerView();
+                sb.JudgeUpdate();
+                sb.SetSongTime(10.000f);
+                sb.SpawnerView();
+                sb.PressAt(2, 10.000f);
+                sb.JudgeUpdate();
+                sb.SpawnerView();
+                for (int i = 1; i <= 10; i++)      // 按住 1s（HoldProgress = 1/3）
+                {
+                    sb.SetSongTime(10.000f + i * 0.1f);
+                    sb.JudgeUpdate();
+                    sb.SpawnerView();
+                }
+
+                float fallDistance = Mathf.Abs(sb.Spawner.SpawnY - sb.Spawner.JudgeLineY);
+                float fallTime = sb.Game.ActualFallTime;
+                float trueLen = fallDistance * (dur / fallTime);
+                float expectY = sb.Spawner.JudgeLineY + trueLen * (1f - 1f / 3f);
+                float got = sb.LongEndViewY(holdId);
+                bool overOneScreen = trueLen > fallDistance;    // 3s @ 2s 下落 = 1.5 个落距（旧实现会被夹成 1 个）
+                check("长条·尾巴位置 = 剩余时间×速度",
+                    overOneScreen && !float.IsNaN(got) && Mathf.Abs(got - expectY) < 2f,
+                    string.Format("3s 长条 @ {0:0.##}s 下落：真长 {1:0.#}（落距 {2:0.#}）、按住 1/3 → 尾巴 y={3:0.#} 期望 {4:0.#}",
+                        fallTime, trueLen, fallDistance, got, expectY));
+            }
+
+            // ㉑ 层级：对象池取出的音符必须排到容器最后 —— 等价上游"音符 sprite 恒在长条身体 mesh 之上"。
+            //    池化后绘制顺序原本 = 对象最初创建顺序（与谱面顺序无关），长条身体（0.9 填充 + 0.95 边线）
+            //    会盖住复用旧对象的音符（作者 2026-09-21 "长音符拖到后来的音符"）。
+            using (var sb = new Sandbox())
+            {
+                Note first = sb.TakeFromPool();
+                int lastAtFirst = sb.ContainerChildCount - 1;      // 取第一个时它就该已经在最后
+                int idxFirst = first != null ? first.transform.GetSiblingIndex() : -1;
+                Note second = sb.TakeFromPool();
+                int idxSecond = second != null ? second.transform.GetSiblingIndex() : -1;
+                int last = sb.ContainerChildCount - 1;
+                check("层级·池取出的音符排到最后",
+                    first != null && second != null && idxFirst == lastAtFirst && idxSecond == last && idxSecond > idxFirst,
+                    string.Format("容器 {0} 个子节点：第 1 个取到时 sibling={1}（期望 {2}）、第 2 个 sibling={3}（期望 {4}）",
+                        sb.ContainerChildCount, idxFirst, lastAtFirst, idxSecond, last));
+                sb.ReturnToPool(first);
+                sb.ReturnToPool(second);
+            }
         }
 
         /// <summary>晚 90ms 按下（同一个音符），返回判定档——用来验窗口倍率是否进表</summary>
@@ -807,6 +864,7 @@ namespace FallenAngel.Core
             private static readonly MethodInfo MSpawnerOnGameStart = typeof(NoteSpawner).GetMethod("OnGameStart", Priv);
             private static readonly FieldInfo FSessionHitErrors =
                 typeof(JudgeManager).GetField("sessionHitErrorsMs", Priv);
+            private static readonly FieldInfo FNotePool = typeof(NoteSpawner).GetField("notePool", Priv);
 
             private readonly GameObject host;
             private readonly ChartData chart = new ChartData();
@@ -910,6 +968,51 @@ namespace FallenAngel.Core
             public void MoveAt(int lane, float musicTime, float dx, float dy, int fingerId)
             {
                 Input.SimulateFingerMoveAt(lane, musicTime, dx, dy, fingerId);
+            }
+
+            /// <summary>层级自检用：直接从对象池取一个音符（`Get` 必须把它排到容器最后 = 画在最上层）</summary>
+            public Note TakeFromPool()
+            {
+                object pool = FNotePool.GetValue(Spawner);
+                if (pool == null) return null;
+                // 精确取无参重载：ObjectPool<T> 同时有 Get() 与 Get(out T)，按名字取会 AmbiguousMatch
+                MethodInfo get = pool.GetType().GetMethod("Get", Type.EmptyTypes);
+                return get != null ? (Note)get.Invoke(pool, null) : null;
+            }
+
+            public void ReturnToPool(Note note)
+            {
+                if (note == null) return;
+                object pool = FNotePool.GetValue(Spawner);
+                if (pool == null) return;
+                MethodInfo release = pool.GetType().GetMethod("Release", new[] { typeof(Note) });
+                release?.Invoke(pool, new object[] { note });
+            }
+
+            /// <summary>音符容器（NotesContainer）的子节点数</summary>
+            public int ContainerChildCount
+            {
+                get
+                {
+                    var container = (RectTransform)FSpawnerContainer.GetValue(Spawner);
+                    return container != null ? container.childCount : -1;
+                }
+            }
+
+            /// <summary>长按尾标记（视图）的画布 y：按 longNoteId + type=LongEnd 在容器里找。找不到返回 NaN。</summary>
+            public float LongEndViewY(int longNoteId)
+            {
+                var container = (RectTransform)FSpawnerContainer.GetValue(Spawner);
+                if (container == null) return float.NaN;
+                for (int i = 0; i < container.childCount; i++)
+                {
+                    Note note = container.GetChild(i).GetComponent<Note>();
+                    if (note == null || note.Data == null) continue;
+                    if (note.Data.type != DataNoteType.LongEnd || note.Data.longNoteId != longNoteId) continue;
+                    if (!note.gameObject.activeSelf) continue;
+                    return ((RectTransform)note.transform).anchoredPosition.y;
+                }
+                return float.NaN;
             }
 
             /// <summary>把手指移到「轨道中心 + (dx,dy)」（触屏语义；连续调用传累计位移）</summary>

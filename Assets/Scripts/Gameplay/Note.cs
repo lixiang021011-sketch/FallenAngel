@@ -229,16 +229,17 @@ namespace FallenAngel.Gameplay
             //（远端不再完全透明：尾部标记挂在身体末端，全透明会让连接段与尾标记断开）
             ApplyPartsColor(LaneColors.GetLaneColor(Data.lane, Palette));
 
-            // 身体长度 = 按住期间音符下落的距离（不再叠加整条轨道高度），
-            // 修复：此前 body = 轨道全长 + 按住距离，远超屏幕高度，观感像无限长
-            float fallDistance = Mathf.Abs(spawnPos.y - judgeLinePos.y); // 轨道全长（下落距离）
+            // 身体长度 = **按时间算的真值**：`下落距离 × 时长/下落时长`（照抄上游 NoteLineView 的
+            // "头/尾两点由时间推"）。这里**不做任何像素上下限**——当年的 `Clamp(长度, 300, 一屏)`
+            // 一但生效，"尾巴到判定线的距离 = 剩余时间 × 速度"就不成立：长条尾巴比音符慢
+            //（实测 0.50×）、短条在慢速下尾巴比音符快（最坏 6.82×）→ 玩家读到的时长是错的。
+            // 超出屏幕的部分本来就看不见；被它盖住的风险由"音符恒画在身体之上"（对象池 Get 时
+            // SetAsLastSibling）负责，而不是靠截短长度。
+            float fallDistance = Mathf.Abs(spawnPos.y - judgeLinePos.y); // 生成点 → 判定线的落差
             float fallTime = GameManager.Instance != null ? GameManager.Instance.ActualFallTime : 2f;
             builtFallTime = fallTime; builtSpawnPos = spawnPos; builtJudgePos = judgeLinePos;
-            float holdDistance = fallDistance * (Data.duration / fallTime); // 按住期间下落距离
-            // 上限 = 一屏下落距离：长条再长，身体也只画到"生成点"为止——
-            // 否则 4s 的条身体就有 1.8 屏高（15.6s 时 7 屏），会把后面来的音符整个盖住
-            //（作者反馈"长音符拖到后来的音符，双指打不了"，根因就是这个视觉遮挡）。
-            float bodyHeight = Mathf.Clamp(holdDistance, 300f, fallDistance);
+            float holdDistance = fallDistance * (Data.duration / fallTime); // 按住期间的下落距离（真值）
+            float bodyHeight = holdDistance;
             // 宽度只是矩形参考值：实际画出来的宽度由带子按轨道曲线逐高度取值（kick 全宽条走 SetKickVisual）
             float bodyWidth = Mathf.Max(24f, rectTransform.sizeDelta.x - 2f);
             bodyRect.sizeDelta = new Vector2(bodyWidth, bodyHeight);
@@ -728,7 +729,8 @@ namespace FallenAngel.Gameplay
             float fallDistance = Mathf.Abs(builtSpawnPos.y - builtJudgePos.y);
             if (Data.type == NoteType.LongStart && Data.duration > 0f && bodyRect != null && bodyGraphic != null)
             {
-                float bodyHeight = Mathf.Clamp(fallDistance * (Data.duration / fallTime), 300f, fallDistance);
+                // 与生成时同一条真值公式（变速后按新下落时长重建；不带像素 clamp）
+                float bodyHeight = fallDistance * (Data.duration / fallTime);
                 bodyRect.sizeDelta = new Vector2(bodyRect.sizeDelta.x, bodyHeight);
                 bodyGraphic.SetStraightBand(bodyHeight);
                 bodyGraphic.SetAllDirty();
@@ -847,8 +849,9 @@ namespace FallenAngel.Gameplay
                 if (head != null && head.IsHolding && head.Data.type == NoteType.LongStart)
                 {
                     float fallDistance = Mathf.Abs(spawnPosY - judgePosY);
-                    // 与身体长度同公式（含"一屏上限"）：尾部标记跟着被截断后的末端，才不会飘到屏外
-                    float holdDistance = Mathf.Clamp(fallDistance * (head.Data.duration / fallTime), 300f, fallDistance);
+                    // 与身体同一条**真值**公式（不带像素 clamp）：尾巴到判定线的距离 = 剩余时间 × 速度。
+                    // 长条未按住时标记停在屏幕上方（看不见），按到"还剩一个落距"时它正好进屏 —— 与上游一致。
+                    float holdDistance = fallDistance * (head.Data.duration / fallTime);
                     float y = judgePosY + holdDistance * (1f - Mathf.Clamp01(head.HoldProgress));
                     rectTransform.anchoredPosition = new Vector2(rectTransform.anchoredPosition.x, y);
                 }
