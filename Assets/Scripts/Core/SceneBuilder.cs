@@ -226,6 +226,61 @@ namespace FallenAngel.Core
             HUDController hud = CreateHUD(hudPanel.transform);
 
             // 倒计时 UI（游戏开始前 3-2-1）
+            // E5 加载页：在倒计时之前显示（标题/说明/不确定进度条/小贴士），由 GameManager 控制时序
+            GameObject loadingPanel = new GameObject("LoadingPanel", typeof(RectTransform), typeof(Image));
+            loadingPanel.transform.SetParent(gamePanel.transform, false);
+            RectTransform lpRT = (RectTransform)loadingPanel.transform;
+            lpRT.anchorMin = Vector2.zero;
+            lpRT.anchorMax = Vector2.one;
+            lpRT.offsetMin = Vector2.zero;
+            lpRT.offsetMax = Vector2.zero;
+            Image lpBg = loadingPanel.GetComponent<Image>();
+            lpBg.color = new Color(0.03f, 0.07f, 0.09f, 0.97f);
+            lpBg.raycastTarget = false;
+
+            TextMeshProUGUI loadTitle = CreateText("LoadingTitle", loadingPanel.transform,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 190), new Vector2(900, 80),
+                "", 48, TextAlignmentOptions.Center);
+            loadTitle.fontStyle = FontStyles.Bold;
+            CreateText("LoadingDesc", loadingPanel.transform,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 110), new Vector2(900, 50),
+                "loading.preparing", 28, TextAlignmentOptions.Center).color = new Color(1f, 1f, 1f, 0.72f);
+
+            GameObject loadTrack = new GameObject("LoadingTrack", typeof(RectTransform), typeof(Image));
+            loadTrack.transform.SetParent(loadingPanel.transform, false);
+            RectTransform ltRT = (RectTransform)loadTrack.transform;
+            ltRT.anchorMin = ltRT.anchorMax = new Vector2(0.5f, 0.5f);
+            ltRT.pivot = new Vector2(0.5f, 0.5f);
+            ltRT.sizeDelta = new Vector2(600, 12);
+            ltRT.anchoredPosition = new Vector2(0, 20);
+            Image ltImg = loadTrack.GetComponent<Image>();
+            ltImg.color = new Color(1f, 1f, 1f, 0.12f);
+            ltImg.raycastTarget = false;
+
+            GameObject loadSweep = new GameObject("LoadingSweep", typeof(RectTransform), typeof(Image));
+            loadSweep.transform.SetParent(loadTrack.transform, false);
+            RectTransform lsRT = (RectTransform)loadSweep.transform;
+            lsRT.anchorMin = lsRT.anchorMax = new Vector2(0.5f, 0.5f);
+            lsRT.pivot = new Vector2(0.5f, 0.5f);
+            lsRT.sizeDelta = new Vector2(210, 12);
+            lsRT.anchoredPosition = Vector2.zero;
+            Image lsImg = loadSweep.GetComponent<Image>();
+            lsImg.color = new Color(0.44f, 0.88f, 0.84f, 0.95f);
+            lsImg.raycastTarget = false;
+
+            TextMeshProUGUI loadTip = CreateText("LoadingTip", loadingPanel.transform,
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -220), new Vector2(900, 80),
+                "", 26, TextAlignmentOptions.Center);
+            loadTip.color = new Color(1f, 1f, 1f, 0.55f);
+
+            FallenAngel.UI.LoadingScreen loadingScreen = loadingPanel.AddComponent<FallenAngel.UI.LoadingScreen>();
+            SetPrivateField(loadingScreen, "panelRoot", loadingPanel);
+            SetPrivateField(loadingScreen, "titleText", loadTitle);
+            SetPrivateField(loadingScreen, "tipText", loadTip);
+            SetPrivateField(loadingScreen, "sweepBar", lsRT);
+            SetPrivateField(gm, "loadingScreen", loadingScreen);
+            loadingPanel.SetActive(false);
+
             GameObject countdownGO = new GameObject("CountdownText", typeof(RectTransform));
             countdownGO.transform.SetParent(gamePanel.transform, false);
             RectTransform cdrt = (RectTransform)countdownGO.transform;
@@ -295,9 +350,12 @@ namespace FallenAngel.Core
 
             // 结算面板 —— ResultPanel 是始终激活的容器，ResultRoot 是内容（SetActive(false)）
             GameObject resultPanel = CreatePanel("ResultPanel", gamePanel.transform);
-            CreateResultScreen(resultPanel.transform);
-            // 关键：在 GamePanel 上挂 ResultScreen（始终激活）
+            // 顺序要紧：**先挂组件、再建 UI**。
+            // CreateResultScreen 内部要往"GamePanel 上的 ResultScreen"注入文本/按钮/演出引用，
+            // 组件晚了就拿不到（此前正是这样：rankText/scoreText/… 全是 null，结算页一直在显示占位文案，
+            // E2 的演出引用也是 null → 分数不滚、各项不淡入）。真机日志与场景文件都能看到这些字段是 fileID 0。
             ResultScreen gamePanelRS = gamePanel.AddComponent<ResultScreen>();
+            CreateResultScreen(resultPanel.transform);
             SetPrivateField(gamePanelRS, "rootPanel", resultPanel);
             SetPrivateField(gamePanelRS, "gamePanel", gamePanel);
             SetPrivateField(gamePanelRS, "menuPanel", menuPanel);

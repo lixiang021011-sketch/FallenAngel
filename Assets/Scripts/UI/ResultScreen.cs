@@ -148,6 +148,32 @@ namespace FallenAngel.UI
 
             // gamePanel 就是自身所在
             if (gamePanel == null) gamePanel = gameObject;
+
+            // 文本引用兜底（2026-09-22 修的坑：SceneBuilder 里组件曾晚于 UI 创建 → 注入全落空，
+            // 结算页一直在显示占位文案。按钮早就有兜底，文本没有 —— 这里补齐，双保险）
+            Transform rootT = rootPanel != null ? rootPanel.transform : null;
+            if (rootT != null)
+            {
+                Transform rr = rootT.Find("ResultRoot") ?? rootT;
+                if (songNameText == null) songNameText = FindText(rr, "SongName");
+                if (songArtistText == null) songArtistText = FindText(rr, "Artist");
+                if (difficultyText == null) difficultyText = FindText(rr, "Difficulty");
+                if (rankText == null) rankText = FindText(rr, "Rank");
+                if (scoreText == null) scoreText = FindText(rr, "Score");
+                if (accuracyText == null) accuracyText = FindText(rr, "Accuracy");
+                if (maxComboText == null) maxComboText = FindText(rr, "MaxCombo");
+                if (perfectCountText == null) perfectCountText = FindText(rr, "Val_PERFECT");
+                if (greatCountText == null) greatCountText = FindText(rr, "Val_GREAT");
+                if (goodCountText == null) goodCountText = FindText(rr, "Val_GOOD");
+                if (badCountText == null) badCountText = FindText(rr, "Val_BAD");
+                if (missCountText == null) missCountText = FindText(rr, "Val_MISS");
+            }
+        }
+
+        private static TextMeshProUGUI FindText(Transform parent, string name)
+        {
+            Transform t = parent != null ? parent.Find(name) : null;
+            return t != null ? t.GetComponent<TextMeshProUGUI>() : null;
         }
 
         private void BindButtons()

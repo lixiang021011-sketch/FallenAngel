@@ -359,6 +359,26 @@
     {
       "key": "pause.retire.confirm",
       "value": "退出"
+    },
+    {
+      "key": "loading.preparing",
+      "value": "准备演奏…"
+    },
+    {
+      "key": "loading.tip.0",
+      "value": "长按只要按住不放，尾巴会自动结算"
+    },
+    {
+      "key": "loading.tip.1",
+      "value": "甩键要朝箭头方向划，慢甩也算"
+    },
+    {
+      "key": "loading.tip.2",
+      "value": "判定对时间敏感，位置可以放松"
+    },
+    {
+      "key": "loading.tip.3",
+      "value": "校准入口在设置页，跟着高音敲即可"
     }
   ]
 }

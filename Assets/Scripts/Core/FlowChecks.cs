@@ -111,6 +111,22 @@ namespace FallenAngel.Core
                 check("result.reveal", revealOk,
                     string.Format("第 i 项在 i×{0:0.##}s 后开始淡入；{1} 项总时长 {2:0.##}s（不短于分数滚动）",
                         ResultPresentation.RevealStagger, count, total));
+
+                // ⑨ E5 加载页：小贴士按曲名确定性选择、落在条数范围内、且同一首歌每次都一样
+                int t1 = LoadingTip.TipIndex("Tell your world", "livetune");
+                int t2 = LoadingTip.TipIndex("Tell your world", "livetune");
+                int t3 = LoadingTip.TipIndex("Dear Stars", "DashyDesu");
+                check("loading.tipDeterministic",
+                    t1 == t2 && t1 >= 0 && t1 < LoadingTip.TipCount
+                    && t3 >= 0 && t3 < LoadingTip.TipCount
+                    && LoadingTip.TipKey(t1) == "loading.tip." + t1,
+                    string.Format("同曲同贴士（{0}）、跨曲可不同（{1} vs {2}），范围 0..{3}",
+                        t1, t1, t3, LoadingTip.TipCount - 1));
+
+                // ⑩ E5 加载页展示窗口：必须 > 0（否则本地读谱太快，加载页只会闪一帧）
+                check("loading.window", LoadingTip.LoadingSeconds > 0.2f,
+                    string.Format("展示 {0:0.##}s 后进倒计时（上游是资源加载时长；我们固定窗口）",
+                        LoadingTip.LoadingSeconds));
             }
             catch (Exception e)
             {

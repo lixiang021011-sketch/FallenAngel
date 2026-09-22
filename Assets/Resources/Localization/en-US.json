@@ -359,6 +359,26 @@
     {
       "key": "pause.retire.confirm",
       "value": "Retire"
+    },
+    {
+      "key": "loading.preparing",
+      "value": "Preparing…"
+    },
+    {
+      "key": "loading.tip.0",
+      "value": "Hold notes only need you to keep holding; the tail settles itself"
+    },
+    {
+      "key": "loading.tip.1",
+      "value": "Flicks follow the arrow direction; slow flicks count too"
+    },
+    {
+      "key": "loading.tip.2",
+      "value": "Timing matters, horizontal position does not"
+    },
+    {
+      "key": "loading.tip.3",
+      "value": "Calibration lives in Settings — tap along with the high tone"
     }
   ]
 }

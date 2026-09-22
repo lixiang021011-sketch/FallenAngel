@@ -41,8 +41,11 @@ namespace FallenAngel.Core
         [SerializeField] private TextMeshProUGUI countdownText;
         [Tooltip("倒计时表现层（E1：缩放弹出 + 淡出；未注入时退回纯文本）")]
         [SerializeField] private FallenAngel.UI.CountdownView countdownView;
+        [Tooltip("加载页（E5；未注入时不显示加载页，流程照旧）")]
+        [SerializeField] private FallenAngel.UI.LoadingScreen loadingScreen;
         private AudioClip countdownTickClip;
         private AudioClip countdownGoClip;
+        private bool isLoadingScreen;
 
         /// <summary>当前游戏状态</summary>
         public GameState CurrentState { get; private set; }
@@ -143,12 +146,31 @@ namespace FallenAngel.Core
         /// </summary>
         public void StartCountdownAndPlay()
         {
-            if (isCountingDown) return;
+            if (isCountingDown || isLoadingScreen) return;
             if (CurrentState != GameState.Loading)
             {
                 Debug.LogWarning("[GameManager] 游戏未处于Loading状态，无法开始倒计时");
                 return;
             }
+            StartCoroutine(LoadingThenCountdown());
+        }
+
+        /// <summary>
+        /// E5：加载页先亮 `LoadingTip.LoadingSeconds` 秒（上游是"资源真在加载"的时长；
+        /// 我们本地读谱几乎瞬时，不给窗口的话加载页只会闪一帧、观感上等于没有），
+        /// 然后关掉加载页进倒计时。
+        /// </summary>
+        private System.Collections.IEnumerator LoadingThenCountdown()
+        {
+            isLoadingScreen = true;
+            if (loadingScreen != null)
+            {
+                loadingScreen.Show();
+                Debug.Log(string.Format("[GameManager] 加载页显示 {0:0.##}s（E5）", LoadingTip.LoadingSeconds));
+                yield return new WaitForSecondsRealtime(LoadingTip.LoadingSeconds);
+                loadingScreen.Hide();
+            }
+            isLoadingScreen = false;
             StartCoroutine(CountdownCoroutine());
         }
 

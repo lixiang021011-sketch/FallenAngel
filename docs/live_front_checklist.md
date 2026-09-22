@@ -56,11 +56,11 @@
 
 | # | 上游 | 行为 | 我们 | 判定 |
 | --- | --- | --- | --- | --- |
-| [ ] E1 | `CountdownView`（3.9KB）：3-2-1 + GO 的动画/音效 | 倒计时演出 | `CountdownText` 纯文本 | 必须复现 |
-| [ ] E2 | `LiveResultView` + `LiveResultAnimationType`：结算演出（分数滚动、等级、评价） | 逐项入场动画 | `ResultScreen` 静态填充 | 必须复现 |
-| [ ] E3 | `LiveOutUIController`（6.6KB）：暂停/退出/继续 的 UI 与流程 | 暂停面板、退出确认 | `PauseController` 简化版 | 必须复现 |
-| [ ] E4 | `MusicInfoView`（13.8KB）：曲信息/难度/进度显示 | 演奏页信息区 | `SongTitle` + 进度条 | 必须复现 |
-| [ ] E5 | `LoadingView` / `LoadingLiveBackgroundView`：加载页（转圈/背景） | 加载演出 | `DeepSeaLoadingPulse` 等程序化 | 必须复现 |
+| [x] E1 | `CountdownView`：特效对象逐个激活 + 每步 1s + 每步一声 `SE_LIVE_COUNT_DOWN` | 3-2-1-GO 演出 | `Core/CountdownTiming` + `UI/CountdownView`（3/2/1 各 1s + GO 0.5s、缩放弹出、每步一声） | 已复现（特效按定案程序化等价） |
+| [x] E2 | `LiveResultView` + `LiveResultAnimationType`（六档） | 逐项入场 + 分数滚动 | `Core/ResultPresentation`（六档分级 + S/A/B/C/D + 滚动/间隔）+ `UI/ResultReveal`（19 项依次淡入、分数 0→最终） | 已复现（演出程序化等价） |
+| [x] E3 | `LiveOutUIController.ShowConfirmRetireDialog` | 暂停面板 + 退出确认 | `PauseController`（退出先弹确认：继续演奏/退出） | 已复现 |
+| [x] E4 | `MusicInfoView`（曲信息/难度/进度） | 演奏页信息区 | `HUDController` 曲名行 = 曲名 - 曲师 · 难度 Lv.等级 + 进度条/文本 | 已复现 |
+| [x] E5 | `LoadingView` / `LoadingLiveBackgroundView`（标题/说明/图/小贴士） | 加载演出 | `Core/LoadingTip`（确定性小贴士）+ `UI/LoadingScreen`（标题/说明/不确定进度条/贴士，展示 0.8s） | 已复现（视觉程序化等价） |
 | [ ] E6 | `CutinView` / `CutinManager`：技能/连击 cut-in | — | 无 | 待决策（无技能系统） |
 | [ ] E7 | `SkillView` / `SkillTextView*`：技能图标与文本 | — | 无 | 待决策 |
 

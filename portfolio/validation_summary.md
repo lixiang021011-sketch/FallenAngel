@@ -14,15 +14,31 @@
 | `IconGeometryChecks` | 27 | **PASS 27 / 0** | 图标墨迹包围盒中心偏移 ≤1px、不溢出宿主矩形 |
 | `NotePartChecks` | 16 | **PASS 16 / 0** | 音符 head / body / tail 部件存在性与顺序、网格非空、不溢出、配色、同押连线几何 |
 | `NoteShapeChecks` | 4 | **PASS 4 / 0** | 音符厚度（tap 130×28，加厚 ×2 已生效）、八类形状几何不溢出自身包围盒 |
-| `PlayVisualChecks` | 17 | **PASS 17 / 0** | 判定线视觉位置 == 音符判定位置、按键区不越线、轨道占屏 ≥90%、音符宽度随轨宽自适配、音符容器全画布无偏移（带子坐标系前提）、演奏背景已挂载、Miss 特效已接线、modifier 调试窗口可安装且按钮真的生效 |
+| `PlayVisualChecks` | 19 | **PASS 19 / 0** | 判定线视觉位置 == 音符判定位置、按键区不越线、轨道占屏 ≥90%、音符宽度随轨宽自适配、音符容器全画布无偏移（带子坐标系前提）、演奏背景已挂载、Miss 特效已接线、modifier 调试窗口可安装且按钮真的生效、判定文字动画与映射门控 |
+| `PerspectiveChecks` | 8 | **PASS 8 / 0** | 透视曲线端点/单调/尺寸下限 0.35、**过线继续下移（D4）**、轨道与音符严格对齐（越界 0）、可回退线性 |
+| `LiveJudgeChecks` | 21 | **PASS 21 / 0** | 窗口帧口径、跨度小数轨道、边沿与摩擦、拾取、归属、同指去重、每指独立、长按容器 7 项、小数轨道解析、适配层 2 项 |
+| `PlayClockChecks` | 7 | **PASS 7 / 0** | 校准 ms↔秒、输出延迟补偿可测可关、平台判断、输入时间戳外推与钳制、音频平滑时钟 |
+| `SafeAreaChecks` | 4 | **PASS 4 / 0** | 满屏不挪动、挖孔/横屏/长屏 anchors 正确且不越界 |
+| `HitErrorChecks` | 19 | **PASS 19 / 0** | osu! 式命中误差统计：中位数抗离群、单局门槛、符号（打晚→建议变小）、夹取 ±20 帧、历史容量 50 丢最旧、跨局持久化、已准确门限 |
+| `LifeChecks` | 10 | **PASS 10 / 0** | 生命 1000 / Bad−60 / Miss−80（照上游）、受伤倍率与回血的 modifier 口子、归零不结算（练习模式口径） |
+| `FeverChecks` | 8 | **PASS 8 / 0** | 谱面事件驱动（fever.begin/start/end）、状态机、倍率走 modifier（幂等/可叠道具/End 撤销）、蓄力夹取 |
+| `CutinChecks` | 9 | **PASS 9 / 0** | 队列先进先出、同源去重、连击里程碑不重复、道具三档 modifier 生效与到期、debuff 同链路、迟到订阅追赶 |
+| `ComboChecks` | 10 | **PASS 10 / 0** | 位数与 0.475/0.95 布局、0.1s 出现、0.1~0.2s 爆发、AP 4.1887903 rad/s 呼吸、AP 门控、底板激活与归零隐藏 |
+| `HudLayoutChecks` | 5 | **PASS 5 / 0** | HUD 元素两两不重叠、不出 20px 安全边距、判定反馈位置未变、顶部行序、cut-in 不压 combo |
+| `FlowChecks` | 10 | **PASS 10 / 0** | E1 倒计时节奏/标签/曲线/GO 强调色、E2 结算分级/评级/分数滚动/逐项入场、E5 加载页贴士确定性与展示窗口 |
 | `PlayModifierChecks` | 8 | **PASS 8 / 0** | 判定窗口倍率乘法叠加、同 id 刷新不叠加、按歌曲时间失效、判定线/谱面隐身、清空复位 |
-| `JudgeTimingChecks` | 7 | **PASS 7 / 0** | 伪双押同刻一起判、相邻音符分开按、同刻容差边界、真双押两次按下、横条只认按下边沿、同一次按下同帧不补刀 |
+| `JudgeTimingChecks` | 21 | **PASS 21 / 0** | 一次按下只判一个、真双押、只认按下边沿、宽音符任意轨、输入时间戳参与判定、长按端到端、自动 Miss 收口、modifier 倍率、空按不判、视图接线、命中误差采样端到端 + 门槛 |
 | `PerspectiveChecks` | 7 | **PASS 7 / 0** | 透视曲线端点/单调/尺寸下限 0.35、轨道与音符严格对齐（越界 0）、带子取样前提（折点外线性）、可回退线性 |
 | `JudgeWindowChecks` | 8 | **PASS 8 / 0** | 每类窗口默认等同对称基准、Flick 前后不对称、按种类相互独立、modifier 覆盖整张表、长按尾走有效窗口、时机提示档位、退化表回退 |
 | `NotePoolChecks` | 11 | **PASS 11 / 0** | 按谱面估算最大同屏数、长按占位、首尾相接不重复计、按谱面预热、池上下限 |
 | `LocalSongPackChecks` | 4 | **PASS 4 / 0** | 本地曲包加载与跳过语义（曲包不入库；未放时跳过是预期行为） |
 
-合计 **204 项 / 11 组**，2026-09-21 无头重跑全绿（每组进程退出码 0）。
+合计 **332 项 / 21 组**，2026-09-22 无头重跑全绿（每组进程退出码 0、汇总行双查）。
+
+> 2026-09-22 新增 10 组：`LiveJudgeChecks` / `PlayClockChecks` / `PerspectiveChecks`（过线飞行）/
+> `SafeAreaChecks` / `HitErrorChecks`（osu! 式校准统计）/ `LifeChecks` / `FeverChecks` / `CutinChecks` /
+> `ComboChecks` / `HudLayoutChecks` / `FlowChecks`；`JudgeTimingChecks` 由 7 → 21 项，
+> `PlayVisualChecks` 17 → 19 项，`LocalSongPackChecks` 4 → 12 项（含 CC/Phira 测试曲包）。
 
 原始日志（本地、不入库）：`Logs/portfolio_report_20260910.txt`、`Logs/icon_geometry_check.txt`、
 `Logs/note_part_check.txt`、`Logs/play_visual_check.txt`、`Logs/play_modifier_check.txt`、
@@ -35,8 +51,11 @@
 ```powershell
 $unity = 'D:\unity\2022.3.62f3c1\Editor\Unity.exe'
 $proj  = 'C:\Users\LorXer\Documents\trae_projects\FallenAngel'
-foreach ($m in 'PortfolioChecks','IconGeometryChecks','NotePartChecks','NoteShapeChecks',
-               'PlayVisualChecks','PlayModifierChecks','JudgeTimingChecks') {
+foreach ($m in 'LiveJudgeChecks','JudgeTimingChecks','JudgeWindowChecks','PlayClockChecks',
+               'NotePartChecks','NoteShapeChecks','PlayVisualChecks','PerspectiveChecks',
+               'NotePoolChecks','PlayModifierChecks','SafeAreaChecks','IconGeometryChecks',
+               'LocalSongPackChecks','HitErrorChecks','LifeChecks','FeverChecks','CutinChecks',
+               'ComboChecks','HudLayoutChecks','FlowChecks','PortfolioChecks') {
   & $unity -batchmode -nographics -quit -projectPath $proj `
     -executeMethod "FallenAngel.Core.$m.Run" -logFile "$proj\Logs\$m.log"
 }
