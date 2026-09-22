@@ -79,6 +79,14 @@ namespace FallenAngel.UI
                 () => Apply("DBG_NOLINE", ModifierKind.JudgeLineHidden, 0f, 3f));
             MakeRow("谱面隐身 3 秒", ref y, new Color(.24f, .28f, .34f),
                 () => Apply("DBG_NONOTES", ModifierKind.NotesHidden, 0f, 3f));
+            MakeRow("判定窗口 1.2×（本次行程）", ref y, new Color(.20f, .30f, .22f),
+                () => Apply("DBG_RUN_WIDE", ModifierKind.JudgeWindowScale, 1.2f, 0f, ModifierScope.Run));
+            MakeRow("模拟曲终（清本曲作用域）", ref y, new Color(.26f, .24f, .34f),
+                () => ModifierManager.EnsureInstance().EndSong());
+            MakeRow("模拟局终（清行程作用域）", ref y, new Color(.26f, .24f, .34f),
+                () => ModifierManager.EnsureInstance().EndRun());
+            MakeRow("净化 debuff（清负面）", ref y, new Color(.30f, .26f, .20f),
+                () => ModifierManager.EnsureInstance().RemoveDebuffs());
             MakeRow("清空全部效果", ref y, new Color(.45f, .24f, .16f),
                 () => ModifierManager.Instance?.ClearAll());
 
@@ -109,13 +117,15 @@ namespace FallenAngel.UI
             }
         }
 
-        private void Apply(string id, ModifierKind kind, float magnitude, float duration)
+        private void Apply(string id, ModifierKind kind, float magnitude, float duration,
+            ModifierScope scope = ModifierScope.Song)
         {
-            ApplyInternal(id, kind, magnitude, duration);
+            ApplyInternal(id, kind, magnitude, duration, scope);
         }
 
         /// <summary>
-        /// 快捷键入口（GameStarter 调用）：0–3 施加预设效果，4 = 清空全部。
+        /// 快捷键入口（GameStarter 调用）：0–3 施加预设效果，4 = 清空全部，
+        /// 5 = 判定窗口 1.2×（本次行程，用来手验"跨曲保留"），6 = 模拟曲终（只清本曲作用域）。
         /// 与面板按钮走同一条路径，用于"面板点不动时也能验证 modifier"。
         /// </summary>
         public static void ApplyPresetByIndex(int index)
@@ -130,17 +140,26 @@ namespace FallenAngel.UI
                     ModifierManager.EnsureInstance().ClearAll();
                     Debug.Log("[ModifierDebug] 清空全部效果");
                     break;
+                case 5:
+                    ApplyInternal("DBG_RUN_WIDE", ModifierKind.JudgeWindowScale, 1.2f, 0f, ModifierScope.Run);
+                    break;
+                case 6:
+                    Debug.Log(string.Format("[ModifierDebug] 模拟曲终：清除 {0} 条本曲作用域效果",
+                        ModifierManager.EnsureInstance().EndSong()));
+                    break;
             }
         }
 
         /// <summary>统一入口：就地兜底，不依赖"场景是否重建过"</summary>
-        private static void ApplyInternal(string id, ModifierKind kind, float magnitude, float duration)
+        private static void ApplyInternal(string id, ModifierKind kind, float magnitude, float duration,
+            ModifierScope scope = ModifierScope.Song)
         {
             ModifierManager mgr = ModifierManager.EnsureInstance();
             if (kind == ModifierKind.JudgeLineHidden || kind == ModifierKind.NotesHidden)
                 PlayVisibilityController.EnsureInstance();   // 渲染侧控制器，旧场景里没有就现建
-            mgr.Apply(new ModifierDef(id, kind, magnitude, duration));
-            Debug.Log(string.Format("[ModifierDebug] 施加 {0}（{1}）", id, kind));
+            mgr.Apply(new ModifierDef(id, kind, magnitude, duration,
+                scope: scope, source: ModifierSource.Debug));
+            Debug.Log(string.Format("[ModifierDebug] 施加 {0}（{1}，作用域={2}，来源=调试）", id, kind, scope));
         }
 
         private void MakeRow(string text, ref float y, Color color, System.Action action)
@@ -213,8 +232,26 @@ namespace FallenAngel.UI
                 if (i > 0) sb.Append("  ");
                 sb.Append(rt.def.kind);
                 sb.Append(rt.IsPersistent ? "(常驻)" : string.Format("({0:0.0}s)", Mathf.Max(0f, rt.Remaining - songTime)));
+                sb.Append(rt.def.scope == ModifierScope.Run ? "·行程" : "·本曲");
+                sb.Append("/").Append(SourceLabel(rt.def.source));
+                if (rt.def.debuff) sb.Append("·debuff");
             }
             status.text = deps + "\n" + sb.ToString();
+        }
+
+        /// <summary>来源的短标签（状态行显示用）</summary>
+        private static string SourceLabel(ModifierSource source)
+        {
+            switch (source)
+            {
+                case ModifierSource.Talent: return "天赋";
+                case ModifierSource.Build: return "构筑";
+                case ModifierSource.Item: return "道具";
+                case ModifierSource.Node: return "房间";
+                case ModifierSource.Drop: return "掉落";
+                case ModifierSource.Debug: return "调试";
+                default: return "系统";
+            }
         }
     }
 }

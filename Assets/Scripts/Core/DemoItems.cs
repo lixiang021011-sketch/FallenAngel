@@ -29,11 +29,14 @@ namespace FallenAngel.Core
             }
 
             mgr.Apply(new ModifierDef(EnergyDrinkId + "_SCORE", ModifierKind.ScoreMultiplier, 1.1f,
-                EnergyDrinkDuration, "item.energy.name", "item.energy.desc"));
+                EnergyDrinkDuration, "item.energy.name", "item.energy.desc",
+                scope: ModifierScope.Song, source: ModifierSource.Item));
             mgr.Apply(new ModifierDef(EnergyDrinkId + "_HURT", ModifierKind.LifeDamageScale, 0.5f,
-                EnergyDrinkDuration, "item.energy.name", "item.energy.desc"));
+                EnergyDrinkDuration, "item.energy.name", "item.energy.desc",
+                scope: ModifierScope.Song, source: ModifierSource.Item));
             mgr.Apply(new ModifierDef(EnergyDrinkId + "_REGEN", ModifierKind.LifeRegen, 5f,
-                EnergyDrinkDuration, "item.energy.name", "item.energy.desc"));
+                EnergyDrinkDuration, "item.energy.name", "item.energy.desc",
+                scope: ModifierScope.Song, source: ModifierSource.Item));
 
             CutinService.Play(CutinRequest.Make(EnergyDrinkId, "item.energy.icon",
                 "item.energy.name", "item.energy.desc", 1.8f));
@@ -50,7 +53,8 @@ namespace FallenAngel.Core
             ModifierManager mgr = ModifierManager.Instance;
             if (mgr == null) return false;
             mgr.Apply(new ModifierDef("DEBUFF_FRAGILE", ModifierKind.LifeDamageScale, 1.5f, 8f,
-                "item.fragile.name", "item.fragile.desc"));
+                "item.fragile.name", "item.fragile.desc",
+                scope: ModifierScope.Song, source: ModifierSource.Item, debuff: true));
             CutinService.Play(CutinRequest.Make("DEBUFF_FRAGILE", "item.fragile.icon",
                 "item.fragile.name", "item.fragile.desc", 1.5f));
             return true;

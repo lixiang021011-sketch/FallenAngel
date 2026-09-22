@@ -112,7 +112,8 @@ namespace FallenAngel.Core
             ModifierManager mgr = ModifierManager.Instance;
             if (mgr == null) return;                     // 自检/无管理器时静默（倍率由 PlayRules 兜底）
             mgr.Apply(new ModifierDef(ScoreModifierId, ModifierKind.ScoreMultiplier, ScoreMultiplier, 0f,
-                "modifier.fever.name", "modifier.fever.desc"));
+                "modifier.fever.name", "modifier.fever.desc",
+                scope: ModifierScope.Song, source: ModifierSource.System));
         }
 
         private static void RemoveScoreModifier()

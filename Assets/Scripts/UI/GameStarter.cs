@@ -146,7 +146,8 @@ namespace FallenAngel.UI
         }
 
         /// <summary>
-        /// modifier 调试快捷键（编辑器专用）：1–4 施加效果，5 清空全部。
+        /// modifier 调试快捷键（编辑器专用）：1–4 施加效果，5 清空全部，
+        /// 6 = 判定窗口 1.2×（本次行程，手验跨曲保留），7 = 模拟曲终（只清本曲作用域）。
         /// 面板按钮若因布局/射线问题点不动，这里仍可验证 modifier 是否生效（Console 会打日志）。
         /// </summary>
         private void HandleModifierDebugKeys()
@@ -159,6 +160,8 @@ namespace FallenAngel.UI
             else if (Input.GetKeyDown(KeyCode.Alpha3)) ModifierDebugPanel.ApplyPresetByIndex(2);
             else if (Input.GetKeyDown(KeyCode.Alpha4)) ModifierDebugPanel.ApplyPresetByIndex(3);
             else if (Input.GetKeyDown(KeyCode.Alpha5)) ModifierDebugPanel.ApplyPresetByIndex(4);
+            else if (Input.GetKeyDown(KeyCode.Alpha6)) ModifierDebugPanel.ApplyPresetByIndex(5);
+            else if (Input.GetKeyDown(KeyCode.Alpha7)) ModifierDebugPanel.ApplyPresetByIndex(6);
 #endif
         }
 

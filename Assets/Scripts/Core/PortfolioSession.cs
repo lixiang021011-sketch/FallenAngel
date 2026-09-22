@@ -254,6 +254,7 @@ namespace FallenAngel.Core
         {
             if (IsPerforming()) return;
             Profile = null; Run = null; OwnsSong = false;
+            EndRunModifiers();
             manager?.BackToMenu();
             OnChanged?.Invoke();
         }
@@ -275,6 +276,7 @@ namespace FallenAngel.Core
         public void Begin()
         {
             if (Profile == null || IsPerforming()) return;
+            EndRunModifiers();   // 新局从干净状态开始（上一次行程的 Run 作用域不该带进来）
             growth.Begin(Profile.profileId, failureLimit, completionBonus, true);
             Refresh();
         }
@@ -448,11 +450,18 @@ namespace FallenAngel.Core
         public void Abandon()
         {
             CancelAutoContinue();
+            EndRunModifiers();
             growth.Abandon(Profile.profileId, Run.runId);
             manager.CancelCountdown();
             manager.BackToMenu();
             OwnsSong = false;
             Refresh();
+        }
+
+        /// <summary>行程边界（新局 / 放弃 / 退出成长）：清掉本次行程作用域的 modifier（D3）</summary>
+        private void EndRunModifiers()
+        {
+            ModifierManager.Instance?.EndRun();
         }
 
         // ---- 装备持有 ----
