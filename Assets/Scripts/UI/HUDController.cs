@@ -16,6 +16,8 @@ namespace FallenAngel.UI
         [SerializeField] private TextMeshProUGUI scoreText;
         [SerializeField] private TextMeshProUGUI comboText;
         [SerializeField] private TextMeshProUGUI comboLabelText;
+        [Tooltip("Combo 数字位 + AP 特效（B3；常量照抄上游 ComboView）")]
+        [SerializeField] private ComboView comboView;
         [SerializeField] private TextMeshProUGUI judgeResultText;  // 判定结果（PERFECT/GOOD...）
         [SerializeField] private TextMeshProUGUI judgeBiasText;    // 早/晚指示（Phigros 手感参考）
         [SerializeField] private TextMeshProUGUI songTitleText;    // 歌曲名
@@ -180,6 +182,15 @@ namespace FallenAngel.UI
 
         private void HandleComboUpdate(int combo, bool isFullCombo)
         {
+            // B3：数字位布局/出现/爆发/AP 呼吸全部交给 ComboView（旧的整块文本已停用）
+            if (comboView != null)
+            {
+                JudgeManager judge = JudgeManager.Instance;
+                bool allPerfect = judge != null && ComboView.IsAllPerfectScore(
+                    judge.PerfectCount, judge.GreatCount, judge.GoodCount, judge.BadCount, judge.MissCount);
+                comboView.SetCombo(combo, allPerfect);
+            }
+
             if (comboText != null)
             {
                 comboText.text = combo.ToString();

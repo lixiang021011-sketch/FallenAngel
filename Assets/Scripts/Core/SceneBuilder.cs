@@ -782,6 +782,139 @@ namespace FallenAngel.Core
             SetPrivateField(cutinView, "iconText", cutinIconText);
             SetPrivateField(cutinView, "titleText", cutinTitle);
             SetPrivateField(cutinView, "subtitleText", cutinSub);
+
+            // Combo 数字位 + AP 特效（B3）：7 个数字位 + 爆发层 + AP 呼吸光板
+            // 布局常量全部取上游 ComboView（见 UI/ComboView.cs 的对照表）；这里只建对象，位置由运行时按公式放。
+            combo.gameObject.SetActive(false);      // 旧的整体 TMP 文本退场，数字位改由 ComboView 画
+
+            GameObject comboRoot = new GameObject("ComboRoot", typeof(RectTransform));
+            comboRoot.transform.SetParent(hudGO.transform, false);
+            RectTransform comboRootRT = (RectTransform)comboRoot.transform;
+            comboRootRT.anchorMin = comboRootRT.anchorMax = new Vector2(0.5f, 0.5f);
+            comboRootRT.pivot = new Vector2(0.5f, 0.5f);
+            comboRootRT.sizeDelta = new Vector2(900, 420);
+            comboRootRT.anchoredPosition = new Vector2(0, 250);
+
+            GameObject comboNumberRoot = new GameObject("ComboDigits", typeof(RectTransform));
+            comboNumberRoot.transform.SetParent(comboRoot.transform, false);
+            RectTransform numberRT = (RectTransform)comboNumberRoot.transform;
+            numberRT.anchorMin = numberRT.anchorMax = new Vector2(0.5f, 0.5f);
+            numberRT.pivot = new Vector2(0.5f, 0.5f);
+            numberRT.sizeDelta = new Vector2(900, 200);
+            numberRT.anchoredPosition = new Vector2(0, 40);
+
+            const int comboDigits = 7;              // 上游也是 7 段数字 renderer
+            const float comboDigitW = 96f;
+            var comboDigitTexts = new TextMeshProUGUI[comboDigits];
+            var comboDigitPlates = new Image[comboDigits];
+            for (int i = 0; i < comboDigits; i++)
+            {
+                GameObject plateGO = new GameObject($"ComboDigit{i}", typeof(RectTransform), typeof(Image));
+                plateGO.transform.SetParent(comboNumberRoot.transform, false);
+                RectTransform plateRT = (RectTransform)plateGO.transform;
+                plateRT.anchorMin = plateRT.anchorMax = new Vector2(0.5f, 0.5f);
+                plateRT.pivot = new Vector2(0.5f, 0.5f);
+                plateRT.sizeDelta = new Vector2(comboDigitW, comboDigitW);
+                Image plateImg = plateGO.GetComponent<Image>();
+                plateImg.color = new Color(0.12f, 0.24f, 0.26f);
+                plateImg.raycastTarget = false;
+                comboDigitPlates[i] = plateImg;
+
+                TextMeshProUGUI digitText = CreateText($"ComboDigitText{i}", plateGO.transform,
+                    new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero,
+                    new Vector2(comboDigitW, comboDigitW), "", 68, TextAlignmentOptions.Center);
+                digitText.color = new Color(0.89f, 0.96f, 0.95f);
+                digitText.fontStyle = FontStyles.Bold;
+                comboDigitTexts[i] = digitText;
+                plateGO.SetActive(false);
+            }
+
+            GameObject comboEffectRoot = new GameObject("ComboEffect", typeof(RectTransform));
+            comboEffectRoot.transform.SetParent(comboRoot.transform, false);
+            RectTransform effectRootRT = (RectTransform)comboEffectRoot.transform;
+            effectRootRT.anchorMin = effectRootRT.anchorMax = new Vector2(0.5f, 0.5f);
+            effectRootRT.pivot = new Vector2(0.5f, 0.5f);
+            effectRootRT.sizeDelta = new Vector2(900, 200);
+            effectRootRT.anchoredPosition = new Vector2(0, 40);
+
+            var comboEffectPlates = new RectTransform[comboDigits];
+            for (int i = 0; i < comboDigits; i++)
+            {
+                GameObject ghost = new GameObject($"ComboEffectDigit{i}", typeof(RectTransform), typeof(Image));
+                ghost.transform.SetParent(comboEffectRoot.transform, false);
+                RectTransform comboGhostRT = (RectTransform)ghost.transform;
+                comboGhostRT.anchorMin = comboGhostRT.anchorMax = new Vector2(0.5f, 0.5f);
+                comboGhostRT.pivot = new Vector2(0.5f, 0.5f);
+                comboGhostRT.sizeDelta = new Vector2(comboDigitW, comboDigitW);
+                Image comboGhostImg = ghost.GetComponent<Image>();
+                comboGhostImg.color = new Color(0.44f, 0.88f, 0.84f, 0f);   // 爆发层（alpha 由 ComboView 控制）
+                comboGhostImg.raycastTarget = false;
+                comboEffectPlates[i] = comboGhostRT;
+                ghost.SetActive(false);
+            }
+
+            // AP 呼吸框：四条边一起呼吸（上游是 AP 专用 sprite 环；我们没美术资源，用程序化描边等价）
+            GameObject apRootGO = new GameObject("ComboApFrame", typeof(RectTransform));
+            apRootGO.transform.SetParent(comboRoot.transform, false);
+            RectTransform apRootRT = (RectTransform)apRootGO.transform;
+            apRootRT.anchorMin = apRootRT.anchorMax = new Vector2(0.5f, 0.5f);
+            apRootRT.pivot = new Vector2(0.5f, 0.5f);
+            apRootRT.sizeDelta = new Vector2(720, 210);
+            apRootRT.anchoredPosition = new Vector2(0, 40);
+
+            var apParts = new Image[4];
+            string[] apNames = { "Top", "Bottom", "Left", "Right" };
+            for (int i = 0; i < apParts.Length; i++)
+            {
+                GameObject bar = new GameObject("ComboApFrame" + apNames[i], typeof(RectTransform), typeof(Image));
+                bar.transform.SetParent(apRootGO.transform, false);
+                RectTransform barRT = (RectTransform)bar.transform;
+                barRT.pivot = new Vector2(0.5f, 0.5f);
+                switch (i)
+                {
+                    case 0:   // 上边
+                        barRT.anchorMin = new Vector2(0f, 1f);
+                        barRT.anchorMax = new Vector2(1f, 1f);
+                        barRT.sizeDelta = new Vector2(0f, 10f);
+                        barRT.anchoredPosition = new Vector2(0f, -5f);
+                        break;
+                    case 1:   // 下边
+                        barRT.anchorMin = new Vector2(0f, 0f);
+                        barRT.anchorMax = new Vector2(1f, 0f);
+                        barRT.sizeDelta = new Vector2(0f, 10f);
+                        barRT.anchoredPosition = new Vector2(0f, 5f);
+                        break;
+                    case 2:   // 左边
+                        barRT.anchorMin = new Vector2(0f, 0f);
+                        barRT.anchorMax = new Vector2(0f, 1f);
+                        barRT.sizeDelta = new Vector2(10f, 0f);
+                        barRT.anchoredPosition = new Vector2(5f, 0f);
+                        break;
+                    default:  // 右边
+                        barRT.anchorMin = new Vector2(1f, 0f);
+                        barRT.anchorMax = new Vector2(1f, 1f);
+                        barRT.sizeDelta = new Vector2(10f, 0f);
+                        barRT.anchoredPosition = new Vector2(-5f, 0f);
+                        break;
+                }
+                Image barImg = bar.GetComponent<Image>();
+                barImg.color = new Color(1f, 0.55f, 0.78f, 0.4f);
+                barImg.raycastTarget = false;
+                apParts[i] = barImg;
+            }
+            apRootGO.SetActive(false);
+
+            ComboView comboView = hudGO.AddComponent<ComboView>();
+            SetPrivateField(comboView, "numberRoot", numberRT);
+            SetPrivateField(comboView, "effectRoot", effectRootRT);
+            SetPrivateField(comboView, "apRoot", apRootRT);
+            SetPrivateField(comboView, "apParts", apParts);
+            SetPrivateField(comboView, "digitTexts", comboDigitTexts);
+            SetPrivateField(comboView, "digitPlates", comboDigitPlates);
+            SetPrivateField(comboView, "effectPlates", comboEffectPlates);
+            SetPrivateField(comboView, "comboLabel", comboLabel);
+            SetPrivateField(comboView, "digitWidth", comboDigitW);
+            SetPrivateField(hudC, "comboView", comboView);
             return hudC;
         }
 

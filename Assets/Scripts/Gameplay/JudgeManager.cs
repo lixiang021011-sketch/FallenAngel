@@ -205,6 +205,9 @@ namespace FallenAngel.Gameplay
 
             runtime.Update(LiveNoteBuilder.Info(songTime));
             BuildFrameTouches(songTime);
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+            if (devAutoplay) runtime.AutoPlay(LiveNoteBuilder.Info(songTime));   // 开发版自测：自动演奏
+#endif
             runtime.Judge(frameTouches);
             pendingInputs.Clear();
             extraInputs.Clear();
@@ -273,6 +276,9 @@ namespace FallenAngel.Gameplay
         }
 
 #if DEVELOPMENT_BUILD || UNITY_EDITOR
+        /// <summary>开发版自测：自动演奏（不开触摸也能把整首判成全 PERFECT → 验 AP 特效）</summary>
+        private bool devAutoplay;
+
         /// <summary>开发版自测：开局 3 秒后使用局内道具（模拟"演奏中使用"这条真实路径）</summary>
         private System.Collections.IEnumerator DevUseItemInPlay(bool energyDrink)
         {
@@ -362,6 +368,21 @@ namespace FallenAngel.Gameplay
                 Debug.Log("[JudgeManager] 开发版自动开局：合成密集谱 + 局内道具（" + mode + "，开局 3 秒后使用）");
                 starter.StartChart(BuildDenseDeviceTestChart());
                 StartCoroutine(DevUseItemInPlay(mode == "item"));
+                return;
+            }
+
+            // 自动演奏自测（作者 2026-09-22：手打现有谱面打不出 AP → 用自动脚本验 AP 特效）
+            if (mode == "auto" || mode == "autotiny")
+            {
+                if (starter == null)
+                {
+                    Debug.LogWarning("[JudgeManager] 开发版自动开局失败：场景里没有 GameStarter");
+                    return;
+                }
+                devAutoplay = true;
+                string chartName = mode == "autotiny" ? "test_chart_tiny" : "test_chart_5k";
+                Debug.Log("[JudgeManager] 开发版自动开局：自动演奏 " + chartName + "（应全程 Perfect → AP）");
+                starter.StartChartFromResources(chartName);
                 return;
             }
 
@@ -841,12 +862,17 @@ namespace FallenAngel.Gameplay
                     // Bad −60（上游 LiveConfig.Damages）
                     if (result == JudgeResultType.Bad) PlayLife.ApplyDamage(PlayLife.DamageBad);
                     BreakCombo();
+                    AddJudgeCount(result);
                 }
                 else
                 {
+                    // 顺序要紧：**先更新判定计数，再涨连击**。
+                    // 因为 AddScoreAndCombo 内部会抛 OnComboUpdate → HUD/ComboView 在那里判断 AP
+                    // （全 Perfect）；反过来写的话第一颗音符永远是 AP=False（真机日志抓到过：
+                    // combo=1 AP=False，从第 2 颗起才 True）。
+                    AddJudgeCount(result);
                     AddScoreAndCombo(JudgeWindows.GetScore(result));
                 }
-                AddJudgeCount(result);
                 ApplyViewResult(view, note, result);
                 OnJudgeResult?.Invoke(result, lane);
                 OnJudgeBias?.Invoke(bias);
@@ -920,6 +946,9 @@ namespace FallenAngel.Gameplay
             {
                 case NoteResult.JustPerfect:
                 case NoteResult.Perfect:
+                // 自动演奏（AutoJudgment）在原作里就是全 PERFECT —— 映射成 Perfect，
+                // 这样"自动脚本跑一遍"就能真的触发 AP（All Perfect）表现，用于 B3 验收。
+                case NoteResult.Auto:
                     return JudgeResultType.Perfect;
                 case NoteResult.Great:
                     return JudgeResultType.Great;
