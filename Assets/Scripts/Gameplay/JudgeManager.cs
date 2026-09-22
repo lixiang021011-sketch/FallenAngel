@@ -306,6 +306,34 @@ namespace FallenAngel.Gameplay
                 return;
             }
 
+            // ── 下面三个是 2026-09-22 加的面板自测（MIUI 拦 adb 触摸注入，只能靠钩子把面板叫出来）──
+            if (mode == "settings")
+            {
+                var panel = FindObjectOfType<FallenAngel.UI.SettingsPanelController>(true);
+                if (panel != null) { Debug.Log("[JudgeManager] 开发版自测：打开设置页"); panel.Open(); }
+                else Debug.LogWarning("[JudgeManager] 开发版自测：场景里没有 SettingsPanelController");
+                return;
+            }
+
+            if (mode == "fallpreview")
+            {
+                var preview = FindObjectOfType<FallenAngel.UI.FallSpeedPreviewController>(true);
+                if (preview != null) { Debug.Log("[JudgeManager] 开发版自测：打开下落速度预览"); preview.Open(); }
+                else Debug.LogWarning("[JudgeManager] 开发版自测：场景里没有 FallSpeedPreviewController");
+                return;
+            }
+
+            if (mode == "suggest")
+            {
+                // 只验"建议值能不能显示出来"这条界面链（真实采样由 JudgeTimingChecks 的端到端断言保证）：
+                // 灌 3 个中位误差 +30ms 的样本 → 设置页应显示"系统建议 −30 ms（3 局统计）"
+                for (int i = 0; i < 3; i++) HitErrorHistory.Add(new HitErrorTracker.Sample(30f, 0f));
+                Debug.Log(string.Format("[JudgeManager] 开发版自测：灌入 {0} 个命中误差样本（中位 +30ms）", HitErrorHistory.Count));
+                var panel = FindObjectOfType<FallenAngel.UI.SettingsPanelController>(true);
+                if (panel != null) panel.Open();
+                return;
+            }
+
             if (starter == null)
             {
                 Debug.LogWarning("[JudgeManager] 开发版自动开局失败：场景里没有 GameStarter");
