@@ -79,17 +79,19 @@ namespace FallenAngel.Core
                     normalBegan, normalHeld, frictionHeld));
 
             // ④ 拾取：手指已经按住，摩擦音符"随后进窗"时被它拾到（PickUpNotBeginInputNotes / 跟手核心）
-            //    本工程协议：drag 碰即 Perfect → 拾到的当帧就结算（不等过线）
+            //    作者 2026-09-22 定案：**认领在窗内、结算在判定线** —— 提前按住时音符不许被提前判掉
+            //（"黄键如果提前按住会以最早的位置提前判掉"），但认领之后（isTouched/Input）到线上必须判成 JustPerfect。
             var pickupNote = MakeFriction(2f, 3f, 0.5f, 1f, 1f);
             var pickupRunner = new FrameRunner(new List<LiveNoteBase> { pickupNote });
             int beforeWindow = pickupRunner.Step(0.80f, new TestInput(11, 11, LiveTouchPhase.Moved, 0.80f, 2f));
             pickupRunner.Step(0.90f, new TestInput(11, 11, LiveTouchPhase.Moved, 0.90f, 2f));
-            bool judgedInWindow = pickupNote.State == NoteState.Done && pickupNote.Result == NoteResult.JustPerfect;
+            bool claimedEarly = pickupNote.State != NoteState.Done && pickupNote.Result == NoteResult.None;
             pickupRunner.Step(1.00f, new TestInput(11, 11, LiveTouchPhase.Moved, 1.00f, 2f));
+            bool judgedOnLine = pickupNote.State == NoteState.Done && pickupNote.Result == NoteResult.JustPerfect;
             check("拾取（已按住的手指）",
-                beforeWindow == 0 && judgedInWindow && pickupNote.Result == NoteResult.JustPerfect,
-                string.Format("0.80s 窗外判定数={0}；0.90s 进窗被拾取即结算={1}；结果={2}",
-                    beforeWindow, judgedInWindow, pickupNote.Result));
+                beforeWindow == 0 && claimedEarly && judgedOnLine,
+                string.Format("0.80s 窗外判定数={0}；0.90s 进窗只认领不结算={1}；1.00s 到线结算={2}/{3}",
+                    beforeWindow, claimedEarly, pickupNote.Result, pickupNote.Description));
 
             // ⑤ 重叠归属：两指夹同一个音符 → 按轨道距离归属，只判一次
             var overlapNote = MakeNormal(1f, 3f, 0.5f, 1f, 1f);
@@ -246,6 +248,20 @@ namespace FallenAngel.Core
                 flickWrong.State == NoteState.Done && flickWrong.Result == NoteResult.Great
                 && flickWrong.Description == NoteResultDescription.FlickMiss,
                 string.Format("需要下划、实际 40px 上滑 → {0}/{1}", flickWrong.Result, flickWrong.Description));
+
+            // ⑧i 甩键·**第一根手指**（touchId 0）：Unity 的 fingerId 从 0 开始，而判定簇的内部账本
+            //      用 0 当"槽位空"的哨兵（上游 touchId 从 1 开始）—— 不换算时这根手指永远判不出甩键。
+            //      作者反馈的"粉键识别不了"就是从这来的。
+            var flickZero = new LiveFlickNote(LiveNoteBuilder.Info(1.00f), 82, 2, 2,
+                NoteCategory.Flick, 1f, LiveNoteType.Default, NoteDirection.Up, 0.5f, 20f);
+            var runnerZero = new FrameRunner(new List<LiveNoteBase> { flickZero });
+            runnerZero.Step(0.90f);
+            runnerZero.Step(1.00f, new TestInput(0, 0, LiveTouchPhase.Began, 1.00f, 2f));
+            int zeroJudged = runnerZero.Step(1.02f,
+                new TestInput(0, 0, LiveTouchPhase.Moved, 1.02f, 2f, new Vector2(0f, 40f)));
+            check("甩键·0 号手指（fingerId=0）",
+                zeroJudged == 1 && flickZero.State == NoteState.Done && flickZero.Result == NoteResult.Perfect,
+                string.Format("touchId=0 上滑 40px → 判定数={0}、{1}", zeroJudged, flickZero.Result));
 
             // ── ⑨ 小数轨道解析器（上游 GetJudgmentLane）──────────────────
             var resolver = LiveLaneResolver.CreateFromLaneLayout(PlayVisualSpec.JudgeLineY, 4);

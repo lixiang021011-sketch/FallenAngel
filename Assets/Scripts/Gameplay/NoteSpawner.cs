@@ -64,8 +64,15 @@ namespace FallenAngel.Gameplay
         private int nextNoteIndex;
         private bool isPlaying;
 
-        /// <summary>同刻判定容差（秒）：与规则引擎 chord_split 的 ±1ms 同刻分组对齐</summary>
-        private const float SimultaneousLinkTolerance = 0.0015f;
+        /// <summary>
+        /// 同刻判定容差（秒）：只吸收浮点/序列化噪声。
+        ///
+        /// 实测本工程全部谱面（PJSK SUS / Phira RPE / 自家规则引擎输出）里，和弦两音的时间**完全相等**
+        /// （`chart_tools` 的体检脚本逐对比较：差值 0 的才是和弦，其余最近的也差 116ms）。
+        /// 容差放大没有收益，反而会把"两个音符各自在不同高度"的连打误连成双押——那样的连线不会是水平的，
+        /// 画出来就是"够不着伙伴"的断线。所以取 2ms 只做噪声吸收。
+        /// </summary>
+        internal const float SimultaneousLinkTolerance = 0.002f;
 
         /// <summary>判定层给出结果后，视图最多再留多久（FX 兜底回收；正常路径是 FX 自己隐藏）</summary>
         private const float JudgeKeepSeconds = 1.2f;
@@ -388,6 +395,8 @@ namespace FallenAngel.Gameplay
                 NoteData p = notes[partner];
                 note.SetSimultaneousLink(
                     LaneLayout.GetCenterXForActive(Mathf.Clamp(p.lane, 0, LaneLayout.ActiveLaneCount - 1)),
+                    // 伙伴的**真实半宽**（画布单位）：连线跨度要用各自的宽度算，不能默认两边一样宽
+                    Note.CanvasWidthOf(p) * 0.5f,
                     // 用伙伴音符将采用的那一版配色，保证连线两端与音符本体同色
                     LaneColors.GetLaneColor(p.lane, LaneColors.PickNotePalette(p.lane, p.time)));
             }

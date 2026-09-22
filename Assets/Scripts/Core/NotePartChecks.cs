@@ -463,9 +463,17 @@ namespace FallenAngel.Core
                     { new NoteData(0, 0f, NoteType.Normal), new NoteData(3, 0f, NoteType.LongEnd, 0f, 7) }, 0, -1),
             };
 
+            // 用**生产里的容差**跑配对（别再抄一个魔数进来）：它决定"哪些音符算同刻双押"，
+            // 实测工程内所有谱面的和弦都是完全同刻，容差只吸收浮点噪声。
+            float tolerance = NoteSpawner.SimultaneousLinkTolerance;
+            if (tolerance > 0.005f)
+            {
+                fail++;
+                lines.Add(string.Format("FAIL {0,-16} 同刻容差 {1:0.####}s 过大（会把连打误连成双押）", "容差上限", tolerance));
+            }
             foreach (var c in cases)
             {
-                int got = NoteSpawner.FindSimultaneousPartner(c.Notes, c.Index, 0.0015f);
+                int got = NoteSpawner.FindSimultaneousPartner(c.Notes, c.Index, tolerance);
                 bool ok = got == c.Expect;
                 if (ok) pass++; else fail++;
                 lines.Add(string.Format("{0} {1,-16} 配对返回 {2}（期望 {3}）", ok ? "PASS" : "FAIL", c.Name, got, c.Expect));
@@ -480,37 +488,80 @@ namespace FallenAngel.Core
             GameObject leftGO = null, rightGO = null;
             try
             {
-                Note left = BuildNote(new Case("连线左", new NoteData(0, 0f, NoteType.Normal), 5), out leftGO);
-                BuildNote(new Case("连线右", new NoteData(3, 0f, NoteType.Normal), 5), out rightGO);
+                NoteData leftData = new NoteData(0, 0f, NoteType.Normal);
+                NoteData rightData = new NoteData(3, 0f, NoteType.Normal);
+                Note left = BuildNote(new Case("连线左", leftData, 5), out leftGO);
+                Note right = BuildNote(new Case("连线右", rightData, 5), out rightGO);
 
-                float partnerX = LaneLayout.GetCenterXForActive(3);
-                float myX = ((RectTransform)leftGO.transform).anchoredPosition.x;
-                // 连线是"边缘到边缘"（2026-09-21 排版修正）：宽度 = 中心距 − 两个音符的半宽
-                float noteHalf = ((RectTransform)leftGO.transform).sizeDelta.x * 0.5f;
-                float expectWidth = Mathf.Abs(partnerX - myX) - noteHalf * 2f;
-                left.SetSimultaneousLink(partnerX, LaneColors.GetLaneColor(3));
+                var leftRect = (RectTransform)leftGO.transform;
+                var rightRect = (RectTransform)rightGO.transform;
+                // 按真实生成几何摆位：NoteSpawner 把音符放在**轨道中心**（BuildNote 只是造在 x=0 的中性位置）
+                leftRect.anchoredPosition = new Vector2(LaneLayout.GetCenterXForActive(0), SpawnPos.y);
+                rightRect.anchoredPosition = new Vector2(LaneLayout.GetCenterXForActive(3), SpawnPos.y);
+                float partnerX = rightRect.anchoredPosition.x;
+                float myX = leftRect.anchoredPosition.x;
+                left.SetSimultaneousLink(partnerX, Note.CanvasWidthOf(rightData) * 0.5f, LaneColors.GetLaneColor(3));
 
                 var link = (NoteLinkGraphic)Field("linkGraphic").GetValue(left);
                 var linkRect = (RectTransform)Field("linkRect").GetValue(left);
                 var headRect = (RectTransform)Field("headRect").GetValue(left);
                 if (link == null || linkRect == null) { notes.Add("连线部件未创建"); return false; }
-                if (!link.gameObject.activeSelf) { notes.Add("连线未显示"); return false; }
+                if (!link.gameObject.activeSelf)
+                {
+                    notes.Add($"连线未显示（dx={partnerX - myX:0.#}、s={leftRect.localScale.x:0.###}、" +
+                              $"宽={leftRect.sizeDelta.x:0.#}、伙伴半宽={Note.CanvasWidthOf(rightData) * 0.5f:0.#}）");
+                    return false;
+                }
 
+                // 连线几何**每帧按透视缩放重算**（2026-09-22 修"提示线是断的"）：
+                // 两个音符的中心距固定，但本体被整体缩放 s（出生 0.35 → 判定线 1），
+                // 屏幕上的可视间隙 = 中心距 − (两边半宽之和)×s。所以要在**多个高度**上验证：
+                // 连线在画布单位下的两端都要压住（重叠）两个音符的墨迹，而不是只做一条固定长度的短线。
+                var method = Method("UpdateLinkPart");
+                foreach (float s in new[] { 0.35f, 0.62f, 1f })
+                {
+                    leftRect.localScale = new Vector3(s, s, 1f);
+                    rightRect.localScale = new Vector3(s, s, 1f);
+                    method.Invoke(left, null);
+
+                    if (!link.gameObject.activeSelf) { ok = false; notes.Add($"缩放 {s:0.##} 时连线被隐藏"); continue; }
+
+                    float myHalf = leftRect.sizeDelta.x * 0.5f * s;
+                    float partnerHalf = rightRect.sizeDelta.x * 0.5f * s;
+                    float bandHalf = linkRect.sizeDelta.x * 0.5f * s;
+                    float bandCenter = myX + linkRect.anchoredPosition.x * s;
+                    float bandLeft = bandCenter - bandHalf;
+                    float bandRight = bandCenter + bandHalf;
+
+                    // 画布单位下的期望：中心距 − 两个半宽 + 两端重叠（实现里 overlap = 0.3×高×s，≥1）
+                    float overlap = Mathf.Max(1f, leftRect.sizeDelta.y * 0.3f * s);
+                    float expectWidth = Mathf.Abs(partnerX - myX) - myHalf - partnerHalf + overlap * 2f;
+                    float expectCenter = (myX + partnerX) * 0.5f;
+
+                    if (Mathf.Abs(bandCenter - expectCenter) > TolerancePx)
+                    { ok = false; notes.Add($"缩放 {s:0.##} 连线中心 {bandCenter:0.0} 期望 {expectCenter:0.0}"); }
+                    if (Mathf.Abs(linkRect.sizeDelta.x * s - expectWidth) > TolerancePx)
+                    { ok = false; notes.Add($"缩放 {s:0.##} 连线宽 {linkRect.sizeDelta.x * s:0.0} 期望 {expectWidth:0.0}"); }
+                    // 关键断言：两端都要**越过**音符边缘（重叠 ≥ 1px，画布单位）——否则看起来就是断线
+                    if (bandLeft > myX + myHalf - 1f)
+                    { ok = false; notes.Add($"缩放 {s:0.##} 左端没接上音符（{bandLeft:0.0} > {myX + myHalf:0.0}）"); }
+                    if (bandRight < partnerX - partnerHalf + 1f)
+                    { ok = false; notes.Add($"缩放 {s:0.##} 右端没接上伙伴（{bandRight:0.0} < {partnerX - partnerHalf:0.0}）"); }
+                }
+
+                // 回到判定线尺寸：查网格 / 高度 / 配色 / 层级
+                leftRect.localScale = Vector3.one;
+                rightRect.localScale = Vector3.one;
+                method.Invoke(left, null);
                 int verts = link.BuildDebugMesh(out Rect bounds);
                 if (verts <= 0) { ok = false; notes.Add("连线网格未生成"); }
                 else if (!Inside(bounds, linkRect.rect)) { ok = false; notes.Add($"连线溢出矩形 {Fmt(bounds)} vs {Fmt(linkRect.rect)}"); }
 
-                if (Mathf.Abs(linkRect.sizeDelta.x - expectWidth) > TolerancePx)
-                { ok = false; notes.Add($"连线宽度 {linkRect.sizeDelta.x:0.0} 期望 {expectWidth:0.0}"); }
-                // 连线居中在"两个音符中心之间"（宽度是边缘到边缘，所以不能用 expectWidth/2 当中心）
-                float expectCenterX = Mathf.Abs(partnerX - myX) * 0.5f;
-                if (Mathf.Abs(linkRect.anchoredPosition.x - expectCenterX) > TolerancePx ||
-                    Mathf.Abs(linkRect.anchoredPosition.y) > TolerancePx)
-                { ok = false; notes.Add($"连线中心 {Fmt(linkRect.anchoredPosition)} 期望 ({expectCenterX:0.0},0)"); }
-
-                float expectHeight = Mathf.Max(6f, ((RectTransform)leftGO.transform).sizeDelta.y * 0.45f);
+                float expectHeight = Mathf.Max(6f, leftRect.sizeDelta.y * 0.45f);
                 if (Mathf.Abs(linkRect.sizeDelta.y - expectHeight) > TolerancePx)
                 { ok = false; notes.Add($"连线高度 {linkRect.sizeDelta.y:0.0} 期望 {expectHeight:0.0}"); }
+                if (Mathf.Abs(linkRect.anchoredPosition.y) > TolerancePx)
+                { ok = false; notes.Add($"连线纵向偏移 {linkRect.anchoredPosition.y:0.0} 期望 0"); }
 
                 Color expectLeft = LaneColors.GetLaneColor(0); expectLeft.a = 0.75f;
                 Color expectRight = LaneColors.GetLaneColor(3); expectRight.a = 0.75f;
@@ -520,7 +571,11 @@ namespace FallenAngel.Core
                 if (linkRect.GetSiblingIndex() >= headRect.GetSiblingIndex())
                 { ok = false; notes.Add("连线未画在头部之下"); }
 
-                if (ok) notes.Add($"宽 {linkRect.sizeDelta.x:0.0}×{linkRect.sizeDelta.y:0.0}、网格 {verts} 顶点 {Fmt(bounds)}、两端取轨色、画在头部之下");
+                if (ok)
+                {
+                    notes.Add($"3 个高度(0.35/0.62/1)都接上两端；判定线宽 {linkRect.sizeDelta.x:0.0}、" +
+                              $"网格 {verts} 顶点 {Fmt(bounds)}、两端取轨色、画在头部之下");
+                }
             }
             finally
             {

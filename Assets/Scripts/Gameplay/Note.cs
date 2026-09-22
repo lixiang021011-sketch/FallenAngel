@@ -98,6 +98,12 @@ namespace FallenAngel.Gameplay
         private RectTransform linkRect;
         private Color linkBaseLeft = Color.clear;        // 连线两端基色（着色时按音符 alpha 统一缩放）
         private Color linkBaseRight = Color.clear;
+        // 连线的几何**每帧重算**：本音符被透视缩放 s = 0.35…1（出生→判定线），
+        // 而两个音符的**中心距**不随缩放变化 → 屏幕上的可视间隙 = 中心距 − 两个半宽×s。
+        // 生成时算一次（用未缩放的中心距）会在整段下落里都画出一条够不着两端的短线（作者反馈"提示线是断的"），
+        // 所以这里只记伙伴的中心 X 与**未缩放的**半宽，几何交给 <see cref="UpdateLinkPart"/>。
+        private float linkPartnerCanvasX = float.NaN;    // 伙伴中心 X（画布中心系；NaN = 无同押）
+        private float linkPartnerHalfCanvas;             // 伙伴半宽（画布单位，未乘透视缩放）
         // Slide 剩余轨迹重算用（生成时记录，避免每帧重取）
         private float slideStartX;                       // slide 起点 Canvas X（尾部件定位用）
         // 生成时用过的下落时长 + 生成/判定位置：变速（FallSpeedController 实时生效）后要按新时长重建
@@ -442,9 +448,15 @@ namespace FallenAngel.Gameplay
         /// </summary>
         private string VisualKey(bool tail)
         {
-            if (Data == null) return tail ? "LongEnd" : "Normal";
-            if (Data.wide && !tail) return "Wide";
-            switch (Data.type)
+            return VisualKeyOf(Data, tail);
+        }
+
+        /// <summary>静态版外观键：同押连线要按**伙伴**的谱面条目取宽度，不能只看自己。</summary>
+        private static string VisualKeyOf(NoteData data, bool tail)
+        {
+            if (data == null) return tail ? "LongEnd" : "Normal";
+            if (data.wide && !tail) return "Wide";
+            switch (data.type)
             {
                 case NoteType.Drag: return "Drag";
                 case NoteType.Flick: return "Flick";
@@ -452,6 +464,16 @@ namespace FallenAngel.Gameplay
                 case NoteType.Slide: return tail ? "SlideTail" : "Slide";
                 default: return "Normal";
             }
+        }
+
+        /// <summary>
+        /// 某个谱面条目在**画布单位**下的音符宽度（配表宽 × 轨道缩放，未乘透视）。
+        /// 同押连线用它取伙伴的真实半宽——drag（94）比普通（130）窄，用错就会有多余的一段线戳出来。
+        /// </summary>
+        public static float CanvasWidthOf(NoteData data)
+        {
+            NoteVisualRow row = NoteVisualConfig.Find(VisualKeyOf(data, false));
+            return row != null ? row.Width * LaneLayout.SizeScale : DefaultNoteWidth;
         }
 
         private void EnsureHeadGraphic()
@@ -509,37 +531,65 @@ namespace FallenAngel.Gameplay
         }
 
         /// <summary>
-        /// 同时押横向连线：画出「本音符中心 → 伙伴音符中心」的渐变带（两端被各自头部盖住，
-        /// 读起来是一条横跨两轨的音符条）。partnerCanvasX 传 NaN 表示清除（无同押伙伴 / 池复用）。
+        /// 同时押横向连线：登记伙伴（中心 X + 未缩放的半宽）与两端配色。
+        /// 几何**不在这里算**——透视缩放每帧都在变，见 <see cref="UpdateLinkPart"/>。
+        /// partnerCanvasX 传 NaN 表示清除（无同押伙伴 / 池复用）。
         /// </summary>
-        public void SetSimultaneousLink(float partnerCanvasX, Color partnerColor)
+        public void SetSimultaneousLink(float partnerCanvasX, float partnerHalfCanvasWidth, Color partnerColor)
         {
             if (float.IsNaN(partnerCanvasX))
             {
                 ClearSimultaneousLink();
                 return;
             }
-            if (rectTransform == null) rectTransform = GetComponent<RectTransform>();
-
-            float dx = partnerCanvasX - rectTransform.anchoredPosition.x;
-            // 连线画在**两个音符的边缘之间**（原来画的是"中心到中心"，两端插进音符里 → 排版看着糊成一坨）
-            float myHalf = rectTransform.sizeDelta.x * 0.5f;
-            float width = Mathf.Abs(dx) - myHalf * 2f;
-            if (width < 4f) { ClearSimultaneousLink(); return; }
 
             EnsureLinkGraphic();
 
             Color mine = LaneColors.GetLaneColor(Data != null ? Data.lane : 0, Palette);
             mine.a = 0.75f;
             partnerColor.a = 0.75f;
+            float dx = partnerCanvasX - (rectTransform != null ? rectTransform.anchoredPosition.x : 0f);
             linkBaseLeft = dx >= 0f ? mine : partnerColor;
             linkBaseRight = dx >= 0f ? partnerColor : mine;
-
-            linkRect.sizeDelta = new Vector2(width, Mathf.Max(6f, rectTransform.sizeDelta.y * 0.45f));
-            linkRect.anchoredPosition = new Vector2(dx * 0.5f, 0f);
             linkGraphic.LeftColor = linkBaseLeft;
             linkGraphic.RightColor = linkBaseRight;
+
+            linkPartnerCanvasX = partnerCanvasX;
+            linkPartnerHalfCanvas = Mathf.Max(0f, partnerHalfCanvasWidth);
             linkGraphic.gameObject.SetActive(true);
+            UpdateLinkPart();
+        }
+
+        /// <summary>
+        /// 按**当前透视缩放**重算连线几何（每帧，位置更新之后调）。
+        ///
+        /// 两个音符的中心距是固定的（轨道中心），但音符本体被整体缩放了 s（出生 0.35 → 判定线 1.0），
+        /// 所以屏幕上的可视间隙 = 中心距 − (我的半宽 + 伙伴的半宽) × s —— 出生时约 140px、判定线上约 21px。
+        /// 连线画在音符局部空间，所以要按 s 反算：先在画布单位里求出跨度，再 ÷ s。
+        /// 两端各留一小截**重叠**压进音符墨迹（头部形状自带切角/尖角内缩），端到端才真正连上。
+        /// </summary>
+        private void UpdateLinkPart()
+        {
+            if (linkGraphic == null || linkRect == null || !linkGraphic.gameObject.activeSelf) return;
+            if (float.IsNaN(linkPartnerCanvasX)) return;
+            if (rectTransform == null) rectTransform = GetComponent<RectTransform>();
+
+            float s = Mathf.Max(0.01f, transform.localScale.x);
+            float dx = linkPartnerCanvasX - CanvasX();
+            float myHalf = rectTransform.sizeDelta.x * 0.5f * s;
+            float partnerHalf = linkPartnerHalfCanvas * s;
+            // 端点重叠：0.3×音符高度（≈8.4 局部单位）—— 覆盖 flick 尖角(≈6.3)与普通切角(≈1.5)的内缩
+            float overlap = Mathf.Max(1f, rectTransform.sizeDelta.y * 0.3f * s);
+            float width = Mathf.Abs(dx) - myHalf - partnerHalf + overlap * 2f;
+
+            if (width < 4f)
+            {
+                linkGraphic.gameObject.SetActive(false);   // 两音符宽到没有缝：不画（避免画成一条糊线）
+                return;
+            }
+
+            linkRect.sizeDelta = new Vector2(width / s, Mathf.Max(6f, rectTransform.sizeDelta.y * 0.45f));
+            linkRect.anchoredPosition = new Vector2(dx * 0.5f / s, 0f);
             linkGraphic.SetAllDirty();
         }
 
@@ -548,6 +598,8 @@ namespace FallenAngel.Gameplay
         {
             linkBaseLeft = Color.clear;
             linkBaseRight = Color.clear;
+            linkPartnerCanvasX = float.NaN;
+            linkPartnerHalfCanvas = 0f;
             if (linkGraphic != null) linkGraphic.gameObject.SetActive(false);
         }
 
@@ -739,6 +791,15 @@ namespace FallenAngel.Gameplay
             return y;
         }
 
+        /// <summary>本音符中心在画布中心系里的 x（父容器可能有偏移）。同押连线按画布单位算跨度。</summary>
+        private float CanvasX()
+        {
+            float x = rectTransform.anchoredPosition.x;
+            RectTransform parent = transform.parent as RectTransform;
+            if (parent != null && parent.anchorMin == parent.anchorMax) x += parent.anchoredPosition.x;
+            return x;
+        }
+
         /// <summary>
         /// 每帧更新音符位置（基于时间）
         /// </summary>
@@ -825,6 +886,9 @@ namespace FallenAngel.Gameplay
 
             // 尾部部件跟随身体/路径末端（hold 收缩后再算，故放在最后）
             UpdateTailPart();
+
+            // 同押连线：跨度按**本帧**的透视缩放重算（位置/缩放都定下来之后）
+            UpdateLinkPart();
         }
 
         /// <summary>

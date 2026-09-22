@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -16,6 +17,14 @@ namespace FallenAngel.InputSystem
         /// <summary>滑动方向是否可信（触屏 true；键盘/编辑器鼠标 false，flick 方向判定据此放宽）</summary>
         public bool swipeKnown;
         public bool isPressed;       // true=按下, false=抬起
+        /// <summary>
+        /// true = 这一条是"手指仍按住、位置发生变化"（同轨内的移动），**不是按下边沿**。
+        /// 为什么要单独标：判定层把 `isPressed` 一律当 `Began`（新按下）用 —— 手指在轨内滑动
+        /// 如果也走 Began，flick 的位移累计会被反复清零（永远判不出甩键）；
+        /// 反过来不发事件的话，判定层根本收不到"滑动"这一帧（同样判不出）。
+        /// 所以这里要区分"按下边沿"与"按住中移动"，判定层据此映射成 LiveTouchPhase.Moved。
+        /// </summary>
+        public bool isMove;
         public Vector2 touchPos;     // 触屏位置（屏幕坐标）
         /// <summary>
         /// 本次输入对应的**歌曲时间**（秒）。
@@ -294,8 +303,10 @@ namespace FallenAngel.InputSystem
                 lastTouchLogFrame = Time.frameCount;
                 Vector2 p = t.position;
                 string zone = p.y <= Screen.height * touchBottomRatio ? "判定区内" : "上半屏";
-                Debug.Log(string.Format("[InputManager] 触摸按下（真机）：屏 {0:0}×{1:0}（屏高 {2}，{3}）",
-                    p.x, p.y, Screen.height, zone));
+                // fingerId 一定要打：Unity 的第一根手指是 0，而判定层历史上拿 0 当"空槽"哨兵
+                // （flick 因此永远判不出来）。这行日志是真机上唯一能证明"0 号手指也在参与"的证据。
+                Debug.Log(string.Format("[InputManager] 触摸按下（真机）：id={4} 屏 {0:0}×{1:0}（屏高 {2}，{3}）",
+                    p.x, p.y, Screen.height, zone, t.fingerId));
             }
         }
 #endif
@@ -393,63 +404,90 @@ namespace FallenAngel.InputSystem
             for (int i = 0; i < UnityEngine.Input.touchCount; i++)
             {
                 Touch touch = UnityEngine.Input.GetTouch(i);
-                Vector2 touchPos = touch.position;
-                int touchId = touch.fingerId;
-                bool ended = touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled;
-
-                if (ended)
-                {
-                    ReleaseTouchId(touchId, touchPos);
-                    continue;
-                }
-
-                bool inHitZone = touchPos.y <= Screen.height * touchBottomRatio
-                    && !IsPointerOverUI(touchPos);
-                int lane = inHitZone ? GetLaneFromScreenPos(touchPos) : -1;
-                if (lane < 0 || lane >= LaneLayout.ActiveLaneCount)
-                {
-                    // 已按住的手指滑到 UI 上 / 滑出判定区：**保持它原来的轨**，只有真正抬起才释放。
-                    // 以前这里直接释放 → 手指越过 HUD、或滑条跟手时稍微出界就"断触"（作者反馈
-                    // "断触频繁、打得小心翼翼"）。滑条跟手有独立容差（JudgeManager 的 SlideFollowTolerance），
-                    // 不需要在这里靠"释放"来惩罚。
-                    continue;
-                }
-
-                switch (touch.phase)
-                {
-                    case TouchPhase.Began:
-                        if (!touchIdToLane.ContainsKey(touchId))
-                        {
-                            touchIdToLane[touchId] = lane;
-                            touchPrev[touchId] = touchPos;
-                            fingerScreenPos[touchId] = touchPos;
-                            laneSwipeY[lane] = 0f;                 // 新按下：该轨滑动量归零
-                            SetLaneState(lane, true, touchPos, true, touchId, TouchEventTime(touchId));
-                        }
-                        break;
-
-                    case TouchPhase.Moved:
-                    case TouchPhase.Stationary:
-                        fingerScreenPos[touchId] = touchPos;
-                        // 累计纵向滑动（flick 方向判定用）：同一根手指跨轨时，位移记到当前轨
-                        if (touchPrev.TryGetValue(touchId, out Vector2 prev))
-                        {
-                            if (touchIdToLane.TryGetValue(touchId, out int cur)) 
-                                laneSwipeY[cur] = (laneSwipeY.TryGetValue(cur, out float acc) ? acc : 0f) + (touchPos.y - prev.y);
-                            touchPrev[touchId] = touchPos;
-                        }
-                        if (touchIdToLane.TryGetValue(touchId, out int oldLane) && oldLane != lane)
-                        {
-                            touchIdToLane[touchId] = lane;
-                            // 旧轨道仅当没有其他手指按住时才释放（支持同轨多指交替）
-                            if (!IsLaneHeldByAnyTouch(oldLane))
-                                SetLaneState(oldLane, false, touchPos, true, touchId, TouchEventTime(touchId));
-                            // 跨轨按下：带该轨累计滑动量
-                            SetLaneState(lane, true, touchPos, true, touchId, TouchEventTime(touchId));
-                        }
-                        break;
-                }
+                ProcessTouchSample(touch.fingerId, touch.position, touch.phase, TouchEventTime(touch.fingerId));
             }
+        }
+
+        /// <summary>
+        /// 处理**一条**触摸样本（Began / Moved / Stationary / Ended）。
+        /// 真机由 `HandleTouchInput` 每帧逐条喂进来；自检直接喂合成样本 —— 这样
+        /// "触屏样本 → 音轨事件"这段（含下方的 Moved 语义）在批处理里也能逐条断言，
+        /// 不必依赖真机手指（MIUI 拦掉了 adb 注入触摸）。
+        /// </summary>
+        internal void ProcessTouchSample(int touchId, Vector2 touchPos, TouchPhase phase, double eventTime)
+        {
+            if (phase == TouchPhase.Ended || phase == TouchPhase.Canceled)
+            {
+                ReleaseTouchId(touchId, touchPos);
+                return;
+            }
+
+            int lane = InHitZone(touchPos) ? LaneOf(touchPos) : -1;
+            if (lane < 0 || lane >= LaneLayout.ActiveLaneCount)
+            {
+                // 已按住的手指滑到 UI 上 / 滑出判定区：**保持它原来的轨**，只有真正抬起才释放。
+                // 以前这里直接释放 → 手指越过 HUD、或滑条跟手时稍微出界就"断触"（作者反馈
+                // "断触频繁、打得小心翼翼"）。滑条跟手有独立容差（JudgeManager 的 SlideFollowTolerance），
+                // 不需要在这里靠"释放"来惩罚。
+                return;
+            }
+
+            switch (phase)
+            {
+                case TouchPhase.Began:
+                    if (!touchIdToLane.ContainsKey(touchId))
+                    {
+                        touchIdToLane[touchId] = lane;
+                        touchPrev[touchId] = touchPos;
+                        fingerScreenPos[touchId] = touchPos;
+                        laneSwipeY[lane] = 0f;                 // 新按下：该轨滑动量归零
+                        SetLaneState(lane, true, touchPos, true, touchId, eventTime);
+                    }
+                    break;
+
+                case TouchPhase.Moved:
+                case TouchPhase.Stationary:
+                    fingerScreenPos[touchId] = touchPos;
+                    bool crossedLane = false;
+                    // 累计纵向滑动（flick 方向判定用）：同一根手指跨轨时，位移记到当前轨
+                    if (touchPrev.TryGetValue(touchId, out Vector2 prev))
+                    {
+                        if (touchIdToLane.TryGetValue(touchId, out int cur))
+                            laneSwipeY[cur] = (laneSwipeY.TryGetValue(cur, out float acc) ? acc : 0f) + (touchPos.y - prev.y);
+                        touchPrev[touchId] = touchPos;
+                    }
+                    if (touchIdToLane.TryGetValue(touchId, out int oldLane) && oldLane != lane)
+                    {
+                        touchIdToLane[touchId] = lane;
+                        crossedLane = true;
+                        // 旧轨道仅当没有其他手指按住时才释放（支持同轨多指交替）
+                        if (!IsLaneHeldByAnyTouch(oldLane))
+                            SetLaneState(oldLane, false, touchPos, true, touchId, eventTime);
+                    }
+
+                    // 真的移动了（或跨了轨）**必须发事件**，且要声明 isMove：
+                    //  · 不发事件 → 判定层收不到"这一帧在滑动"（flick 的位移累计靠这些帧）；
+                    //  · 不声明 isMove → 判定层按"新按下(Began)"处理，跨轨移动会**重置**甩键的累计幅度，
+                    //    斜着甩 / 手抖过轨就再也判不出来（作者反馈"粉键识别不了"）。
+                    // 静止(Stationary)不重复发事件：判定层本来就会为"仍按住的轨"补一条持续输入。
+                    if (phase == TouchPhase.Moved || crossedLane)
+                    {
+                        SetLaneStateAt(lane, true, touchPos, true,
+                            MusicTimeOf(eventTime), touchId, isMove: true);
+                    }
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// 触摸事件时刻 → 歌曲时间。拿不到事件时间戳时（未装 EnhancedTouch 的 legacy 路径、
+        /// 以及自检直接喂的合成样本）回退到**本帧歌曲时间** —— 绝不能把 -1 当事件时刻喂给
+        /// <see cref="InputClock.ToMusicTime"/>，那会把判定时间戳拖到 250ms 之前（时钟外推钳位）。
+        /// </summary>
+        private float MusicTimeOf(double eventTime)
+        {
+            if (eventTime >= 0.0) return InputClock.ToMusicTime(eventTime);
+            return GameManager.Instance != null ? GameManager.Instance.SongTime : 0f;
         }
 
         /// <summary>按 fingerId 释放一条触摸；同轨仍有其他手指时不抬起该轨。</summary>
@@ -529,7 +567,7 @@ namespace FallenAngel.InputSystem
 
         /// <summary>按指定歌曲时间触发音轨事件（自检注入事件时间戳用）</summary>
         private void SetLaneStateAt(int lane, bool pressed, Vector2 touchPos, bool fromTouch, float musicTime,
-                                    int fingerId = -1)
+                                    int fingerId = -1, bool isMove = false)
         {
             if (lane < 0 || lane >= LanePressStates.Length) return;
             LanePressStates[lane] = pressed;
@@ -540,6 +578,7 @@ namespace FallenAngel.InputSystem
             {
                 laneIndex = lane,
                 isPressed = pressed,
+                isMove = isMove,
                 touchPos = touchPos,
                 swipeKnown = fromTouch,
                 swipeY = fromTouch && laneSwipeY.TryGetValue(lane, out float swipe) ? swipe : 0f,
@@ -555,6 +594,26 @@ namespace FallenAngel.InputSystem
         /// 修复：此前按屏幕四等分判定，与 CanvasScaler 缩放/裁切后的按键视觉错位
         /// （不同视图下按红色可能触发黄色）。
         /// </summary>
+        // ── 自检接缝（2026-09-22）──────────────────────────────────────────
+        // 为什么需要：批处理自检里既没有 Canvas、也没有真实触摸，而"触屏样本 → 音轨事件"
+        // 偏偏是 bug 的高发段（同轨移动不发事件、跨轨移动被当成新按下都是这里出的）。
+        // 把"屏幕坐标 → 轨道 / 是否在判定区"做成两个可替换探针：运行时为空（走真实实现），
+        // 自检填合成实现后就能逐样本断言事件序列。空委托不影响热路径。
+        internal Func<Vector2, int> LaneProbe;
+        internal Func<Vector2, bool> InHitZoneProbe;
+
+        private int LaneOf(Vector2 screenPos)
+        {
+            return LaneProbe != null ? LaneProbe(screenPos) : GetLaneFromScreenPos(screenPos);
+        }
+
+        private bool InHitZone(Vector2 screenPos)
+        {
+            return InHitZoneProbe != null
+                ? InHitZoneProbe(screenPos)
+                : screenPos.y <= Screen.height * touchBottomRatio && !IsPointerOverUI(screenPos);
+        }
+
         private int GetLaneFromScreenPos(Vector2 screenPos)
         {
             if (canvasForLaneMapping == null)
@@ -606,7 +665,10 @@ namespace FallenAngel.InputSystem
         public void SimulateLaneInputAt(int lane, bool pressed, float musicTime, int fingerId = -1)
         {
             int count = Mathf.Max(1, LanePressStates.Length);
-            Vector2 pos = new Vector2(Screen.width * (lane + 0.5f) / count, Screen.height * 0.3f);
+            // 位置基线必须与 SimulateFingerAt / SimulateFingerMoveAt / FingerPositionOf **一致**（都在 0.5 屏高）：
+            // 不一致时"按下 → 移动"之间的位移会掺进一段基线落差（0.2 屏高），判定层的甩键幅度判据
+            // 会被这段落差直接顶过阈值 —— 那样测出来的就不是"手指滑了多少"。
+            Vector2 pos = new Vector2(Screen.width * (lane + 0.5f) / count, Screen.height * 0.5f);
             SetLaneStateAt(lane, pressed, pos, false, musicTime, fingerId < 0 ? lane + 1 : fingerId);
         }
 
@@ -623,6 +685,22 @@ namespace FallenAngel.InputSystem
             int finger = fingerId < 0 ? lane + 1 : fingerId;
             fingerScreenPos[finger] = pos;
             SetLaneStateAt(lane, true, pos, true, musicTime, finger);
+        }
+
+        /// <summary>
+        /// 自检用：模拟"手指**仍按住**、这一帧移动了"——与真机同轨移动走**同一条路**（isMove 事件）。
+        /// 与 <see cref="SimulateFingerAt"/> 的区别：那条是"按下(Began)"，这条是"移动(Moved)"。
+        /// 作者反馈的"粉键识别不了"正是这条路断掉：移动不发事件 → 判定层拿不到滑动帧。
+        /// </summary>
+        public void SimulateFingerMoveAt(int lane, float musicTime, float dx, float dy, int fingerId = -1)
+        {
+            int count = Mathf.Max(1, LanePressStates.Length);
+            Vector2 basePos = new Vector2(Screen.width * (lane + 0.5f) / count, Screen.height * 0.5f);
+            Vector2 pos = basePos + new Vector2(dx, dy);
+            int finger = fingerId < 0 ? lane + 1 : fingerId;
+            fingerScreenPos[finger] = pos;
+            touchPrev[finger] = pos;
+            SetLaneStateAt(lane, true, pos, true, musicTime, finger, isMove: true);
         }
 
         /// <summary>

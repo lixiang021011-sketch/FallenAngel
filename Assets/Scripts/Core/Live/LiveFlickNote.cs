@@ -29,6 +29,19 @@ namespace FallenAngel.Live
         /// <summary>判定"够得上甩"的最小滑动距离（像素；由构造方按屏幕高度算）</summary>
         private readonly float flickDistance;
 
+        /// <summary>
+        /// 记账用的手指键：**上游 touchId 从 1 开始**（0 是"槽位空"的哨兵），
+        /// 而本工程的 touchId 就是 Unity 的 `Touch.fingerId` —— **第一根手指就是 0**。
+        /// 直接把 0 存进 `inputResults` 会看起来"槽位是空的"：`HasInputResult` 永远返回 false
+        /// （`Judgment` 在 `!HasInputResult` 处直接 return）、`JudgmentFlick` 的 `result.id != 0`
+        /// 也永远过滤掉它 —— 真机表现就是**第一根手指甩不动粉键**（作者反馈"粉键识别不了"）。
+        /// 所以内部统一 +1 再存，保持上游"0 = 空槽"的语义。
+        /// </summary>
+        private static int SlotKey(int touchId)
+        {
+            return touchId + 1;
+        }
+
         public override NoteState State
         {
             get { return state; }
@@ -159,9 +172,10 @@ namespace FallenAngel.Live
                 return true;
             }
 
+            int key = SlotKey(touch.touchId);
             foreach (var result in inputResults)
             {
-                if (result.id != 0 && result.id == touch.touchId)
+                if (result.id != 0 && result.id == key)
                 {
                     return false;
                 }
@@ -234,11 +248,12 @@ namespace FallenAngel.Live
         /// <summary>写入该手指的输入结果，返回它占用的槽位（-1 = 槽满）</summary>
         private int AddInputResult(ref LiveTouch touch, ref bool isUpdatedDelta, ref bool isTrueDirection)
         {
+            int key = SlotKey(touch.touchId);
             for (var i = 0; i < inputResults.Length; i++)
             {
-                if (inputResults[i].id == 0 || inputResults[i].id == touch.touchId)
+                if (inputResults[i].id == 0 || inputResults[i].id == key)
                 {
-                    inputResults[i] = (touch.touchId, isUpdatedDelta, isTrueDirection);
+                    inputResults[i] = (key, isUpdatedDelta, isTrueDirection);
                     return i;
                 }
             }
@@ -249,9 +264,10 @@ namespace FallenAngel.Live
         /// <summary>该手指占用的槽位（没有则 -1）</summary>
         private int SlotOf(int touchId)
         {
+            int key = SlotKey(touchId);
             for (var i = 0; i < inputResults.Length; i++)
             {
-                if (inputResults[i].id == touchId) return i;
+                if (inputResults[i].id == key) return i;
             }
             return -1;
         }
@@ -324,9 +340,10 @@ namespace FallenAngel.Live
 
         private bool HasInputResult(int touchId)
         {
+            int key = SlotKey(touchId);
             foreach (var result in inputResults)
             {
-                if (result.id != 0 && result.id == touchId)
+                if (result.id != 0 && result.id == key)
                 {
                     return true;
                 }

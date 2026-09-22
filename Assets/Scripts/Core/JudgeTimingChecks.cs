@@ -342,7 +342,9 @@ namespace FallenAngel.Core
                     string.Format("{0}/{1}、Great={2}", live.Result, live.Description, sb.Judge.GreatCount));
             }
 
-            // ⑫ drag（摩擦）碰即判：按住的手指在窗内触到就**当帧**结算（不等过线）
+            // ⑫ drag（摩擦）：**认领在窗内、结算在判定线**（作者 2026-09-22 定案）
+            //    作者反馈"黄键如果提前按住会以最早的位置提前判掉" —— 早碰不许提前结算，
+            //    但早碰要锁定（不会因为"碰到时还没到线"而漏判），到线那一刻判 JustPerfect。
             using (var sb = new Sandbox())
             {
                 sb.AddChartNote(new NoteData(2, 10.000f, DataNoteType.Drag));
@@ -350,14 +352,22 @@ namespace FallenAngel.Core
                 sb.SetSongTime(9.950f);
                 sb.JudgeUpdate();
                 sb.SetSongTime(9.920f);
-                sb.PressAt(2, 9.920f);           // 音符前 80ms 触到
+                sb.PressAt(2, 9.920f);           // 音符前 80ms 按住（窗内）
                 sb.JudgeUpdate();
                 var live = sb.Live(0);
-                check("drag·碰即判（当帧结算）",
-                    live.State == NoteState.Done && live.Result == NoteResult.JustPerfect
+                bool notJudgedEarly = live.State != NoteState.Done && sb.Judge.PerfectCount == 0;
+
+                for (int i = 0; i <= 9; i++)      // 一直按着走到 10.01s（过判定线）
+                {
+                    sb.SetSongTime(9.920f + i * 0.010f);
+                    sb.JudgeUpdate();
+                }
+
+                check("drag·提前按住不提前判、到线才结算",
+                    notJudgedEarly && live.State == NoteState.Done && live.Result == NoteResult.JustPerfect
                     && sb.Judge.PerfectCount == 1,
-                    string.Format("{0}（音符 10.000 / 触到 9.920）Perfect={1}",
-                        live.Result, sb.Judge.PerfectCount));
+                    string.Format("早 80ms 按住时未判={0}；到线后 {1}/Perfect={2}",
+                        notJudgedEarly, live.Result, sb.Judge.PerfectCount));
             }
 
             // ⑬ 甩键：**累计**滑动幅度够大就要算（慢甩 5px×6 帧 = 30px 也该判）
@@ -399,6 +409,80 @@ namespace FallenAngel.Core
                     live.State == NoteState.Done && live.Result == NoteResult.Great
                     && live.Description == NoteResultDescription.FlickMiss,
                     string.Format("需要下划、实际上滑 → {0}/{1}", live.Result, live.Description));
+            }
+
+            // ⑭b 甩键·**同轨移动**：真机上"手指在轨内滑动"过去**不发事件**，判定层拿不到滑动帧
+            //     （作者反馈"粉键识别不了"）。这条断言走的是与真机同一条路（InputManager 的 Moved 事件）。
+            using (var sb = new Sandbox())
+            {
+                sb.AddChartNote(new NoteData(2, 10.000f, DataNoteType.Flick, 0f, -1, FlickDirection.Up));
+                sb.BuildScore();
+                float flickDist = LiveNoteBuilder.DefaultFlickDistancePixels;
+                float step = flickDist * 0.6f;        // 单帧略小于阈值：只有"收到移动帧"才会判
+                sb.SetSongTime(9.985f);
+                sb.PressAtAs(2, 9.985f, 5);
+                sb.JudgeUpdate();
+                for (int i = 1; i <= 3; i++)
+                {
+                    sb.SetSongTime(9.985f + i * 0.005f);
+                    sb.MoveAt(2, 9.985f + i * 0.005f, 0f, step * i, 5);   // 同轨上滑（Moved 相位）
+                    sb.JudgeUpdate();
+                }
+                var live = sb.Live(0);
+                check("甩键·同轨移动（Moved）能判",
+                    live.State == NoteState.Done && live.Result > NoteResult.Pass,
+                    string.Format("逐帧 {0:0.#}px 上滑（阈值 {1:0.#}px）→ {2}/{3}",
+                        step, flickDist, live.Result, live.Description));
+            }
+
+            // ⑭c 甩键·**跨轨移动**不得重置累计幅度：跨轨在过去被当成"新按下(Began)"，
+            //     累计量清零 → 斜着甩 / 手抖过轨就再也判不出来。这条用"两侧各半"的幅度做判别：
+            //     单侧不够阈值、跨轨后累加才过阈值 —— 只要中途被清零，就当帧判不出来。
+            using (var sb = new Sandbox())
+            {
+                sb.AddChartNote(new NoteData(2, 10.000f, DataNoteType.Flick, 0f, -1, FlickDirection.Up));
+                sb.BuildScore();
+                // 判定层把每帧位移按 Time.deltaTime 归一化到 60fps 口径（慢甩累计的同一处），
+                // 批处理里的 deltaTime 与真机不同 → 用同一个换算把"单侧不到阈值"做成**归一化后**的判据。
+                float amp = Time.deltaTime > 0.0001f ? Time.deltaTime / 0.016667f : 1f;
+                float half = LiveNoteBuilder.DefaultFlickDistancePixels * 0.75f * amp;   // 单侧不到阈值
+                sb.SetSongTime(9.980f);
+                sb.PressAtAs(2, 9.980f, 5);
+                sb.JudgeUpdate();
+                sb.SetSongTime(9.990f);
+                sb.MoveAt(2, 9.990f, 0f, half, 5);                    // 轨 2 内上滑半程
+                sb.JudgeUpdate();
+                var live = sb.Live(0);
+                bool notYet = live.State != NoteState.Done;
+                sb.SetSongTime(10.000f);
+                sb.MoveAt(1, 10.000f, 0f, half * 2f, 5);              // 跨到轨 1，继续上滑（累计 1.5×阈值）
+                sb.JudgeUpdate();
+                check("甩键·跨轨移动不重置累计",
+                    notYet && live.State == NoteState.Done && live.Result > NoteResult.Pass,
+                    string.Format("轨内半程未判={0}；跨轨后累计 {1:0.##}×阈值 → {2}",
+                        notYet, (half * 2f) / Mathf.Max(1f, LiveNoteBuilder.DefaultFlickDistancePixels * amp), live.Result));
+            }
+
+            // ⑭d 甩键·**0 号手指**：Unity 的 fingerId 从 0 开始（判定簇内部拿 0 当"空槽"哨兵，
+            //     上游 touchId 从 1 开始）。没做换算时，第一根手指甩粉键永远判不出来。
+            using (var sb = new Sandbox())
+            {
+                sb.AddChartNote(new NoteData(2, 10.000f, DataNoteType.Flick, 0f, -1, FlickDirection.Up));
+                sb.BuildScore();
+                float step = LiveNoteBuilder.DefaultFlickDistancePixels * 0.8f;
+                sb.SetSongTime(9.985f);
+                sb.PressAtAs(2, 9.985f, 0);       // fingerId = 0
+                sb.JudgeUpdate();
+                for (int i = 1; i <= 3; i++)
+                {
+                    sb.SetSongTime(9.985f + i * 0.005f);
+                    sb.MoveAt(2, 9.985f + i * 0.005f, 0f, step * i, 0);
+                    sb.JudgeUpdate();
+                }
+                var live = sb.Live(0);
+                check("甩键·0 号手指（fingerId=0）能判",
+                    live.State == NoteState.Done && live.Result > NoteResult.Pass,
+                    string.Format("fingerId=0 上滑 → {0}/{1}", live.Result, live.Description));
             }
 
             // ⑮ 长按**按住到尾巴**（不松手）：产品语义 = 成功；绝不能因为"没在窗口内松手"判 Miss
@@ -595,6 +679,52 @@ namespace FallenAngel.Core
                 HitErrorHistory.InvalidateCache();
                 PlayerPrefs.Save();
             }
+
+            // ⑲ 输入层·触摸样本 → 音轨事件（真机路径的回归）。
+            //    作者反馈的"粉键识别不了"有两层：① 轨内滑动**不发事件**（判定层收不到滑动帧）；
+            //    ② 跨轨滑动被当成"新按下(Began)"（甩键累计幅度被清零）。这条逐样本断言事件序列，
+            //    批处理里也能跑（用探针替换掉 Canvas 与 Screen 尺寸这两个环境依赖）。
+            {
+                var host = new GameObject("__JudgeTimingTouchProbe");
+                try
+                {
+                    var input = host.AddComponent<InputManager>();
+                    input.LaneProbe = pos => Mathf.Clamp(Mathf.FloorToInt(pos.x / 100f), 0, 4);
+                    input.InHitZoneProbe = pos => pos.x >= 0f;
+                    typeof(InputManager)
+                        .GetMethod("EnsureLaneArrays", BindingFlags.Instance | BindingFlags.NonPublic)
+                        .Invoke(input, null);
+
+                    var log = new List<LaneInputArgs>();
+                    input.OnLaneInput += (s, e) => log.Add(e);
+
+                    input.ProcessTouchSample(3, new Vector2(150f, 10f), TouchPhase.Began, -1);
+                    bool begun = log.Count == 1 && log[0].isPressed && !log[0].isMove && log[0].laneIndex == 1;
+
+                    input.ProcessTouchSample(3, new Vector2(160f, 40f), TouchPhase.Moved, -1);
+                    bool sameLaneMove = log.Count == 2 && log[1].isPressed && log[1].isMove && log[1].laneIndex == 1;
+
+                    input.ProcessTouchSample(3, new Vector2(250f, 60f), TouchPhase.Moved, -1);
+                    bool crossLane = log.Count == 4
+                        && !log[2].isPressed && log[2].laneIndex == 1
+                        && log[3].isPressed && log[3].isMove && log[3].laneIndex == 2;
+
+                    input.ProcessTouchSample(3, new Vector2(250f, 60f), TouchPhase.Stationary, -1);
+                    bool stationarySilent = log.Count == 4;
+
+                    input.ProcessTouchSample(3, new Vector2(250f, 60f), TouchPhase.Ended, -1);
+                    bool ended = log.Count == 5 && !log[4].isPressed && log[4].laneIndex == 2;
+
+                    check("输入层·滑动事件序列（isMove）",
+                        begun && sameLaneMove && crossLane && stationarySilent && ended,
+                        string.Format("按下{0}/同轨移动{1}/跨轨(释放+移动){2}/静止不发{3}/抬起{4}，共 {5} 条事件",
+                            begun, sameLaneMove, crossLane, stationarySilent, ended, log.Count));
+                }
+                finally
+                {
+                    UnityEngine.Object.DestroyImmediate(host);
+                }
+            }
         }
 
         /// <summary>晚 90ms 按下（同一个音符），返回判定档——用来验窗口倍率是否进表</summary>
@@ -770,6 +900,16 @@ namespace FallenAngel.Core
             public void PressAtAs(int lane, float musicTime, int fingerId)
             {
                 Input.SimulateLaneInputAt(lane, true, musicTime, fingerId);
+            }
+
+            /// <summary>
+            /// 手指仍按住、这一帧**移动**了（Moved 事件）——真机同轨滑动走的就是这条路。
+            /// 与 <see cref="SwipeAt"/> 的区别：那个只更新位置（靠判定层补的持续输入帧），
+            /// 这个发真正的 isMove 事件，用来验"移动不发事件 / 跨轨被当成新按下"这两类 bug。
+            /// </summary>
+            public void MoveAt(int lane, float musicTime, float dx, float dy, int fingerId)
+            {
+                Input.SimulateFingerMoveAt(lane, musicTime, dx, dy, fingerId);
             }
 
             /// <summary>把手指移到「轨道中心 + (dx,dy)」（触屏语义；连续调用传累计位移）</summary>

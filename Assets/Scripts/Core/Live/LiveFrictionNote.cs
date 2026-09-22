@@ -124,19 +124,15 @@ namespace FallenAngel.Live
 
         public override bool Judgment(ref LiveTouch touch, float lane)
         {
-            // 本工程协议（v2 chart：drag = 碰即 Perfect、永不 MISS）：
-            // 单点摩擦音符**触到即结算**，不像上游那样"标记 isTouched、等过线才完成"——
-            // 等过线会让 drag 的反馈比手指晚最多一个 Bad 窗口（实机表现为"拖沓"）。
-            // 长按链上的摩擦点（parentNote != null）仍走上游的累积语义。
-            if (parentNote == null && State != NoteState.Done)
-            {
-                JudgeInfo = (NoteResult.JustPerfect, NoteResultDescription.None);
-                Progress = 1f;
-                OffsetJudgeTime = 0f;
-                State = NoteState.Done;
-                return true;
-            }
-
+            // 上游语义（作者 2026-09-22 定案）：**手指在窗内碰到 = 认领（isTouched），
+            // 结算仍然发生在音符过判定线那一刻**（Excute 里 Progress >= 1）。
+            //
+            // 为什么改回来：本工程一度让单点 drag "碰到即结算"（判定与手指同时发生），
+            // 于是**提前按住**时音符还悬在判定线上方就被判掉（作者反馈"黄键如果提前按住
+            // 会以最早的位置提前判掉"）。认领 + 过线结算同时满足两件事：
+            //   · 早碰不吃亏（窗内碰到就锁定，不会漏判）；
+            //   · 判定时刻永远落在判定线上 = 玩家听到/看到的时机正确；
+            //   · 判定误差采样也不会被 drag 的"早碰量"污染（认领那帧 HasJudgedError 会被撤销）。
             if (State == NoteState.Last)
             {
                 OffsetJudgeTime = 0f;

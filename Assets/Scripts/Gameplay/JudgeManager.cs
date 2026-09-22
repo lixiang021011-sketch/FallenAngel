@@ -690,12 +690,22 @@ namespace FallenAngel.Gameplay
 
             var pending = new PendingInput
             {
-                phase = e.isPressed ? LiveTouchPhase.Began : LiveTouchPhase.Ended,
+                // 按下边沿 → Began；按住中移动 → Moved（flick 的位移累计靠它）；抬起 → Ended
+                phase = !e.isPressed ? LiveTouchPhase.Ended
+                    : (e.isMove ? LiveTouchPhase.Moved : LiveTouchPhase.Began),
                 musicTime = e.musicTime,
                 screenPos = e.touchPos,
                 fromTouch = e.swipeKnown,
                 lane = e.laneIndex
             };
+
+            // 同一帧里"先按下、后移动"：只保留按下边沿（Moved 会覆盖掉 Began，
+            // 而 Began 才是一次输入的起点 —— flick 也要求先有 Began 注册这一指）
+            if (e.isMove && pendingInputs.TryGetValue(e.fingerId, out PendingInput held)
+                && held.phase == LiveTouchPhase.Began)
+            {
+                return;
+            }
 
             // 同一帧内"按下又抬起"（极短点按）：两条都得发，否则这次点按整条丢掉
             if (pendingInputs.TryGetValue(e.fingerId, out PendingInput existing)
