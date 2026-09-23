@@ -57,7 +57,7 @@ namespace FallenAngel.Core
                 // ④ 受伤倍率（modifier 口子）：0.5× 只吃一半
                 PlayRules.ResetModifiers();
                 PlayLife.Reset();
-                PlayRules.SetModifierState(1f, true, true, 0.5f, 0f, 1f);   // 模拟 ModifierManager 汇总结果
+            PlayRules.SetModifierState(1f, true, true, 0.5f, 0f, 1f, 0f);   // 模拟 ModifierManager 汇总结果
                 PlayLife.ApplyDamage(PlayLife.DamageMiss);
                 check("modifier.damageScale",
                     Mathf.Abs(PlayLife.Current - 960f) < 1e-3f,
@@ -65,7 +65,7 @@ namespace FallenAngel.Core
 
                 // ⑤ 每秒回血（modifier 口子）：+25/s 跑 2 秒 = +50
                 PlayLife.Reset();
-                PlayRules.SetModifierState(1f, true, true, 1f, 25f, 1f);
+            PlayRules.SetModifierState(1f, true, true, 1f, 25f, 1f, 0f);
                 PlayLife.ApplyDamage(PlayLife.DamageMiss);   // 920
                 PlayLife.Tick(2f);
                 check("modifier.regen",

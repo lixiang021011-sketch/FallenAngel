@@ -794,7 +794,7 @@ namespace FallenAngel.Core
                     sb.AddChartNote(new NoteData(2, 10.000f, DataNoteType.Normal));
                     sb.BuildScore();
                     // 注意顺序：沙箱构造会把 modifier 复位，倍率必须在沙箱就绪之后再施加
-                    PlayRules.SetModifierState(scale, true, true, 1f, 0f, 1f);
+            PlayRules.SetModifierState(scale, true, true, 1f, 0f, 1f, 0f);
                     sb.SetSongTime(9.910f);
                     sb.PressAt(2, 10.090f);   // 音符 10.000 → 晚 90ms
                     sb.JudgeUpdate();

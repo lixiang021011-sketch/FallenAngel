@@ -38,10 +38,11 @@ namespace FallenAngel.Core
 
         public static float Current { get { return current; } }
 
-        public static float Max { get { return MaxLife; } }
+        /// <summary>有效上限 = 基础上限（上游 LiveConfig.Life）+ PlayRules 的开局生命加成（CG12 喉糖）。</summary>
+        public static float Max { get { return MaxLife + Mathf.Max(0f, PlayRules.LifeBonus); } }
 
-        /// <summary>`life / maxLife`（上游 `LifeView` 的 rate）</summary>
-        public static float Rate { get { return MaxLife > 0f ? current / MaxLife : 0f; } }
+        /// <summary>`life / max`（上游 `LifeView` 的 rate；分母用有效上限，开曲满血时恒为 1）</summary>
+        public static float Rate { get { return Max > 0f ? current / Max : 0f; } }
 
         /// <summary>生命是否已经见底（见底后照常继续打，只是不再往下扣）</summary>
         public static bool IsEmpty { get { return current <= 0f; } }
@@ -49,7 +50,7 @@ namespace FallenAngel.Core
         /// <summary>开局/重开时调用</summary>
         public static void Reset()
         {
-            current = MaxLife;
+            current = Max;
             Raise();
         }
 
@@ -66,7 +67,7 @@ namespace FallenAngel.Core
         public static void Heal(float amount)
         {
             if (amount <= 0f) return;
-            current = Mathf.Min(MaxLife, current + amount);
+            current = Mathf.Min(Max, current + amount);
             Raise();
         }
 
@@ -75,7 +76,7 @@ namespace FallenAngel.Core
         {
             float regen = PlayRules.LifeRegenPerSecond;
             if (regen == 0f || deltaSeconds <= 0f) return;
-            float next = Mathf.Clamp(current + regen * deltaSeconds, 0f, MaxLife);
+            float next = Mathf.Clamp(current + regen * deltaSeconds, 0f, Max);
             if (Mathf.Abs(next - current) < 1e-4f) return;
             current = next;
             Raise();
@@ -83,7 +84,7 @@ namespace FallenAngel.Core
 
         private static void Raise()
         {
-            if (OnChanged != null) OnChanged(current, MaxLife);
+            if (OnChanged != null) OnChanged(current, Max);
         }
     }
 }

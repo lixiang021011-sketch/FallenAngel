@@ -379,6 +379,106 @@
     {
       "key": "loading.tip.3",
       "value": "校准入口在设置页，跟着高音敲即可"
+    },
+    {
+      "key": "gear.cg01.name",
+      "value": "晃是晃，摊开就能用。"
+    },
+    {
+      "key": "gear.cg01.desc",
+      "value": "判定线不会再被挡住——不管发生什么，它都在那儿。"
+    },
+    {
+      "key": "gear.cg01.origin.a",
+      "value": "旧货市场那位摊主塞给你的"
+    },
+    {
+      "key": "gear.cg01.origin.b",
+      "value": "从家里书桌底下抽出来的"
+    },
+    {
+      "key": "gear.cg01.origin.c",
+      "value": "不知道什么时候放进琴包的"
+    },
+    {
+      "key": "gear.cg06.name",
+      "value": "手热了才弹得动。"
+    },
+    {
+      "key": "gear.cg06.desc",
+      "value": "一开场的那半分钟，你会更稳。"
+    },
+    {
+      "key": "gear.cg06.origin.a",
+      "value": "休息房里邻座的人借你用的"
+    },
+    {
+      "key": "gear.cg06.origin.b",
+      "value": "出门时塞进包里的"
+    },
+    {
+      "key": "gear.cg06.origin.c",
+      "value": "到旅店才发现它在包里"
+    },
+    {
+      "key": "gear.cg08.name",
+      "value": "外面的声音没了，只剩你和拍子。"
+    },
+    {
+      "key": "gear.cg08.desc",
+      "value": "判得更严，但打准了分更高。"
+    },
+    {
+      "key": "gear.cg08.origin.a",
+      "value": "练团那天鼓手塞给你一副"
+    },
+    {
+      "key": "gear.cg08.origin.b",
+      "value": "本来是买来睡觉用的"
+    },
+    {
+      "key": "gear.cg08.origin.c",
+      "value": "琴包夹层里躺着"
+    },
+    {
+      "key": "gear.cg12.name",
+      "value": "唱完一颗。"
+    },
+    {
+      "key": "gear.cg12.desc",
+      "value": "这一曲开场，你比平时更满。"
+    },
+    {
+      "key": "gear.cg12.origin.a",
+      "value": "候车厅里有人分了你一颗"
+    },
+    {
+      "key": "gear.cg12.origin.b",
+      "value": "出门前抓的一把"
+    },
+    {
+      "key": "gear.cg12.origin.c",
+      "value": "裤兜里剩的"
+    },
+    {
+      "key": "gear.cg13.name",
+      "value": "手破了，贴上继续。"
+    },
+    {
+      "key": "gear.cg13.desc",
+      "value": "失误时掉的血少一些。"
+    },
+    {
+      "key": "gear.cg13.origin.a",
+      "value": "便利店店员顺手塞的"
+    },
+    {
+      "key": "gear.cg13.origin.b",
+      "value": "钱包里一直夹着几张"
+    },
+    {
+      "key": "gear.cg13.origin.c",
+      "value": "琴盒角落里"
     }
   ]
 }

@@ -379,6 +379,106 @@
     {
       "key": "loading.tip.3",
       "value": "Calibration lives in Settings — tap along with the high tone"
+    },
+    {
+      "key": "gear.cg01.name",
+      "value": "It wobbles, but it opens."
+    },
+    {
+      "key": "gear.cg01.desc",
+      "value": "The judge line can no longer be covered — it stays put, whatever happens."
+    },
+    {
+      "key": "gear.cg01.origin.a",
+      "value": "Pressed on you by the stall keeper at the flea market"
+    },
+    {
+      "key": "gear.cg01.origin.b",
+      "value": "Pulled out from under the desk at home"
+    },
+    {
+      "key": "gear.cg01.origin.c",
+      "value": "No idea when it got into the gig bag"
+    },
+    {
+      "key": "gear.cg06.name",
+      "value": "Warm hands play."
+    },
+    {
+      "key": "gear.cg06.desc",
+      "value": "For the first half minute of a song you are steadier."
+    },
+    {
+      "key": "gear.cg06.origin.a",
+      "value": "Lent to you by the person next to you at the hostel"
+    },
+    {
+      "key": "gear.cg06.origin.b",
+      "value": "Packed into your bag on the way out"
+    },
+    {
+      "key": "gear.cg06.origin.c",
+      "value": "Only noticed it in the bag at the inn"
+    },
+    {
+      "key": "gear.cg08.name",
+      "value": "Outside goes quiet; just you and the beat."
+    },
+    {
+      "key": "gear.cg08.desc",
+      "value": "Judging gets stricter, but clean hits score higher."
+    },
+    {
+      "key": "gear.cg08.origin.a",
+      "value": "The drummer handed you a pair at practice"
+    },
+    {
+      "key": "gear.cg08.origin.b",
+      "value": "Originally bought to sleep with"
+    },
+    {
+      "key": "gear.cg08.origin.c",
+      "value": "Lying in the lining of the gig bag"
+    },
+    {
+      "key": "gear.cg12.name",
+      "value": "One after the singing."
+    },
+    {
+      "key": "gear.cg12.desc",
+      "value": "You start each song with more of yourself left."
+    },
+    {
+      "key": "gear.cg12.origin.a",
+      "value": "Someone shared one with you in the waiting hall"
+    },
+    {
+      "key": "gear.cg12.origin.b",
+      "value": "A handful grabbed before leaving home"
+    },
+    {
+      "key": "gear.cg12.origin.c",
+      "value": "A leftover in your pocket"
+    },
+    {
+      "key": "gear.cg13.name",
+      "value": "Hands break; tape it and keep going."
+    },
+    {
+      "key": "gear.cg13.desc",
+      "value": "Mistakes cost you a little less health."
+    },
+    {
+      "key": "gear.cg13.origin.a",
+      "value": "Slipped to you by the shop assistant"
+    },
+    {
+      "key": "gear.cg13.origin.b",
+      "value": "A few have always been in your wallet"
+    },
+    {
+      "key": "gear.cg13.origin.c",
+      "value": "In the corner of the case"
     }
   ]
 }

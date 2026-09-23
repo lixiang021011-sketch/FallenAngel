@@ -57,9 +57,10 @@ namespace FallenAngel.Core
                 mgr.ClearAll();
 
                 // ---------- ① 出货表：口子就位、内容未铺 ----------
-                check("出货表未铺内容",
-                    ModifierCatalog.Rows.Count == 0 && BuildCatalog.Entries.Count == 0 && BuildCatalog.Effects.Count == 0,
-                    string.Format("内容 {0} 行 / 构筑 {1} 项 / 关联 {2} 行（本轮只出表结构与校验）",
+                // 内容表里已经有通用件第一批的行（CG01/CG06/CG08/CG12/CG13），构筑表仍为空。
+                check("构筑表未铺内容（内容表已含通用件行）",
+                    BuildCatalog.Entries.Count == 0 && BuildCatalog.Effects.Count == 0,
+                    string.Format("内容 {0} 行（通用件）/ 构筑 {1} 项 / 关联 {2} 行",
                         ModifierCatalog.Rows.Count, BuildCatalog.Entries.Count, BuildCatalog.Effects.Count));
 
                 // ---------- ② 出货表校验必须通过 ----------

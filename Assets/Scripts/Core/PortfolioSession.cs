@@ -300,6 +300,9 @@ namespace FallenAngel.Core
             playingIndex = Run.completedSongs;
             loadedChart = chart;
             Failures = 0; failed = false; failedNotes.Clear(); failedHolds.Clear();
+            // 通用件：曲前写入持有快照并挂上效果（Song 的随曲终清，Run 的留到局终）。
+            // 必须在 LoadChart 之前——JudgeManager 建谱时会按当前有效值重置生命与计分。
+            CommonGearService.BeginSong(HeldEquipmentIds);
             AudioManager.Instance?.StopAll();
             AudioManager.Instance?.LoadBGM(chart);
             manager.LoadChart(chart);
@@ -341,6 +344,7 @@ namespace FallenAngel.Core
         private void SongEnded()
         {
             if (!OwnsSong || loadedChart != manager.CurrentChart) return;
+            CommonGearService.EndSong();
             LastScore = JudgeManager.Instance?.Score ?? 0;
             LastAccuracy = JudgeManager.Instance?.CalculateAccuracy() ?? 0;
             double perfectRate = 0;
@@ -462,6 +466,7 @@ namespace FallenAngel.Core
         private void EndRunModifiers()
         {
             ModifierManager.Instance?.EndRun();
+            CommonGearService.EndRun();
         }
 
         // ---- 装备持有 ----

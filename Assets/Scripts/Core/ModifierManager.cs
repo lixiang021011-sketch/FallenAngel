@@ -60,6 +60,10 @@ namespace FallenAngel.Core
         LifeRegen = 4,
         /// <summary>分数倍率：magnitude = 倍率（Fever 与局内道具都走这一档）</summary>
         ScoreMultiplier = 5,
+        /// <summary>判定线不可被遮蔽：magnitude 忽略。有它在，同期的 <see cref="JudgeLineHidden"/> 一律不生效（通用件 CG01 折叠谱架）</summary>
+        JudgeLineLock = 6,
+        /// <summary>开局生命加成：magnitude = 额外生命值（与基础上限相加，见 <see cref="PlayLife.Max"/>；通用件 CG12 喉糖）</summary>
+        LifeBonus = 7,
     }
 
     /// <summary>一条 modifier 的定义（纯数据，可由配置表生成）</summary>
@@ -400,6 +404,21 @@ namespace FallenAngel.Core
                 scope: ModifierScope.Song, source: ModifierSource.Debug));
         }
 
+        [ContextMenu("调试/判定线不可遮蔽 5 秒（CG01 折叠谱架的口径）")]
+        private void DebugLineLock()
+        {
+            Apply(new ModifierDef("DBG_LINELOCK", ModifierKind.JudgeLineLock, 0f, 5f,
+                scope: ModifierScope.Song, source: ModifierSource.Debug));
+        }
+
+        [ContextMenu("调试/开局生命 +100（CG12 喉糖的口径）")]
+        private void DebugLifeBonus()
+        {
+            Apply(new ModifierDef("DBG_LIFEBONUS", ModifierKind.LifeBonus, 100f, 0f,
+                scope: ModifierScope.Song, source: ModifierSource.Debug));
+            PlayLife.Reset();   // 开局加成要重新进一次 Reset 才落到当前生命上
+        }
+
         [ContextMenu("调试/判定窗口放宽 1.2×（本次行程）")]
         private void DebugRunWideWindows()
         {
@@ -435,6 +454,8 @@ namespace FallenAngel.Core
             float damageScale = 1f;
             float regen = 0f;
             float scoreMul = 1f;
+            float lifeBonus = 0f;
+            bool lineLocked = false;
 
             for (int i = 0; i < active.Count; i++)
             {
@@ -448,6 +469,9 @@ namespace FallenAngel.Core
                     case ModifierKind.JudgeLineHidden:
                         lineVisible = false;
                         break;
+                    case ModifierKind.JudgeLineLock:
+                        lineLocked = true;      // 锁在：最后统一把可见性拉回可见（见循环后的 if）
+                        break;
                     case ModifierKind.NotesHidden:
                         notesVisible = false;
                         break;
@@ -460,9 +484,15 @@ namespace FallenAngel.Core
                     case ModifierKind.ScoreMultiplier:
                         scoreMul *= def.magnitude;      // 乘法叠加（fever × 道具）
                         break;
+                    case ModifierKind.LifeBonus:
+                        lifeBonus += def.magnitude;     // 加法叠加：两条 +100 = +200
+                        break;
                 }
             }
-            PlayRules.SetModifierState(scale, lineVisible, notesVisible, damageScale, regen, scoreMul);
+            // 判定线锁只抬可见性下限，不影响判定；音符隐身不受它管（那是另一条效果）
+            if (lineLocked) lineVisible = true;
+            PlayRules.SetModifierState(scale, lineVisible, notesVisible, damageScale, regen, scoreMul,
+                lifeBonus);
         }
     }
 }

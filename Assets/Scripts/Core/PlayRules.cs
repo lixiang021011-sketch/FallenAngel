@@ -22,6 +22,7 @@ namespace FallenAngel.Core
         private static float lifeDamageScale = 1f;
         private static float lifeRegenPerSecond;
         private static float scoreMultiplier = 1f;
+        private static float lifeBonus;
 
         /// <summary>判定窗口倍率（1 = 原始；&gt;1 更宽松，&lt;1 更严格）</summary>
         public static float JudgeWindowScale { get { return judgeWindowScale; } }
@@ -40,6 +41,9 @@ namespace FallenAngel.Core
 
         /// <summary>分数倍率（1 = 原始）。Fever 与局内道具都走这一档，判定层不硬编码。</summary>
         public static float ScoreMultiplier { get { return scoreMultiplier; } }
+
+        /// <summary>开局生命加成（0 = 无）。来源：ModifierManager 的 LifeBonus；<see cref="PlayLife.Max"/> 把它加到基础上限上。</summary>
+        public static float LifeBonus { get { return lifeBonus; } }
 
         /// <summary>有效判定窗口（缓存实例；调用方只读，不要改它的字段）</summary>
         public static JudgeWindows Windows
@@ -60,7 +64,7 @@ namespace FallenAngel.Core
 
         /// <summary>由 ModifierManager 调用：写入当前生效的修正状态</summary>
         internal static void SetModifierState(float windowScale, bool lineVisible, bool notesVisibleNow,
-            float damageScale, float regenPerSecond, float scoreMul)
+            float damageScale, float regenPerSecond, float scoreMul, float lifeBonusNow)
         {
             judgeWindowScale = Mathf.Max(0.05f, windowScale);
             judgeLineVisible = lineVisible;
@@ -68,13 +72,14 @@ namespace FallenAngel.Core
             lifeDamageScale = Mathf.Max(0f, damageScale);
             lifeRegenPerSecond = regenPerSecond;
             scoreMultiplier = Mathf.Max(0f, scoreMul);
+            lifeBonus = Mathf.Max(0f, lifeBonusNow);
             dirty = true;
         }
 
         /// <summary>回到无修正状态（切歌、退出演奏、清空效果时调用）</summary>
         public static void ResetModifiers()
         {
-            SetModifierState(1f, true, true, 1f, 0f, 1f);
+            SetModifierState(1f, true, true, 1f, 0f, 1f, 0f);
         }
 
         private static void Refresh()

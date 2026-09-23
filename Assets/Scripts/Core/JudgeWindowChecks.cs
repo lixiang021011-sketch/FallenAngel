@@ -136,7 +136,7 @@ namespace FallenAngel.Core
             // ⑤ modifier 倍率作用于**整张表**（原来只缩放 4 个对称字段）
             PlayRules.SetBaseWindows(JudgeWindows.Default);
             PlayRules.ResetModifiers();
-            PlayRules.SetModifierState(1.5f, true, true, 1f, 0f, 1f);
+            PlayRules.SetModifierState(1.5f, true, true, 1f, 0f, 1f, 0f);
             var scaled = PlayRules.Windows;
             JudgeWindowRow scaledFlick = scaled.table.Get(JudgeNoteKind.Flick);
             JudgeWindowRow scaledHoldEnd = scaled.table.Get(JudgeNoteKind.HoldEnd);
@@ -153,7 +153,7 @@ namespace FallenAngel.Core
             float releaseDiff = 0.150f;
             PlayRules.ResetModifiers();
             JudgeResultType atBase = JudgeLongReleaseResult(releaseDiff);
-            PlayRules.SetModifierState(1.5f, true, true, 1f, 0f, 1f);
+            PlayRules.SetModifierState(1.5f, true, true, 1f, 0f, 1f, 0f);
             JudgeResultType atScaled = JudgeLongReleaseResult(releaseDiff);
             PlayRules.ResetModifiers();
             check("长按尾吃 modifier",

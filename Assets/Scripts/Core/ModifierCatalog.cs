@@ -44,8 +44,8 @@ namespace FallenAngel.Core
     }
 
     /// <summary>
-    /// modifier 内容表（D3 的"内容层"）。**当前内容为空**——本轮只落表结构与校验口子，
-    /// 内容（判定宽度 / 无敌 / 净化 / 杠杆类）等内容侧排期时再往里填行。
+    /// modifier 内容表（D3 的"内容层"）。**当前只有通用件第一批的 6 行**（CG01 / CG06 / CG08 / CG12 / CG13，
+    /// 见 docs/common-gear-spec.md）——构筑（D1）与天赋的内容仍为空，按各自排期往里填。
     ///
     /// 生成侧的口子：本表由代码持有是为了让"内容 = 数据"，将来若接到外部表导出
     /// （像 PortfolioConfig 那样由脚本生成），只需把 <see cref="Rows"/> 换成导出的行集合，
@@ -53,9 +53,26 @@ namespace FallenAngel.Core
     /// </summary>
     public static class ModifierCatalog
     {
-        private static readonly ModifierContentRow[] rows = new ModifierContentRow[0];
+        private static readonly ModifierContentRow[] rows = new ModifierContentRow[]
+        {
+            // ── 通用件第一批 ──
+            // 玩家可见文本与器材共用 Loc key（一件一条效果时够用；将来一件挂多条、文案要分开时再各自写 key）。
+            // 来源固定由施加方传入：通用件走 ModifierSource.Item（见 CommonGearService）。
+            new ModifierContentRow("MC_LINE_LOCK", ModifierKind.JudgeLineLock, 0f, 0f,
+                ModifierScope.Run, false, "gear.cg01.name", "gear.cg01.desc"),
+            new ModifierContentRow("MC_HOTBAG", ModifierKind.JudgeWindowScale, 0.85f, 30f,
+                ModifierScope.Song, false, "gear.cg06.name", "gear.cg06.desc"),
+            new ModifierContentRow("MC_EARPLUG_TIGHT", ModifierKind.JudgeWindowScale, 0.90f, 0f,
+                ModifierScope.Song, false, "gear.cg08.name", "gear.cg08.desc"),
+            new ModifierContentRow("MC_EARPLUG_SCORE", ModifierKind.ScoreMultiplier, 1.10f, 0f,
+                ModifierScope.Song, false, "gear.cg08.name", "gear.cg08.desc"),
+            new ModifierContentRow("MC_THROAT_BONUS", ModifierKind.LifeBonus, 100f, 0f,
+                ModifierScope.Song, false, "gear.cg12.name", "gear.cg12.desc"),
+            new ModifierContentRow("MC_BANDAGE", ModifierKind.LifeDamageScale, 0.85f, 0f,
+                ModifierScope.Run, false, "gear.cg13.name", "gear.cg13.desc"),
+        };
 
-        /// <summary>全部内容行（当前为空）</summary>
+        /// <summary>全部内容行</summary>
         public static IReadOnlyList<ModifierContentRow> Rows { get { return rows; } }
 
         /// <summary>按 id 找内容行（出货表）</summary>
@@ -149,6 +166,7 @@ namespace FallenAngel.Core
                 case ModifierKind.JudgeWindowScale:
                 case ModifierKind.LifeDamageScale:
                 case ModifierKind.ScoreMultiplier:
+                case ModifierKind.LifeBonus:
                     return true;
                 default:
                     return false;
