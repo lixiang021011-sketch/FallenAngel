@@ -3,13 +3,13 @@
 .chart → MIDI 转换器（供 Guitar Pro / 任意 DAW 导入打击乐轨）
 用法: python chart_to_midi.py <输入.chart> [输出.mid]
 
-轨道 → GM 鼓件: 0底鼓→36  1军鼓→38  2踩镲/嗵→42  3吊镲→49
+轨道 → GM 鼓件: 0底鼓→36  1军鼓→38  2踩镲→42  3吊镲→49  4嗵鼓→45
 division = 192（与 .chart tick 一致）；音符时长 = 32 分（6 tick）
 """
 import sys
 import struct
 
-LANE_TO_MIDI = {0: 36, 1: 38, 2: 42, 3: 49}
+LANE_TO_MIDI = {0: 36, 1: 38, 2: 42, 3: 49, 4: 45}
 
 
 def vlq(n):

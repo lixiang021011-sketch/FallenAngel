@@ -14,7 +14,7 @@
     { "name": "drums-roll",      "match": { "instrument": "drums", "articulations": ["tremolo"] },               "emit": { "type": "drag", "lane": "from_pitch" } },
     { "name": "drums-kick",      "match": { "instrument": "drums", "pitch_in": [35, 36] },                     "emit": { "type": "tap", "lane": 0 } },
     { "name": "drums-snare",     "match": { "instrument": "drums", "pitch_in": [37, 38, 40] },                  "emit": { "type": "tap", "lane": 1 } },
-    { "name": "drums-tom",       "match": { "instrument": "drums", "pitch_in": [41, 43, 45, 47, 48, 50] },       "emit": { "type": "tap", "lane": 3 } },
+    { "name": "drums-tom",       "match": { "instrument": "drums", "pitch_in": [41, 43, 45, 47, 48, 50] },       "emit": { "type": "tap", "lane": 4 } },
     { "name": "drums-hh-closed", "match": { "instrument": "drums", "pitch": 42 },                                "emit": { "type": "tap", "lane": 2 } },
     { "name": "drums-hh-open",   "match": { "instrument": "drums", "pitch": 46 },                                "emit": { "type": "flick", "lane": 2, "direction": "up" } },
     { "name": "drums-hh-pedal",  "match": { "instrument": "drums", "pitch": 44 },                                "emit": { "type": "flick", "lane": 2, "direction": "down" } },

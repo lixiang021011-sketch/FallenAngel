@@ -35,7 +35,7 @@ class TestDrumRules(unittest.TestCase):
                          ev(instrument="drums", pitch=38, duration=0.1),
                          ev(instrument="drums", pitch=43, duration=0.1)])
         self.assertEqual([(x["type"], x["lane"]) for x in n],
-                         [("tap", 0), ("tap", 1), ("tap", 3)])
+                         [("tap", 0), ("tap", 1), ("tap", 4)])
 
     def test_hihat_closed_open_pedal(self):
         # HH 家族音乐上互斥（同一物理镲片的状态），错开时刻逐个验证

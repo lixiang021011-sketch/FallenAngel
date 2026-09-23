@@ -14,9 +14,12 @@ FallenAngel 谱面制作工具·第四步：.chart 转换器（Moonscraper / Clo
   [Song]        Resolution(每四分音符 tick 数)、Offset(秒)、Name/Artist/Charter
   [SyncTrack]   时间签名 TS n/d、BPM 事件 B <微BPM>（如 140000 = 140.0）
   [ExpertDrums] 鼓谱事件 "pos = N fret length"（pos/length 单位 tick）
-                fret 0-3 = 四个鼓垫 → 轨道 0-3；fret 5 = 底鼓 → kick-lane
+                fret 0-3 = 四个鼓垫 → 轨道 0-3；fret 4 = 第 5 轨（嗵鼓）→ 轨道 4
+                fret 5 = 底鼓 → kick-lane
                 length > 0 = 持续音（长按），时长 = pos+length 的换算时间差
 时间换算: 沿 SyncTrack 逐 tick 累加 60/bpm/resolution（支持变速）
+输出: v2 谱面（formatVersion 2 + 字符串音符类型 + noteCounts）——鼓与其它身份同为
+      5 键（2026-09-23 作者定案）。v1 输出已废弃：旧形状被游戏按 4 键读，第 5 轨会被钳到第 3 轨。
 """
 import sys
 import os
@@ -146,7 +149,7 @@ def main():
     skipped = 0
     for pos, fret, length in notes_raw:
         t0 = times[min(pos, max_tick)]
-        if fret in (0, 1, 2, 3):
+        if fret in (0, 1, 2, 3, 4):
             lane = fret
         elif fret == 5:
             lane = kick_lane
@@ -157,20 +160,20 @@ def main():
             t1 = times[min(pos + length, max_tick)]
             dur = round(t1 - t0, 3)
             if dur < 0.2:
-                out_notes.append({"lane": lane, "time": round(t0, 3), "type": 0,
-                                  "duration": 0.0, "longNoteId": -1})
+                out_notes.append({"type": "tap", "lane": lane, "time": round(t0, 3)})
                 continue
-            out_notes.append({"lane": lane, "time": round(t0, 3), "type": 1,
-                              "duration": dur, "longNoteId": long_id})
-            out_notes.append({"lane": lane, "time": round(t1, 3), "type": 3,
-                              "duration": 0.0, "longNoteId": long_id})
+            # v2 的 hold 只写头 + duration，尾由游戏按协议生成（不再写 longNoteId 尾条目）
+            out_notes.append({"type": "hold", "lane": lane, "time": round(t0, 3),
+                              "duration": dur})
             long_id += 1
         else:
-            out_notes.append({"lane": lane, "time": round(t0, 3), "type": 0,
-                              "duration": 0.0, "longNoteId": -1})
+            out_notes.append({"type": "tap", "lane": lane, "time": round(t0, 3)})
     out_notes.sort(key=lambda n: (n["time"], n["lane"]))
 
     first_bpm = bpm_events[0][1] / 1000.0
+    counts = {"tap": 0, "hold": 0, "drag": 0, "flick": 0, "slide": 0}
+    for n in out_notes:
+        counts[n["type"]] = counts.get(n["type"], 0) + 1
     chart = {
         "metadata": {
             "songName": song.get("Name", song_name),
@@ -183,6 +186,8 @@ def main():
             "audioFileName": song_name,
             "previewStartTime": 0.0,
             "previewDuration": 15.0,
+            "formatVersion": 2,
+            "noteCounts": counts,
         },
         "notes": out_notes,
     }
