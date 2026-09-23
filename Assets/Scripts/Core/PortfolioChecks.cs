@@ -106,7 +106,7 @@ namespace FallenAngel.Core
                 "Reserved cash entry remains disabled");
             var binding = PortfolioConfig.ChartBindings.Single();
             var chart = ChartLoader.LoadFromResources(binding.ResourceName);
-            Check(chart != null && chart.LaneCount == 4 && chart.notes.Count > 0, "Actual placeholder Resources chart loads as 4K");
+            Check(chart != null && chart.LaneCount == 5 && chart.notes.Count > 0, "Actual placeholder Resources chart loads as 5K");
             Check(Resources.Load<AudioClip>("Audio/" + chart.metadata.audioFileName) != null, "Placeholder audio imports and loads");
         }
 

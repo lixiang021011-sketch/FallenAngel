@@ -5,12 +5,12 @@
   "resource_files_checked": true,
   "warnings": [
     "Placeholder chart bindings are present: difficulty and reward balance are not verified.",
-    "CHART_DRUMS_PLACEHOLDER: tap-only chart cannot verify hold effects."
+    "CHART_DRUMS_PLACEHOLDER: now points at the in-repo test chart test_chart_5k (5-key, tap/hold/drag/flick/slide); still not release material."
   ],
   "tables": {
     "chart_bindings": {
       "count": 1,
-      "sha256": "2c7bc717c9d39fa7ae584b75c6a83b6732e13c5e68938acee2bc65fbbdd39661"
+      "sha256": "8e1141ec49c49bdb74c7717c997db4099795a8403b1d9351ccfa6c886acfc39d"
     },
     "drop_entries": {
       "count": 11,
