@@ -49,6 +49,7 @@ namespace FallenAngel.Core
                 ValidateGrowth();
                 ValidateDrop();
                 ValidateLegacy(temporary);
+                ValidateReset(temporary);
                 ValidateMap();
                 ValidateIncomeAndDiscounts();
                 WriteReport("PASS");
@@ -363,6 +364,38 @@ namespace FallenAngel.Core
             talents.Unlock(profile.profileId, "A0", loaded.revision);
             Check(talents.ReadProfile(profile.profileId).unlockedNodeIds.Contains("A0") && File.ReadAllText(file).Contains("Profile.v2"),
                 "Legacy profile upgrades on next successful transaction");
+        }
+
+        /// <summary>
+        /// 重置默认槽：这条路径要能删掉已有档案（含 .lock 残留）再重建。
+        /// 2026-09-27 "点击新游戏报 IOException" 的复现点就在这里——
+        /// 旧实现把正在持有的 .lock 也当成残留删掉，Windows 下必然抛错。
+        /// </summary>
+        private static void ValidateReset(string directory)
+        {
+            string sub = Path.Combine(directory, "reset_" + Guid.NewGuid().ToString("N"));
+            var store = new PortfolioProfileStore(sub);
+            var service = new PortfolioTalentService(store);
+
+            // 先建默认档，再提交一次（产生 .json / .lock / .bak 三件套）
+            var first = service.ResetDefaultProfile("重置测试");
+            var profile = service.ReadProfile(first.profileId);
+            profile.growthPoints = 120;
+            profile.revision++;
+            store.Commit(profile, profile.revision - 1);
+
+            // 再重置一次：删掉旧档案 + 重建（旧实现在这一步抛 IOException）
+            var second = service.ResetDefaultProfile("重置测试");
+            var loaded = service.ReadProfile(second.profileId);
+            Check(second.profileId == first.profileId && loaded.growthPoints == 0 && loaded.unlockedNodeIds.Count == 0,
+                "Reset default profile deletes the old slot (including its .lock leftovers) and recreates it");
+
+            // 直接删除也要能删干净：档案与备份都不在（.lock 是互斥量，允许留着）
+            store.Delete(second.profileId);
+            Check(!store.ListProfileIds().Contains(second.profileId)
+                && !File.Exists(Path.Combine(sub, second.profileId + ".json"))
+                && !File.Exists(Path.Combine(sub, second.profileId + ".json.bak")),
+                "Delete removes the profile and its backup without throwing");
         }
 
         private static void ValidateMap()

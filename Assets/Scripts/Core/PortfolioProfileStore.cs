@@ -115,8 +115,16 @@ namespace FallenAngel.Core
                 if (Directory.Exists(directory))
                 {
                     // 清理 {id}.json.{guid}.tmp 等临时残留（File.Delete 对不存在文件静默）。
+                    //
+                    // 注意：**不要**删 {id}.json.lock —— 它正被上面这行 using 以 FileShare.None 打开着，
+                    // Windows 下删不掉（会抛 IOException；2026-09-27 "点击新游戏报错" 就是崩在这里，
+                    // 而且档案已经被删掉，等于把重置打断在半路）。这个空锁文件本身就是互斥量，不是残留。
+                    string lockPath = target + ".lock";
                     foreach (string leftover in Directory.GetFiles(directory, profileId + ".*"))
+                    {
+                        if (string.Equals(leftover, lockPath, StringComparison.OrdinalIgnoreCase)) continue;
                         File.Delete(leftover);
+                    }
                 }
             }
             Debug.Log("[PortfolioProfileStore] Deleted profile " + profileId);
