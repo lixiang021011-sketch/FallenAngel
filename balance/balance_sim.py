@@ -37,24 +37,27 @@ CAPACITY = 20
 INCOME_CAP_RATIO = 0.5
 PERFECT_FULL = 0.9  # 与 PortfolioDefaults.PerfectFullThreshold 一致（I0 上层线）
 COMPLETION_BONUS = 100  # PortfolioSession.completionBonus 原型值
-PAID_ROUTE_FEE = max(e["route_price"] for e in EDGES)  # 从表读取（唯一付费边）
+PAID_ROUTE_FEE = max(e["route_price"] for e in EDGES)  # 从表读取（没有收费边时为 0）
 
 
-def free_route():
-    node = MAP_NODES["N00"]
-    visited, route = set(), []
-    while node["node_id"] not in visited:
-        visited.add(node["node_id"])
-        if node["stage_id"]:
-            route.append(node["stage_id"])
+def chapter_route():
+    """第一章房间序列：起点 → 终房。每站记 (类型, 关卡, 入场路费)。"""
+    node = next(n for n in MAP_NODES.values() if n["node_type"] == "START")
+    route, guard = [], 0
+    while guard < 64:
+        guard += 1
+        incoming = [e["route_price"] for e in EDGES if e["to_node_id"] == node["node_id"]]
+        route.append({"type": node["node_type"], "stage": node["stage_id"],
+                      "fee": max(incoming) if incoming else 0})
         if node["node_type"] == "FINAL":
             break
-        edge = next(e for e in EDGES if e["from_node_id"] == node["node_id"] and e["route_price"] == 0)
+        edge = next(e for e in EDGES if e["from_node_id"] == node["node_id"])
         node = MAP_NODES[edge["to_node_id"]]
     return route
 
 
-FREE_ROUTE = free_route()  # 免费路线关卡序列；付费分叉把第2首换成 S02
+ROUTE = chapter_route()
+FREE_ROUTE = [r["stage"] for r in ROUTE if r["stage"]]  # 关卡序列（7 场：含 2 场硬仗）
 
 
 def first(effects, handler, scope=None):
@@ -226,12 +229,19 @@ def simulate_run(rng, unlocked, perfect_rate, miss_count):
     talents = talent_effects_of(unlocked)
     equip_effs = equip_effects_of(held)
     income_total, points_earned = 0.0, 0
-    stage_ids = list(FREE_ROUTE)
-    for idx, sid in enumerate(stage_ids):
-        if idx == 1 and cash >= PAID_ROUTE_FEE:  # 付费分叉：现金够则走 S02
-            stage_ids[idx] = "S02"
-            cash -= PAID_ROUTE_FEE
-        stage = STAGES[stage_ids[idx]]
+    # 按房间顺序走：演奏房/硬仗结算，商店买货，事件房与休息房目前只过站（内容未铺）
+    for room in ROUTE:
+        if room["fee"]:
+            if cash < room["fee"]:
+                continue   # 付不起就跳过这一场（表里现在是 0，走不到这里）
+            cash -= room["fee"]
+        if room["type"] == "SHOP":
+            cash, bought = shop_visit(rng, cash, held, talents, equip_effs)
+            equip_effs = equip_effects_of(held)
+            continue
+        if not room["stage"]:
+            continue       # 事件房 / 休息房 / 终房
+        stage = STAGES[room["stage"]]
         income = settle(stage["base_income"], stage["stage_type"], talents, equip_effs,
                         perfect_rate, miss_count, float(cash))
         cash += int(income)
@@ -239,9 +249,6 @@ def simulate_run(rng, unlocked, perfect_rate, miss_count):
         points_earned += stage["growth_score"]
         talents = talent_effects_of(unlocked)
         equip_effs = equip_effects_of(held)
-        if idx < len(stage_ids) - 1:  # 每曲之间经过商店（N02/N05）
-            cash, bought = shop_visit(rng, cash, held, talents, equip_effs)
-            equip_effs = equip_effects_of(held)
     points_earned += COMPLETION_BONUS
     return cash, income_total, points_earned, held
 
@@ -279,7 +286,8 @@ def main():
     total_cost = sum(n["unlock_cost"] or 0 for n in TALENT_NODES)
     print("=" * 72)
     print("FallenAngel 数值平衡模拟")
-    print(f"免费路线: {' → '.join(FREE_ROUTE)}  (第2曲现金≥{PAID_ROUTE_FEE}时改走付费 S02)")
+    print(f"第一章房间: {' → '.join(r['type'] for r in ROUTE)}")
+    print(f"关卡序列: {' → '.join(FREE_ROUTE)}  (路费 {PAID_ROUTE_FEE}/场，表里为 0)")
     print(f"天赋树: {len(TALENT_NODES)} 节点 / 总价 {total_cost} / 每局通关积分 {sum(STAGES[s]['growth_score'] for s in FREE_ROUTE)}+{COMPLETION_BONUS}(奖励) = {sum(STAGES[s]['growth_score'] for s in FREE_ROUTE)+COMPLETION_BONUS}")
     print(f"商店: 候选池 {len(SHOP_POOL)} 件 / 每次展示 {BASE_CANDIDATES} 件 / 容量 {CAPACITY}")
     print("=" * 72)
@@ -315,10 +323,10 @@ def main():
         lines, total = settle_lines(st["base_income"], st["stage_type"], all_talents, e05_only, pr, miss, 100)
         desc = "  ".join(f"{k}+{v:.1f}" for k, v in lines)
         print(f"{name} | S01: {desc} = {total:.1f}")
-    st = STAGES["S02"]
+    st = STAGES["S03"]
     for name, (pr, miss) in tiers.items():
         lines, total = settle_lines(st["base_income"], st["stage_type"], all_talents, e05_only, pr, miss, 100)
-        print(f"{name} | S02(付费挑战,路费{PAID_ROUTE_FEE}): {', '.join(f'{k}+{v:.1f}' for k, v in lines)} = {total:.1f} (净收益 {total-PAID_ROUTE_FEE:.1f})")
+        print(f"{name} | S03(硬仗,路费{PAID_ROUTE_FEE}): {', '.join(f'{k}+{v:.1f}' for k, v in lines)} = {total:.1f} (净收益 {total-PAID_ROUTE_FEE:.1f})")
     print("\n注: 模拟为贪心策略(每局末解锁最便宜可解锁天赋/商店买最便宜可负担装备),真实玩家行为会不同;")
 
 

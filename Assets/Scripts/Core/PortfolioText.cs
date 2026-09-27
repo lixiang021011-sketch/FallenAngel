@@ -6,7 +6,7 @@
         public static void Register()
         {
             Add("mapTitle", "FALLEN ANGEL  /  旅程地图", "FALLEN ANGEL / JOURNEY MAP");
-            Add("mapIntro", "选择房间 · 免费与付费分支 · 汇合抵达终点", "Choose rooms · Free and paid branches · Converge at the finale");
+            Add("mapIntro", "三层十六站 · 一站接一站 · 走进终房结算", "Three layers · sixteen stops · walk into the finale to settle");
             Add("talentsPage", "查看永久天赋", "Permanent talents");
             Add("backToMap", "返回旅程地图", "Back to journey map");
             Add("chooseRoom", "选择下方房间", "Choose a room below");
@@ -18,16 +18,27 @@
             Add("cashShort", "局内现金不足，请选择免费路线。", "Not enough run cash. Choose a free route.");
             Add("node.START", "起点", "Start");
             Add("node.STAGE", "战斗", "Battle");
-            Add("node.FINAL", "终点战斗", "Final battle");
+            Add("node.HARD", "硬仗", "Hard fight");
+            Add("node.EVENT", "事件房", "Event");
+            Add("node.REST", "休息房", "Rest");
+            Add("node.FINAL", "终房", "Journey's end");
             Add("node.SHOP", "商店", "Shop");
             Add("node.EMPTY", "空占位房", "Empty room");
+            // 地图节点标签（面板按节点类型取这两条；缺了会直接显示 key）
+            Add("mapEmpty", "空占位房", "Empty");
+            Add("mapPerformance", "演奏房", "Performance");
+            Add("mapChallenge", "付费演奏", "Paid performance");
             Add("room.SHOP", "已进入商店。点击「商店」按钮查看商品。", "Shop reached. Use the Shop button to browse.");
             Add("room.EMPTY", "这是一间空房，目前没有事件。", "An empty room. No event here yet.");
-            Add("mapLegend", "亮色：可进入 · 绿色：当前位置 · 橙色连线：付费\n每个分叉都有免费出口。战斗仍共用占位鼓谱。", "Bright: reachable · Green: current · Orange edge: paid\nEvery fork has a free exit. Battles share the placeholder chart.");
-            Add("legacyRun", "此存档仍在旧版线性局中；结束本局后，新一局使用分叉地图。", "This profile has a legacy linear run. The next run uses the branching map.");
+            Add("room.EVENT", "这里有人来过，但没留下什么。\n（事件内容还没接，关闭后继续前进）", "Someone was here once.\n(No events wired yet — close to move on.)");
+            Add("room.REST", "歇一晚。\n（休息内容还没接，关闭后继续前进）", "A night's rest.\n(No rest effects yet — close to move on.)");
+            Add("room.HARD", "人多，灯亮。这一场比平时难一档。", "Crowded and bright. One notch harder than usual.");
+            Add("room.FINAL", "这一程的落点。\n（离开即结算；纪念品与册子留到内容期）", "The end of this journey.\n(Leaving settles the run; keepsakes come later.)");
+            Add("mapLegend", "亮色：可进入 · 绿色：当前位置\n直线推进，没有分叉；战斗仍共用占位鼓谱。", "Bright: reachable · Green: current\nOne straight road, no forks. Battles share the placeholder chart.");
+            Add("legacyRun", "此存档是旧版九节点地图的一局；结束本局后，新一局使用章节地图。", "This profile is on the legacy nine-node map. The next run uses the chapter map.");
             Add("entry", "成长流程验证", "Growth playtest");
             Add("title", "FALLEN ANGEL  /  永久成长", "FALLEN ANGEL  /  PERMANENT GROWTH");
-            Add("intro", "免费路线 · 三次演奏 · 共用占位鼓谱", "Free route · three performances · shared placeholder chart");
+            Add("intro", "三层十六站 · 七场演奏（两场硬仗）· 共用占位鼓谱", "Three layers · sixteen stops · seven performances (two hard) · shared placeholder chart");
             Add("profiles", "存档列表", "Profiles");
             Add("create", "新建存档", "Create profile");
             Add("name", "输入存档名称（最多32字）", "Profile name (up to 32 characters)");

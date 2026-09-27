@@ -387,7 +387,10 @@ namespace FallenAngel.UI
                         else if (r.phase == "ROOM")
                         {
                             if (n.NodeType == "SHOP" && ShopPanel != null) ShopPanel.Open();
-                            else if (n.NodeType == "EMPTY") session.LeaveRoom();
+                            // 过站类房间（事件 / 休息 / 空占位）与终房都靠"离开"推进；
+                            // 终房的离开 = 这一程的结算（见 PortfolioGrowthService.LeaveRoom）。
+                            else if (n.NodeType == "EMPTY" || n.NodeType == "EVENT"
+                                     || n.NodeType == "REST" || n.NodeType == "FINAL") session.LeaveRoom();
                         }
                     }
                 }, current ? new Color(.13f,.2f,.25f) : card);

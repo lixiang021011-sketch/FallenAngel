@@ -69,7 +69,7 @@ namespace FallenAngel.Core
                         Click("OpenTalents"); step = 40; break;
                     case 40:
                         if (!HasButton("BackToMap")) return;
-                        Require(HasButton("Talent_A0") && !HasButton("Room_N00"), "Talents have a separate page");
+                        Require(HasButton("Talent_A0") && !HasButton("Room_R00"), "Talents have a separate page");
                         Capture("01_talent_tree"); Click("BackToMap"); step = 41; break;
                     case 41:
                         if (!HasButton("BeginGrowthRun")) return;
@@ -123,9 +123,27 @@ namespace FallenAngel.Core
                         if (gm.CurrentState != GameState.Playing) return;
                         gm.EndGame(); step++; break;
                     case 12:
-                        if (!HasButton("BeginGrowthRun")) return;
-                        Require(session.Profile.growthPoints == 500 && session.Run.phase == "FINISHED", "End-to-end run credits 500");
-                        Click("OpenTalents"); step = 42; break;
+                        // 章节地图是 16 站 / 7 场：一路把这一局推完（演奏房用 EndGame 驱动边界，
+                        // 事件/休息/商店靠 PrepareBattle 点「离开」，终房离开后结算）。
+                        if (session.Run.phase == "FINISHED")
+                        {
+                            Require(session.Profile.growthPoints == 900,
+                                "End-to-end run credits 900 (seven performances + finale)");
+                            Click("OpenTalents"); step = 42; break;
+                        }
+                        if (session.Run.phase == "RESULT")
+                        {
+                            if (HasButton("ContinueGrowth")) Click("ContinueGrowth");
+                            return;
+                        }
+                        if (session.Run.phase == "PLAYING")
+                        {
+                            if (gm.CurrentState == GameState.Playing) gm.EndGame();
+                            return;
+                        }
+                        PrepareBattle();
+                        if (session.Run.phase == "READY" && HasButton("ContinueGrowth")) Click("ContinueGrowth");
+                        return;
                     case 42:
                         if (!HasButton("Talent_A0")) return;
                         Click("Talent_A0"); step = 13; break;
@@ -138,7 +156,7 @@ namespace FallenAngel.Core
                         Click("Confirm"); step++; break;
                     case 15:
                         if (HasButton("Confirm")) return;
-                        Require(session.Profile.growthPoints == 400 && session.Profile.unlockedNodeIds.Contains("A0"), "UI confirmation spends 100 and unlocks A0");
+                        Require(session.Profile.growthPoints == 800 && session.Profile.unlockedNodeIds.Contains("A0"), "UI confirmation spends 100 and unlocks A0");
                         Capture("05_unlocked");
                         Click("BackToMap"); step = 43; break;
                     case 43:
@@ -157,7 +175,7 @@ namespace FallenAngel.Core
                         step++; break;
                     case 18:
                         if (session.Run.phase != "FINISHED") return;
-                        Require(session.Run.outcome == "FAILED" && session.Profile.growthPoints == 400, "Failure threshold ends run without unfinished song reward");
+                        Require(session.Run.outcome == "FAILED" && session.Profile.growthPoints == 800, "Failure threshold ends run without unfinished song reward");
                         Capture("06_failure");
                         Finish(null); break;
                 }
@@ -171,9 +189,9 @@ namespace FallenAngel.Core
         {
             if (session.Run.phase == "MAP")
             {
-                var edge = PortfolioConfig.MapEdges.Single(e => e.FromNodeId == session.Run.currentNodeId && e.RoutePrice == 0);
+                var edge = PortfolioConfig.MapEdges.Single(e => e.FromNodeId == session.Run.currentNodeId);
                 if (!HasButton("Room_" + edge.ToNodeId)) return false;
-                if (session.Run.currentNodeId == "N02") Capture("07_paid_fork");
+                if (session.Run.currentNodeId == "R13") Capture("07_shop_room");
                 Click("Room_" + edge.ToNodeId);
                 return false;
             }

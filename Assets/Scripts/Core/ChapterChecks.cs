@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using FallenAngel.Data;
 using UnityEditor;
 using UnityEngine;
 
@@ -16,6 +17,7 @@ namespace FallenAngel.Core
     ///   · 设计稿的数字对得上：价格 40/80/160、刷新首价 30、包 8 格、演奏房奖励 60/25/15、硬仗保底至少蓝；
     ///   · 故意写错的表（重复 id、少一场演奏、硬仗只剩 1、缺终房、起点跑错层、序号断档、层数不对、
     ///     稀有度权重和不是 1、某层没有演奏房）必须被逐条点到名。
+    ///   · 与本文件的表跟运行时地图表（PortfolioConfig）必须一致——两张表漂移是这一节最容易出的错。
     ///
     /// 菜单与 batchmode（-executeMethod FallenAngel.Core.ChapterChecks.Run）两用；
     /// 报告写在 Logs/chapter_check.txt。
@@ -80,6 +82,33 @@ namespace FallenAngel.Core
                 string.Format("首 = {0} / 末 = {1}",
                     firstRoom == null ? "?" : firstRoom.RoomId + "(" + firstRoom.Kind + ")",
                     lastRoom == null ? "?" : lastRoom.RoomId + "(" + lastRoom.Kind + ")"));
+
+            // ---------- 与运行时地图表对齐（防两张表漂移） ----------
+            var kindByNodeType = new Dictionary<string, ChapterRoomKind>
+            {
+                { "START", ChapterRoomKind.Start }, { "STAGE", ChapterRoomKind.Performance },
+                { "HARD", ChapterRoomKind.HardFight }, { "SHOP", ChapterRoomKind.Shop },
+                { "EVENT", ChapterRoomKind.Event }, { "REST", ChapterRoomKind.Rest },
+                { "FINAL", ChapterRoomKind.Final },
+            };
+            var mismatched = new List<string>();
+            for (int i = 0; i < ChapterCatalog.Rooms.Count; i++)
+            {
+                ChapterRoomSpec room = ChapterCatalog.Rooms[i];
+                MapNodesRow node = PortfolioConfig.MapNodes.FirstOrDefault(n => n.NodeId == room.RoomId);
+                ChapterRoomKind mapped;
+                if (node == null) mismatched.Add(room.RoomId + " 不在运行时地图里");
+                else if (!kindByNodeType.TryGetValue(node.NodeType, out mapped)) mismatched.Add(node.NodeId + " 类型未知 " + node.NodeType);
+                else if (mapped != room.Kind) mismatched.Add(node.NodeId + " 类型不符 " + node.NodeType);
+            }
+            check("运行时地图与章节表一致",
+                mismatched.Count == 0
+                && PortfolioConfig.MapNodes.Count == ChapterCatalog.Rooms.Count
+                && PortfolioConfig.Stages.Count == ChapterCatalog.PerformanceCount
+                && PortfolioConfig.MapNodes.Count(n => !string.IsNullOrEmpty(n.StageId)) == ChapterCatalog.PerformanceCount,
+                mismatched.Count == 0
+                    ? string.Format("节点 {0}、关卡 {1}", PortfolioConfig.MapNodes.Count, PortfolioConfig.Stages.Count)
+                    : string.Join("；", mismatched.ToArray()));
 
             // ---------- 稀有度与数值 ----------
             var layerSpecs = ChapterCatalog.Layers;
@@ -159,7 +188,7 @@ namespace FallenAngel.Core
                 missingNoPlay.Count == 0 ? "已点名" : "没点到：" + string.Join("、", missingNoPlay.ToArray()));
 
             // ---------- 报告 ----------
-            string summary = string.Format("{0} PASS {1} / FAIL {2}（第一章结构表；未接玩法、未铺内容）",
+            string summary = string.Format("{0} PASS {1} / FAIL {2}（第一章结构与地图；事件/休息/终房内容还没铺）",
                 Tag, pass, fail);
             for (int i = 0; i < lines.Count; i++) Debug.Log(Tag + lines[i]);
             Debug.Log(summary);

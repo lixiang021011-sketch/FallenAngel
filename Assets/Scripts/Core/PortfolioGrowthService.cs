@@ -37,7 +37,9 @@ namespace FallenAngel.Core
                 || run.earnedPoints != run.growthRewards.Take(run.completedSongs).Sum()
                 || !new[] { "READY", "PLAYING", "RESULT", "FINISHED", "MAP", "ROOM" }.Contains(run.phase)
                 || (run.phase == "FINISHED" ? !string.IsNullOrEmpty(profile.activeRunId) : profile.activeRunId != run.runId)
-                || (run.phase != "FINISHED" && run.completedSongs == run.stageIds.Count))
+                // 打完最后一场之后仍要走进终房才算走完，所以"完成数 == 关卡数"本身不违规；
+                // 真正不允许的是"还想再打一场"：READY / PLAYING 却已经没有下一关了。
+                || ((run.phase == "READY" || run.phase == "PLAYING") && run.completedSongs >= run.stageIds.Count))
                 throw new InvalidOperationException("Invalid growth run snapshot.");
             if (run.phase == "FINISHED")
             {
@@ -98,10 +100,11 @@ namespace FallenAngel.Core
                     run.growthRewards.Add(stage.GrowthScore);
                 }
                 if (node.NodeType == "FINAL") break;
-                var edge = PortfolioConfig.MapEdges.Single(e => e.FromNodeId == node.NodeId && e.RoutePrice == 0);
+                // 章节地图是一条直线：每个房间只有一个后继；路费在进入时收，不影响这里的关卡清单。
+                var edge = PortfolioConfig.MapEdges.Single(e => e.FromNodeId == node.NodeId);
                 node = PortfolioConfig.MapNodes.Single(n => n.NodeId == edge.ToNodeId);
             }
-            if (node.NodeType != "FINAL" || run.stageIds.Count == 0) throw new InvalidOperationException("Invalid free route.");
+            if (node.NodeType != "FINAL" || run.stageIds.Count == 0) throw new InvalidOperationException("Invalid chapter route.");
             if (useMap)
             {
                 run.useMap = true;
@@ -168,8 +171,8 @@ namespace FallenAngel.Core
                 }
                 r.completedSongs++;
             }
-            if (!success || r.completedSongs == r.stageIds.Count) Finish(p, r, success ? "CLEARED" : "FAILED");
-            else r.phase = "RESULT";
+            if (!success) Finish(p, r, "FAILED");
+            else r.phase = "RESULT";   // 打完最后一场也停在这里：玩家继续后还要走进终房
             Save(p, r);
             return r;
         }
@@ -180,7 +183,21 @@ namespace FallenAngel.Core
             var p = talents.ReadProfile(profileId);
             var r = Require(p, runId);
             if (r.phase != "RESULT") throw new InvalidOperationException("No result to continue.");
-            r.phase = r.useMap ? "MAP" : "READY";
+            if (r.useMap)
+            {
+                r.phase = "MAP";   // 回到地图：最后一场之后还要走进终房
+            }
+            else if (r.completedSongs >= r.stageIds.Count)
+            {
+                // 不走地图的旧路径没有房间可走，直接在最后一场结算。
+                Finish(p, r, "CLEARED");
+                Save(p, r);
+                return;
+            }
+            else
+            {
+                r.phase = "READY";
+            }
             Save(p, r);
         }
 
@@ -203,7 +220,11 @@ namespace FallenAngel.Core
                 r.optionalRouteDiscountUsed++;
             r.currentNodeId = nodeId;
             r.visitedNodeIds.Add(nodeId);
-            if (node.NodeType == "STAGE" || node.NodeType == "FINAL")
+            // 演奏类房间（普通演奏 / 硬仗）进入即可开曲；终房没有收尾演奏——走进终房只是"这一程的落点"，
+            // 离开时才结算（见 LeaveRoom）。
+            bool playsStage = node.NodeType == "STAGE" || node.NodeType == "HARD"
+                || (node.NodeType == "FINAL" && !string.IsNullOrEmpty(node.StageId));
+            if (playsStage)
             {
                 var stage = PortfolioConfig.Stages.Single(s => s.StageId == node.StageId && s.Enabled);
                 r.stageIds[r.completedSongs] = stage.StageId;
@@ -263,6 +284,15 @@ namespace FallenAngel.Core
             var p = talents.ReadProfile(profileId);
             var r = Require(p, runId);
             if (!r.useMap || r.phase != "ROOM") throw new InvalidOperationException("No room to leave.");
+            var node = PortfolioConfig.MapNodes.Single(n => n.NodeId == r.currentNodeId);
+            if (node.NodeType == "FINAL")
+            {
+                // 终房 = 这一程的落点：离开即结算（纪念品与册子留到内容期）。
+                Finish(p, r, "CLEARED");
+                Save(p, r);
+                Debug.Log($"[PortfolioGrowthService] 终房结算：{r.completedSongs}/{r.stageIds.Count} 场 → {r.outcome}");
+                return;
+            }
             r.phase = "MAP";
             Save(p, r);
         }

@@ -1,65 +1,114 @@
 [
   {
-    "node_id": "N00",
+    "node_id": "R00",
     "node_type": "START",
     "stage_id": null,
     "layout_x": 0,
     "layout_y": 0
   },
   {
-    "node_id": "N01",
+    "node_id": "R11",
     "node_type": "STAGE",
     "stage_id": "S01",
-    "layout_x": 0,
+    "layout_x": -1,
     "layout_y": 1
   },
   {
-    "node_id": "N02",
-    "node_type": "SHOP",
+    "node_id": "R12",
+    "node_type": "EVENT",
     "stage_id": null,
     "layout_x": 0,
     "layout_y": 2
   },
   {
-    "node_id": "N03",
-    "node_type": "STAGE",
-    "stage_id": "S01",
-    "layout_x": -1,
-    "layout_y": 3
-  },
-  {
-    "node_id": "N04",
-    "node_type": "STAGE",
-    "stage_id": "S02",
+    "node_id": "R13",
+    "node_type": "SHOP",
+    "stage_id": null,
     "layout_x": 1,
     "layout_y": 3
   },
   {
-    "node_id": "N05",
-    "node_type": "SHOP",
-    "stage_id": null,
+    "node_id": "R21",
+    "node_type": "STAGE",
+    "stage_id": "S02",
     "layout_x": 0,
+    "layout_y": 4
+  },
+  {
+    "node_id": "R22",
+    "node_type": "HARD",
+    "stage_id": "S03",
+    "layout_x": -1,
     "layout_y": 5
   },
   {
-    "node_id": "N06",
-    "node_type": "FINAL",
-    "stage_id": "S03",
+    "node_id": "R23",
+    "node_type": "EVENT",
+    "stage_id": null,
     "layout_x": 0,
     "layout_y": 6
   },
   {
-    "node_id": "N07",
-    "node_type": "EMPTY",
-    "stage_id": null,
-    "layout_x": -1,
-    "layout_y": 4
-  },
-  {
-    "node_id": "N08",
-    "node_type": "EMPTY",
+    "node_id": "R24",
+    "node_type": "SHOP",
     "stage_id": null,
     "layout_x": 1,
-    "layout_y": 4
+    "layout_y": 7
+  },
+  {
+    "node_id": "R25",
+    "node_type": "REST",
+    "stage_id": null,
+    "layout_x": 0,
+    "layout_y": 8
+  },
+  {
+    "node_id": "R31",
+    "node_type": "STAGE",
+    "stage_id": "S04",
+    "layout_x": -1,
+    "layout_y": 9
+  },
+  {
+    "node_id": "R32",
+    "node_type": "STAGE",
+    "stage_id": "S05",
+    "layout_x": 0,
+    "layout_y": 10
+  },
+  {
+    "node_id": "R33",
+    "node_type": "HARD",
+    "stage_id": "S06",
+    "layout_x": 1,
+    "layout_y": 11
+  },
+  {
+    "node_id": "R34",
+    "node_type": "EVENT",
+    "stage_id": null,
+    "layout_x": 0,
+    "layout_y": 12
+  },
+  {
+    "node_id": "R35",
+    "node_type": "REST",
+    "stage_id": null,
+    "layout_x": -1,
+    "layout_y": 13
+  },
+  {
+    "node_id": "R36",
+    "node_type": "STAGE",
+    "stage_id": "S07",
+    "layout_x": 0,
+    "layout_y": 14
+  },
+  {
+    "node_id": "R37",
+    "node_type": "FINAL",
+    "stage_id": null,
+    "layout_x": 0,
+    "layout_y": 15
   }
 ]

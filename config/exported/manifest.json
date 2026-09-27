@@ -5,7 +5,8 @@
   "resource_files_checked": true,
   "warnings": [
     "Placeholder chart bindings are present: difficulty and reward balance are not verified.",
-    "CHART_DRUMS_PLACEHOLDER: now points at the in-repo test chart test_chart_5k (5-key, tap/hold/drag/flick/slide); still not release material."
+    "CHART_DRUMS_PLACEHOLDER: now points at the in-repo test chart test_chart_5k (5-key, tap/hold/drag/flick/slide); still not release material.",
+    "Chapter 1 skeleton: 16 rooms / 3 layers / 7 performances (2 hard). Event and rest rooms are pass-through for now; no priced route edges yet."
   ],
   "tables": {
     "chart_bindings": {
@@ -29,20 +30,20 @@
       "sha256": "309460466481ea72463f8ab75f1d942ec6b95d2b7245aca15bd4fb38a251063f"
     },
     "map_edges": {
-      "count": 9,
-      "sha256": "f11ca2549ea1dcf5b81cf9bd9730a4afaef729f43effd8bbce236e2ed0159229"
+      "count": 15,
+      "sha256": "e6d9c5bfc115f7865473dc581aac45fdfe1588ebec8fe262caa1f80de05da0bb"
     },
     "map_nodes": {
-      "count": 9,
-      "sha256": "319805374d502edb3f80840daed1498eb4b8f598f519b9ceb19dc64838c044c4"
+      "count": 16,
+      "sha256": "1a6ffda25571230238d983b57cc83651844c25ccf551c3ffa5343af63a81bf24"
     },
     "shop_candidates": {
       "count": 10,
       "sha256": "b184bdd1e991c7ac3d80828b8427d9bad6dc54278dcc2da79322b96ab2f26db8"
     },
     "stages": {
-      "count": 3,
-      "sha256": "f15b6bfd1806492f4fbba89f5fb01b8940fd146c9b5e5de9bd3261f16a145793"
+      "count": 7,
+      "sha256": "16b07151f4bb016e2e587e68f162ba3780e08d3848661482350a75cd32640632"
     },
     "talent_edges": {
       "count": 27,
