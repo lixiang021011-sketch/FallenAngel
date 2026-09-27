@@ -12,5 +12,6 @@ Design and engineering documentation for FallenAngel. These documents were writt
 | [roguelike-chapter1-design.md](roguelike-chapter1-design.md) | The chapter 1 design baseline (millennium dreamcore): world, run structure, gear, companions, pacing and numbers. |
 | [common-gear-spec.md](common-gear-spec.md) | Implementation spec for the 16 common gear items: per-item rule, code seam, acceptance steps and open decisions. |
 | [chapter-rooms-spec.md](chapter-rooms-spec.md) | Design spec for chapter 1's rooms: run flow, per-room rules, route-fee options, per-layer splits and the content tables still to build. |
+| [chapter-route-spec.md](chapter-route-spec.md) | Route design: why the run branches, the composition rules, a hand-authored first map with node/edge tables, and the choice model. Supersedes the linear route. |
 
 Elsewhere in the repository: [`../README.md`](../README.md) is the project overview in English and Chinese; [`../portfolio/`](../portfolio) holds portfolio figures; [`../CLAUDE.md`](../CLAUDE.md) is the AI collaboration brief; [`../chart_tools/`](../chart_tools) holds the analysis and conversion tooling.
