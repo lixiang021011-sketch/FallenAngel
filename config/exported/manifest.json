@@ -5,8 +5,9 @@
   "resource_files_checked": true,
   "warnings": [
     "Placeholder chart bindings are present: difficulty and reward balance are not verified.",
-    "CHART_DRUMS_PLACEHOLDER: now points at the in-repo test chart test_chart_5k (5-key, tap/hold/drag/flick/slide); still not release material.",
-    "Chapter 1 skeleton: 16 rooms / 3 layers / 7 performances (2 hard). Event and rest rooms are pass-through for now; no priced route edges yet."
+    "CHART_DRUMS_PLACEHOLDER: points at the in-repo test chart test_chart_5k (5-key); not release material.",
+    "Chapter 1 route: branching, 15 steps per run (7 performance steps + 7 resource steps + finale), 29 rooms on the board.",
+    "Event and rest rooms are pass-through for now; no priced route edges yet."
   ],
   "tables": {
     "chart_bindings": {
@@ -18,8 +19,8 @@
       "sha256": "6e824679be7bd54b8db9db4b786742e3bbe8c4f0cfaf795c0e8a33f3bd9fc7ed"
     },
     "drop_rules": {
-      "count": 2,
-      "sha256": "5e3c8ce2f9ed6f9b441da2780ae48b873da74e34976a495dbf56fbb49c5c65af"
+      "count": 3,
+      "sha256": "61ef41668e0b8a206718972419351f0979f7f9932b128337283803d7ee34c624"
     },
     "equipment_base": {
       "count": 10,
@@ -30,20 +31,20 @@
       "sha256": "309460466481ea72463f8ab75f1d942ec6b95d2b7245aca15bd4fb38a251063f"
     },
     "map_edges": {
-      "count": 15,
-      "sha256": "e6d9c5bfc115f7865473dc581aac45fdfe1588ebec8fe262caa1f80de05da0bb"
+      "count": 47,
+      "sha256": "dadf1d3839bb9a70671ceda761473d241f88fe837748984b452deece24960937"
     },
     "map_nodes": {
-      "count": 16,
-      "sha256": "1a6ffda25571230238d983b57cc83651844c25ccf551c3ffa5343af63a81bf24"
+      "count": 29,
+      "sha256": "783fc1fdab83d4eb13791443b67e93b0b66c9f257cd3ed593ee7a58e9afa1b2f"
     },
     "shop_candidates": {
       "count": 10,
       "sha256": "b184bdd1e991c7ac3d80828b8427d9bad6dc54278dcc2da79322b96ab2f26db8"
     },
     "stages": {
-      "count": 7,
-      "sha256": "16b07151f4bb016e2e587e68f162ba3780e08d3848661482350a75cd32640632"
+      "count": 13,
+      "sha256": "154cbfe5c5b5bbf57b85f1e8246ee751028e45bb6f5298eabb63906f5fa4636d"
     },
     "talent_edges": {
       "count": 27,

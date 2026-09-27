@@ -1,92 +1,284 @@
 [
   {
-    "edge_id": "ME01",
+    "edge_id": "E001",
     "from_node_id": "R00",
-    "to_node_id": "R11",
+    "to_node_id": "R1A",
     "route_price": 0
   },
   {
-    "edge_id": "ME02",
-    "from_node_id": "R11",
-    "to_node_id": "R12",
+    "edge_id": "E002",
+    "from_node_id": "R1A",
+    "to_node_id": "R2A",
     "route_price": 0
   },
   {
-    "edge_id": "ME03",
-    "from_node_id": "R12",
-    "to_node_id": "R13",
+    "edge_id": "E003",
+    "from_node_id": "R1A",
+    "to_node_id": "R2B",
     "route_price": 0
   },
   {
-    "edge_id": "ME04",
-    "from_node_id": "R13",
-    "to_node_id": "R21",
+    "edge_id": "E004",
+    "from_node_id": "R2A",
+    "to_node_id": "R3A",
     "route_price": 0
   },
   {
-    "edge_id": "ME05",
-    "from_node_id": "R21",
-    "to_node_id": "R22",
+    "edge_id": "E005",
+    "from_node_id": "R2A",
+    "to_node_id": "R3B",
     "route_price": 0
   },
   {
-    "edge_id": "ME06",
-    "from_node_id": "R22",
-    "to_node_id": "R23",
+    "edge_id": "E006",
+    "from_node_id": "R2B",
+    "to_node_id": "R3A",
     "route_price": 0
   },
   {
-    "edge_id": "ME07",
-    "from_node_id": "R23",
-    "to_node_id": "R24",
+    "edge_id": "E007",
+    "from_node_id": "R2B",
+    "to_node_id": "R3B",
     "route_price": 0
   },
   {
-    "edge_id": "ME08",
-    "from_node_id": "R24",
-    "to_node_id": "R25",
+    "edge_id": "E008",
+    "from_node_id": "R3A",
+    "to_node_id": "R4A",
     "route_price": 0
   },
   {
-    "edge_id": "ME09",
-    "from_node_id": "R25",
-    "to_node_id": "R31",
+    "edge_id": "E009",
+    "from_node_id": "R3A",
+    "to_node_id": "R4B",
     "route_price": 0
   },
   {
-    "edge_id": "ME10",
-    "from_node_id": "R31",
-    "to_node_id": "R32",
+    "edge_id": "E010",
+    "from_node_id": "R3B",
+    "to_node_id": "R4B",
     "route_price": 0
   },
   {
-    "edge_id": "ME11",
-    "from_node_id": "R32",
-    "to_node_id": "R33",
+    "edge_id": "E011",
+    "from_node_id": "R4A",
+    "to_node_id": "R5A",
     "route_price": 0
   },
   {
-    "edge_id": "ME12",
-    "from_node_id": "R33",
-    "to_node_id": "R34",
+    "edge_id": "E012",
+    "from_node_id": "R4A",
+    "to_node_id": "R5B",
     "route_price": 0
   },
   {
-    "edge_id": "ME13",
-    "from_node_id": "R34",
-    "to_node_id": "R35",
+    "edge_id": "E013",
+    "from_node_id": "R4B",
+    "to_node_id": "R5A",
     "route_price": 0
   },
   {
-    "edge_id": "ME14",
-    "from_node_id": "R35",
-    "to_node_id": "R36",
+    "edge_id": "E014",
+    "from_node_id": "R4B",
+    "to_node_id": "R5B",
     "route_price": 0
   },
   {
-    "edge_id": "ME15",
-    "from_node_id": "R36",
-    "to_node_id": "R37",
+    "edge_id": "E015",
+    "from_node_id": "R5A",
+    "to_node_id": "R6A",
+    "route_price": 0
+  },
+  {
+    "edge_id": "E016",
+    "from_node_id": "R5A",
+    "to_node_id": "R6B",
+    "route_price": 0
+  },
+  {
+    "edge_id": "E017",
+    "from_node_id": "R5B",
+    "to_node_id": "R6B",
+    "route_price": 0
+  },
+  {
+    "edge_id": "E018",
+    "from_node_id": "R6A",
+    "to_node_id": "R7A",
+    "route_price": 0
+  },
+  {
+    "edge_id": "E019",
+    "from_node_id": "R6A",
+    "to_node_id": "R7B",
+    "route_price": 0
+  },
+  {
+    "edge_id": "E020",
+    "from_node_id": "R6B",
+    "to_node_id": "R7A",
+    "route_price": 0
+  },
+  {
+    "edge_id": "E021",
+    "from_node_id": "R6B",
+    "to_node_id": "R7B",
+    "route_price": 0
+  },
+  {
+    "edge_id": "E022",
+    "from_node_id": "R7A",
+    "to_node_id": "R8A",
+    "route_price": 0
+  },
+  {
+    "edge_id": "E023",
+    "from_node_id": "R7A",
+    "to_node_id": "R8B",
+    "route_price": 0
+  },
+  {
+    "edge_id": "E024",
+    "from_node_id": "R7B",
+    "to_node_id": "R8B",
+    "route_price": 0
+  },
+  {
+    "edge_id": "E025",
+    "from_node_id": "R8A",
+    "to_node_id": "R9A",
+    "route_price": 0
+  },
+  {
+    "edge_id": "E026",
+    "from_node_id": "R8A",
+    "to_node_id": "R9B",
+    "route_price": 0
+  },
+  {
+    "edge_id": "E027",
+    "from_node_id": "R8B",
+    "to_node_id": "R9A",
+    "route_price": 0
+  },
+  {
+    "edge_id": "E028",
+    "from_node_id": "R8B",
+    "to_node_id": "R9B",
+    "route_price": 0
+  },
+  {
+    "edge_id": "E029",
+    "from_node_id": "R9A",
+    "to_node_id": "R10A",
+    "route_price": 0
+  },
+  {
+    "edge_id": "E030",
+    "from_node_id": "R9A",
+    "to_node_id": "R10B",
+    "route_price": 0
+  },
+  {
+    "edge_id": "E031",
+    "from_node_id": "R9B",
+    "to_node_id": "R10B",
+    "route_price": 0
+  },
+  {
+    "edge_id": "E032",
+    "from_node_id": "R10A",
+    "to_node_id": "R11A",
+    "route_price": 0
+  },
+  {
+    "edge_id": "E033",
+    "from_node_id": "R10A",
+    "to_node_id": "R11B",
+    "route_price": 0
+  },
+  {
+    "edge_id": "E034",
+    "from_node_id": "R10B",
+    "to_node_id": "R11A",
+    "route_price": 0
+  },
+  {
+    "edge_id": "E035",
+    "from_node_id": "R10B",
+    "to_node_id": "R11B",
+    "route_price": 0
+  },
+  {
+    "edge_id": "E036",
+    "from_node_id": "R11A",
+    "to_node_id": "R12A",
+    "route_price": 0
+  },
+  {
+    "edge_id": "E037",
+    "from_node_id": "R11A",
+    "to_node_id": "R12B",
+    "route_price": 0
+  },
+  {
+    "edge_id": "E038",
+    "from_node_id": "R11B",
+    "to_node_id": "R12B",
+    "route_price": 0
+  },
+  {
+    "edge_id": "E039",
+    "from_node_id": "R12A",
+    "to_node_id": "R13A",
+    "route_price": 0
+  },
+  {
+    "edge_id": "E040",
+    "from_node_id": "R12A",
+    "to_node_id": "R13B",
+    "route_price": 0
+  },
+  {
+    "edge_id": "E041",
+    "from_node_id": "R12B",
+    "to_node_id": "R13A",
+    "route_price": 0
+  },
+  {
+    "edge_id": "E042",
+    "from_node_id": "R12B",
+    "to_node_id": "R13B",
+    "route_price": 0
+  },
+  {
+    "edge_id": "E043",
+    "from_node_id": "R13A",
+    "to_node_id": "R14A",
+    "route_price": 0
+  },
+  {
+    "edge_id": "E044",
+    "from_node_id": "R13A",
+    "to_node_id": "R14B",
+    "route_price": 0
+  },
+  {
+    "edge_id": "E045",
+    "from_node_id": "R13B",
+    "to_node_id": "R14B",
+    "route_price": 0
+  },
+  {
+    "edge_id": "E046",
+    "from_node_id": "R14A",
+    "to_node_id": "R15",
+    "route_price": 0
+  },
+  {
+    "edge_id": "E047",
+    "from_node_id": "R14B",
+    "to_node_id": "R15",
     "route_price": 0
   }
 ]

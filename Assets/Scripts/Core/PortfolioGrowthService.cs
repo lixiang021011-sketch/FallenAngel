@@ -30,7 +30,8 @@ namespace FallenAngel.Core
             }
             var run = JsonUtility.FromJson<PortfolioGrowthRunData>(profile.growthRunJson);
             if (run == null || run.version != 1 || !Guid.TryParseExact(run.runId, "N", out _)
-                || run.stageIds == null || run.growthRewards == null || run.stageIds.Count == 0
+                // 分支地图：关卡清单是"走到哪追加到哪"，所以开局允许为空。
+                || run.stageIds == null || run.growthRewards == null
                 || run.stageIds.Count != run.growthRewards.Count || run.completedSongs < 0
                 || run.completedSongs > run.stageIds.Count || run.failureLimit < 1 || run.completionBonus < 0
                 || run.growthRewards.Any(n => n < 0)
@@ -89,28 +90,33 @@ namespace FallenAngel.Core
             var p = talents.ReadProfile(profileId);
             if (!string.IsNullOrEmpty(p.activeRunId)) throw new InvalidOperationException("Run already active.");
             var run = new PortfolioGrowthRunData { runId = Guid.NewGuid().ToString("N"), failureLimit = failureLimit, completionBonus = completionBonus };
-            var node = PortfolioConfig.MapNodes.Single(n => n.NodeType == "START");
-            var visited = new HashSet<string>();
-            while (visited.Add(node.NodeId))
-            {
-                if (!string.IsNullOrEmpty(node.StageId))
-                {
-                    var stage = PortfolioConfig.Stages.Single(s => s.StageId == node.StageId && s.Enabled);
-                    run.stageIds.Add(stage.StageId);
-                    run.growthRewards.Add(stage.GrowthScore);
-                }
-                if (node.NodeType == "FINAL") break;
-                // 章节地图是一条直线：每个房间只有一个后继；路费在进入时收，不影响这里的关卡清单。
-                var edge = PortfolioConfig.MapEdges.Single(e => e.FromNodeId == node.NodeId);
-                node = PortfolioConfig.MapNodes.Single(n => n.NodeId == edge.ToNodeId);
-            }
-            if (node.NodeType != "FINAL" || run.stageIds.Count == 0) throw new InvalidOperationException("Invalid chapter route.");
             if (useMap)
             {
+                // 分支地图：关卡清单**不预走**——玩家走到哪、才把那一场的关卡追加进来（见 EnterRoom）。
                 run.useMap = true;
                 run.phase = "MAP";
                 run.currentNodeId = PortfolioConfig.MapNodes.Single(n => n.NodeType == "START").NodeId;
                 run.visitedNodeIds.Add(run.currentNodeId);
+            }
+            else
+            {
+                // 不走地图的旧路径（自检与调试）：沿"每个房间的第一个后继"展开一条默认路线，保持旧行为。
+                var node = PortfolioConfig.MapNodes.Single(n => n.NodeType == "START");
+                var visited = new HashSet<string>();
+                while (visited.Add(node.NodeId))
+                {
+                    if (!string.IsNullOrEmpty(node.StageId))
+                    {
+                        var stage = PortfolioConfig.Stages.Single(s => s.StageId == node.StageId && s.Enabled);
+                        run.stageIds.Add(stage.StageId);
+                        run.growthRewards.Add(stage.GrowthScore);
+                    }
+                    if (node.NodeType == "FINAL") break;
+                    var edge = PortfolioConfig.MapEdges.First(e => e.FromNodeId == node.NodeId);
+                    node = PortfolioConfig.MapNodes.Single(n => n.NodeId == edge.ToNodeId);
+                }
+                if (node.NodeType != "FINAL" || run.stageIds.Count == 0)
+                    throw new InvalidOperationException("Invalid default route.");
             }
             // 开局冻结：先应用 E1（加 E0 系数）再按 E0 发放刷新预算（guide：不能依行序执行）
             run.shopRefreshBudget = ComputeRefreshBudget(p);
@@ -227,8 +233,17 @@ namespace FallenAngel.Core
             if (playsStage)
             {
                 var stage = PortfolioConfig.Stages.Single(s => s.StageId == node.StageId && s.Enabled);
-                r.stageIds[r.completedSongs] = stage.StageId;
-                r.growthRewards[r.completedSongs] = stage.GrowthScore;
+                // 走到哪打哪：分支地图没有预走的清单，进入演奏房时把这一场追加到当前进度上。
+                if (r.completedSongs < r.stageIds.Count)
+                {
+                    r.stageIds[r.completedSongs] = stage.StageId;
+                    r.growthRewards[r.completedSongs] = stage.GrowthScore;
+                }
+                else
+                {
+                    r.stageIds.Add(stage.StageId);
+                    r.growthRewards.Add(stage.GrowthScore);
+                }
                 r.phase = "READY";
             }
             else r.phase = "ROOM";

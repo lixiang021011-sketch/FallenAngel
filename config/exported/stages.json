@@ -21,42 +21,42 @@
   },
   {
     "stage_id": "S03",
-    "name": "硬仗（共用鼓谱）",
-    "stage_type": "HARD",
-    "chart_id": "CHART_DRUMS_PLACEHOLDER",
-    "base_income": 150,
-    "growth_score": 150,
-    "drop_rule_id": "DP_CHALLENGE",
-    "enabled": true
-  },
-  {
-    "stage_id": "S04",
-    "name": "普通演奏（共用鼓谱）",
+    "name": "普通演奏（偏器材）",
     "stage_type": "NORMAL",
     "chart_id": "CHART_DRUMS_PLACEHOLDER",
-    "base_income": 100,
+    "base_income": 80,
     "growth_score": 100,
     "drop_rule_id": "DP_NORMAL",
     "enabled": true
   },
   {
-    "stage_id": "S05",
-    "name": "普通演奏（共用鼓谱）",
+    "stage_id": "S04",
+    "name": "普通演奏（偏现金）",
     "stage_type": "NORMAL",
     "chart_id": "CHART_DRUMS_PLACEHOLDER",
-    "base_income": 100,
+    "base_income": 130,
+    "growth_score": 100,
+    "drop_rule_id": "DP_CASH",
+    "enabled": true
+  },
+  {
+    "stage_id": "S05",
+    "name": "普通演奏（偏器材）",
+    "stage_type": "NORMAL",
+    "chart_id": "CHART_DRUMS_PLACEHOLDER",
+    "base_income": 80,
     "growth_score": 100,
     "drop_rule_id": "DP_NORMAL",
     "enabled": true
   },
   {
     "stage_id": "S06",
-    "name": "硬仗（共用鼓谱）",
-    "stage_type": "HARD",
+    "name": "普通演奏（偏现金）",
+    "stage_type": "NORMAL",
     "chart_id": "CHART_DRUMS_PLACEHOLDER",
-    "base_income": 150,
-    "growth_score": 150,
-    "drop_rule_id": "DP_CHALLENGE",
+    "base_income": 130,
+    "growth_score": 100,
+    "drop_rule_id": "DP_CASH",
     "enabled": true
   },
   {
@@ -67,6 +67,66 @@
     "base_income": 100,
     "growth_score": 100,
     "drop_rule_id": "DP_NORMAL",
+    "enabled": true
+  },
+  {
+    "stage_id": "S08",
+    "name": "普通演奏（偏器材）",
+    "stage_type": "NORMAL",
+    "chart_id": "CHART_DRUMS_PLACEHOLDER",
+    "base_income": 80,
+    "growth_score": 100,
+    "drop_rule_id": "DP_NORMAL",
+    "enabled": true
+  },
+  {
+    "stage_id": "S09",
+    "name": "普通演奏（偏现金）",
+    "stage_type": "NORMAL",
+    "chart_id": "CHART_DRUMS_PLACEHOLDER",
+    "base_income": 130,
+    "growth_score": 100,
+    "drop_rule_id": "DP_CASH",
+    "enabled": true
+  },
+  {
+    "stage_id": "S10",
+    "name": "普通演奏（共用鼓谱）",
+    "stage_type": "NORMAL",
+    "chart_id": "CHART_DRUMS_PLACEHOLDER",
+    "base_income": 100,
+    "growth_score": 100,
+    "drop_rule_id": "DP_NORMAL",
+    "enabled": true
+  },
+  {
+    "stage_id": "H01",
+    "name": "硬仗（共用鼓谱）",
+    "stage_type": "HARD",
+    "chart_id": "CHART_DRUMS_PLACEHOLDER",
+    "base_income": 150,
+    "growth_score": 150,
+    "drop_rule_id": "DP_CHALLENGE",
+    "enabled": true
+  },
+  {
+    "stage_id": "H02",
+    "name": "硬仗（共用鼓谱）",
+    "stage_type": "HARD",
+    "chart_id": "CHART_DRUMS_PLACEHOLDER",
+    "base_income": 150,
+    "growth_score": 150,
+    "drop_rule_id": "DP_CHALLENGE",
+    "enabled": true
+  },
+  {
+    "stage_id": "H03",
+    "name": "硬仗（共用鼓谱）",
+    "stage_type": "HARD",
+    "chart_id": "CHART_DRUMS_PLACEHOLDER",
+    "base_income": 150,
+    "growth_score": 150,
+    "drop_rule_id": "DP_CHALLENGE",
     "enabled": true
   }
 ]

@@ -258,7 +258,7 @@ namespace FallenAngel.Data
     /// <summary>全部12张表的只读构建快照；空值与0/false保持不同。</summary>
     public static class PortfolioConfig
     {
-        public const string ManifestSha256 = "69d711c0ee501735e1e7ea559f3ee120a8f406b9c5e25600feb2984a9bf92b30";
+        public const string ManifestSha256 = "1e4117fcc3c932a95d637f652abb6088e8c79eb5ba21a2f2384849cdca289af4";
         public const string SchemaVersion = "3.0";
         public static ReadOnlyCollection<EquipmentBaseRow> EquipmentBase { get; } =
             System.Array.AsReadOnly(new EquipmentBaseRow[]
@@ -291,47 +291,100 @@ namespace FallenAngel.Data
         public static ReadOnlyCollection<MapNodesRow> MapNodes { get; } =
             System.Array.AsReadOnly(new MapNodesRow[]
         {
-            // 第一章（千禧梦核）章节骨架：3 层 / 16 站 / 7 场演奏（其中 2 场硬仗）。
-            // 与 Core/ChapterCatalog.Rooms 一一对应（ChapterChecks 会核对，防两张表漂移）。
-            // LayoutY = 行走序号；三层在视觉上还没有分带处理（等美术过稿）。
+            // 第一章（千禧梦核）路线：**一局 16 站（起点 + 15 步）**，每步 1–3 个候选、玩家自己挑。
+            // 7 个演奏步 + 7 个资源步 + 终房；一局演奏数恒 7，硬仗 0–3（每层一个候选位）。
+            // 与 Core/ChapterCatalog（房间表 + 连线表）一一对应，ChapterChecks 会核对防漂移。
+            // LayoutY = 步号；LayoutX = 行内列（左 0 / 中 1 / 右 2 映射成 -1 / 0 / 1）。
             new MapNodesRow("R00", "START", null, 0, 0),
-            new MapNodesRow("R11", "STAGE", "S01", -1, 1),   // 第 1 层
-            new MapNodesRow("R12", "EVENT", null, 0, 2),
-            new MapNodesRow("R13", "SHOP", null, 1, 3),
-            new MapNodesRow("R21", "STAGE", "S02", 0, 4),    // 第 2 层
-            new MapNodesRow("R22", "HARD", "S03", -1, 5),
-            new MapNodesRow("R23", "EVENT", null, 0, 6),
-            new MapNodesRow("R24", "SHOP", null, 1, 7),
-            new MapNodesRow("R25", "REST", null, 0, 8),
-            new MapNodesRow("R31", "STAGE", "S04", -1, 9),   // 第 3 层
-            new MapNodesRow("R32", "STAGE", "S05", 0, 10),
-            new MapNodesRow("R33", "HARD", "S06", 1, 11),
-            new MapNodesRow("R34", "EVENT", null, 0, 12),
-            new MapNodesRow("R35", "REST", null, -1, 13),
-            new MapNodesRow("R36", "STAGE", "S07", 0, 14),
-            new MapNodesRow("R37", "FINAL", null, 0, 15)
+
+            // ── 第 1 层（步 1–4）──
+            new MapNodesRow("R1A", "STAGE", "S01", -1, 1),
+            new MapNodesRow("R2A", "EVENT", null, -1, 2),
+            new MapNodesRow("R2B", "SHOP", null, 1, 2),
+            new MapNodesRow("R3A", "STAGE", "S02", -1, 3),
+            new MapNodesRow("R3B", "HARD", "H01", 1, 3),
+            new MapNodesRow("R4A", "SHOP", null, -1, 4),
+            new MapNodesRow("R4B", "EVENT", null, 1, 4),
+
+            // ── 第 2 层（步 5–9）──
+            new MapNodesRow("R5A", "STAGE", "S03", -1, 5),   // 器材向
+            new MapNodesRow("R5B", "STAGE", "S04", 1, 5),    // 钱向
+            new MapNodesRow("R6A", "EVENT", null, -1, 6),
+            new MapNodesRow("R6B", "SHOP", null, 1, 6),
+            new MapNodesRow("R7A", "STAGE", "S05", -1, 7),   // 器材向
+            new MapNodesRow("R7B", "STAGE", "S06", 1, 7),    // 钱向
+            new MapNodesRow("R8A", "REST", null, -1, 8),
+            new MapNodesRow("R8B", "EVENT", null, 1, 8),
+            new MapNodesRow("R9A", "STAGE", "S07", -1, 9),
+            new MapNodesRow("R9B", "HARD", "H02", 1, 9),
+
+            // ── 第 3 层（步 10–15）──
+            new MapNodesRow("R10A", "SHOP", null, -1, 10),
+            new MapNodesRow("R10B", "REST", null, 1, 10),
+            new MapNodesRow("R11A", "STAGE", "S08", -1, 11), // 器材向
+            new MapNodesRow("R11B", "STAGE", "S09", 1, 11),  // 钱向
+            new MapNodesRow("R12A", "EVENT", null, -1, 12),
+            new MapNodesRow("R12B", "REST", null, 1, 12),
+            new MapNodesRow("R13A", "STAGE", "S10", -1, 13),
+            new MapNodesRow("R13B", "HARD", "H03", 1, 13),
+            new MapNodesRow("R14A", "SHOP", null, -1, 14),
+            new MapNodesRow("R14B", "EVENT", null, 1, 14),
+            new MapNodesRow("R15", "FINAL", null, 0, 15)
         });
         public static ReadOnlyCollection<MapEdgesRow> MapEdges { get; } =
             System.Array.AsReadOnly(new MapEdgesRow[]
         {
-            // 直线一站接一站：每个房间只有一个后继，所以不存在"付不起就卡住"的分叉。
-            // 硬仗入场路费怎么收（入场扣 / 结算扣 / 恢复分叉）是待拍板项；在那之前全部边为 0，
-            // 收费链路（F0/F1/E08 与 EnterRoom 扣款）保持可用，只是表里没有收费边。
-            new MapEdgesRow("ME01", "R00", "R11", 0),
-            new MapEdgesRow("ME02", "R11", "R12", 0),
-            new MapEdgesRow("ME03", "R12", "R13", 0),
-            new MapEdgesRow("ME04", "R13", "R21", 0),
-            new MapEdgesRow("ME05", "R21", "R22", 0),
-            new MapEdgesRow("ME06", "R22", "R23", 0),
-            new MapEdgesRow("ME07", "R23", "R24", 0),
-            new MapEdgesRow("ME08", "R24", "R25", 0),
-            new MapEdgesRow("ME09", "R25", "R31", 0),
-            new MapEdgesRow("ME10", "R31", "R32", 0),
-            new MapEdgesRow("ME11", "R32", "R33", 0),
-            new MapEdgesRow("ME12", "R33", "R34", 0),
-            new MapEdgesRow("ME13", "R34", "R35", 0),
-            new MapEdgesRow("ME14", "R35", "R36", 0),
-            new MapEdgesRow("ME15", "R36", "R37", 0)
+            // 只连"上一步 → 下一步"，列差 ≤ 1（地图不交叉）。有些走法下一步只有一个候选
+            //（例：R3B 硬仗之后只能去 R4B）——那是"选择要付的代价"，写在 docs/chapter-route-spec.md。
+            // 路费：现在全部为 0；分支之后最合适的收法是"只收在付费捷径上"（同一步总有免费替代，不会卡死），
+            // 等这条规则拍板再填数。
+            new MapEdgesRow("E001", "R00", "R1A", 0),
+            new MapEdgesRow("E002", "R1A", "R2A", 0),
+            new MapEdgesRow("E003", "R1A", "R2B", 0),
+            new MapEdgesRow("E004", "R2A", "R3A", 0),
+            new MapEdgesRow("E005", "R2A", "R3B", 0),
+            new MapEdgesRow("E006", "R2B", "R3A", 0),
+            new MapEdgesRow("E007", "R2B", "R3B", 0),
+            new MapEdgesRow("E008", "R3A", "R4A", 0),
+            new MapEdgesRow("E009", "R3A", "R4B", 0),
+            new MapEdgesRow("E010", "R3B", "R4B", 0),
+            new MapEdgesRow("E011", "R4A", "R5A", 0),
+            new MapEdgesRow("E012", "R4A", "R5B", 0),
+            new MapEdgesRow("E013", "R4B", "R5A", 0),
+            new MapEdgesRow("E014", "R4B", "R5B", 0),
+            new MapEdgesRow("E015", "R5A", "R6A", 0),
+            new MapEdgesRow("E016", "R5A", "R6B", 0),
+            new MapEdgesRow("E017", "R5B", "R6B", 0),
+            new MapEdgesRow("E018", "R6A", "R7A", 0),
+            new MapEdgesRow("E019", "R6A", "R7B", 0),
+            new MapEdgesRow("E020", "R6B", "R7A", 0),
+            new MapEdgesRow("E021", "R6B", "R7B", 0),
+            new MapEdgesRow("E022", "R7A", "R8A", 0),
+            new MapEdgesRow("E023", "R7A", "R8B", 0),
+            new MapEdgesRow("E024", "R7B", "R8B", 0),
+            new MapEdgesRow("E025", "R8A", "R9A", 0),
+            new MapEdgesRow("E026", "R8A", "R9B", 0),
+            new MapEdgesRow("E027", "R8B", "R9A", 0),
+            new MapEdgesRow("E028", "R8B", "R9B", 0),
+            new MapEdgesRow("E029", "R9A", "R10A", 0),
+            new MapEdgesRow("E030", "R9A", "R10B", 0),
+            new MapEdgesRow("E031", "R9B", "R10B", 0),
+            new MapEdgesRow("E032", "R10A", "R11A", 0),
+            new MapEdgesRow("E033", "R10A", "R11B", 0),
+            new MapEdgesRow("E034", "R10B", "R11A", 0),
+            new MapEdgesRow("E035", "R10B", "R11B", 0),
+            new MapEdgesRow("E036", "R11A", "R12A", 0),
+            new MapEdgesRow("E037", "R11A", "R12B", 0),
+            new MapEdgesRow("E038", "R11B", "R12B", 0),
+            new MapEdgesRow("E039", "R12A", "R13A", 0),
+            new MapEdgesRow("E040", "R12A", "R13B", 0),
+            new MapEdgesRow("E041", "R12B", "R13A", 0),
+            new MapEdgesRow("E042", "R12B", "R13B", 0),
+            new MapEdgesRow("E043", "R13A", "R14A", 0),
+            new MapEdgesRow("E044", "R13A", "R14B", 0),
+            new MapEdgesRow("E045", "R13B", "R14B", 0),
+            new MapEdgesRow("E046", "R14A", "R15", 0),
+            new MapEdgesRow("E047", "R14B", "R15", 0)
         });
         public static ReadOnlyCollection<ShopCandidatesRow> ShopCandidates { get; } =
             System.Array.AsReadOnly(new ShopCandidatesRow[]
@@ -350,13 +403,21 @@ namespace FallenAngel.Data
         public static ReadOnlyCollection<StagesRow> Stages { get; } =
             System.Array.AsReadOnly(new StagesRow[]
         {
+            // 普通演奏 100/100；**器材向** 80 收益但掉率 50%（DP_NORMAL）；**钱向** 130 收益、掉率 20%（DP_CASH）。
+            // 硬仗 150/150 + DP_CHALLENGE。一局固定 7 场（见 Core/ChapterCatalog）。
             new StagesRow("S01", "\u666e\u901a\u6f14\u594f\uff08\u5171\u7528\u9f13\u8c31\uff09", "NORMAL", "CHART_DRUMS_PLACEHOLDER", 100, 100, "DP_NORMAL", true),
             new StagesRow("S02", "\u666e\u901a\u6f14\u594f\uff08\u5171\u7528\u9f13\u8c31\uff09", "NORMAL", "CHART_DRUMS_PLACEHOLDER", 100, 100, "DP_NORMAL", true),
-            new StagesRow("S03", "\u786c\u4ed7\uff08\u5171\u7528\u9f13\u8c31\uff09", "HARD", "CHART_DRUMS_PLACEHOLDER", 150, 150, "DP_CHALLENGE", true),
-            new StagesRow("S04", "\u666e\u901a\u6f14\u594f\uff08\u5171\u7528\u9f13\u8c31\uff09", "NORMAL", "CHART_DRUMS_PLACEHOLDER", 100, 100, "DP_NORMAL", true),
-            new StagesRow("S05", "\u666e\u901a\u6f14\u594f\uff08\u5171\u7528\u9f13\u8c31\uff09", "NORMAL", "CHART_DRUMS_PLACEHOLDER", 100, 100, "DP_NORMAL", true),
-            new StagesRow("S06", "\u786c\u4ed7\uff08\u5171\u7528\u9f13\u8c31\uff09", "HARD", "CHART_DRUMS_PLACEHOLDER", 150, 150, "DP_CHALLENGE", true),
-            new StagesRow("S07", "\u666e\u901a\u6f14\u594f\uff08\u5171\u7528\u9f13\u8c31\uff09", "NORMAL", "CHART_DRUMS_PLACEHOLDER", 100, 100, "DP_NORMAL", true)
+            new StagesRow("S03", "\u666e\u901a\u6f14\u594f\uff08\u504f\u5668\u6750\uff09", "NORMAL", "CHART_DRUMS_PLACEHOLDER", 80, 100, "DP_NORMAL", true),
+            new StagesRow("S04", "\u666e\u901a\u6f14\u594f\uff08\u504f\u73b0\u91d1\uff09", "NORMAL", "CHART_DRUMS_PLACEHOLDER", 130, 100, "DP_CASH", true),
+            new StagesRow("S05", "\u666e\u901a\u6f14\u594f\uff08\u504f\u5668\u6750\uff09", "NORMAL", "CHART_DRUMS_PLACEHOLDER", 80, 100, "DP_NORMAL", true),
+            new StagesRow("S06", "\u666e\u901a\u6f14\u594f\uff08\u504f\u73b0\u91d1\uff09", "NORMAL", "CHART_DRUMS_PLACEHOLDER", 130, 100, "DP_CASH", true),
+            new StagesRow("S07", "\u666e\u901a\u6f14\u594f\uff08\u5171\u7528\u9f13\u8c31\uff09", "NORMAL", "CHART_DRUMS_PLACEHOLDER", 100, 100, "DP_NORMAL", true),
+            new StagesRow("S08", "\u666e\u901a\u6f14\u594f\uff08\u504f\u5668\u6750\uff09", "NORMAL", "CHART_DRUMS_PLACEHOLDER", 80, 100, "DP_NORMAL", true),
+            new StagesRow("S09", "\u666e\u901a\u6f14\u594f\uff08\u504f\u73b0\u91d1\uff09", "NORMAL", "CHART_DRUMS_PLACEHOLDER", 130, 100, "DP_CASH", true),
+            new StagesRow("S10", "\u666e\u901a\u6f14\u594f\uff08\u5171\u7528\u9f13\u8c31\uff09", "NORMAL", "CHART_DRUMS_PLACEHOLDER", 100, 100, "DP_NORMAL", true),
+            new StagesRow("H01", "\u786c\u4ed7\uff08\u5171\u7528\u9f13\u8c31\uff09", "HARD", "CHART_DRUMS_PLACEHOLDER", 150, 150, "DP_CHALLENGE", true),
+            new StagesRow("H02", "\u786c\u4ed7\uff08\u5171\u7528\u9f13\u8c31\uff09", "HARD", "CHART_DRUMS_PLACEHOLDER", 150, 150, "DP_CHALLENGE", true),
+            new StagesRow("H03", "\u786c\u4ed7\uff08\u5171\u7528\u9f13\u8c31\uff09", "HARD", "CHART_DRUMS_PLACEHOLDER", 150, 150, "DP_CHALLENGE", true)
         });
         public static ReadOnlyCollection<ChartBindingsRow> ChartBindings { get; } =
             System.Array.AsReadOnly(new ChartBindingsRow[]
@@ -367,7 +428,9 @@ namespace FallenAngel.Data
             System.Array.AsReadOnly(new DropRulesRow[]
         {
             new DropRulesRow("DP_NORMAL", "POOL_STAGE_COMMON", "STAGE_COMPLETED", 0.5d, 1, true),
-            new DropRulesRow("DP_CHALLENGE", "POOL_STAGE_COMMON", "STAGE_COMPLETED", 0.75d, 1, true)
+            new DropRulesRow("DP_CHALLENGE", "POOL_STAGE_COMMON", "STAGE_COMPLETED", 0.75d, 1, true),
+            // 钱向演奏房：掉率低、现金高——"钱还是器材"这个选择就落在这一行上。
+            new DropRulesRow("DP_CASH", "POOL_STAGE_COMMON", "STAGE_COMPLETED", 0.2d, 1, true)
         });
         public static ReadOnlyCollection<DropEntriesRow> DropEntries { get; } =
             System.Array.AsReadOnly(new DropEntriesRow[]

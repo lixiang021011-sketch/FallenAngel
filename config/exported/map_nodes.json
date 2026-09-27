@@ -7,105 +7,196 @@
     "layout_y": 0
   },
   {
-    "node_id": "R11",
+    "node_id": "R1A",
     "node_type": "STAGE",
     "stage_id": "S01",
     "layout_x": -1,
     "layout_y": 1
   },
   {
-    "node_id": "R12",
+    "node_id": "R2A",
     "node_type": "EVENT",
     "stage_id": null,
-    "layout_x": 0,
+    "layout_x": -1,
     "layout_y": 2
   },
   {
-    "node_id": "R13",
+    "node_id": "R2B",
     "node_type": "SHOP",
     "stage_id": null,
+    "layout_x": 1,
+    "layout_y": 2
+  },
+  {
+    "node_id": "R3A",
+    "node_type": "STAGE",
+    "stage_id": "S02",
+    "layout_x": -1,
+    "layout_y": 3
+  },
+  {
+    "node_id": "R3B",
+    "node_type": "HARD",
+    "stage_id": "H01",
     "layout_x": 1,
     "layout_y": 3
   },
   {
-    "node_id": "R21",
-    "node_type": "STAGE",
-    "stage_id": "S02",
-    "layout_x": 0,
+    "node_id": "R4A",
+    "node_type": "SHOP",
+    "stage_id": null,
+    "layout_x": -1,
     "layout_y": 4
   },
   {
-    "node_id": "R22",
-    "node_type": "HARD",
+    "node_id": "R4B",
+    "node_type": "EVENT",
+    "stage_id": null,
+    "layout_x": 1,
+    "layout_y": 4
+  },
+  {
+    "node_id": "R5A",
+    "node_type": "STAGE",
     "stage_id": "S03",
     "layout_x": -1,
     "layout_y": 5
   },
   {
-    "node_id": "R23",
+    "node_id": "R5B",
+    "node_type": "STAGE",
+    "stage_id": "S04",
+    "layout_x": 1,
+    "layout_y": 5
+  },
+  {
+    "node_id": "R6A",
     "node_type": "EVENT",
     "stage_id": null,
-    "layout_x": 0,
+    "layout_x": -1,
     "layout_y": 6
   },
   {
-    "node_id": "R24",
+    "node_id": "R6B",
     "node_type": "SHOP",
     "stage_id": null,
+    "layout_x": 1,
+    "layout_y": 6
+  },
+  {
+    "node_id": "R7A",
+    "node_type": "STAGE",
+    "stage_id": "S05",
+    "layout_x": -1,
+    "layout_y": 7
+  },
+  {
+    "node_id": "R7B",
+    "node_type": "STAGE",
+    "stage_id": "S06",
     "layout_x": 1,
     "layout_y": 7
   },
   {
-    "node_id": "R25",
+    "node_id": "R8A",
     "node_type": "REST",
     "stage_id": null,
-    "layout_x": 0,
+    "layout_x": -1,
     "layout_y": 8
   },
   {
-    "node_id": "R31",
+    "node_id": "R8B",
+    "node_type": "EVENT",
+    "stage_id": null,
+    "layout_x": 1,
+    "layout_y": 8
+  },
+  {
+    "node_id": "R9A",
     "node_type": "STAGE",
-    "stage_id": "S04",
+    "stage_id": "S07",
     "layout_x": -1,
     "layout_y": 9
   },
   {
-    "node_id": "R32",
-    "node_type": "STAGE",
-    "stage_id": "S05",
-    "layout_x": 0,
+    "node_id": "R9B",
+    "node_type": "HARD",
+    "stage_id": "H02",
+    "layout_x": 1,
+    "layout_y": 9
+  },
+  {
+    "node_id": "R10A",
+    "node_type": "SHOP",
+    "stage_id": null,
+    "layout_x": -1,
     "layout_y": 10
   },
   {
-    "node_id": "R33",
-    "node_type": "HARD",
-    "stage_id": "S06",
+    "node_id": "R10B",
+    "node_type": "REST",
+    "stage_id": null,
+    "layout_x": 1,
+    "layout_y": 10
+  },
+  {
+    "node_id": "R11A",
+    "node_type": "STAGE",
+    "stage_id": "S08",
+    "layout_x": -1,
+    "layout_y": 11
+  },
+  {
+    "node_id": "R11B",
+    "node_type": "STAGE",
+    "stage_id": "S09",
     "layout_x": 1,
     "layout_y": 11
   },
   {
-    "node_id": "R34",
+    "node_id": "R12A",
     "node_type": "EVENT",
     "stage_id": null,
-    "layout_x": 0,
+    "layout_x": -1,
     "layout_y": 12
   },
   {
-    "node_id": "R35",
+    "node_id": "R12B",
     "node_type": "REST",
     "stage_id": null,
+    "layout_x": 1,
+    "layout_y": 12
+  },
+  {
+    "node_id": "R13A",
+    "node_type": "STAGE",
+    "stage_id": "S10",
     "layout_x": -1,
     "layout_y": 13
   },
   {
-    "node_id": "R36",
-    "node_type": "STAGE",
-    "stage_id": "S07",
-    "layout_x": 0,
+    "node_id": "R13B",
+    "node_type": "HARD",
+    "stage_id": "H03",
+    "layout_x": 1,
+    "layout_y": 13
+  },
+  {
+    "node_id": "R14A",
+    "node_type": "SHOP",
+    "stage_id": null,
+    "layout_x": -1,
     "layout_y": 14
   },
   {
-    "node_id": "R37",
+    "node_id": "R14B",
+    "node_type": "EVENT",
+    "stage_id": null,
+    "layout_x": 1,
+    "layout_y": 14
+  },
+  {
+    "node_id": "R15",
     "node_type": "FINAL",
     "stage_id": null,
     "layout_x": 0,

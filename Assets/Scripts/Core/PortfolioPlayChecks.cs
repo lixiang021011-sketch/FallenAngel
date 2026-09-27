@@ -127,8 +127,8 @@ namespace FallenAngel.Core
                         // 事件/休息/商店靠 PrepareBattle 点「离开」，终房离开后结算）。
                         if (session.Run.phase == "FINISHED")
                         {
-                            Require(session.Profile.growthPoints == 900,
-                                "End-to-end run credits 900 (seven performances + finale)");
+                            Require(session.Profile.growthPoints == 800,
+                                "End-to-end run credits 800 (seven performances on the first-successor route + finale)");
                             Click("OpenTalents"); step = 42; break;
                         }
                         if (session.Run.phase == "RESULT")
@@ -156,7 +156,7 @@ namespace FallenAngel.Core
                         Click("Confirm"); step++; break;
                     case 15:
                         if (HasButton("Confirm")) return;
-                        Require(session.Profile.growthPoints == 800 && session.Profile.unlockedNodeIds.Contains("A0"), "UI confirmation spends 100 and unlocks A0");
+                        Require(session.Profile.growthPoints == 700 && session.Profile.unlockedNodeIds.Contains("A0"), "UI confirmation spends 100 and unlocks A0");
                         Capture("05_unlocked");
                         Click("BackToMap"); step = 43; break;
                     case 43:
@@ -175,7 +175,7 @@ namespace FallenAngel.Core
                         step++; break;
                     case 18:
                         if (session.Run.phase != "FINISHED") return;
-                        Require(session.Run.outcome == "FAILED" && session.Profile.growthPoints == 800, "Failure threshold ends run without unfinished song reward");
+                        Require(session.Run.outcome == "FAILED" && session.Profile.growthPoints == 700, "Failure threshold ends run without unfinished song reward");
                         Capture("06_failure");
                         Finish(null); break;
                 }
@@ -189,9 +189,10 @@ namespace FallenAngel.Core
         {
             if (session.Run.phase == "MAP")
             {
-                var edge = PortfolioConfig.MapEdges.Single(e => e.FromNodeId == session.Run.currentNodeId);
+                // 自检固定策略：每一步都挑第一个后继（分支留给玩家在游戏里选）
+                var edge = PortfolioConfig.MapEdges.First(e => e.FromNodeId == session.Run.currentNodeId);
                 if (!HasButton("Room_" + edge.ToNodeId)) return false;
-                if (session.Run.currentNodeId == "R13") Capture("07_shop_room");
+                if (session.Run.currentNodeId == "R4A") Capture("07_shop_room");
                 Click("Room_" + edge.ToNodeId);
                 return false;
             }

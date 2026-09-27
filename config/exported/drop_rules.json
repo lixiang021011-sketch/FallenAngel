@@ -14,5 +14,13 @@
     "drop_chance": 0.75,
     "max_rewards": 1,
     "enabled": true
+  },
+  {
+    "rule_id": "DP_CASH",
+    "pool_id": "POOL_STAGE_COMMON",
+    "trigger_event": "STAGE_COMPLETED",
+    "drop_chance": 0.2,
+    "max_rewards": 1,
+    "enabled": true
   }
 ]

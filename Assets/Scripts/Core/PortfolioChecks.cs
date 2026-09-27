@@ -93,10 +93,10 @@ namespace FallenAngel.Core
             Check(PortfolioConfig.TalentNodes.Count == 24 && PortfolioConfig.TalentEdges.Count == 27
                 && PortfolioConfig.TalentEffects.Count == 21, "Talent tables: 24 + 27 + 21");
             Check(PortfolioConfig.ShopCandidates.Count == 10 && PortfolioConfig.DropEntries.Count == 11
-                && PortfolioConfig.DropRules.Count == 2, "Shop/drop tables: 10 + 11 + 2");
-            Check(PortfolioConfig.Stages.Count == 7 && PortfolioConfig.ChartBindings.Count == 1
-                && PortfolioConfig.MapNodes.Count == 16 && PortfolioConfig.MapEdges.Count == 15,
-                "Stage/map tables: 7 + 1 + 16 + 15（第一章章节骨架）");
+                && PortfolioConfig.DropRules.Count == 3, "Shop/drop tables: 10 + 11 + 3（含钱向演奏房的 DP_CASH）");
+            Check(PortfolioConfig.Stages.Count == 13 && PortfolioConfig.ChartBindings.Count == 1
+                && PortfolioConfig.MapNodes.Count == 29 && PortfolioConfig.MapEdges.Count == 47,
+                "Stage/map tables: 13 + 1 + 29 + 47（分支路线：10 普通 + 3 硬仗）");
             Check(PortfolioConfig.TalentNodes.Sum(n => n.UnlockCost) == 3600, "Full tree cost = 3600");
             Check(PortfolioConfig.TalentNodes.Where(n => n.NodeType == "JUNCTION")
                 .All(n => n.UnlockCost == 0 && n.EffectId == null), "Free junctions preserve null effect IDs");
@@ -217,9 +217,9 @@ namespace FallenAngel.Core
             var growth = new PortfolioGrowthService(store);
             var p = talents.CreateProfile("Growth");
             var r = growth.Begin(p.profileId, 30, 100);
-            Check(r.stageIds.SequenceEqual(new[] { "S01", "S02", "S03", "S04", "S05", "S06", "S07" })
-                && r.growthRewards.SequenceEqual(new[] { 100, 100, 150, 100, 100, 150, 100 }),
-                "Chapter route reads seven stages and growth from config");
+            Check(r.stageIds.SequenceEqual(new[] { "S01", "S02", "S03", "S05", "S07", "S08", "S10" })
+                && r.growthRewards.SequenceEqual(new[] { 100, 100, 100, 100, 100, 100, 100 }),
+                "Default route walks the first successor and reads seven stages");
             Reject(() => growth.Begin(p.profileId, 30, 100), "Only one active run per profile");
             Check(growth.Recover(p.profileId).phase == "READY", "Between songs exit remains resumable");
             store.FailNextCommit = true;
@@ -255,16 +255,16 @@ namespace FallenAngel.Core
             r = growth.CompleteSong(p.profileId, r.runId, 0, true);
             growth.Continue(p.profileId, r.runId);
             r = WalkChapter(growth, talents, p.profileId, r);
-            Check(r.outcome == "CLEARED" && r.completedSongs == 7 && r.creditedPoints == 900
-                && talents.ReadProfile(p.profileId).growthPoints == 900,
-                "Seven songs + finale credit 800 + 100 exactly once");
+            Check(r.outcome == "CLEARED" && r.completedSongs == 7 && r.creditedPoints == 800
+                && talents.ReadProfile(p.profileId).growthPoints == 800,
+                "Seven songs + completion credit 700 + 100 exactly once");
             growth.Recover(p.profileId);
-            Check(talents.ReadProfile(p.profileId).growthPoints == 900, "Reopening finished profile adds no reward");
+            Check(talents.ReadProfile(p.profileId).growthPoints == 800, "Reopening finished profile adds no reward");
             r = growth.Begin(p.profileId, 30, 100);
             growth.MarkPlaying(p.profileId, r.runId);
             growth.CompleteSong(p.profileId, r.runId, 0, true);
             r = growth.Abandon(p.profileId, r.runId);
-            Check(r.creditedPoints == 100 && talents.ReadProfile(p.profileId).growthPoints == 1000, "Abandon banks only completed song points");
+            Check(r.creditedPoints == 100 && talents.ReadProfile(p.profileId).growthPoints == 900, "Abandon banks only completed song points");
             var other = talents.CreateProfile("Other");
             growth.Begin(other.profileId, 30, 100);
             r = growth.Begin(p.profileId, 30, 100);
@@ -273,7 +273,7 @@ namespace FallenAngel.Core
 
         /// <summary>
         /// 把一局从当前位置一路走到结算：演奏房自动通关、事件/休息/商店离开、终房离开即收尾。
-        /// 章节地图是一条直线，所以"下一个房间"就是当前节点唯一的后继。
+        /// 分支地图：每一步按"第一个后继"走（自检里的固定策略），剩下的交给玩家在游戏里挑。
         /// </summary>
         private static PortfolioGrowthRunData WalkChapter(PortfolioGrowthService growth, PortfolioTalentService talents,
             string profileId, PortfolioGrowthRunData r)
@@ -283,7 +283,7 @@ namespace FallenAngel.Core
             {
                 if (r.phase == "MAP")
                 {
-                    string next = PortfolioConfig.MapEdges.Single(e => e.FromNodeId == r.currentNodeId).ToNodeId;
+                    string next = PortfolioConfig.MapEdges.First(e => e.FromNodeId == r.currentNodeId).ToNodeId;
                     growth.EnterRoom(profileId, r.runId, next);
                 }
                 else if (r.phase == "READY")
@@ -307,8 +307,8 @@ namespace FallenAngel.Core
             var p = talents.CreateProfile("Drop");
             var r = growth.Begin(p.profileId, 30, 100, true);
 
-            // 普通演奏（R11 / S01 / DP_NORMAL）：首条合法候选 E01
-            growth.EnterRoom(p.profileId, r.runId, "R11");
+            // 普通演奏（R1A / S01 / DP_NORMAL）：首条合法候选 E01
+            growth.EnterRoom(p.profileId, r.runId, "R1A");
             growth.MarkPlaying(p.profileId, r.runId);
             r = growth.CompleteSong(p.profileId, r.runId, 0, true);
             Check(r.lastDropGranted && r.heldEquipmentIds.Contains("E01")
@@ -317,19 +317,12 @@ namespace FallenAngel.Core
             Check(growth.CompleteSong(p.profileId, r.runId, 0, true).heldEquipmentIds.Count(id => id == "E01") == 1,
                 "Repeated completion does not duplicate a stage drop");
 
-            // 沿路走过事件房与商店，到第 2 层第一场（R21 / S02）
+            // 第 2 步走商店，第 3 步走硬仗（H01 / DP_CHALLENGE）：持有 E01 后首条合法候选为 E02
             growth.Continue(p.profileId, r.runId);
-            growth.EnterRoom(p.profileId, r.runId, "R12"); growth.LeaveRoom(p.profileId, r.runId);
-            growth.EnterRoom(p.profileId, r.runId, "R13"); growth.LeaveRoom(p.profileId, r.runId);
-            growth.EnterRoom(p.profileId, r.runId, "R21");
+            growth.EnterRoom(p.profileId, r.runId, "R2B"); growth.LeaveRoom(p.profileId, r.runId);
+            growth.EnterRoom(p.profileId, r.runId, "R3B");
             growth.MarkPlaying(p.profileId, r.runId);
             r = growth.CompleteSong(p.profileId, r.runId, 1, true);
-
-            // 硬仗（R22 / S03 / DP_CHALLENGE）：持有 E01 后首条合法候选为 E02
-            growth.Continue(p.profileId, r.runId);
-            growth.EnterRoom(p.profileId, r.runId, "R22");
-            growth.MarkPlaying(p.profileId, r.runId);
-            r = growth.CompleteSong(p.profileId, r.runId, 2, true);
             Check(r.lastDropGranted && r.heldEquipmentIds.Contains("E02")
                 && r.heldEquipmentIds.Count(id => id == "E01") == 1,
                 "Hard fight excludes owned equipment and drops next first candidate");
@@ -348,7 +341,7 @@ namespace FallenAngel.Core
             var failureGrowth = new PortfolioGrowthService(failureStore, () => 0d);
             var fp = failureTalents.CreateProfile("DropFail");
             var fr = failureGrowth.Begin(fp.profileId, 30, 100, true);
-            failureGrowth.EnterRoom(fp.profileId, fr.runId, "R11");
+            failureGrowth.EnterRoom(fp.profileId, fr.runId, "R1A");
             failureGrowth.MarkPlaying(fp.profileId, fr.runId);
             fr = failureGrowth.CompleteSong(fp.profileId, fr.runId, 0, false);
             Check(fr.outcome == "FAILED" && !fr.lastDropGranted && fr.heldEquipmentIds.Count == 0,
@@ -379,45 +372,49 @@ namespace FallenAngel.Core
             var growth = new PortfolioGrowthService(store);
             var p = talents.CreateProfile("Map");
             var r = growth.Begin(p.profileId, 30, 100, true);
-            Check(r.phase == "MAP" && r.currentNodeId == "R00" && r.stageIds.Count == 7,
-                "Chapter starts at R00 with seven performances");
-            Reject(() => growth.EnterRoom(p.profileId, r.runId, "R37"), "Cannot skip to the finale");
+            Check(r.phase == "MAP" && r.currentNodeId == "R00" && r.stageIds.Count == 0,
+                "Branching chapter starts at R00 with an empty stage list");
+            Reject(() => growth.EnterRoom(p.profileId, r.runId, "R15"), "Cannot skip to the finale");
+            Reject(() => growth.EnterRoom(p.profileId, r.runId, "R2B"), "Cannot skip a step");
 
-            growth.EnterRoom(p.profileId, r.runId, "R11");
+            // 第 1 步是必打的演奏：进入演奏房才把这一场追加进关卡清单
+            growth.EnterRoom(p.profileId, r.runId, "R1A");
+            r = growth.ReadRun(talents.ReadProfile(p.profileId));
+            Check(r.phase == "READY" && r.stageIds.Count == 1 && r.stageIds[0] == "S01",
+                "Entering a performance room appends its stage");
             growth.MarkPlaying(p.profileId, r.runId);
             r = growth.CompleteSong(p.profileId, r.runId, 0, true);
             Check(r.phase == "RESULT" && r.runCash == 100, "First performance grants configured base cash");
             Check(growth.CompleteSong(p.profileId, r.runId, 0, true).runCash == 100, "Repeated song callback does not duplicate cash");
-
-            Reject(() => growth.EnterRoom(p.profileId, r.runId, "R12"), "Must continue before choosing the next room");
+            Reject(() => growth.EnterRoom(p.profileId, r.runId, "R2A"), "Must continue before choosing the next room");
             growth.Continue(p.profileId, r.runId);
-            growth.EnterRoom(p.profileId, r.runId, "R12");
+
+            // 分支：第 2 步两个候选都能去；走事件，再在第 3 步选硬仗
+            Check(NextRooms("R1A").SequenceEqual(new[] { "R2A", "R2B" }), "Step 2 offers two candidates");
+            growth.EnterRoom(p.profileId, r.runId, "R2A");
             r = growth.ReadRun(talents.ReadProfile(p.profileId));
             Check(r.phase == "ROOM", "Event room is a stop on the road, not a dead end");
-            Reject(() => growth.EnterRoom(p.profileId, r.runId, "R11"), "Cannot backtrack to a visited room");
+            Reject(() => growth.EnterRoom(p.profileId, r.runId, "R1A"), "Cannot backtrack to a visited room");
             growth.LeaveRoom(p.profileId, r.runId);
 
-            growth.EnterRoom(p.profileId, r.runId, "R13");
+            growth.EnterRoom(p.profileId, r.runId, "R3B");
             r = growth.ReadRun(talents.ReadProfile(p.profileId));
-            Check(r.phase == "ROOM" && r.shopCandidates.Count > 0, "Shop room draws candidates on entry");
-            growth.LeaveRoom(p.profileId, r.runId);
-
-            growth.EnterRoom(p.profileId, r.runId, "R21");
+            Check(r.phase == "READY" && r.stageIds[1] == "H01", "Hard fight branch selects the hard stage");
             growth.MarkPlaying(p.profileId, r.runId);
             r = growth.CompleteSong(p.profileId, r.runId, 1, true);
+            Check(r.runCash == 250, "Hard fight pays its own base income");
             growth.Continue(p.profileId, r.runId);
 
-            growth.EnterRoom(p.profileId, r.runId, "R22");
-            r = growth.ReadRun(talents.ReadProfile(p.profileId));
-            Check(r.phase == "READY" && r.stageIds[2] == "S03", "Hard fight room selects the hard stage");
-            growth.MarkPlaying(p.profileId, r.runId);
-            r = growth.CompleteSong(p.profileId, r.runId, 2, true);
-            Check(r.runCash == 350, "Hard fight pays its own base income");
-            growth.Continue(p.profileId, r.runId);
-
+            // 剩下每一站取第一个后继，走到终房
             r = WalkChapter(growth, talents, p.profileId, r);
-            Check(r.outcome == "CLEARED" && r.completedSongs == 7 && r.creditedPoints == 900 && r.runCash == 0,
-                "Finale room settles the seven-song chapter");
+            Check(r.outcome == "CLEARED" && r.completedSongs == 7 && r.creditedPoints == 850 && r.runCash == 0,
+                "Finale settles the run after seven performances");
+        }
+
+        /// <summary>某个房间的全部后继（按表顺序）——自检用来验"这一步给了几个候选"。</summary>
+        private static string[] NextRooms(string roomId)
+        {
+            return PortfolioConfig.MapEdges.Where(e => e.FromNodeId == roomId).Select(e => e.ToNodeId).ToArray();
         }
 
         private static void ValidateIncomeAndDiscounts()
@@ -446,7 +443,7 @@ namespace FallenAngel.Core
             Check(talents.Unlock(p.profileId, "F0", p.revision) == TalentUnlockStatus.Available, "Discount seed F0");
             p = talents.ReadProfile(p.profileId);
             var r = growth.Begin(p.profileId, 30, 100, true);
-            growth.EnterRoom(p.profileId, r.runId, "R11");
+            growth.EnterRoom(p.profileId, r.runId, "R1A");
             growth.MarkPlaying(p.profileId, r.runId);
             r = growth.CompleteSong(p.profileId, r.runId, 0, true);
             growth.Continue(p.profileId, r.runId);
