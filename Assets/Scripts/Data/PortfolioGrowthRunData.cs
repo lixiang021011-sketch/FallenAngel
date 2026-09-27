@@ -32,6 +32,8 @@ namespace FallenAngel.Data
         public float lastAccuracy;
         public bool useMap;
         public string currentNodeId;
+        /// <summary>当前所在层（1–3；0 = 旧档或非地图局）。房间内容的按层过滤、每层状态与旅伴作用域都读它。</summary>
+        public int layer = 1;
         public List<string> visitedNodeIds = new List<string>();
         public int runCash;
         public int lastCashReward;

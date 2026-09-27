@@ -372,8 +372,8 @@ namespace FallenAngel.Core
             var growth = new PortfolioGrowthService(store);
             var p = talents.CreateProfile("Map");
             var r = growth.Begin(p.profileId, 30, 100, true);
-            Check(r.phase == "MAP" && r.currentNodeId == "R00" && r.stageIds.Count == 0,
-                "Branching chapter starts at R00 with an empty stage list");
+            Check(r.phase == "MAP" && r.currentNodeId == "R00" && r.stageIds.Count == 0 && r.layer == 1,
+                "Branching chapter starts at R00, layer 1, empty stage list");
             Reject(() => growth.EnterRoom(p.profileId, r.runId, "R15"), "Cannot skip to the finale");
             Reject(() => growth.EnterRoom(p.profileId, r.runId, "R2B"), "Cannot skip a step");
 
@@ -407,8 +407,9 @@ namespace FallenAngel.Core
 
             // 剩下每一站取第一个后继，走到终房
             r = WalkChapter(growth, talents, p.profileId, r);
-            Check(r.outcome == "CLEARED" && r.completedSongs == 7 && r.creditedPoints == 850 && r.runCash == 0,
-                "Finale settles the run after seven performances");
+            Check(r.outcome == "CLEARED" && r.completedSongs == 7 && r.creditedPoints == 850 && r.runCash == 0
+                && r.layer == ChapterCatalog.LayerCount,
+                "Finale settles the run after seven performances (layer tracked to 3)");
         }
 
         /// <summary>某个房间的全部后继（按表顺序）——自检用来验"这一步给了几个候选"。</summary>

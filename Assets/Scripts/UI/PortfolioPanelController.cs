@@ -371,7 +371,14 @@ namespace FallenAngel.UI
                 bool actionable = current && r != null && r.useMap && r.phase != "MAP";
                 // Current position remains distinct after the room event is complete.
                 bool paidNode = PortfolioConfig.MapEdges.Any(e => e.ToNodeId == n.NodeId && e.RoutePrice > 0);
-                string label = n.NodeType == "EMPTY" ? T("mapEmpty") : n.NodeType == "STAGE" ? T(paidNode ? "mapChallenge" : "mapPerformance") : T("node." + n.NodeType);
+                // 信息模型：只把**下一步**的类型露出来，更远的房间显示"？"（集成战略式的"类型可见、内容不可见"）。
+                int currentStep = r != null && r.useMap
+                    ? PortfolioConfig.MapNodes.Single(nn => nn.NodeId == r.currentNodeId).LayoutY : 0;
+                bool farAway = r != null && r.useMap && n.LayoutY > currentStep + 1;
+                string label = farAway ? T("mapUnknown")
+                    : n.NodeType == "EMPTY" ? T("mapEmpty")
+                    : n.NodeType == "STAGE" ? T(paidNode ? "mapChallenge" : "mapPerformance")
+                    : T("node." + n.NodeType);
                 var button = Button(board, "Room_" + n.NodeId, label, pos.x, pos.y, 240, 150, () =>
                 {
                     if (reachable)

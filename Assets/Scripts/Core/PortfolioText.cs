@@ -26,6 +26,7 @@
             Add("node.EMPTY", "空占位房", "Empty room");
             // 地图节点标签（面板按节点类型取这两条；缺了会直接显示 key）
             Add("mapEmpty", "空占位房", "Empty");
+            Add("mapUnknown", "？", "?");
             Add("mapPerformance", "演奏房", "Performance");
             Add("mapChallenge", "付费演奏", "Paid performance");
             Add("room.SHOP", "已进入商店。点击「商店」按钮查看商品。", "Shop reached. Use the Shop button to browse.");

@@ -67,6 +67,9 @@ namespace FallenAngel.Core
                 throw new InvalidOperationException("Invalid shop candidate snapshot.");
             if (run.shopRefreshBudget < 0 || run.shopRefreshBudget > 2)
                 throw new InvalidOperationException("Invalid shop refresh budget snapshot.");
+            // 层：地图局必须是 1–3；旧档与非地图局允许 0（= 不知道，不影响玩法）。
+            if (run.layer < 0 || run.layer > ChapterCatalog.LayerCount)
+                throw new InvalidOperationException("Invalid layer snapshot.");
             if (run.optionalPurchaseDiscountUsed < 0 || run.optionalRouteDiscountUsed < 0)
                 throw new InvalidOperationException("Invalid optional discount snapshot.");
             if (run.openingCash < 0 || run.incomeBreakdown == null
@@ -96,6 +99,7 @@ namespace FallenAngel.Core
                 run.useMap = true;
                 run.phase = "MAP";
                 run.currentNodeId = PortfolioConfig.MapNodes.Single(n => n.NodeType == "START").NodeId;
+                run.layer = LayerOfNode(run.currentNodeId);
                 run.visitedNodeIds.Add(run.currentNodeId);
             }
             else
@@ -225,6 +229,7 @@ namespace FallenAngel.Core
             if (useOptionalDiscount && optional > standing)
                 r.optionalRouteDiscountUsed++;
             r.currentNodeId = nodeId;
+            r.layer = LayerOfNode(nodeId);
             r.visitedNodeIds.Add(nodeId);
             // 演奏类房间（普通演奏 / 硬仗）进入即可开曲；终房没有收尾演奏——走进终房只是"这一程的落点"，
             // 离开时才结算（见 LeaveRoom）。
@@ -250,6 +255,16 @@ namespace FallenAngel.Core
             if (node.NodeType == "SHOP") r.shopCandidates = DrawShopCandidates(r); // 首次进店生成候选
             Save(p, r);
             Debug.Log($"[PortfolioGrowthService] Enter {nodeId} fee {price}; cash {r.runCash}");
+        }
+
+        /// <summary>节点所属的层（来自章节路线表 Core/ChapterCatalog；运行时地图表只有坐标，没有层）。</summary>
+        private static int LayerOfNode(string nodeId)
+        {
+            for (int i = 0; i < ChapterCatalog.Rooms.Count; i++)
+            {
+                if (ChapterCatalog.Rooms[i].RoomId == nodeId) return ChapterCatalog.Rooms[i].Layer;
+            }
+            return 0;
         }
 
         /// <summary>商店候选抽取：ShopCandidates 权重无放回、排除已持有，目标数=基础候选数+有效 ADD_COUNT 之和（E10）；合法池不足时少量展示，不复制商品。</summary>
