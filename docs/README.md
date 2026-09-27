@@ -11,5 +11,6 @@ Design and engineering documentation for FallenAngel. These documents were writt
 | [note-types.md](note-types.md) | The mapping table from musical notation (drums, guitar, bass) to FallenAngel note types. |
 | [roguelike-chapter1-design.md](roguelike-chapter1-design.md) | The chapter 1 design baseline (millennium dreamcore): world, run structure, gear, companions, pacing and numbers. |
 | [common-gear-spec.md](common-gear-spec.md) | Implementation spec for the 16 common gear items: per-item rule, code seam, acceptance steps and open decisions. |
+| [chapter-rooms-spec.md](chapter-rooms-spec.md) | Design spec for chapter 1's rooms: run flow, per-room rules, route-fee options, per-layer splits and the content tables still to build. |
 
 Elsewhere in the repository: [`../README.md`](../README.md) is the project overview in English and Chinese; [`../portfolio/`](../portfolio) holds portfolio figures; [`../CLAUDE.md`](../CLAUDE.md) is the AI collaboration brief; [`../chart_tools/`](../chart_tools) holds the analysis and conversion tooling.
