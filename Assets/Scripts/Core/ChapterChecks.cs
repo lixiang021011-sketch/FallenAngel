@@ -63,7 +63,7 @@ namespace FallenAngel.Core
 
                 var hardSteps = ChapterCatalog.Rooms.Where(r => r.Kind == ChapterRoomKind.HardFight)
                     .Select(r => r.Step).Distinct().OrderBy(s => s).ToArray();
-                check("硬仗候选 3 步、每层一个、不连着",
+                check("硬仗候选 2 步、每层一个、不连着",
                     hardSteps.Length == ChapterCatalog.HardFightOptionSteps
                     && !hardSteps.Contains(1)
                     && hardSteps.Zip(hardSteps.Skip(1), (a, b) => b > a + 1).All(ok => ok),
@@ -155,7 +155,8 @@ namespace FallenAngel.Core
                     mismatched.Count == 0
                     && PortfolioConfig.MapNodes.Count == ChapterCatalog.Rooms.Count
                     && PortfolioConfig.MapEdges.Count == ChapterCatalog.Edges.Count
-                    && PortfolioConfig.Stages.Count == 13,
+                    // 10 个普通演奏 + 2 个硬仗（第 2 层末换成馈赠占位房后，H02 已撤）
+                    && PortfolioConfig.Stages.Count == 12,
                     mismatched.Count == 0
                         ? string.Format("节点 {0} / 连线 {1} / 关卡 {2}",
                             PortfolioConfig.MapNodes.Count, PortfolioConfig.MapEdges.Count, PortfolioConfig.Stages.Count)
@@ -166,6 +167,18 @@ namespace FallenAngel.Core
                 check("从起点能走到每一个房间",
                     reachable.Count == ChapterCatalog.Rooms.Count,
                     string.Format("可达 {0} / 总 {1}", reachable.Count, ChapterCatalog.Rooms.Count));
+
+                var missingContent = PortfolioConfig.MapNodes
+                    .Where(n => !string.IsNullOrEmpty(n.ContentId) && RoomContentCatalog.FindContent(n.ContentId) == null)
+                    .Select(n => n.NodeId).ToArray();
+                check("地图引用的房间内容都存在",
+                    missingContent.Length == 0,
+                    missingContent.Length == 0
+                        ? string.Format("内容 {0} 条 / 浓雾节点 {1}",
+                            RoomContentCatalog.Events.Count + RoomContentCatalog.Rests.Count
+                            + RoomContentCatalog.Keepsakes.Count,
+                            PortfolioConfig.MapNodes.Count(n => n.Fog))
+                        : "缺：" + string.Join("、", missingContent));
 
                 check("任何一条路都是 15 步 + 起点 = 16 站",
                     ChapterCatalog.Rooms.All(r => r.Step <= ChapterCatalog.StepCount)
@@ -193,7 +206,7 @@ namespace FallenAngel.Core
                     missing.Count == 0 ? string.Format("抓到 {0} 条", badErrors.Count)
                         : "没点到：" + string.Join("、", missing.ToArray()));
 
-                string summary = string.Format("{0} PASS {1} / FAIL {2}（第一章路线：分支、构图规则与数值；房间内容还没铺）",
+                string summary = string.Format("{0} PASS {1} / FAIL {2}（第一章路线：分支、构图规则、占位房与数值）",
                     Tag, pass, fail);
                 for (int i = 0; i < lines.Count; i++) Debug.Log(Tag + lines[i]);
                 Debug.Log(summary);

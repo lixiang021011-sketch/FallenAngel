@@ -4,202 +4,260 @@
     "node_type": "START",
     "stage_id": null,
     "layout_x": 0,
-    "layout_y": 0
+    "layout_y": 0,
+    "content_id": null,
+    "fog": false
   },
   {
     "node_id": "R1A",
     "node_type": "STAGE",
     "stage_id": "S01",
     "layout_x": -1,
-    "layout_y": 1
+    "layout_y": 1,
+    "content_id": null,
+    "fog": false
   },
   {
     "node_id": "R2A",
     "node_type": "EVENT",
     "stage_id": null,
     "layout_x": -1,
-    "layout_y": 2
+    "layout_y": 2,
+    "content_id": "RC_VISITED",
+    "fog": true
   },
   {
     "node_id": "R2B",
     "node_type": "SHOP",
     "stage_id": null,
     "layout_x": 1,
-    "layout_y": 2
+    "layout_y": 2,
+    "content_id": null,
+    "fog": false
   },
   {
     "node_id": "R3A",
     "node_type": "STAGE",
     "stage_id": "S02",
     "layout_x": -1,
-    "layout_y": 3
+    "layout_y": 3,
+    "content_id": null,
+    "fog": false
   },
   {
     "node_id": "R3B",
     "node_type": "HARD",
     "stage_id": "H01",
     "layout_x": 1,
-    "layout_y": 3
+    "layout_y": 3,
+    "content_id": null,
+    "fog": false
   },
   {
     "node_id": "R4A",
     "node_type": "SHOP",
     "stage_id": null,
     "layout_x": -1,
-    "layout_y": 4
+    "layout_y": 4,
+    "content_id": null,
+    "fog": false
   },
   {
     "node_id": "R4B",
     "node_type": "EVENT",
     "stage_id": null,
     "layout_x": 1,
-    "layout_y": 4
+    "layout_y": 4,
+    "content_id": "RC_EMPTY",
+    "fog": false
   },
   {
     "node_id": "R5A",
     "node_type": "STAGE",
     "stage_id": "S03",
     "layout_x": -1,
-    "layout_y": 5
+    "layout_y": 5,
+    "content_id": null,
+    "fog": false
   },
   {
     "node_id": "R5B",
     "node_type": "STAGE",
     "stage_id": "S04",
     "layout_x": 1,
-    "layout_y": 5
+    "layout_y": 5,
+    "content_id": null,
+    "fog": false
   },
   {
     "node_id": "R6A",
     "node_type": "EVENT",
     "stage_id": null,
     "layout_x": -1,
-    "layout_y": 6
+    "layout_y": 6,
+    "content_id": "RC_VISITED",
+    "fog": true
   },
   {
     "node_id": "R6B",
     "node_type": "SHOP",
     "stage_id": null,
     "layout_x": 1,
-    "layout_y": 6
+    "layout_y": 6,
+    "content_id": null,
+    "fog": false
   },
   {
     "node_id": "R7A",
     "node_type": "STAGE",
     "stage_id": "S05",
     "layout_x": -1,
-    "layout_y": 7
+    "layout_y": 7,
+    "content_id": null,
+    "fog": false
   },
   {
     "node_id": "R7B",
     "node_type": "STAGE",
     "stage_id": "S06",
     "layout_x": 1,
-    "layout_y": 7
+    "layout_y": 7,
+    "content_id": null,
+    "fog": false
   },
   {
     "node_id": "R8A",
     "node_type": "REST",
     "stage_id": null,
     "layout_x": -1,
-    "layout_y": 8
+    "layout_y": 8,
+    "content_id": "RC_REST",
+    "fog": false
   },
   {
     "node_id": "R8B",
     "node_type": "EVENT",
     "stage_id": null,
     "layout_x": 1,
-    "layout_y": 8
+    "layout_y": 8,
+    "content_id": "RC_EMPTY",
+    "fog": false
   },
   {
     "node_id": "R9A",
     "node_type": "STAGE",
     "stage_id": "S07",
     "layout_x": -1,
-    "layout_y": 9
+    "layout_y": 9,
+    "content_id": null,
+    "fog": false
   },
   {
     "node_id": "R9B",
-    "node_type": "HARD",
-    "stage_id": "H02",
+    "node_type": "EVENT",
+    "stage_id": null,
     "layout_x": 1,
-    "layout_y": 9
+    "layout_y": 9,
+    "content_id": "RC_GIFT",
+    "fog": false
   },
   {
     "node_id": "R10A",
     "node_type": "SHOP",
     "stage_id": null,
     "layout_x": -1,
-    "layout_y": 10
+    "layout_y": 10,
+    "content_id": null,
+    "fog": false
   },
   {
     "node_id": "R10B",
     "node_type": "REST",
     "stage_id": null,
     "layout_x": 1,
-    "layout_y": 10
+    "layout_y": 10,
+    "content_id": "RC_REST",
+    "fog": false
   },
   {
     "node_id": "R11A",
     "node_type": "STAGE",
     "stage_id": "S08",
     "layout_x": -1,
-    "layout_y": 11
+    "layout_y": 11,
+    "content_id": null,
+    "fog": false
   },
   {
     "node_id": "R11B",
     "node_type": "STAGE",
     "stage_id": "S09",
     "layout_x": 1,
-    "layout_y": 11
+    "layout_y": 11,
+    "content_id": null,
+    "fog": false
   },
   {
     "node_id": "R12A",
     "node_type": "EVENT",
     "stage_id": null,
     "layout_x": -1,
-    "layout_y": 12
+    "layout_y": 12,
+    "content_id": "RC_EMPTY",
+    "fog": false
   },
   {
     "node_id": "R12B",
     "node_type": "REST",
     "stage_id": null,
     "layout_x": 1,
-    "layout_y": 12
+    "layout_y": 12,
+    "content_id": "RC_REST",
+    "fog": false
   },
   {
     "node_id": "R13A",
     "node_type": "STAGE",
     "stage_id": "S10",
     "layout_x": -1,
-    "layout_y": 13
+    "layout_y": 13,
+    "content_id": null,
+    "fog": false
   },
   {
     "node_id": "R13B",
     "node_type": "HARD",
     "stage_id": "H03",
     "layout_x": 1,
-    "layout_y": 13
+    "layout_y": 13,
+    "content_id": null,
+    "fog": false
   },
   {
     "node_id": "R14A",
     "node_type": "SHOP",
     "stage_id": null,
     "layout_x": -1,
-    "layout_y": 14
+    "layout_y": 14,
+    "content_id": null,
+    "fog": false
   },
   {
     "node_id": "R14B",
     "node_type": "EVENT",
     "stage_id": null,
     "layout_x": 1,
-    "layout_y": 14
+    "layout_y": 14,
+    "content_id": "RC_EMPTY",
+    "fog": false
   },
   {
     "node_id": "R15",
     "node_type": "FINAL",
     "stage_id": null,
     "layout_x": 0,
-    "layout_y": 15
+    "layout_y": 15,
+    "content_id": "RC_END",
+    "fog": false
   }
 ]

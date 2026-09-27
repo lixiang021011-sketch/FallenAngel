@@ -7,7 +7,8 @@
     "Placeholder chart bindings are present: difficulty and reward balance are not verified.",
     "CHART_DRUMS_PLACEHOLDER: points at the in-repo test chart test_chart_5k (5-key); not release material.",
     "Chapter 1 route: branching, 15 steps per run (7 performance steps + 7 resource steps + finale), 29 rooms on the board.",
-    "Event and rest rooms are pass-through for now; no priced route edges yet."
+    "Placeholder rooms are wired through RoomContentCatalog (RC_EMPTY / RC_VISITED / RC_GIFT / RC_REST / RC_END); layer 2 ends with RC_GIFT.",
+    "No priced route edges yet; reroute costs live in RerouteCatalog."
   ],
   "tables": {
     "chart_bindings": {
@@ -36,15 +37,15 @@
     },
     "map_nodes": {
       "count": 29,
-      "sha256": "783fc1fdab83d4eb13791443b67e93b0b66c9f257cd3ed593ee7a58e9afa1b2f"
+      "sha256": "417b8520382bab031b65d6b45545599d13bf9e0b3139d19913da76a332b63784"
     },
     "shop_candidates": {
       "count": 10,
       "sha256": "b184bdd1e991c7ac3d80828b8427d9bad6dc54278dcc2da79322b96ab2f26db8"
     },
     "stages": {
-      "count": 13,
-      "sha256": "154cbfe5c5b5bbf57b85f1e8246ee751028e45bb6f5298eabb63906f5fa4636d"
+      "count": 12,
+      "sha256": "f8c7fd517088d7c97cb50ea44b6238863869bf76aa1ae310eece9e0176c591e7"
     },
     "talent_edges": {
       "count": 27,

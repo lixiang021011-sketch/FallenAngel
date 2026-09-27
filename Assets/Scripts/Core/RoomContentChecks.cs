@@ -37,12 +37,40 @@ namespace FallenAngel.Core
             try
             {
                 var shipped = RoomContentCatalog.Validate();
-                check("三张空表通过校验", shipped.Count == 0,
+                check("占位房内容表通过校验", shipped.Count == 0,
                     shipped.Count == 0
                         ? string.Format("选项 {0} / 事件 {1} / 休息 {2} / 纪念品 {3}",
                             RoomContentCatalog.Options.Count, RoomContentCatalog.Events.Count,
                             RoomContentCatalog.Rests.Count, RoomContentCatalog.Keepsakes.Count)
                         : string.Join("；", shipped.ToArray()));
+
+                check("占位房已铺：3 类事件占位 + 休息 + 落点",
+                    RoomContentCatalog.Options.Count == 5 && RoomContentCatalog.Events.Count == 3
+                    && RoomContentCatalog.Rests.Count == 1 && RoomContentCatalog.Keepsakes.Count == 1,
+                    string.Format("选项 {0} / 事件 {1} / 休息 {2} / 落点 {3}",
+                        RoomContentCatalog.Options.Count, RoomContentCatalog.Events.Count,
+                        RoomContentCatalog.Rests.Count, RoomContentCatalog.Keepsakes.Count));
+
+                var layerErrors = LayerCatalog.Validate();
+                check("层过渡文案表通过（时刻 + 层名 + 引言 + 失败）",
+                    layerErrors.Count == 0 && LayerCatalog.Rows.Count == ChapterCatalog.LayerCount + 1,
+                    layerErrors.Count == 0
+                        ? string.Join(" → ", LayerCatalog.Rows.Select(r => r.TimeLabel).ToArray())
+                        : string.Join("；", layerErrors.ToArray()));
+
+                var displayErrors = LayerDisplayCatalog.Validate();
+                check("层显示档位表通过（越深信息越少）", displayErrors.Count == 0,
+                    displayErrors.Count == 0
+                        ? string.Join(" / ", LayerDisplayCatalog.Rows.Select(r =>
+                            string.Format("L{0}:{1}", r.Layer, r.Gear)).ToArray())
+                        : string.Join("；", displayErrors.ToArray()));
+
+                var rerouteErrors = RerouteCatalog.Validate();
+                check("改路消耗表通过（花什么走配表）", rerouteErrors.Count == 0,
+                    rerouteErrors.Count == 0
+                        ? string.Join(" / ", RerouteCatalog.Rows.Select(r =>
+                            string.Format("L{0}:{1} {2}", r.LayerFilter, r.Kind, r.Amount)).ToArray())
+                        : string.Join("；", rerouteErrors.ToArray()));
 
                 var wired = RoomContentCatalog.WiredEffects.OrderBy(k => (int)k).ToArray();
                 check("已接线效果 = None / Gear / Money",
@@ -103,7 +131,7 @@ namespace FallenAngel.Core
                         ? string.Format("第 1 层 {0} 条 / 第 2 层 {1} 条", layer1.Count, layer2.Count)
                         : string.Join("；", goodErrors.ToArray()));
 
-                string summary = string.Format("{0}PASS {1} / FAIL {2}（房间内容框架：三张空表 + 效果闸门 + 按层过滤）",
+                string summary = string.Format("{0}PASS {1} / FAIL {2}（房间内容：占位房 + 层过渡文案 + 层显示档位 + 改路消耗）",
                     Tag, pass, fail);
                 for (int i = 0; i < lines.Count; i++) Debug.Log(Tag + lines[i]);
                 Debug.Log(summary);

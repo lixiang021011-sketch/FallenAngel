@@ -67,13 +67,20 @@ namespace FallenAngel.Data
         public string StageId { get; }
         public int LayoutX { get; }
         public int LayoutY { get; }
-        public MapNodesRow(string node_id, string node_type, string stage_id, int layout_x, int layout_y)
+        /// <summary>房间内容 id（RoomContentCatalog 的行；演奏/硬仗/商店为空 = 走各自的老逻辑）。</summary>
+        public string ContentId { get; }
+        /// <summary>浓雾节点：变成可达之前连类型都不显示（集成战略的 Dense Fog，见 docs/layer-ui-spec.md §5.2）。</summary>
+        public bool Fog { get; }
+        public MapNodesRow(string node_id, string node_type, string stage_id, int layout_x, int layout_y,
+            string content_id = null, bool fog = false)
         {
             NodeId = node_id;
             NodeType = node_type;
             StageId = stage_id;
             LayoutX = layout_x;
             LayoutY = layout_y;
+            ContentId = content_id;
+            Fog = fog;
         }
     }
     /// <summary>只读配置行：map_edges。</summary>
@@ -258,7 +265,7 @@ namespace FallenAngel.Data
     /// <summary>全部12张表的只读构建快照；空值与0/false保持不同。</summary>
     public static class PortfolioConfig
     {
-        public const string ManifestSha256 = "1e4117fcc3c932a95d637f652abb6088e8c79eb5ba21a2f2384849cdca289af4";
+        public const string ManifestSha256 = "e6ae2919b3417904d024465646ad983fdf5dd8778f126927868d9638a12bd3c1";
         public const string SchemaVersion = "3.0";
         public static ReadOnlyCollection<EquipmentBaseRow> EquipmentBase { get; } =
             System.Array.AsReadOnly(new EquipmentBaseRow[]
@@ -299,37 +306,38 @@ namespace FallenAngel.Data
 
             // ── 第 1 层（步 1–4）──
             new MapNodesRow("R1A", "STAGE", "S01", -1, 1),
-            new MapNodesRow("R2A", "EVENT", null, -1, 2),
+            new MapNodesRow("R2A", "EVENT", null, -1, 2, "RC_VISITED", true),
             new MapNodesRow("R2B", "SHOP", null, 1, 2),
             new MapNodesRow("R3A", "STAGE", "S02", -1, 3),
             new MapNodesRow("R3B", "HARD", "H01", 1, 3),
             new MapNodesRow("R4A", "SHOP", null, -1, 4),
-            new MapNodesRow("R4B", "EVENT", null, 1, 4),
+            new MapNodesRow("R4B", "EVENT", null, 1, 4, "RC_EMPTY"),
 
             // ── 第 2 层（步 5–9）──
             new MapNodesRow("R5A", "STAGE", "S03", -1, 5),   // 器材向
             new MapNodesRow("R5B", "STAGE", "S04", 1, 5),    // 钱向
-            new MapNodesRow("R6A", "EVENT", null, -1, 6),
+            new MapNodesRow("R6A", "EVENT", null, -1, 6, "RC_VISITED", true),
             new MapNodesRow("R6B", "SHOP", null, 1, 6),
             new MapNodesRow("R7A", "STAGE", "S05", -1, 7),   // 器材向
             new MapNodesRow("R7B", "STAGE", "S06", 1, 7),    // 钱向
-            new MapNodesRow("R8A", "REST", null, -1, 8),
-            new MapNodesRow("R8B", "EVENT", null, 1, 8),
+            new MapNodesRow("R8A", "REST", null, -1, 8, "RC_REST"),
+            new MapNodesRow("R8B", "EVENT", null, 1, 8, "RC_EMPTY"),
             new MapNodesRow("R9A", "STAGE", "S07", -1, 9),
-            new MapNodesRow("R9B", "HARD", "H02", 1, 9),
+            // 第 2 层末：先放"馈赠占位房"（作者口径）；硬仗候选因此只留第 1、3 层各一处。
+            new MapNodesRow("R9B", "EVENT", null, 1, 9, "RC_GIFT"),
 
             // ── 第 3 层（步 10–15）──
             new MapNodesRow("R10A", "SHOP", null, -1, 10),
-            new MapNodesRow("R10B", "REST", null, 1, 10),
+            new MapNodesRow("R10B", "REST", null, 1, 10, "RC_REST"),
             new MapNodesRow("R11A", "STAGE", "S08", -1, 11), // 器材向
             new MapNodesRow("R11B", "STAGE", "S09", 1, 11),  // 钱向
-            new MapNodesRow("R12A", "EVENT", null, -1, 12),
-            new MapNodesRow("R12B", "REST", null, 1, 12),
+            new MapNodesRow("R12A", "EVENT", null, -1, 12, "RC_EMPTY"),
+            new MapNodesRow("R12B", "REST", null, 1, 12, "RC_REST"),
             new MapNodesRow("R13A", "STAGE", "S10", -1, 13),
             new MapNodesRow("R13B", "HARD", "H03", 1, 13),
             new MapNodesRow("R14A", "SHOP", null, -1, 14),
-            new MapNodesRow("R14B", "EVENT", null, 1, 14),
-            new MapNodesRow("R15", "FINAL", null, 0, 15)
+            new MapNodesRow("R14B", "EVENT", null, 1, 14, "RC_EMPTY"),
+            new MapNodesRow("R15", "FINAL", null, 0, 15, "RC_END")
         });
         public static ReadOnlyCollection<MapEdgesRow> MapEdges { get; } =
             System.Array.AsReadOnly(new MapEdgesRow[]
@@ -416,7 +424,6 @@ namespace FallenAngel.Data
             new StagesRow("S09", "\u666e\u901a\u6f14\u594f\uff08\u504f\u73b0\u91d1\uff09", "NORMAL", "CHART_DRUMS_PLACEHOLDER", 130, 100, "DP_CASH", true),
             new StagesRow("S10", "\u666e\u901a\u6f14\u594f\uff08\u5171\u7528\u9f13\u8c31\uff09", "NORMAL", "CHART_DRUMS_PLACEHOLDER", 100, 100, "DP_NORMAL", true),
             new StagesRow("H01", "\u786c\u4ed7\uff08\u5171\u7528\u9f13\u8c31\uff09", "HARD", "CHART_DRUMS_PLACEHOLDER", 150, 150, "DP_CHALLENGE", true),
-            new StagesRow("H02", "\u786c\u4ed7\uff08\u5171\u7528\u9f13\u8c31\uff09", "HARD", "CHART_DRUMS_PLACEHOLDER", 150, 150, "DP_CHALLENGE", true),
             new StagesRow("H03", "\u786c\u4ed7\uff08\u5171\u7528\u9f13\u8c31\uff09", "HARD", "CHART_DRUMS_PLACEHOLDER", 150, 150, "DP_CHALLENGE", true)
         });
         public static ReadOnlyCollection<ChartBindingsRow> ChartBindings { get; } =

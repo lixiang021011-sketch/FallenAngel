@@ -27,6 +27,35 @@
             // 地图节点标签（面板按节点类型取这两条；缺了会直接显示 key）
             Add("mapEmpty", "空占位房", "Empty");
             Add("mapUnknown", "？", "?");
+            // ── 房间内容（占位房）与选项：文案走表，改这里或改语言文件都行 ──
+            Add("room.op.leave", "离开", "Leave");
+            Add("room.op.look", "看一眼", "Take a look");
+            Add("room.op.take.hotbag", "拿走热水袋", "Take the hot-water bag");
+            Add("room.op.take.bandage", "拿走创可贴", "Take the bandages");
+            Add("room.op.take.pliers", "拿走折叠谱架", "Take the folding stand");
+            Add("room.rc.empty.scene", "空占位房", "Empty room");
+            Add("room.rc.empty.text", "屋里什么都没有。风从窗户进来，又原样出去。", "Nothing here. The wind comes in and leaves the same way.");
+            Add("room.rc.visited.scene", "有人来过", "Someone was here");
+            Add("room.rc.visited.text", "桌上有一杯没喝完的水。人刚走，或者走了很久。", "A half-finished glass of water. They just left, or left long ago.");
+            Add("room.rc.gift.scene", "馈赠占位房", "Gift (placeholder)");
+            Add("room.rc.gift.text", "门口放着一个纸箱，没人认领。", "A cardboard box by the door, unclaimed.");
+            Add("room.rc.rest.scene", "歇脚占位房", "Rest (placeholder)");
+            Add("room.rc.rest.text", "床单是干净的。今晚不用赶路。", "Clean sheets. No need to hurry tonight.");
+            Add("room.rc.end.scene", "落点占位房", "Journey's end (placeholder)");
+            Add("room.rc.end.text", "走到这里，这一程就算完了。", "This is as far as this trip goes.");
+            // ── 层过渡页（照集成战略：时刻 + 层名 + 引言 + 该层失败文案）──
+            Add("layer.1.name", "放学路上的风", "Wind on the way home");
+            Add("layer.1.intro", "天还没黑。你戴上耳机，路还是你认识的那条路。", "Not dark yet. You put your headphones on; the road is still the one you know.");
+            Add("layer.1.fail", "你在熟悉的路口停住了。这一程没走完。", "You stopped at a familiar corner. This trip ends here.");
+            Add("layer.2.name", "灯亮起来的地方", "Where the lights are on");
+            Add("layer.2.intro", "商场早就关门了，可中庭的灯还亮着。没有人，但有人来过。", "The mall closed hours ago, but the atrium lights are still on. Nobody here, but somebody was.");
+            Add("layer.2.fail", "灯灭了。你还在原地。", "The lights went out. You are still standing there.");
+            Add("layer.3.name", "不是时间的那个点", "The hour that isn't");
+            Add("layer.3.intro", "末班车早开走了。你还在走，路已经不像刚才那条了。", "The last bus left long ago. You keep walking; the road is not the same one anymore.");
+            Add("layer.3.fail", "路把你留下了。", "The road kept you.");
+            Add("layer.final.name", "这一程的落点", "Where this trip lands");
+            Add("layer.final.intro", "到这里，钟不走了。", "Here, the clock stops.");
+            Add("layer.final.fail", "（终房不会失败）", "(the finale cannot fail)");
             Add("mapPerformance", "演奏房", "Performance");
             Add("mapChallenge", "付费演奏", "Paid performance");
             Add("room.SHOP", "已进入商店。点击「商店」按钮查看商品。", "Shop reached. Use the Shop button to browse.");

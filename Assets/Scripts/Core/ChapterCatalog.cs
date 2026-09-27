@@ -114,7 +114,7 @@ namespace FallenAngel.Core
         public const int LayerCount = 3;
         public const int StepCount = 15;               // 起点之外的步数
         public const int PerformanceStepCount = 7;     // 一局演奏场数 = 有演奏候选的步数
-        public const int HardFightOptionSteps = 3;     // 给硬仗候选的步数
+        public const int HardFightOptionSteps = 2;     // 给硬仗候选的步数（第 2 层末改成馈赠占位房后只剩第 1、3 层）
         public const int MaxCandidatesPerStep = 3;
         public const int StartCount = 1;
         public const int FinalCount = 1;
@@ -176,7 +176,8 @@ namespace FallenAngel.Core
             new ChapterRoomSpec("R8A", 2, 8, 0, ChapterRoomKind.Rest),
             new ChapterRoomSpec("R8B", 2, 8, 2, ChapterRoomKind.Event),
             new ChapterRoomSpec("R9A", 2, 9, 0, ChapterRoomKind.Performance, "S07"),
-            new ChapterRoomSpec("R9B", 2, 9, 2, ChapterRoomKind.HardFight, "H02"),
+            // 第 2 层末：先放"馈赠占位房"（作者口径 2026-09-27）——内容在 RoomContentCatalog 的 RC_GIFT
+            new ChapterRoomSpec("R9B", 2, 9, 2, ChapterRoomKind.Event),
 
             // ── 第 3 层（步 10–15）──
             new ChapterRoomSpec("R10A", 3, 10, 0, ChapterRoomKind.Shop),

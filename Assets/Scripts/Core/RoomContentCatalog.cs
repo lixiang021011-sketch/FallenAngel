@@ -90,10 +90,40 @@ namespace FallenAngel.Core
             RoomEffectKind.None, RoomEffectKind.Gear, RoomEffectKind.Money,
         };
 
-        private static readonly RoomOptionRow[] options = new RoomOptionRow[0];
-        private static readonly RoomContentRow[] events = new RoomContentRow[0];
-        private static readonly RoomContentRow[] rests = new RoomContentRow[0];
-        private static readonly RoomContentRow[] keepsakes = new RoomContentRow[0];
+        // ── 占位房（作者口径 2026-09-27："当前房间可以都做几类占位房，房间类型走配表"）──
+        // 效果只允许用已接线的词（None / Gear / Money）；文案走 Loc key，改文案不用改代码。
+        private static readonly RoomOptionRow[] options = new RoomOptionRow[]
+        {
+            new RoomOptionRow("OP_LEAVE", "room.op.leave"),
+            new RoomOptionRow("OP_LOOK", "room.op.look", giveKind: RoomEffectKind.Money, giveAmount: 20),
+            new RoomOptionRow("OP_TAKE_HOTBAG", "room.op.take.hotbag", giveKind: RoomEffectKind.Gear, giveId: "CG06"),
+            new RoomOptionRow("OP_TAKE_BANDAGE", "room.op.take.bandage", giveKind: RoomEffectKind.Gear, giveId: "CG13"),
+            new RoomOptionRow("OP_TAKE_PLIERS", "room.op.take.pliers", giveKind: RoomEffectKind.Gear, giveId: "CG01"),
+        };
+
+        private static readonly RoomContentRow[] events = new RoomContentRow[]
+        {
+            new RoomContentRow("RC_EMPTY", ChapterRoomKind.Event, 0,
+                "room.rc.empty.scene", "room.rc.empty.text", new[] { "OP_LEAVE" }),
+            new RoomContentRow("RC_VISITED", ChapterRoomKind.Event, 0,
+                "room.rc.visited.scene", "room.rc.visited.text", new[] { "OP_LOOK", "OP_LEAVE" }),
+            // 第 2 层末的"馈赠占位房"：三件器材里挑一件（三选一奖励的第一版）
+            new RoomContentRow("RC_GIFT", ChapterRoomKind.Event, 0,
+                "room.rc.gift.scene", "room.rc.gift.text",
+                new[] { "OP_TAKE_HOTBAG", "OP_TAKE_BANDAGE", "OP_TAKE_PLIERS" }),
+        };
+
+        private static readonly RoomContentRow[] rests = new RoomContentRow[]
+        {
+            new RoomContentRow("RC_REST", ChapterRoomKind.Rest, 0,
+                "room.rc.rest.scene", "room.rc.rest.text", new[] { "OP_LEAVE" }),
+        };
+
+        private static readonly RoomContentRow[] keepsakes = new RoomContentRow[]
+        {
+            new RoomContentRow("RC_END", ChapterRoomKind.Final, 0,
+                "room.rc.end.scene", "room.rc.end.text", new[] { "OP_LEAVE" }),
+        };
 
         public static IReadOnlyList<RoomOptionRow> Options { get { return options; } }
         public static IReadOnlyList<RoomContentRow> Events { get { return events; } }
@@ -113,6 +143,20 @@ namespace FallenAngel.Core
             IReadOnlyList<RoomOptionRow> source = table ?? options;
             for (int i = 0; i < source.Count; i++)
                 if (source[i] != null && source[i].OptionId == optionId) return source[i];
+            return null;
+        }
+
+        /// <summary>按内容 id 找一条房间内容（三张表一起找）。</summary>
+        public static RoomContentRow FindContent(string contentId)
+        {
+            if (string.IsNullOrEmpty(contentId)) return null;
+            IReadOnlyList<RoomContentRow>[] tables = { events, rests, keepsakes };
+            for (int t = 0; t < tables.Length; t++)
+            {
+                IReadOnlyList<RoomContentRow> table = tables[t];
+                for (int i = 0; i < table.Count; i++)
+                    if (table[i] != null && table[i].ContentId == contentId) return table[i];
+            }
             return null;
         }
 

@@ -95,7 +95,7 @@ namespace FallenAngel.Core
                 && PortfolioConfig.TalentEffects.Count == 21, "Talent tables: 24 + 27 + 21");
             Check(PortfolioConfig.ShopCandidates.Count == 10 && PortfolioConfig.DropEntries.Count == 11
                 && PortfolioConfig.DropRules.Count == 3, "Shop/drop tables: 10 + 11 + 3（含钱向演奏房的 DP_CASH）");
-            Check(PortfolioConfig.Stages.Count == 13 && PortfolioConfig.ChartBindings.Count == 1
+            Check(PortfolioConfig.Stages.Count == 12 && PortfolioConfig.ChartBindings.Count == 1
                 && PortfolioConfig.MapNodes.Count == 29 && PortfolioConfig.MapEdges.Count == 47,
                 "Stage/map tables: 13 + 1 + 29 + 47（分支路线：10 普通 + 3 硬仗）");
             Check(PortfolioConfig.TalentNodes.Sum(n => n.UnlockCost) == 3600, "Full tree cost = 3600");
