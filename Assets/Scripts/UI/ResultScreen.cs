@@ -293,7 +293,7 @@ namespace FallenAngel.UI
                 AudioManager.Instance?.LoadBGM(GameManager.Instance.CurrentChart);
 
                 // 加载谱面并开始倒计时
-                GameManager.Instance.LoadChart(GameManager.Instance.CurrentChart);
+                GameManager.Instance.RetryGame();
                 GameManager.Instance.StartCountdownAndPlay();
             }
             // 确保面板状态正确

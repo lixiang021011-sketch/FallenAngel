@@ -74,6 +74,8 @@ namespace FallenAngel.Gameplay
         private LiveLaneResolver laneResolver;
         private readonly Dictionary<NoteData, LiveNoteBase> liveByChartNote = new Dictionary<NoteData, LiveNoteBase>();
         private readonly Dictionary<LiveNoteBase, NoteData> chartNoteByLive = new Dictionary<LiveNoteBase, NoteData>();
+        // 原有视图映射可能把长音头指向 LongEnd；资源账本必须使用真实头部身份。
+        private readonly Dictionary<LiveNoteBase, NoteData> partRootByLive = new Dictionary<LiveNoteBase, NoteData>();
         private readonly List<LiveNoteBase> slideNotes = new List<LiveNoteBase>();
 
         // 本帧输入装配
@@ -167,6 +169,8 @@ namespace FallenAngel.Gameplay
             {
                 GameManager.Instance.OnGameStart -= ResetScoreForNewSong;
                 GameManager.Instance.OnGameStart += ResetScoreForNewSong;
+                GameManager.Instance.OnPartChanged -= OnPartChanged;
+                GameManager.Instance.OnPartChanged += OnPartChanged;
             }
         }
 
@@ -179,6 +183,7 @@ namespace FallenAngel.Gameplay
             if (GameManager.Instance != null)
             {
                 GameManager.Instance.OnGameStart -= ResetScoreForNewSong;
+                GameManager.Instance.OnPartChanged -= OnPartChanged;
             }
         }
 
@@ -194,7 +199,7 @@ namespace FallenAngel.Gameplay
             // 曲终（Playing → Result）：把这一局的命中误差结算成一个样本（osu! 是一局结束记一个 DataPoint）
             if (game.CurrentState == GameState.Result && !hitErrorSampleFlushed) FlushHitErrorSample();
             if (game.CurrentState != GameState.Playing) return;
-            if (runtime == null || runtime.Notes.Count == 0) return;
+            if (runtime == null) return;
 
             float songTime = game.SongTime;
             // 局内 modifier 的判定窗口倍率（基础值 × 倍率；移植层查表时套用）
@@ -550,11 +555,21 @@ namespace FallenAngel.Gameplay
         }
 
         /// <summary>
-        /// 谱面 → 判定音符树 → 运行时。旋律时间统一取 SongTime，通过 MusicScoreInfo.time 传给判定簇。
+        /// 换声部只清输入和长音跟随状态；累计成绩、Fever 与歌曲事件游标保留。
         /// </summary>
-        private void BuildScore()
+        private void OnPartChanged()
         {
-            ChartData chart = GameManager.Instance != null ? GameManager.Instance.CurrentChart : null;
+            pendingInputs.Clear();
+            extraInputs.Clear();
+            lastScreenPos.Clear();
+            slideOutOfRange.Clear();
+            slideSegmentBroken.Clear();
+            BuildScore(false);
+        }
+
+        private void BuildScore(bool resetEvents = true)
+        {
+            ChartData chart = GameManager.Instance != null ? GameManager.Instance.ActiveChart : null;
             if (chart == null || chart.notes == null)
             {
                 runtime = null;
@@ -576,6 +591,7 @@ namespace FallenAngel.Gameplay
 
             liveByChartNote.Clear();
             chartNoteByLive.Clear();
+            partRootByLive.Clear();
             slideNotes.Clear();
 
             var headByLongId = new Dictionary<int, LiveNoteBase>();
@@ -593,6 +609,7 @@ namespace FallenAngel.Gameplay
                     var live = notes[liveIndex];
                     liveByChartNote[data] = live;
                     chartNoteByLive[live] = data;
+                    if (GameManager.Instance.Parts != null) partRootByLive[live] = data;
                     if (data.type == Data.NoteType.LongStart && data.longNoteId >= 0)
                     {
                         headByLongId[data.longNoteId] = live;
@@ -602,6 +619,7 @@ namespace FallenAngel.Gameplay
             }
 
             float fallTime = Mathf.Max(0.1f, GameManager.Instance.ActualFallTime);
+            if (runtime != null) runtime.JudgeCore.OnUnpicked -= HandleUnpicked;
             runtime = new LiveScoreRuntime { NoteDisplayTimeOffset = fallTime };
             runtime.Setup(notes);
             runtime.JudgeCore.LaneResolver = ResolveLaneFromCanvas;
@@ -661,7 +679,8 @@ namespace FallenAngel.Gameplay
                 chart.notes.Count, notes.Count, laneCount, fallTime));
 
             // 谱面事件通道：Fever 等子系统从这里收事件（v2 events；v1 谱为 null → 空表）
-            liveEvents.Load(chart.events);
+            if (!resetEvents) return;
+            liveEvents.Load(GameManager.Instance.CurrentChart.events);
             Fever.Register(liveEvents);
             Fever.Reset();
             Debug.Log(string.Format("[JudgeManager] 谱面事件通道：{0} 条事件（剩余待派发 {1}）",
@@ -867,6 +886,16 @@ namespace FallenAngel.Gameplay
             bool counts = !isHoldHead
                 && note.Category != NoteCategory.Connection
                 && note.Category != NoteCategory.Combo;
+
+            var partSession = GameManager.Instance?.Parts;
+            if (partSession != null)
+            {
+                var root = note;
+                while (root.ParentNote is LiveNoteBase parent) root = parent;
+                partRootByLive.TryGetValue(root, out NoteData rootData);
+                partSession.Consume(rootData);
+                if (counts) partSession.Reward(rootData, result, PlayRules.EnergyMultiplier);
+            }
 
             // osu! 式命中误差采样：只收"玩家真实计时输入（HasJudgedError）+ 计分音符 + 真判到、不是 Miss"。
             // 长按头/连接点/连击点都不进统计，否则它们的"零误差"会把中位数拽偏。

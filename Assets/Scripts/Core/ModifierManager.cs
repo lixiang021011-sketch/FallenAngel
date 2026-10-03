@@ -64,6 +64,8 @@ namespace FallenAngel.Core
         JudgeLineLock = 6,
         /// <summary>开局生命加成：magnitude = 额外生命值（与基础上限相加，见 <see cref="PlayLife.Max"/>；通用件 CG12 喉糖）</summary>
         LifeBonus = 7,
+        /// <summary>命中局内资源倍率：与分数倍率独立，沿用原有叠加/时效规则。</summary>
+        EnergyMultiplier = 8,
     }
 
     /// <summary>一条 modifier 的定义（纯数据，可由配置表生成）</summary>
@@ -454,6 +456,7 @@ namespace FallenAngel.Core
             float damageScale = 1f;
             float regen = 0f;
             float scoreMul = 1f;
+            float energyMul = 1f;
             float lifeBonus = 0f;
             bool lineLocked = false;
 
@@ -484,6 +487,9 @@ namespace FallenAngel.Core
                     case ModifierKind.ScoreMultiplier:
                         scoreMul *= def.magnitude;      // 乘法叠加（fever × 道具）
                         break;
+                    case ModifierKind.EnergyMultiplier:
+                        energyMul *= def.magnitude;
+                        break;
                     case ModifierKind.LifeBonus:
                         lifeBonus += def.magnitude;     // 加法叠加：两条 +100 = +200
                         break;
@@ -492,7 +498,7 @@ namespace FallenAngel.Core
             // 判定线锁只抬可见性下限，不影响判定；音符隐身不受它管（那是另一条效果）
             if (lineLocked) lineVisible = true;
             PlayRules.SetModifierState(scale, lineVisible, notesVisible, damageScale, regen, scoreMul,
-                lifeBonus);
+                lifeBonus, energyMul);
         }
     }
 }

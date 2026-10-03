@@ -23,6 +23,8 @@ namespace FallenAngel.Core
         private static float lifeRegenPerSecond;
         private static float scoreMultiplier = 1f;
         private static float lifeBonus;
+        /// <summary>单次成功命中的局内资源倍率，独立于得分倍率。</summary>
+        public static float EnergyMultiplier { get; private set; } = 1f;
 
         /// <summary>判定窗口倍率（1 = 原始；&gt;1 更宽松，&lt;1 更严格）</summary>
         public static float JudgeWindowScale { get { return judgeWindowScale; } }
@@ -64,7 +66,7 @@ namespace FallenAngel.Core
 
         /// <summary>由 ModifierManager 调用：写入当前生效的修正状态</summary>
         internal static void SetModifierState(float windowScale, bool lineVisible, bool notesVisibleNow,
-            float damageScale, float regenPerSecond, float scoreMul, float lifeBonusNow)
+            float damageScale, float regenPerSecond, float scoreMul, float lifeBonusNow, float energyMul = 1f)
         {
             judgeWindowScale = Mathf.Max(0.05f, windowScale);
             judgeLineVisible = lineVisible;
@@ -73,6 +75,7 @@ namespace FallenAngel.Core
             lifeRegenPerSecond = regenPerSecond;
             scoreMultiplier = Mathf.Max(0f, scoreMul);
             lifeBonus = Mathf.Max(0f, lifeBonusNow);
+            EnergyMultiplier = float.IsNaN(energyMul) || float.IsInfinity(energyMul) ? 1f : Mathf.Max(0f, energyMul);
             dirty = true;
         }
 

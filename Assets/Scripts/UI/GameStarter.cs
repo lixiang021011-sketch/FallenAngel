@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using FallenAngel.Core;
@@ -58,7 +58,7 @@ namespace FallenAngel.UI
                 AudioManager.Instance?.PlayButtonClick();
                 if (session == null)
                 {
-                    Debug.LogError("[GameStarter] 缺少 PortfolioSession，请重建场景（Tools > FallenAngel > Build Default Game Scene）");
+                    Debug.LogError("[GameStarter] 缺少 PortfolioSession，请重建场景（Tools > FallenAngel > Scenes and Assets > Build Default Game Scene）");
                     return;
                 }
                 // 覆盖默认槽是破坏性操作：有进度先弹确认，空白档直接开始
@@ -83,7 +83,7 @@ namespace FallenAngel.UI
                 // 面板初始非激活、自身未订阅任何事件——打开必须由这里直接调（同其他面板模式）
                 if (session != null) session.EnterSaveSelect();
                 if (saveSelectPanelController != null) saveSelectPanelController.Open();
-                else Debug.LogError("[GameStarter] 缺少 SaveSelectPanelController，请重建场景（Tools > FallenAngel > Build Default Game Scene）");
+                else Debug.LogError("[GameStarter] 缺少 SaveSelectPanelController，请重建场景（Tools > FallenAngel > Scenes and Assets > Build Default Game Scene）");
             });
             if (songSelectButton != null) songSelectButton.onClick.AddListener(() =>
             {
@@ -94,7 +94,7 @@ namespace FallenAngel.UI
             {
                 AudioManager.Instance?.PlayButtonClick();
                 if (settingsPanelController != null) settingsPanelController.Open();
-                else Debug.LogError("[GameStarter] 缺少 SettingsPanelController，请重建场景（Tools > FallenAngel > Build Default Game Scene）");
+                else Debug.LogError("[GameStarter] 缺少 SettingsPanelController，请重建场景（Tools > FallenAngel > Scenes and Assets > Build Default Game Scene）");
             });
             if (pauseButton != null) pauseButton.onClick.AddListener(() => { AudioManager.Instance?.PlayButtonClick(); GameManager.Instance?.TogglePause(); });
 
@@ -114,6 +114,8 @@ namespace FallenAngel.UI
 
         private void Start()
         {
+            if (GameManager.Instance != null && GameManager.Instance.GetComponent<PartPrototypePanel>() == null)
+                GameManager.Instance.gameObject.AddComponent<PartPrototypePanel>();
             if (GetComponent<DeepSeaPresentation>() == null) gameObject.AddComponent<DeepSeaPresentation>();
 #if UNITY_EDITOR
             CreateTemporaryArtDebugOverlay();
@@ -230,7 +232,7 @@ namespace FallenAngel.UI
         {
             PortfolioSession s = GetComponent<PortfolioSession>();
             if (s != null) s.DebugAcquireNextEquipment();
-            else Debug.LogError("[GameStarter] 缺少 PortfolioSession，请重建场景（Tools > FallenAngel > Build Default Game Scene）");
+            else Debug.LogError("[GameStarter] 缺少 PortfolioSession，请重建场景（Tools > FallenAngel > Scenes and Assets > Build Default Game Scene）");
         }
 #endif
 
@@ -273,7 +275,15 @@ namespace FallenAngel.UI
             StartChart(chart);
         }
 
-        public void StartChart(ChartData chart)
+        [ContextMenu("Play Guitar Drums Prototype")]
+        public void StartPartPrototype()
+        {
+            if (GameManager.Instance == null || GameManager.Instance.CurrentState != GameState.Menu ||
+                GameManager.Instance.Portfolio?.IsOpen == true) return;
+            StartChart(PartPrototype.Charts.Song, PartPrototype.Charts);
+        }
+
+        public void StartChart(ChartData chart, SongParts parts = null)
         {
             if (GameManager.Instance == null)
             {
@@ -282,7 +292,7 @@ namespace FallenAngel.UI
             }
 
             AudioManager.Instance?.StopAll();
-            GameManager.Instance.LoadChart(chart);
+            GameManager.Instance.LoadChart(chart, parts);
 
             // 装载BGM但不播放：倒计时结束后由 OnGameStart 统一触发播放，保证开局时间对齐
             if (AudioManager.Instance != null && chart != null)

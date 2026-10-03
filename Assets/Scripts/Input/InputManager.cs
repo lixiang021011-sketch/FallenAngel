@@ -261,6 +261,7 @@ namespace FallenAngel.InputSystem
                            GameManager.Instance.CurrentState == GameState.Playing;
 
             // 键盘状态始终跟踪（暂停期间也同步 lastKeyStates，防止恢复后状态错位吞键）
+            if (playing && UnityEngine.Input.GetKeyDown(KeyCode.Tab)) GameManager.Instance.SwitchPart();
             TrackKeyboardStates(playing);
 
             // 轨道触摸/点击输入：暂停期间不处理并清空跟踪

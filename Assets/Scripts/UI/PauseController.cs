@@ -189,7 +189,7 @@ namespace FallenAngel.UI
                 AudioManager.Instance?.LoadBGM(GameManager.Instance.CurrentChart);
 
                 // 加载谱面（进入Loading状态）并开始倒计时
-                GameManager.Instance.LoadChart(GameManager.Instance.CurrentChart);
+                GameManager.Instance.RetryGame();
                 // 直接调用 StartCountdownAndPlay 开始倒计时
                 GameManager.Instance.StartCountdownAndPlay();
             }

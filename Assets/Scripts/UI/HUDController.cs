@@ -165,7 +165,7 @@ namespace FallenAngel.UI
             if (GameManager.Instance.CurrentState != GameState.Playing)
                 return;
 
-            float total = GameManager.Instance.CurrentChart.GetTotalDuration();
+            float total = GameManager.Instance.SongDuration;
             if (total <= 0f) return;
 
             float progress = Mathf.Clamp01(GameManager.Instance.SongTime / total);

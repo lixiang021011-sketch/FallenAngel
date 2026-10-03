@@ -53,6 +53,22 @@ namespace FallenAngel.Core
         /// <summary>当前谱面数据</summary>
         public ChartData CurrentChart { get; private set; }
 
+        /// <summary>可选的同曲声部演奏；普通单谱仍沿用原流程。</summary>
+        public SongPartSession Parts { get; private set; }
+        public ChartData ActiveChart => Parts?.ActiveChart ?? CurrentChart;
+        public float SongDuration => Parts?.Definition.Duration ?? CurrentChart?.GetTotalDuration() ?? 0f;
+        public event System.Action OnPartChanged;
+
+        /// <summary>在同一 SongTime 选择另一声部，不触发 Loading 或重新播放音频。</summary>
+        public bool SwitchPart()
+        {
+            if (CurrentState != GameState.Playing || Parts == null) return false;
+            Parts.Select(!Parts.IsDrums, SongTime);
+            OnPartChanged?.Invoke();
+            Debug.Log($"[GameManager] Part={Parts.PartName} SongTime={SongTime:F3} Energy={Parts.Energy:F1}");
+            return true;
+        }
+
         /// <summary>歌曲当前播放时间（秒，含偏移补偿）</summary>
         public float SongTime { get; private set; }
 
@@ -116,7 +132,7 @@ namespace FallenAngel.Core
         /// <summary>
         /// 加载指定谱面并准备开始
         /// </summary>
-        public void LoadChart(ChartData chart)
+        public void LoadChart(ChartData chart, SongParts parts = null)
         {
             if (chart == null)
             {
@@ -124,7 +140,15 @@ namespace FallenAngel.Core
                 return;
             }
 
+            if (parts != null && !ReferenceEquals(chart, parts.Song))
+            {
+                Debug.LogError("[GameManager] 声部集合与主谱不一致，无法加载");
+                return;
+            }
+            // 原型重试/换歌是新演奏：上次本曲道具不能沿用旧的到期时刻。
+            if (Parts != null) ModifierManager.Instance?.EndSong();
             CurrentChart = chart;
+            Parts = parts == null ? null : new SongPartSession(parts);
             // 键数驱动轨道布局（4K/5K 动态化唯一入口：LaneLayout/InputManager/NoteSpawner/JudgeManager 均读它）
             LaneLayout.SetActiveLaneCount(chart.LaneCount);
             ChangeState(GameState.Loading);
@@ -269,7 +293,7 @@ namespace FallenAngel.Core
                 if (!warnedMissingAudioManager)
                 {
                     warnedMissingAudioManager = true;
-                    Debug.LogError("[GameManager] 场景中缺少 AudioManager，无法推进游戏时间！请用菜单 Tools > FallenAngel > Build Default Game Scene 重建场景");
+                    Debug.LogError("[GameManager] 场景中缺少 AudioManager，无法推进游戏时间！请用菜单 Tools > FallenAngel > Scenes and Assets > Build Default Game Scene 重建场景");
                 }
                 return;
             }
@@ -290,7 +314,7 @@ namespace FallenAngel.Core
             // 切后台时不要把暂停的 BGM 当成曲终。
             bool audioFinished = Application.isFocused && AudioManager.Instance.HasAudioFinished;
             if (audioFinished ||
-                (CurrentChart != null && SongTime >= CurrentChart.GetTotalDuration()))
+                (CurrentChart != null && SongTime >= SongDuration))
             {
                 EndGame();
             }
@@ -351,7 +375,7 @@ namespace FallenAngel.Core
             if (CurrentChart != null)
             {
                 Time.timeScale = 1f;
-                LoadChart(CurrentChart);
+                LoadChart(CurrentChart, Parts?.Definition);
             }
         }
 
@@ -365,6 +389,7 @@ namespace FallenAngel.Core
             if (AudioManager.Instance != null)
                 AudioManager.Instance.StopAll();
             CurrentChart = null;
+            Parts = null;
             SongTime = 0f;
             IsSongStarted = false;
             ChangeState(GameState.Menu);

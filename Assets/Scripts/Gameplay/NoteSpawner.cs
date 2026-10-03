@@ -184,6 +184,8 @@ namespace FallenAngel.Gameplay
         {
             if (GameManager.Instance != null)
             {
+                GameManager.Instance.OnPartChanged -= OnPartChanged;
+                GameManager.Instance.OnPartChanged += OnPartChanged;
                 GameManager.Instance.OnGameStart += OnGameStart;
                 GameManager.Instance.OnGameEnd += OnGameEnd;
                 GameManager.Instance.OnStateChanged += OnGameStateChanged;
@@ -195,6 +197,8 @@ namespace FallenAngel.Gameplay
             if (GameManager.Instance != null)
             {
                 GameManager.Instance.OnGameStart -= OnGameStart;
+                GameManager.Instance.OnPartChanged -= OnPartChanged;
+                GameManager.Instance.OnPartChanged += OnPartChanged;
                 GameManager.Instance.OnGameStart += OnGameStart;
                 GameManager.Instance.OnGameEnd -= OnGameEnd;
                 GameManager.Instance.OnGameEnd += OnGameEnd;
@@ -208,6 +212,7 @@ namespace FallenAngel.Gameplay
             if (GameManager.Instance != null)
             {
                 GameManager.Instance.OnGameStart -= OnGameStart;
+                GameManager.Instance.OnPartChanged -= OnPartChanged;
                 GameManager.Instance.OnGameEnd -= OnGameEnd;
                 GameManager.Instance.OnStateChanged -= OnGameStateChanged;
             }
@@ -223,6 +228,7 @@ namespace FallenAngel.Gameplay
             GameManager gm = GameManager.Instance;
             if (gm == null || gm.CurrentChart == null) return;
             PrewarmForChart(gm.CurrentChart, gm.ActualFallTime);
+            if (gm.Parts != null) PrewarmForChart(gm.Parts.Definition.Drums, gm.ActualFallTime);
         }
 
         /// <summary>
@@ -288,8 +294,15 @@ namespace FallenAngel.Gameplay
             return Mathf.Max(1, max);
         }
 
+        private void OnPartChanged()
+        {
+            CancelInvoke(nameof(ClearAllNotes));
+            ClearAllNotes();
+        }
+
         private void OnGameStart()
         {
+            CancelInvoke(nameof(ClearAllNotes));
             ClearAllNotes();
             nextNoteIndex = 0;
             isPlaying = true;
@@ -346,7 +359,7 @@ namespace FallenAngel.Gameplay
         private void SpawnDueNotes(float spawnTimeThreshold)
         {
             if (GameManager.Instance.CurrentChart == null) return;
-            var notes = GameManager.Instance.CurrentChart.notes;
+            var notes = GameManager.Instance.ActiveChart.notes;
 
             while (nextNoteIndex < notes.Count && notes[nextNoteIndex].time <= spawnTimeThreshold)
             {

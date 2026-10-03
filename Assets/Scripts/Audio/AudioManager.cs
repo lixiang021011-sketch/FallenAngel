@@ -178,7 +178,8 @@ namespace FallenAngel.Audio
                 return;
             }
 
-            AudioClip clip = Resources.Load<AudioClip>($"Audio/{chart.metadata.audioFileName}");
+            AudioClip clip = chart.metadata.audioFileName == PartPrototype.AudioName
+                ? PartPrototype.Audio : Resources.Load<AudioClip>($"Audio/{chart.metadata.audioFileName}");
             if (clip == null)
             {
                 Debug.LogWarning($"[AudioManager] 找不到音频文件: Audio/{chart.metadata.audioFileName}，使用虚拟钟模式");
