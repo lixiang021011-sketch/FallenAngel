@@ -21,9 +21,12 @@ namespace FallenAngel.Core
         ///   3) 稳段（16–24s）   ：Guitar 每小节 2 条长音（权重 2×）+ 4 颗单击，Drums 4——稀疏但值钱
         ///   4) 鼓 Solo（26–34s）：Drums 从 8 分一路加难到 32 分爆点（宽跳 trill / 同轨连打 / 跑动 / 爆点），
         ///      Guitar 是同段的长音（稀疏但值钱）——理论产率最高、失误也最贵，且**真的打不动**。
+        ///   另有一件 Bass 全程不变：每小节 4 颗八分、只走 0/3 两轨——**最稳也最低产**的第三选项。
         /// 为什么要非对称：均匀循环只能验"切换是否顺手"，验不了"熟悉歌曲后预判切换"。
         /// 为什么鼓 Solo 不能只是"密"：整段单击的话手快的玩家照样全 Perfect，
         /// Risk/Reward 就只活在数值表里；所以这里加的是手速门槛（同轨连打、宽跳、32 分）。
+        /// 为什么要有第三件：两件乐器只能验"换不换"，三件才能验"换哪件"——
+        /// 底部切换条、色相表、路线记录也才有 N 件的真实数据。
         /// </summary>
         public static SongParts Charts
         {
@@ -32,11 +35,15 @@ namespace FallenAngel.Core
                 if (charts != null) return charts;
                 var guitar = NewChart();
                 var drums = NewChart();
+                var bass = NewChart();
                 int longId = 0;
                 for (int bar = 0; bar < 16; bar++)
                 {
                     int section = bar / BarsPerSection;
                     float t0 = 2f + bar * BarSeconds;
+                    // Bass：全程每小节 4 颗八分，只在 0/3 两轨交替——安全档的"稳定收益"
+                    for (int i = 0; i < 4; i++)
+                        bass.notes.Add(new NoteData((i + bar) % 2 == 0 ? 0 : 3, t0 + i * BarSeconds / 4f, NoteType.Normal));
                     if (section == 0)
                     {
                         AddSteps(guitar, bar, t0, 8);
@@ -62,7 +69,7 @@ namespace FallenAngel.Core
                         AddLongNotes(guitar, bar, t0, 2, ref longId);
                     }
                 }
-                charts = new SongParts(guitar, drums);
+                charts = new SongParts(new[] { "Guitar", "Drums", "Bass" }, new[] { guitar, drums, bass });
                 return charts;
             }
         }
@@ -170,6 +177,18 @@ namespace FallenAngel.Core
                         samples[start + j] += note.lane % 2 == 0
                             ? .32f * Mathf.Exp(-24f * t) * Mathf.Sin(2f * Mathf.PI * (70f * t + 2f * (1f - Mathf.Exp(-35f * t))))
                             : .18f * Mathf.Exp(-45f * t) * noise;
+                    }
+                }
+                foreach (NoteData note in Charts.Bass.notes)
+                {
+                    if (note.type != NoteType.Normal) continue;
+                    float hz = 82.41f * Mathf.Pow(2f, new[] { 0, 3, 7, 5 }[note.lane] / 12f);
+                    int start = Mathf.RoundToInt(note.time * rate);
+                    int length = Mathf.Min(samples.Length - start, rate / 2);
+                    for (int j = 0; j < length; j++)
+                    {
+                        float t = j / (float)rate;
+                        samples[start + j] += .20f * Mathf.Exp(-2.6f * t) * Mathf.Sin(2f * Mathf.PI * hz * t);
                     }
                 }
                 clip = AudioClip.Create(AudioName, samples.Length, 1, rate, false);

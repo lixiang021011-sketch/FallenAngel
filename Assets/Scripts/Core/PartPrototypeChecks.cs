@@ -183,8 +183,11 @@ namespace FallenAngel.Core
                 Check(Mathf.Abs(gm.Parts.Energy - 3f) < 1e-3f, "switch bonus pays 1.5x for the first notes");
                 gm.BackToMenu();
 
-                Check(PartPrototype.Charts.Guitar.notes.Count == 96 && PartPrototype.Charts.Drums.notes.Count == 120 &&
-                    PartPrototype.Audio.length == 36f, "audible 36-second two-part demo available");
+                var demoParts = PartPrototype.Charts;
+                Check(demoParts.Guitar.notes.Count == 96 && demoParts.Drums.notes.Count == 120 &&
+                    demoParts.ChartOf("Bass") != null && demoParts.ChartOf("Bass").notes.Count == 64 &&
+                    demoParts.PartNames.Length == 3 && PartPrototype.Audio.length == 36f,
+                    "audible 36-second three-part demo available (guitar / drums / bass)");
                 var demoDrums = PartPrototype.Charts.Drums.notes;
                 Check(PartPrototype.Charts.Guitar.notes.Exists(n => n.type == NoteType.LongStart) &&
                     demoDrums.FindAll(n => n.time >= 26f && n.time < 34f).Count == 56,
@@ -199,6 +202,25 @@ namespace FallenAngel.Core
                     "drum solo is a real wall: 16th trill, same-lane jack and a 32nd burst");
                 Check(PartPrototype.Charts.Guitar.notes.FindAll(n => n.time >= 26f && n.type == NoteType.LongStart).Count == 8,
                     "guitar keeps a low-risk long-note retreat during the drum wall");
+                var demoBass = demoParts.ChartOf("Bass").notes;
+                Check(demoBass.FindAll(n => n.lane == 0 || n.lane == 3).Count == demoBass.Count &&
+                    demoBass.FindAll(n => n.type != NoteType.Normal).Count == 0,
+                    "bass is the safe option: plain 8th notes on lanes 0/3 for the whole song");
+
+                // ── 双击确认（底部切换条的防误触第二层）──
+                var tap = new PartSwitchTap();
+                Check(!tap.Register("Drums", 10f) && tap.PendingPart == "Drums",
+                    "first tap only arms the chip");
+                Check(tap.Register("Drums", 10.3f) && tap.PendingPart == null,
+                    "second tap within the window confirms the switch");
+                Check(!tap.Register("Drums", 20f) && !tap.Register("Drums", 21f) && tap.PendingPart == "Drums",
+                    "a too-slow second tap restarts the count instead of confirming");
+                Check(!tap.Register("Bass", 21.1f) && tap.PendingPart == "Bass",
+                    "tapping another chip moves the pending target");
+                Check(!tap.Tick(21.4f) && tap.PendingPart == "Bass" && tap.Tick(22.0f) && tap.PendingPart == null,
+                    "pending state expires and clears itself");
+                Check(PartSwitchTap.ConfirmSeconds > 0.2f && PartSwitchTap.ConfirmSeconds < 0.8f,
+                    "double-tap window stays in a usable range");
 
                 // ── 声部视觉（2026-10-03 过稿：全色相 + G2 半场；占位，未来换商用素材）──
                 Check(PartPalette.KnownParts.Length == 5 &&

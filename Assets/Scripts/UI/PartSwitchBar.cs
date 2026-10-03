@@ -17,8 +17,12 @@ namespace FallenAngel.UI
     /// 落在它上面的触摸挡在判定层之外，所以底栏这段不再是轨道输入区；
     /// 对应地，键帽（KeyArea）在运行时整体上移，让"看得见的轨道"不压在底栏上。
     ///
-    /// 防误触：只在"按下→抬起都在同一个芯片内、且按下时长 ≤ <see cref="MaxTapSeconds"/>"时切换。
-    /// 拇指歇在屏幕上（长按）抬起不会换声部。
+    /// 防误触两层（作者 2026-10-03 定）：
+    ///   ① 只在"按下→抬起都在同一个芯片内、且按下时长 ≤ <see cref="MaxTapSeconds"/>"时算一次点击
+    ///      —— 拇指歇在屏幕上（长按）抬起不算；
+    ///   ② 点击本身还要**双击确认**（<see cref="PartSwitchTap.ConfirmSeconds"/> 内连点同一枚）：
+    ///      第一下只把芯片点亮成"待确认"，第二下才真的换声部。
+    /// 切换条在屏幕最底部、正是拇指常驻与滑过的地方，所以要两层一起挡。
     /// </summary>
     public sealed class PartSwitchBar : MonoBehaviour
     {
@@ -35,6 +39,7 @@ namespace FallenAngel.UI
         private RectTransform chipRow;
         private TMP_FontAsset font;
         private readonly List<PartSwitchChip> chips = new List<PartSwitchChip>();
+        private readonly PartSwitchTap tap = new PartSwitchTap();
 
         private void Start()
         {
@@ -68,8 +73,15 @@ namespace FallenAngel.UI
 
         private void HandleGameStart()
         {
+            tap.Reset();
             RebuildChips();
             Refresh();
+        }
+
+        private void Update()
+        {
+            // 待确认超时 → 熄灭（不换声部）
+            if (tap.Tick(Time.unscaledTime)) Refresh();
         }
 
         // ── 建层 ────────────────────────────────────────────────────────
@@ -180,6 +192,13 @@ namespace FallenAngel.UI
             GameManager gm = Gm;
             if (gm == null || gm.Parts == null) return;
             if (partName == gm.Parts.PartName) return;      // 点当前声部是空操作
+            if (!tap.Register(partName, Time.unscaledTime))
+            {
+                Debug.Log("[PartSwitchBar] 待确认：" + partName + "（再点一次切换）");
+                Refresh();
+                return;
+            }
+            Debug.Log("[PartSwitchBar] 双击确认，切换到 " + partName);
             gm.SwitchPart(partName);
         }
 
@@ -196,7 +215,12 @@ namespace FallenAngel.UI
             GameManager gm = Gm;
             string active = gm != null && gm.Parts != null ? gm.Parts.PartName : null;
             for (int i = 0; i < chips.Count; i++)
-                if (chips[i] != null) chips[i].SetActivePart(chips[i].partName == active);
+            {
+                if (chips[i] == null) continue;
+                bool isActive = chips[i].partName == active;
+                chips[i].SetActivePart(isActive);
+                chips[i].SetArmed(!isActive && chips[i].partName == tap.PendingPart);
+            }
         }
     }
 
@@ -209,6 +233,7 @@ namespace FallenAngel.UI
         private System.Action<string> onTapped;
         private float downTime;
         private bool down;
+        private bool armedState;
 
         public void Bind(string name, Image target, TextMeshProUGUI text, System.Action<string> tapped)
         {
@@ -246,6 +271,15 @@ namespace FallenAngel.UI
                     : new Color(color.r * 0.22f, color.g * 0.22f, color.b * 0.22f, 1f);
             if (label != null)
                 label.color = active ? new Color(0.09f, 0.11f, 0.12f, 1f) : new Color(color.r, color.g, color.b, 0.85f);
+        }
+
+        /// <summary>"待确认"：整体提亮成白，配合日志告诉玩家再点一次（第一下不换声部）</summary>
+        public void SetArmed(bool armed)
+        {
+            armedState = armed;
+            if (!armed || image == null) return;   // 熄灭时颜色已由 SetActivePart 复原
+            image.color = new Color(0.92f, 0.96f, 0.97f, 1f);
+            if (label != null) label.color = new Color(0.08f, 0.10f, 0.11f, 1f);
         }
     }
 }

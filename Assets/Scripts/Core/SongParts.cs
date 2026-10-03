@@ -7,39 +7,64 @@ namespace FallenAngel.Core
     /// <summary>同曲声部集合：复用原有 ChartData，所有声部共享键数、音频与 offset。</summary>
     public sealed class SongParts
     {
-        public ChartData Song { get; }
-        public ChartData Guitar { get; }
-        public ChartData Drums { get; }
+        private readonly ChartData[] charts;
+
+        public ChartData Song { get { return charts.Length > 0 ? charts[0] : null; } }
+        /// <summary>兼容旧用例的快捷读法（不认识就返回 null）</summary>
+        public ChartData Guitar { get { return ChartOf("Guitar"); } }
+        public ChartData Drums { get { return ChartOf("Drums"); } }
+        public ChartData Bass { get { return ChartOf("Bass"); } }
         public float Duration { get; }
         /// <summary>
         /// 本曲可演奏的声部**顺序**（底部切换条按这个顺序出芯片；将来一首歌 5 件乐器就是 5 项）。
         /// 声部数量是内容属性，不是界面属性——界面按这个列表自适应。
         /// </summary>
-        public readonly string[] PartNames = { "Guitar", "Drums" };
+        public string[] PartNames { get; }
 
+        /// <summary>两件乐器的便捷构造（原型与自检大量在用）</summary>
         public SongParts(ChartData guitar, ChartData drums)
+            : this(new[] { "Guitar", "Drums" }, new[] { guitar, drums }) { }
+
+        /// <summary>
+        /// 通用构造：名字表与谱面表一一对应，数量不限（2 件与 5 件走同一条路）。
+        /// 校验口径不变：所有声部必须共享音频、偏移与键数——切换的前提是"同一首歌、同一时间轴"。
+        /// </summary>
+        public SongParts(string[] partNames, ChartData[] partCharts)
         {
-            if (guitar?.metadata == null || drums?.metadata == null ||
-                guitar.notes == null || drums.notes == null ||
-                guitar.LaneCount != drums.LaneCount ||
-                guitar.metadata.audioFileName != drums.metadata.audioFileName ||
-                Math.Abs(guitar.metadata.offset - drums.metadata.offset) > 0.0001f)
+            if (partNames == null || partCharts == null || partNames.Length == 0 ||
+                partNames.Length != partCharts.Length)
+                throw new ArgumentException("声部表与谱面表必须等长且非空");
+
+            ChartData first = partCharts[0];
+            if (first?.metadata == null || first.notes == null)
                 throw new ArgumentException("声部必须使用相同音频、偏移和键数");
-            Guitar = guitar;
-            Drums = drums;
-            Song = guitar;
-            Duration = Math.Max(guitar.GetTotalDuration(), drums.GetTotalDuration());
+
+            float duration = 0f;
+            for (int i = 0; i < partCharts.Length; i++)
+            {
+                ChartData chart = partCharts[i];
+                if (chart?.metadata == null || chart.notes == null ||
+                    chart.LaneCount != first.LaneCount ||
+                    chart.metadata.audioFileName != first.metadata.audioFileName ||
+                    Math.Abs(chart.metadata.offset - first.metadata.offset) > 0.0001f)
+                    throw new ArgumentException("声部必须使用相同音频、偏移和键数");
+                for (int j = 0; j < i; j++)
+                    if (partNames[j] == partNames[i])
+                        throw new ArgumentException("声部名不能重复：" + partNames[i]);
+                duration = Math.Max(duration, chart.GetTotalDuration());
+            }
+            PartNames = partNames;
+            charts = partCharts;
+            Duration = duration;
         }
 
         /// <summary>按名字取该声部的谱面；不认识的名字返回 null（切换时直接拒绝）</summary>
         public ChartData ChartOf(string partName)
         {
-            switch (partName)
-            {
-                case "Guitar": return Guitar;
-                case "Drums": return Drums;
-                default: return null;
-            }
+            if (partName == null) return null;
+            for (int i = 0; i < PartNames.Length; i++)
+                if (PartNames[i] == partName) return charts[i];
+            return null;
         }
     }
 
