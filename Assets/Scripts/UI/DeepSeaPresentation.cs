@@ -45,6 +45,8 @@ namespace FallenAngel.UI
                 DeepSeaTheme.Backdrop(game);
                 // 声部视觉层（占位实现）：运行时建层，场景不用重建；换商用素材时只改 PartPalette 与它的贴图
                 if (game.GetComponent<PartTintView>() == null) game.gameObject.AddComponent<PartTintView>();
+                // 底部声部切换条（C2 方案）：芯片按曲目声部表自适应，2 件与 5 件走同一条代码
+                if (game.GetComponent<PartSwitchBar>() == null) game.gameObject.AddComponent<PartSwitchBar>();
             }
             var menu = transform.Find("MenuPanel");
             if (menu != null)

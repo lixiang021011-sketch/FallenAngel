@@ -11,6 +11,11 @@ namespace FallenAngel.Core
         public ChartData Guitar { get; }
         public ChartData Drums { get; }
         public float Duration { get; }
+        /// <summary>
+        /// 本曲可演奏的声部**顺序**（底部切换条按这个顺序出芯片；将来一首歌 5 件乐器就是 5 项）。
+        /// 声部数量是内容属性，不是界面属性——界面按这个列表自适应。
+        /// </summary>
+        public readonly string[] PartNames = { "Guitar", "Drums" };
 
         public SongParts(ChartData guitar, ChartData drums)
         {
@@ -25,6 +30,17 @@ namespace FallenAngel.Core
             Song = guitar;
             Duration = Math.Max(guitar.GetTotalDuration(), drums.GetTotalDuration());
         }
+
+        /// <summary>按名字取该声部的谱面；不认识的名字返回 null（切换时直接拒绝）</summary>
+        public ChartData ChartOf(string partName)
+        {
+            switch (partName)
+            {
+                case "Guitar": return Guitar;
+                case "Drums": return Drums;
+                default: return null;
+            }
+        }
     }
 
     /// <summary>一次演奏的声部和资源账本；不拥有时钟，不修改源谱。</summary>
@@ -33,8 +49,8 @@ namespace FallenAngel.Core
         private readonly HashSet<NoteData> consumed = new HashSet<NoteData>();
         private readonly HashSet<NoteData> rewarded = new HashSet<NoteData>();
         public SongParts Definition { get; }
-        public bool IsDrums { get; private set; }
-        public string PartName => IsDrums ? "Drums" : "Guitar";
+        public string PartName { get; private set; }
+        public bool IsDrums => PartName == "Drums";
         public ChartData ActiveChart { get; private set; }
         public float Energy { get; private set; }
         public int HitCount { get; private set; }
@@ -54,14 +70,18 @@ namespace FallenAngel.Core
         public SongPartSession(SongParts definition)
         {
             Definition = definition ?? throw new ArgumentNullException(nameof(definition));
-            Select(false, 0f);
+            Select(definition.PartNames.Length > 0 ? definition.PartNames[0] : null, 0f);
         }
 
-        /// <summary>只保留当前时间之后、未结算的头音符及其尾部；跨切换的长音静默取消。</summary>
-        public void Select(bool drums, float songTime)
+        /// <summary>
+        /// 切到指定声部：只保留当前时间之后、未结算的头音符及其尾部；跨切换的长音静默取消。
+        /// 返回 false = 名字不认识或已经是当前声部（调用方据此决定要不要发事件）。
+        /// </summary>
+        public bool Select(string partName, float songTime)
         {
-            IsDrums = drums;
-            ChartData source = drums ? Definition.Drums : Definition.Guitar;
+            ChartData source = Definition.ChartOf(partName);
+            if (source == null || partName == PartName) return false;
+            PartName = partName;
             var selected = new ChartData { metadata = source.metadata, events = source.events };
             var longIds = new HashSet<int>();
             foreach (NoteData note in source.notes)
@@ -80,6 +100,17 @@ namespace FallenAngel.Core
             segmentStartTime = songTime;
             notesSinceSwitch = 0;
             Route.OpenAt(PartName, songTime, source);
+            return true;
+        }
+
+        /// <summary>下一件声部（Tab / 单按钮循环用）。按谱面表的顺序循环，不是"两件对翻"。</summary>
+        public string NextPartName()
+        {
+            string[] names = Definition.PartNames;
+            if (names == null || names.Length == 0) return null;
+            for (int i = 0; i < names.Length; i++)
+                if (names[i] == PartName) return names[(i + 1) % names.Length];
+            return names[0];
         }
 
         /// <summary>头音符一旦接受判定就不可通过切回声部重放（包括提前命中）。</summary>

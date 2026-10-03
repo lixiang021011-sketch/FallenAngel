@@ -59,11 +59,15 @@ namespace FallenAngel.Core
         public float SongDuration => Parts?.Definition.Duration ?? CurrentChart?.GetTotalDuration() ?? 0f;
         public event System.Action OnPartChanged;
 
-        /// <summary>在同一 SongTime 选择另一声部，不触发 Loading 或重新播放音频。</summary>
-        public bool SwitchPart()
+        /// <summary>
+        /// 在同一 SongTime 换声部，不触发 Loading 或重新播放音频。
+        /// 不传名字 = 循环到谱面表里的下一件（键盘 Tab）；传名字 = 直接选那一件（底部切换条用）。
+        /// </summary>
+        public bool SwitchPart(string partName = null)
         {
             if (CurrentState != GameState.Playing || Parts == null) return false;
-            Parts.Select(!Parts.IsDrums, SongTime);
+            string target = string.IsNullOrEmpty(partName) ? Parts.NextPartName() : partName;
+            if (!Parts.Select(target, SongTime)) return false;
             OnPartChanged?.Invoke();
             Debug.Log($"[GameManager] Part={Parts.PartName} SongTime={SongTime:F3} Energy={Parts.Energy:F1}");
             return true;

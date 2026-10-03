@@ -119,6 +119,23 @@ namespace FallenAngel.Core
                 gm.LoadChart(guitar);
                 Check(gm.Parts == null && gm.ActiveChart == guitar, "ordinary single charts unchanged");
 
+                // ── 声部表与按名切换：界面要装得下不止两件乐器 ──
+                Check(set.PartNames.Length == 2 && set.PartNames[0] == "Guitar" && set.PartNames[1] == "Drums" &&
+                    set.ChartOf("Drums") == drums && set.ChartOf("Nope") == null,
+                    "song parts expose an ordered part table for the switch bar");
+                gm.LoadChart(guitar, set);
+                gm.StartGame();
+                Check(gm.Parts.PartName == "Guitar" && gm.Parts.NextPartName() == "Drums",
+                    "session starts on the first part and knows the next one");
+                Check(!gm.SwitchPart("Nope") && gm.Parts.PartName == "Guitar",
+                    "unknown part name is rejected and nothing changes");
+                Check(gm.SwitchPart("Drums") && gm.Parts.PartName == "Drums" &&
+                    !gm.SwitchPart("Drums") && gm.Parts.Route.SwitchCount == 1,
+                    "switching by name works once and re-selecting the active part is a no-op");
+                Check(gm.SwitchPart() && gm.Parts.PartName == "Guitar",
+                    "no-argument switch cycles to the next part (tab key path)");
+                gm.BackToMenu();
+
                 // ── 原型增量（2026-10-03）：单位产率 / 声部道具 / 路线记录 ──
                 Check(Mathf.Abs(PartEnergyRules.NoteWeight(NoteType.Normal) - 1f) < 1e-4f &&
                     Mathf.Abs(PartEnergyRules.NoteWeight(NoteType.LongStart) - 2f) < 1e-4f &&
@@ -313,6 +330,28 @@ namespace FallenAngel.Core
                     fx.Find("RailLeft").GetComponent<Image>() != null &&
                     !fx.Find("RailLeft").GetComponent<Image>().raycastTarget,
                     "part visuals never block touch input");
+
+                // 底部切换条：底栏要被建出来、键帽要让位、且底栏自己吃触摸（不吃触摸等于手指穿过去打音符）
+                var keyArea = new GameObject("KeyArea", typeof(RectTransform));
+                RectTransform keyRect = (RectTransform)keyArea.transform;
+                keyRect.SetParent(lanes.transform, false);
+                keyRect.anchorMin = keyRect.anchorMax = new Vector2(0.5f, 0f);
+                keyRect.pivot = new Vector2(0.5f, 0f);
+                keyRect.anchoredPosition = Vector2.zero;
+
+                var switchBar = gamePanel.AddComponent<PartSwitchBar>();
+                Invoke(switchBar, "Start");
+                Transform bar = gamePanel.transform.Find("PartSwitchBar");
+                Check(bar != null && bar.GetSiblingIndex() < hud.transform.GetSiblingIndex() &&
+                    bar.GetComponent<Image>() != null && bar.GetComponent<Image>().raycastTarget,
+                    "switch bar sits above notes, below the HUD, and eats its own touches");
+                Check(Mathf.Abs(keyRect.anchoredPosition.y - PartSwitchBar.BarHeight) < 0.01f,
+                    "key caps are lifted by the bar height so the visible lanes stop above it");
+                float fiveChips = PartSwitchBar.ChipWidthFor(5, PartSwitchBar.RowWidth);
+                float twoChips = PartSwitchBar.ChipWidthFor(2, PartSwitchBar.RowWidth);
+                Check(fiveChips * 5f + PartSwitchBar.ChipGap * 4f <= PartSwitchBar.RowWidth + 0.01f &&
+                    fiveChips < PartSwitchBar.ChipMaxWidth && Mathf.Abs(twoChips - PartSwitchBar.ChipMaxWidth) < 0.01f,
+                    "chip width adapts to the part count: two stays 240, five still fit one row");
             }
             finally
             {
