@@ -335,9 +335,14 @@ namespace FallenAngel.Core
             {
                 Parts.Route.Close(SongTime);
                 Debug.Log("[GameManager] " + Parts.Route.Summary().Replace("\n", " ‖ "));
+                // 试玩数据落盘：手机/打包版拿不到 Console，一行 JSON 追加到 persistentDataPath
+                LastRunLogPath = PartRunLog.Record(this, Parts);
             }
             Debug.Log("[GameManager] 游戏结束！");
         }
+
+        /// <summary>最近一局试玩记录的落盘路径（原型面板显示；没有则 null）</summary>
+        public string LastRunLogPath { get; private set; }
 
         /// <summary>
         /// 暂停/继续游戏

@@ -34,6 +34,8 @@ namespace FallenAngel.Core
             var host = new GameObject("__PartChecks");
             var views = new GameObject("__PartViews", typeof(RectTransform));
             ModifierManager modifiers = null;
+            bool logWasEnabled = PartRunLog.Enabled;
+            PartRunLog.Enabled = false;   // 自检不写真实试玩数据
             try
             {
                 var gm = host.AddComponent<GameManager>();
@@ -194,11 +196,56 @@ namespace FallenAngel.Core
                     PartPalette.TintPeak > 0f && PartPalette.TintPeak < 0.5f &&
                     PartPalette.TintSpan > 0f && PartPalette.TintSpan < 1f,
                     "G2 half-field tint constants present, unknown parts stay untinted");
+
+                // ── 判定等级 × 单位产率：Good 不再等于 Perfect（设计稿第三节的最小模型）──
+                Check(Mathf.Abs(PartEnergyRules.GradeWeight(JudgeResultType.Perfect) - 1f) < 1e-4f &&
+                    Mathf.Abs(PartEnergyRules.GradeWeight(JudgeResultType.Great) - 0.65f) < 1e-4f &&
+                    Mathf.Abs(PartEnergyRules.GradeWeight(JudgeResultType.Good) - 0.35f) < 1e-4f &&
+                    PartEnergyRules.GradeWeight(JudgeResultType.Miss) == 0f,
+                    "grade yield: perfect 1x / great 0.65x / good 0.35x / miss 0");
+                Check(Mathf.Abs(PartEnergyRules.Yield(NoteType.Normal, JudgeResultType.Perfect, 1f, 1f) - 1f) < 1e-4f &&
+                    Mathf.Abs(PartEnergyRules.Yield(NoteType.LongStart, JudgeResultType.Perfect, 1f, 1f) - 2f) < 1e-4f &&
+                    Mathf.Abs(PartEnergyRules.Yield(NoteType.Normal, JudgeResultType.Good, 2f, 1.3f) - 0.91f) < 1e-4f,
+                    "yield = note weight x grade x modifier x item");
+
+                // ── 试玩数据落盘：一行 JSON，能原样读回来 ──
+                string checkPath = Path.Combine(Application.temporaryCachePath, "part_runs_check.jsonl");
+                if (File.Exists(checkPath)) File.Delete(checkPath);
+                gm.LoadChart(guitar, set);
+                gm.StartGame();
+                SetTime(gm, 1.95f);
+                gm.SwitchPart();
+                SetTime(gm, 3f);
+                Auto(judge, 3f);
+                SetTime(gm, 3.2f);   // 把 SongTime 推过那颗粒，段窗口才把它算进"供给"
+                gm.EndGame();
+                PartRunRecord record = PartRunLog.Build(gm, gm.Parts, new DateTime(2026, 10, 3, 12, 0, 0, DateTimeKind.Utc));
+                Check(record != null && record.segments.Count == 2 && record.switches == 1 &&
+                    record.segments[1].perfect == 1 && record.segments[1].great == 0 &&
+                    record.segments[1].hits == 1,
+                    "run record keeps switches and per-segment grade mix");
+                Check(PartRunLog.Append(record, checkPath) && File.Exists(checkPath) &&
+                    PartRunLog.Append(record, checkPath) &&
+                    File.ReadAllLines(checkPath).Length == 2,
+                    "run log appends one JSON line per play");
+                string firstLine = File.ReadAllLines(checkPath)[0];
+                Debug.Log("[PartPrototypeChecks] 落盘行：" + firstLine);
+                PartRunRecord parsed = JsonUtility.FromJson<PartRunRecord>(firstLine);
+                Check(parsed != null, "run log line parses at all");
+                Check(parsed != null && parsed.segments != null && parsed.segments.Count == 2,
+                    "run log line keeps both segments");
+                Check(parsed != null && parsed.switches == 1 && parsed.segments.Count == 2 &&
+                    parsed.segments[0].part == "Guitar" && parsed.segments[1].perfect == 1,
+                    "run log line parses back into the same record");
+                File.Delete(checkPath);
+                gm.BackToMenu();
+
                 CheckPartVisualLayers();
                 Debug.Log($"[PartPrototypeChecks] ALL PASS ({passed})");
             }
             finally
             {
+                PartRunLog.Enabled = logWasEnabled;
                 if (modifiers != null) UnityEngine.Object.DestroyImmediate(modifiers.gameObject);
                 // 自检创建的兜底 prefab 不属于场景资源。
                 var prefab = views.GetComponent<NoteSpawner>()?.GetType().GetField("notePrefab", BindingFlags.Instance | BindingFlags.NonPublic)

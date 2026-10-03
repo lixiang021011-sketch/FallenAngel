@@ -5,6 +5,7 @@ using FallenAngel.Data;
 namespace FallenAngel.Core
 {
     /// <summary>一次演奏里的一段声部：供给、命中、失误、能量、失血。</summary>
+    [System.Serializable]
     public struct PartSegment
     {
         public string part;
@@ -14,6 +15,10 @@ namespace FallenAngel.Core
         public int offered;
         public int hits;
         public int misses;
+        /// <summary>该段的判定分布：高密度段是否真的掉档，看这三个数</summary>
+        public int perfect;
+        public int great;
+        public int good;
         public float energy;
         public int lifeLost;
 
@@ -79,12 +84,18 @@ namespace FallenAngel.Core
             hasOpen = false;
         }
 
-        public void NoteHit(float energy)
+        public void NoteHit(float energy, JudgeResultType result)
         {
             if (!hasOpen) return;
             open.hits++;
             open.energy += energy;
             TotalEnergy += energy;
+            switch (result)
+            {
+                case JudgeResultType.Perfect: open.perfect++; break;
+                case JudgeResultType.Great: open.great++; break;
+                case JudgeResultType.Good: open.good++; break;
+            }
         }
 
         public void NoteMiss(int damage)
@@ -120,8 +131,9 @@ namespace FallenAngel.Core
                 // 段窗口是 [起点, 终点)：正好压在切换时刻上的音符算给新段，所以老段可能"供 0 中 1"，
                 // 这种情况不印百分比（分母为 0 的比率没有意义）。
                 string rate = s.offered > 0 ? string.Format("({0:0}%)", s.HitRate * 100f) : "";
-                sb.Append(string.Format("[声部] {0} {1:0.0}–{2:0.0}s 供{3} 中{4}{5} 能量{6:0.0} 失误{7} 失血{8}",
-                    s.part, s.start, s.end, s.offered, s.hits, rate, s.energy, s.misses, s.lifeLost));
+                sb.Append(string.Format("[声部] {0} {1:0.0}–{2:0.0}s 供{3} 中{4}{5} 能量{6:0.0} 失误{7} 失血{8}（P{9} G{10} Gd{11}）",
+                    s.part, s.start, s.end, s.offered, s.hits, rate, s.energy, s.misses, s.lifeLost,
+                    s.perfect, s.great, s.good));
             }
             if (segments.Count > 0) sb.Append('\n');
             sb.Append(string.Format("[声部] 切换 {0} 次 · 总能量 {1:0.0} · 总失误 {2}",

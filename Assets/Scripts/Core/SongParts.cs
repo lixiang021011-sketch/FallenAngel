@@ -97,9 +97,9 @@ namespace FallenAngel.Core
             HitCount++;
             if (float.IsNaN(multiplier) || float.IsInfinity(multiplier)) multiplier = 1f;
             float itemMultiplier = PartEnergyRules.Compose(Item, PartName, SamePartSeconds(songTime), notesSinceSwitch);
-            float gain = Math.Max(0f, PartEnergyRules.NoteWeight(root.type) * multiplier * itemMultiplier);
+            float gain = PartEnergyRules.Yield(root.type, result, multiplier, itemMultiplier);
             Energy += gain;
-            Route.NoteHit(gain);
+            Route.NoteHit(gain, result);
             notesSinceSwitch++;
             OnEnergyChanged?.Invoke();
         }

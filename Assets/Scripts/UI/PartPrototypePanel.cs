@@ -59,6 +59,8 @@ namespace FallenAngel.UI
                 {
                     GUILayout.Label("路线（A）：" + parts.Route.RouteLine());
                     GUILayout.Label(parts.Route.Summary());
+                    if (!string.IsNullOrEmpty(gm.LastRunLogPath))
+                        GUILayout.Label("本局已落盘：" + gm.LastRunLogPath);
                 }
                 if (gm.CurrentState == GameState.Result && GUILayout.Button(Loc.T("Retry prototype"))) gm.RetryGame();
             }

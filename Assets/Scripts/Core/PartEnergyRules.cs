@@ -27,6 +27,10 @@ namespace FallenAngel.Core
     public static class PartEnergyRules
     {
         public const float ContractMultiplier = 1.3f;
+        /// <summary>判定等级的单位产率：Perfect 全给，Great 与计分的 65% 同口径，Good 保值但不保量</summary>
+        public const float PerfectYield = 1f;
+        public const float GreatYield = 0.65f;
+        public const float GoodYield = 0.35f;
         /// <summary>留守倍率从这个秒数之后开始爬</summary>
         public const float StayRampStartSeconds = 8f;
         /// <summary>到这里封顶 1.5×</summary>
@@ -49,6 +53,34 @@ namespace FallenAngel.Core
                 default:
                     return 1f;
             }
+        }
+
+        /// <summary>
+        /// 判定等级 → 单位产率。为什么与计分表不同：计分照 Phigros 语义（Good 不给分），
+        /// 而资源是玩法货币，Good 仍要保值（见 2026-10-03 设计稿第三节的"Good → 较少资源"）。
+        /// Great 取 0.65 是为了和已有的计分口径一致（Great ≈ Perfect 的 65%）。
+        /// </summary>
+        public static float GradeWeight(JudgeResultType result)
+        {
+            switch (result)
+            {
+                case JudgeResultType.Perfect: return PerfectYield;
+                case JudgeResultType.Great: return GreatYield;
+                case JudgeResultType.Good: return GoodYield;
+                default: return 0f;
+            }
+        }
+
+        /// <summary>
+        /// 一次命中的实得资源 = 音符权重 × 判定等级 × 倍率（modifier）× 道具倍率。
+        /// 单独抽出来是为了能直接断言"高密度段掉档后是否还比稳段赚"这类问题。
+        /// </summary>
+        public static float Yield(NoteType type, JudgeResultType result, float multiplier, float itemMultiplier)
+        {
+            if (float.IsNaN(multiplier) || float.IsInfinity(multiplier)) multiplier = 1f;
+            if (float.IsNaN(itemMultiplier) || float.IsInfinity(itemMultiplier)) itemMultiplier = 1f;
+            float value = NoteWeight(type) * GradeWeight(result) * multiplier * itemMultiplier;
+            return float.IsNaN(value) || float.IsInfinity(value) ? 0f : UnityEngine.Mathf.Max(0f, value);
         }
 
         public static float PartMultiplier(PartItem item, string partName)
