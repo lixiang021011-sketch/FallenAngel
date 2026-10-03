@@ -330,6 +330,12 @@ namespace FallenAngel.Core
             // 曲终音乐淡出（音频长于谱面时结算页不再残留播放；音频已播完时为空操作）
             AudioManager.Instance?.FadeOutBGM();
             OnGameEnd?.Invoke();
+            // 声部路线：曲终把最后一段收口并落一行可读日志（原型验收靠这行，不靠感觉）
+            if (Parts != null)
+            {
+                Parts.Route.Close(SongTime);
+                Debug.Log("[GameManager] " + Parts.Route.Summary().Replace("\n", " ‖ "));
+            }
             Debug.Log("[GameManager] 游戏结束！");
         }
 

@@ -5,9 +5,11 @@ using System.Reflection;
 using FallenAngel.Data;
 using FallenAngel.Gameplay;
 using FallenAngel.Live;
+using FallenAngel.UI;
 using UnityEditor;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
+using UnityEngine.UI;
 using NoteType = FallenAngel.Data.NoteType;
 
 namespace FallenAngel.Core
@@ -109,12 +111,90 @@ namespace FallenAngel.Core
                 Auto(judge, 4f);
                 SetTime(gm, 6f);
                 Auto(judge, 6f);
-                Check(gm.Parts.HitCount == 2 && gm.Parts.Energy == 2, "completed long note rewarded once at tail");
+                Check(gm.Parts.HitCount == 2 && gm.Parts.Energy == 3,
+                    "completed long note rewarded once at tail (1 tap + long note at 2x weight)");
                 gm.BackToMenu();
                 gm.LoadChart(guitar);
                 Check(gm.Parts == null && gm.ActiveChart == guitar, "ordinary single charts unchanged");
-                Check(PartPrototype.Charts.Guitar.notes.Count == 96 && PartPrototype.Charts.Drums.notes.Count == 96 &&
+
+                // ── 原型增量（2026-10-03）：单位产率 / 声部道具 / 路线记录 ──
+                Check(Mathf.Abs(PartEnergyRules.NoteWeight(NoteType.Normal) - 1f) < 1e-4f &&
+                    Mathf.Abs(PartEnergyRules.NoteWeight(NoteType.LongStart) - 2f) < 1e-4f &&
+                    Mathf.Abs(PartEnergyRules.NoteWeight(NoteType.Slide) - 2f) < 1e-4f,
+                    "unit yield: tap 1x, long/slide 2x");
+                Check(Mathf.Abs(PartEnergyRules.StayMultiplier(PartItem.StayRamp, 8f) - 1f) < 1e-4f &&
+                    Mathf.Abs(PartEnergyRules.StayMultiplier(PartItem.StayRamp, 12f) - 1.25f) < 1e-4f &&
+                    Mathf.Abs(PartEnergyRules.StayMultiplier(PartItem.StayRamp, 20f) - 1.5f) < 1e-4f,
+                    "stay ramp: starts at 8s, caps at 1.5x by 16s");
+                Check(Mathf.Abs(PartEnergyRules.SwitchMultiplier(PartItem.SwitchBonus, 0) - 1.5f) < 1e-4f &&
+                    Mathf.Abs(PartEnergyRules.SwitchMultiplier(PartItem.SwitchBonus, 10) - 1f) < 1e-4f,
+                    "switch bonus covers only the first 10 notes");
+                Check(Mathf.Abs(PartEnergyRules.PartMultiplier(PartItem.DrumContract, "Drums") - 1.3f) < 1e-4f &&
+                    Mathf.Abs(PartEnergyRules.PartMultiplier(PartItem.DrumContract, "Guitar") - 1f) < 1e-4f,
+                    "drum contract applies to Drums only");
+
+                gm.LoadChart(guitar, set);
+                gm.StartGame();
+                gm.Parts.Item = PartItem.DrumContract;
+                SetTime(gm, 1.95f);
+                gm.SwitchPart();
+                SetTime(gm, 3f);
+                Auto(judge, 3f);
+                Check(Mathf.Abs(gm.Parts.Energy - 1.3f) < 1e-3f, "drum contract pays 1.3x on a drum note");
+                SetTime(gm, 3.2f);   // 让刚打中的那颗落在段窗口内，便于核对"供给"
+                gm.EndGame();
+                Check(gm.Parts.Route.Segments.Count == 2 && gm.Parts.Route.SwitchCount == 1 &&
+                    gm.Parts.Route.TotalEnergy > 0f && gm.Parts.Route.RouteLine().Contains("Drums"),
+                    "route recorder: segments, switches and energy are readable");
+                Check(gm.Parts.Route.Segments[0].part == "Guitar" && gm.Parts.Route.Segments[0].offered == 0 &&
+                    gm.Parts.Route.Segments[1].part == "Drums" && gm.Parts.Route.Segments[1].offered == 1 &&
+                    gm.Parts.Route.Segments[1].hits == 1 && gm.Parts.Route.Segments[1].HitRate == 1f,
+                    "route recorder counts what each part actually offered");
+
+                gm.BackToMenu();
+                gm.LoadChart(guitar, set);
+                gm.StartGame();
+                gm.Parts.Item = PartItem.SwitchBonus;
+                SetTime(gm, 1.95f);
+                gm.SwitchPart();
+                SetTime(gm, 3f);
+                Auto(judge, 3f);
+                SetTime(gm, 7f);
+                Auto(judge, 7f);
+                Check(Mathf.Abs(gm.Parts.Energy - 3f) < 1e-3f, "switch bonus pays 1.5x for the first notes");
+                gm.BackToMenu();
+
+                Check(PartPrototype.Charts.Guitar.notes.Count == 88 && PartPrototype.Charts.Drums.notes.Count == 128 &&
                     PartPrototype.Audio.length == 36f, "audible 36-second two-part demo available");
+                Check(PartPrototype.Charts.Guitar.notes.Exists(n => n.type == NoteType.LongStart) &&
+                    PartPrototype.Charts.Drums.notes.FindAll(n => n.time >= 26f && n.time < 34f).Count == 64,
+                    "demo has a long-note steady section and a 8-notes-per-second drum solo");
+
+                // ── 声部视觉（2026-10-03 过稿：全色相 + G2 半场；占位，未来换商用素材）──
+                Check(PartPalette.KnownParts.Length == 5 &&
+                    PartPalette.HueGap(PartPalette.HueDrums, PartPalette.HueGuitar) >= 45f &&
+                    PartPalette.HueGap(PartPalette.HueGuitar, PartPalette.HueKeys) >= 60f,
+                    "part hues: five distinct instruments, drums/guitar at least 45 degrees apart");
+                bool distinct = true;
+                for (int i = 0; i < PartPalette.KnownParts.Length && distinct; i++)
+                {
+                    float hueA = PartPalette.HueOf(PartPalette.KnownParts[i]);
+                    distinct = hueA >= 0f;
+                    for (int j = i + 1; j < PartPalette.KnownParts.Length && distinct; j++)
+                    {
+                        float hueB = PartPalette.HueOf(PartPalette.KnownParts[j]);
+                        distinct = PartPalette.HueGap(hueA, hueB) >= 45f;
+                    }
+                }
+                Check(distinct, "part hues: every pair is at least 45 degrees apart");
+                Color drumColor, guitarColor;
+                Check(PartPalette.TryGetColor("Drums", out drumColor) &&
+                    PartPalette.TryGetColor("Guitar", out guitarColor) &&
+                    !PartPalette.TryGetColor("Unknown", out _) &&
+                    PartPalette.TintPeak > 0f && PartPalette.TintPeak < 0.5f &&
+                    PartPalette.TintSpan > 0f && PartPalette.TintSpan < 1f,
+                    "G2 half-field tint constants present, unknown parts stay untinted");
+                CheckPartVisualLayers();
                 Debug.Log($"[PartPrototypeChecks] ALL PASS ({passed})");
             }
             finally
@@ -135,6 +215,53 @@ namespace FallenAngel.Core
             judge.Runtime.Update(LiveNoteBuilder.Info(time));
             judge.Runtime.AutoPlay(LiveNoteBuilder.Info(time));
         }
+
+        /// <summary>
+        /// 声部视觉层的**结构**自检：染色层必须在轨道/音符之下、演出层必须在音符之上、HUD 之下，
+        /// 且都不吃触摸。层序错了在实机上只表现为"看起来不对"，很难在数值上发现，所以在这里卡住。
+        /// </summary>
+        private static void CheckPartVisualLayers()
+        {
+            var canvas = new GameObject("__PartVisualRoot", typeof(RectTransform));
+            try
+            {
+                var gamePanel = new GameObject("GamePanel", typeof(RectTransform));
+                gamePanel.transform.SetParent(canvas.transform, false);
+                var background = new GameObject("GameplayBackground", typeof(RectTransform));
+                background.transform.SetParent(gamePanel.transform, false);
+                var lanes = new GameObject("LanesBG", typeof(RectTransform));
+                lanes.transform.SetParent(gamePanel.transform, false);
+                var judgeLine = new GameObject("JudgeLine", typeof(RectTransform), typeof(Image));
+                judgeLine.transform.SetParent(lanes.transform, false);
+                var notes = new GameObject("NotesContainer", typeof(RectTransform));
+                notes.transform.SetParent(lanes.transform, false);
+                var hud = new GameObject("HUDPanel", typeof(RectTransform));
+                hud.transform.SetParent(gamePanel.transform, false);
+
+                var view = gamePanel.AddComponent<PartTintView>();
+                Invoke(view, "Start");
+
+                Transform tint = lanes.transform.Find("PartTint");
+                Transform fx = gamePanel.transform.Find("PartSwitchFX");
+                Check(tint != null && tint.GetSiblingIndex() == 0 &&
+                    tint.GetSiblingIndex() < notes.transform.GetSiblingIndex(),
+                    "part tint sits under lanes/notes but above the panel backdrop");
+                Check(fx != null && fx.GetSiblingIndex() < hud.transform.GetSiblingIndex(),
+                    "switch FX sits above notes and below the HUD");
+                Check(fx != null && fx.Find("RailLeft") != null && fx.Find("RailRight") != null &&
+                    fx.Find("JudgeFlash") != null && fx.Find("PartBadge") != null,
+                    "switch FX builds rails, judge-line flash and badge");
+                Check(tint != null && tint.GetComponent<Image>() != null && !tint.GetComponent<Image>().raycastTarget &&
+                    fx.Find("RailLeft").GetComponent<Image>() != null &&
+                    !fx.Find("RailLeft").GetComponent<Image>().raycastTarget,
+                    "part visuals never block touch input");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(canvas);
+            }
+        }
+
         private static void SetTime(GameManager gm, float time) => Set(typeof(GameManager), "SongTime", gm, time);
         private static void Set(Type type, string name, object instance, object value) =>
             type.GetProperty(name, BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance).SetValue(instance, value);

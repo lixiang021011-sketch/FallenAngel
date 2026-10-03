@@ -40,7 +40,12 @@ namespace FallenAngel.UI
                 if (text.name.EndsWith("Title")) DeepSeaTheme.TitleRule(text);
             }
             var game = transform.Find("GamePanel");
-            if (game != null) DeepSeaTheme.Backdrop(game);
+            if (game != null)
+            {
+                DeepSeaTheme.Backdrop(game);
+                // 声部视觉层（占位实现）：运行时建层，场景不用重建；换商用素材时只改 PartPalette 与它的贴图
+                if (game.GetComponent<PartTintView>() == null) game.gameObject.AddComponent<PartTintView>();
+            }
             var menu = transform.Find("MenuPanel");
             if (menu != null)
             {

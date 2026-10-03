@@ -888,13 +888,15 @@ namespace FallenAngel.Gameplay
                 && note.Category != NoteCategory.Combo;
 
             var partSession = GameManager.Instance?.Parts;
+            NoteData partRootData = null;
             if (partSession != null)
             {
                 var root = note;
                 while (root.ParentNote is LiveNoteBase parent) root = parent;
-                partRootByLive.TryGetValue(root, out NoteData rootData);
-                partSession.Consume(rootData);
-                if (counts) partSession.Reward(rootData, result, PlayRules.EnergyMultiplier);
+                partRootByLive.TryGetValue(root, out partRootData);
+                partSession.Consume(partRootData);
+                if (counts)
+                    partSession.Reward(partRootData, result, PlayRules.EnergyMultiplier, GameManager.Instance.SongTime);
             }
 
             // osu! 式命中误差采样：只收"玩家真实计时输入（HasJudgedError）+ 计分音符 + 真判到、不是 Miss"。
@@ -915,6 +917,8 @@ namespace FallenAngel.Gameplay
                 {
                     // 生命值（前端对照清单 B4）：Miss −80（上游 LiveConfig.Damages），归零不结算、继续打完
                     PlayLife.ApplyDamage(PlayLife.DamageMiss);
+                    // 声部账本：漏掉的算在哪一段（原型验证 A 项；生命只在上面扣一次）
+                    partSession?.Miss(partRootData, PlayLife.DamageMiss);
                     ProcessMiss(lane);
                     view?.JudgeMiss();
                     OnJudgeResult?.Invoke(result, lane);

@@ -38,7 +38,18 @@ namespace FallenAngel.Core
         public ChartData ActiveChart { get; private set; }
         public float Energy { get; private set; }
         public int HitCount { get; private set; }
+        /// <summary>本次演奏的声部路线与分段账本（原型验证 A 项）</summary>
+        public PartRouteRecorder Route { get; } = new PartRouteRecorder();
+        /// <summary>当前生效的声部道具（原型用；正式内容里由局内构筑决定）</summary>
+        public PartItem Item { get; set; } = PartItem.None;
         public event Action OnEnergyChanged;
+
+        private float segmentStartTime;
+        private int notesSinceSwitch;
+        /// <summary>当前段已连续演奏的秒数（留守类道具的输入）</summary>
+        public float SamePartSeconds(float songTime) => Math.Max(0f, songTime - segmentStartTime);
+        /// <summary>切换后已经打掉几颗（换手类道具的输入）</summary>
+        public int NotesSinceSwitch => notesSinceSwitch;
 
         public SongPartSession(SongParts definition)
         {
@@ -66,21 +77,38 @@ namespace FallenAngel.Core
                     longIds.Contains(note.longNoteId)) selected.notes.Add(note);
             selected.SortNotes();
             ActiveChart = selected;
+            segmentStartTime = songTime;
+            notesSinceSwitch = 0;
+            Route.OpenAt(PartName, songTime, source);
         }
 
         /// <summary>头音符一旦接受判定就不可通过切回声部重放（包括提前命中）。</summary>
         public void Consume(NoteData root) { if (root != null) consumed.Add(root); }
 
-        /// <summary>每个谱面音符成功完成一次获 1×倍率；长音在尾判完成时奖励一次。</summary>
-        public void Reward(NoteData root, JudgeResultType result, float multiplier)
+        /// <summary>
+        /// 每个谱面音符成功完成一次按"单位产率 × 倍率 × 道具倍率"结算；长音在尾判完成时奖励一次。
+        /// songTime 只用来算留守时长——本工程的时钟唯一来源仍是 GameManager.SongTime。
+        /// </summary>
+        public void Reward(NoteData root, JudgeResultType result, float multiplier, float songTime)
         {
             if (root == null || (result != JudgeResultType.Perfect && result != JudgeResultType.Great &&
                 result != JudgeResultType.Good) || !rewarded.Add(root)) return;
             Consume(root);
             HitCount++;
             if (float.IsNaN(multiplier) || float.IsInfinity(multiplier)) multiplier = 1f;
-            Energy += Math.Max(0f, multiplier);
+            float itemMultiplier = PartEnergyRules.Compose(Item, PartName, SamePartSeconds(songTime), notesSinceSwitch);
+            float gain = Math.Max(0f, PartEnergyRules.NoteWeight(root.type) * multiplier * itemMultiplier);
+            Energy += gain;
+            Route.NoteHit(gain);
+            notesSinceSwitch++;
             OnEnergyChanged?.Invoke();
+        }
+
+        /// <summary>漏掉一颗：只记账（生命扣减仍由判定层调用 PlayLife，避免两处各扣一次）</summary>
+        public void Miss(NoteData root, int damage)
+        {
+            if (root == null) return;
+            Route.NoteMiss(damage);
         }
     }
 }
