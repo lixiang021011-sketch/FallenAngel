@@ -51,7 +51,7 @@ namespace FallenAngel.Core
             finally { DevelopmentBuild = false; }
         }
 
-        [MenuItem("Tools/FallenAngel/Build Android APK")]
+        [MenuItem("Tools/FallenAngel/Build/Build Android APK", false, 300)]
         public static void BuildAndroidApk()
         {
             // ---- 1. 重建并保存场景（工程不保存场景，打包必须先构建）----

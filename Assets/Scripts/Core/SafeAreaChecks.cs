@@ -17,7 +17,7 @@ namespace FallenAngel.Core
     /// </summary>
     public static class SafeAreaChecks
     {
-        [MenuItem("Tools/FallenAngel/Validate Safe Area")]
+        [MenuItem("Tools/FallenAngel/Validation/Visuals/Validate Safe Area", false, 602)]
         public static void Run()
         {
             var lines = new List<string>();

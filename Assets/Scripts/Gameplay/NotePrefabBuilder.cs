@@ -10,12 +10,12 @@ namespace FallenAngel.Gameplay
 {
     /// <summary>
     /// Note Prefab 自动创建器（Editor Only）
-    /// 菜单: Tools > FallenAngel > Create Note Prefab
+    /// 菜单: Tools > FallenAngel > Scenes and Assets > Create Note Prefab
     /// </summary>
     public static class NotePrefabBuilder
     {
 #if UNITY_EDITOR
-        [MenuItem("Tools/FallenAngel/Create Note Prefab")]
+        [MenuItem("Tools/FallenAngel/Scenes and Assets/Create Note Prefab", false, 201)]
         public static void CreateNotePrefab()
         {
             string folder = "Assets/Prefabs";

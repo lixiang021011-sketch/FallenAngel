@@ -25,7 +25,7 @@ namespace FallenAngel.Core
         private static readonly PropertyInfo PModifierInstance = typeof(ModifierManager).GetProperty("Instance",
             BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
 
-        [MenuItem("Tools/FallenAngel/Validate Play Modifiers")]
+        [MenuItem("Tools/FallenAngel/Validation/Gameplay/Validate Play Modifiers", false, 510)]
         public static void Run()
         {
             var lines = new List<string>();

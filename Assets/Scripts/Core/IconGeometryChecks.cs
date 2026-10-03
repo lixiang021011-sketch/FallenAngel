@@ -54,7 +54,7 @@ namespace FallenAngel.Core
             new Case(DeepSeaGraphic.Shape.Upgrade, 34, 34, "天赋语义·升级"),
         };
 
-        [MenuItem("Tools/FallenAngel/Validate Icon Geometry")]
+        [MenuItem("Tools/FallenAngel/Validation/Visuals/Validate Icon Geometry", false, 607)]
         public static void Run()
         {
             var lines = new List<string>();

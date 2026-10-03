@@ -16,7 +16,7 @@ namespace FallenAngel.Core
     /// </summary>
     public static class LifeChecks
     {
-        [MenuItem("Tools/FallenAngel/Validate Life and Damage")]
+        [MenuItem("Tools/FallenAngel/Validation/Gameplay/Validate Life and Damage", false, 507)]
         public static void Run()
         {
             var lines = new List<string>();

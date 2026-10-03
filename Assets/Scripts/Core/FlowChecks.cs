@@ -15,7 +15,7 @@ namespace FallenAngel.Core
     /// </summary>
     public static class FlowChecks
     {
-        [MenuItem("Tools/FallenAngel/Validate Flow Pages")]
+        [MenuItem("Tools/FallenAngel/Validation/Visuals/Validate Flow Pages", false, 601)]
         public static void Run()
         {
             var lines = new List<string>();

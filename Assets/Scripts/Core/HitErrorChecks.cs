@@ -20,7 +20,7 @@ namespace FallenAngel.Core
     /// </summary>
     public static class HitErrorChecks
     {
-        [MenuItem("Tools/FallenAngel/Validate Hit Error Offset Suggestion")]
+        [MenuItem("Tools/FallenAngel/Validation/Gameplay/Validate Hit Error Offset Suggestion", false, 505)]
         public static void Run()
         {
             var lines = new List<string>();

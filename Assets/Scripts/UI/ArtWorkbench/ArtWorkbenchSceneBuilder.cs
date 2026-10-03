@@ -14,7 +14,7 @@ namespace FallenAngel.UI
     {
         const string ScenePath = "Assets/Scenes/ArtWorkbench.unity";
 
-        [MenuItem("Tools/FallenAngel/Build Art Workbench Scene")]
+        [MenuItem("Tools/FallenAngel/Art Workbench/Build Art Workbench Scene", false, 401)]
         public static void BuildScene()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode)
@@ -50,7 +50,7 @@ namespace FallenAngel.UI
                 "美术工作台场景已生成：\n" + ScenePath + "\n\n打开该场景后按 Play。此场景不在构建列表里。", "OK");
         }
 
-        [MenuItem("Tools/FallenAngel/Open Art Workbench")]
+        [MenuItem("Tools/FallenAngel/Art Workbench/Open Art Workbench", false, 400)]
         public static void OpenWorkbench()
         {
             if (EditorApplication.isPlaying)
@@ -65,7 +65,7 @@ namespace FallenAngel.UI
 
     public static class ArtWorkbenchChecks
     {
-        [MenuItem("Tools/FallenAngel/Validate Art Workbench")]
+        [MenuItem("Tools/FallenAngel/Art Workbench/Validate Art Workbench", false, 402)]
         public static void Validate()
         {
             int pass = 0;
@@ -92,11 +92,11 @@ namespace FallenAngel.UI
             bool hasStart = typeof(GameManager).GetEvent("OnGameStart") != null;
             if (hasJudge && hasStart) Ok("A10", "实机转发 OnJudgeResult / OnComboUpdate / OnScoreUpdate / OnGameStart / OnGameEnd；无 Hold 事件则回退工作台");
             else Warn("A10", "未找到实机事件");
-            Warn("A11", "截图请 Play 后执行 Tools > FallenAngel > Capture Art Workbench Evidence");
+            Warn("A11", "截图请 Play 后执行 Tools > FallenAngel > Art Workbench > Capture Art Workbench Evidence");
             Debug.Log("[ArtWorkbench] 校验 " + pass + " 项静态通过。判定窗口/谱面/计分/校准未改。");
         }
 
-        [MenuItem("Tools/FallenAngel/Capture Art Workbench Evidence")]
+        [MenuItem("Tools/FallenAngel/Art Workbench/Capture Art Workbench Evidence", false, 403)]
         public static void Capture()
         {
             if (!EditorApplication.isPlaying)

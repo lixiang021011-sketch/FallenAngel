@@ -23,7 +23,7 @@ namespace FallenAngel.Core
     {
         private const float Margin = 20f;
 
-        [MenuItem("Tools/FallenAngel/Validate HUD Layout")]
+        [MenuItem("Tools/FallenAngel/Validation/Visuals/Validate HUD Layout", false, 600)]
         public static void Run()
         {
             var lines = new List<string>();

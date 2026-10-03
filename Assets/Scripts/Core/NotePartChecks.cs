@@ -69,7 +69,7 @@ namespace FallenAngel.Core
             };
         }
 
-        [MenuItem("Tools/FallenAngel/Validate Note Parts")]
+        [MenuItem("Tools/FallenAngel/Validation/Visuals/Validate Note Parts", false, 604)]
         public static void Run()
         {
             var lines = new List<string>();

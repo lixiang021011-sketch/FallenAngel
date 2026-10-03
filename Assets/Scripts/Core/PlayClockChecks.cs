@@ -24,7 +24,7 @@ namespace FallenAngel.Core
     /// </summary>
     public static class PlayClockChecks
     {
-        [MenuItem("Tools/FallenAngel/Validate Play Clock and Offsets")]
+        [MenuItem("Tools/FallenAngel/Validation/Gameplay/Validate Play Clock and Offsets", false, 504)]
         public static void Run()
         {
             var lines = new List<string>();

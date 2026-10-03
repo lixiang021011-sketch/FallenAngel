@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -235,7 +235,7 @@ namespace FallenAngel.UI
         {
             AudioManager.Instance?.PlayButtonClick();
             if (talentPanel != null) talentPanel.Open();
-            else Debug.LogWarning("[SaveSelectPanelController] 天赋面板未注入，请重建场景（Tools > FallenAngel > Build Default Game Scene）");
+            else Debug.LogWarning("[SaveSelectPanelController] 天赋面板未注入，请重建场景（Tools > FallenAngel > Scenes and Assets > Build Default Game Scene）");
         }
 
         /// <summary>选中档后显隐"进入游戏"/"天赋"按钮</summary>

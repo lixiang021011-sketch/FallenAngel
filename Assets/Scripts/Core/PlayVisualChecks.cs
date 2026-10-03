@@ -23,7 +23,7 @@ namespace FallenAngel.Core
     {
         private const float TolerancePx = 0.5f;
 
-        [MenuItem("Tools/FallenAngel/Validate Play Visual Spec")]
+        [MenuItem("Tools/FallenAngel/Validation/Visuals/Validate Play Visual Spec", false, 606)]
         public static void Run()
         {
             var lines = new List<string>();

@@ -22,7 +22,7 @@ namespace FallenAngel.Core
     /// </summary>
     public static class LiveJudgeChecks
     {
-        [MenuItem("Tools/FallenAngel/Validate Live Judge Core")]
+        [MenuItem("Tools/FallenAngel/Validation/Gameplay/Validate Live Judge Core", false, 503)]
         public static void Run()
         {
             var lines = new List<string>();

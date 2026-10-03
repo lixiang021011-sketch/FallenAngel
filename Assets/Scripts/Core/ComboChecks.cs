@@ -22,7 +22,7 @@ namespace FallenAngel.Core
     /// </summary>
     public static class ComboChecks
     {
-        [MenuItem("Tools/FallenAngel/Validate Combo and AP")]
+        [MenuItem("Tools/FallenAngel/Validation/Gameplay/Validate Combo and AP", false, 506)]
         public static void Run()
         {
             var lines = new List<string>();

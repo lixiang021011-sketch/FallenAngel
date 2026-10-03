@@ -26,7 +26,7 @@ namespace FallenAngel.Core
         private const float Tol = 1e-4f;
         private static readonly Vector2 SpawnPos = new Vector2(0f, 1200f);
 
-        [MenuItem("Tools/FallenAngel/Validate Judge Windows")]
+        [MenuItem("Tools/FallenAngel/Validation/Gameplay/Validate Judge Windows", false, 502)]
         public static void Run()
         {
             var lines = new List<string>();

@@ -29,7 +29,7 @@ namespace FallenAngel.Core
         const string OflFontPath = "Assets/Fonts/SourceHanSansCN-Regular.otf";
         const string CjkFontAssetPath = "Assets/Fonts/CJK_Font SDF.asset";
 
-        [MenuItem("Tools/FallenAngel/Create Chinese TMP Font")]
+        [MenuItem("Tools/FallenAngel/Scenes and Assets/Create Chinese TMP Font", false, 202)]
         public static void CreateChineseTmpFont()
         {
             EnsureCjkFont(true);
@@ -116,7 +116,7 @@ namespace FallenAngel.Core
             AssetDatabase.SaveAssets();
             if (confirm)
                 EditorUtility.DisplayDialog("FallenAngel",
-                    "中文字体已就绪（思源黑体 CN，SIL OFL）。\n\n请重新执行 Tools > FallenAngel > Build Default Game Scene 重建场景。", "OK");
+                    "中文字体已就绪（思源黑体 CN，SIL OFL）。\n\n请重新执行 Tools > FallenAngel > Scenes and Assets > Build Default Game Scene 重建场景。", "OK");
             return true;
         }
 
@@ -127,7 +127,7 @@ namespace FallenAngel.Core
                    fa.atlasTextures.Length > 0 && fa.atlasTextures[0] != null;
         }
 
-        [MenuItem("Tools/FallenAngel/Build Default Game Scene")]
+        [MenuItem("Tools/FallenAngel/Scenes and Assets/Build Default Game Scene", false, 200)]
         public static void BuildDefaultScene()
         {
             BuildDefaultScene(true);

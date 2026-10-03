@@ -27,7 +27,7 @@ namespace FallenAngel.Core
         private const float LoudThreshold = 0.004f;
         private const float SustainSeconds = 0.05f;
 
-        [MenuItem("Tools/FallenAngel/Measure Chart Audio Offset")]
+        [MenuItem("Tools/FallenAngel/Charts/Measure Chart Audio Offset", false, 101)]
         public static void Run()
         {
             RunInternal(false);
@@ -38,7 +38,7 @@ namespace FallenAngel.Core
         /// 只读版本先看体检表；确认无误再跑这个。
         /// batchmode：-executeMethod FallenAngel.Core.ChartAudioOffsetTool.ApplyOffsets
         /// </summary>
-        [MenuItem("Tools/FallenAngel/Apply Chart Audio Offsets (by measured silence)")]
+        [MenuItem("Tools/FallenAngel/Charts/Apply Chart Audio Offsets (by measured silence)", false, 102)]
         public static void ApplyOffsets()
         {
             RunInternal(true);

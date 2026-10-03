@@ -24,7 +24,7 @@ namespace FallenAngel.Core
             return new ChartEvent { time = t, type = type, value = 0f };
         }
 
-        [MenuItem("Tools/FallenAngel/Validate Fever")]
+        [MenuItem("Tools/FallenAngel/Validation/Gameplay/Validate Fever", false, 508)]
         public static void Run()
         {
             var lines = new List<string>();

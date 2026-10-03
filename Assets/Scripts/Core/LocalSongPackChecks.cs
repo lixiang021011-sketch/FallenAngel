@@ -33,7 +33,7 @@ namespace FallenAngel.Core
         /// </remarks>
         private static readonly string[] Prefixes = { "pjsk_", "cc_", "phira_" };
 
-        [MenuItem("Tools/FallenAngel/Validate Local Song Pack")]
+        [MenuItem("Tools/FallenAngel/Validation/Content/Validate Local Song Pack", false, 700)]
         public static void Run()
         {
             var lines = new List<string>();

@@ -28,7 +28,7 @@ namespace FallenAngel.Core
         private static readonly PropertyInfo PModifierInstance = typeof(ModifierManager).GetProperty("Instance",
             BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
 
-        [MenuItem("Tools/FallenAngel/Validate Build Catalog")]
+        [MenuItem("Tools/FallenAngel/Validation/Content/Validate Build Catalog", false, 703)]
         public static void Run()
         {
             var lines = new List<string>();

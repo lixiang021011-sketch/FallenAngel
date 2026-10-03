@@ -75,7 +75,7 @@ namespace FallenAngel.Core
         private float lastPreviewTime;   // 上一帧的预览时间，用于"跨过即触发"
         private const double BurstSeconds = .32;
 
-        [MenuItem("Tools/FallenAngel/Chart Editor")]
+        [MenuItem("Tools/FallenAngel/Charts/Chart Editor", false, 100)]
         public static void Open() => GetWindow<ChartEditorWindow>("谱面编辑器");
 
         /// <summary>打开窗口即有可编辑内容：默认谱存在则载入，否则自动新建 5 轨草稿。</summary>

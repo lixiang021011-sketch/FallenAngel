@@ -26,7 +26,7 @@ namespace FallenAngel.Core
     {
         private const string Tag = "[ChapterCatalog] ";
 
-        [MenuItem("Tools/FallenAngel/Validate Chapter 1 Route")]
+        [MenuItem("Tools/FallenAngel/Validation/Content/Validate Chapter 1 Route", false, 704)]
         public static void Run()
         {
             var lines = new List<string>();

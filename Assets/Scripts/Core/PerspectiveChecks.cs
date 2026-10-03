@@ -29,7 +29,7 @@ namespace FallenAngel.Core
         private static readonly Vector2 SpawnPos = new Vector2(0f, PlayVisualSpec.SpawnYFromCenter);
         private static readonly Vector2 JudgePos = new Vector2(0f, PlayVisualSpec.JudgeLineY);
 
-        [MenuItem("Tools/FallenAngel/Validate Play Perspective")]
+        [MenuItem("Tools/FallenAngel/Validation/Visuals/Validate Play Perspective", false, 605)]
         public static void Run()
         {
             var lines = new List<string>();

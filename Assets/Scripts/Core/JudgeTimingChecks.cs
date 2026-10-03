@@ -32,7 +32,7 @@ namespace FallenAngel.Core
     /// </summary>
     public static class JudgeTimingChecks
     {
-        [MenuItem("Tools/FallenAngel/Validate Judge Timing")]
+        [MenuItem("Tools/FallenAngel/Validation/Gameplay/Validate Judge Timing", false, 501)]
         public static void Run()
         {
             var lines = new List<string>();

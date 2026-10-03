@@ -23,7 +23,7 @@ namespace FallenAngel.Core
     {
         private static readonly BindingFlags Priv = BindingFlags.Instance | BindingFlags.NonPublic;
 
-        [MenuItem("Tools/FallenAngel/Validate Note Pool")]
+        [MenuItem("Tools/FallenAngel/Validation/Gameplay/Validate Note Pool", false, 511)]
         public static void Run()
         {
             var lines = new List<string>();

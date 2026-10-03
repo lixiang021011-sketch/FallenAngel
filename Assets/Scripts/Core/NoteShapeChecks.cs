@@ -25,7 +25,7 @@ namespace FallenAngel.Core
             "Normal", "Drag", "Flick", "LongStart", "LongEnd", "Slide", "SlideTail", "Wide",
         };
 
-        [MenuItem("Tools/FallenAngel/Validate Note Shapes")]
+        [MenuItem("Tools/FallenAngel/Validation/Visuals/Validate Note Shapes", false, 603)]
         public static void Run()
         {
             var lines = new List<string>();

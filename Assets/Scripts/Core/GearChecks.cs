@@ -24,7 +24,7 @@ namespace FallenAngel.Core
         private const float Tol = 1e-3f;
         private const string Tag = "[GearCatalog] ";
 
-        [MenuItem("Tools/FallenAngel/Validate Common Gear")]
+        [MenuItem("Tools/FallenAngel/Validation/Content/Validate Common Gear", false, 705)]
         public static void Run()
         {
             var lines = new List<string>();

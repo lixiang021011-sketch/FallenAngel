@@ -18,7 +18,7 @@ namespace FallenAngel.Core
     /// </summary>
     public static class CutinChecks
     {
-        [MenuItem("Tools/FallenAngel/Validate Cutin and Demo Item")]
+        [MenuItem("Tools/FallenAngel/Validation/Gameplay/Validate Cutin and Demo Item", false, 509)]
         public static void Run()
         {
             var lines = new List<string>();
