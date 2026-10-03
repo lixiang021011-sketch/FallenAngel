@@ -14,7 +14,8 @@
   · 判定线（屏幕 y=1520）不动，音符判定与下落不受影响；
   · 底栏高 132，吃掉屏幕最底一条的触摸（判定层用 IsPointerOverUI 挡），所以那段不再是轨道输入区；
   · 键帽（KeyArea）在运行时整体上移 132，让"看得见的轨道"停在底栏之上；
-  · 防误触：只有"按下→抬起都在同一枚芯片内、且按下 ≤0.4s"才算切换 —— 拇指歇在屏幕上抬起不会换声部。
+  · 防误触两层：① 只有"按下→抬起都在同一枚芯片内、且按下 ≤0.4s"才算一次点击（拇指歇着抬起不算）；
+    ② 点击本身还要**双击确认**（0.5s 内连点同一枚）——第一下只点亮成"待确认"，第二下才换声部。
 
 输出（art_tools/review/part_switch/）：
   part_switch_button_bottom.png  2 件 / 5 件两条整屏对照 + 底栏放大 + 切换条状态
@@ -125,7 +126,7 @@ def draw_field(img, color):
     d.line([(0, JUDGE_SCREEN_Y), (W, JUDGE_SCREEN_Y)], fill=JUDGE, width=4)
 
 
-def draw_switch_bar(img, parts, active, pressed=None):
+def draw_switch_bar(img, parts, active, pressed=None, armed=None):
     """与 PartSwitchBar 同一套算法：芯片居中、宽度 min(240, (1040−12(N−1))/N)。"""
     d = ImageDraw.Draw(img, "RGBA")
     d.rectangle([0, BAR_TOP, W, H], fill=(9, 18, 23, 240))
@@ -141,23 +142,25 @@ def draw_switch_bar(img, parts, active, pressed=None):
             else (int(color[0] * 0.22), int(color[1] * 0.22), int(color[2] * 0.22), 255)
         if part == pressed:
             fill = (min(255, fill[0] + 60), min(255, fill[1] + 60), min(255, fill[2] + 60), 255)
+        if part == armed:
+            fill = (235, 245, 248, 255)          # 待确认：提亮成白
         rounded(d, [x0, y0, x0 + cw, y0 + CHIP_H], 14, fill=fill,
                 outline=color + (255,), width=3 if is_active else 2)
         f = font(34, True)
         tw = d.textlength(part, font=f)
-        text_color = (24, 28, 30, 255) if is_active else color + (235,)
+        text_color = (24, 28, 30, 255) if (is_active or part == armed) else color + (235,)
         d.text((x0 + cw / 2 - tw / 2, y0 + CHIP_H / 2 - 22), part, font=f, fill=text_color)
         if is_active:
             rounded(d, [x0 + 16, y0 + 8, x0 + cw - 16, y0 + 14], 3, fill=color + (255,))
 
 
-def mock(parts, active, pressed=None, badge=False):
+def mock(parts, active, pressed=None, armed=None, badge=False):
     img = Image.new("RGB", (W, H), BG_DEEP)
     color = hue_rgb(hue_of(active))
     draw_background(img, color)
     draw_hud(img)
     draw_field(img, color)
-    draw_switch_bar(img, parts, active, pressed)
+    draw_switch_bar(img, parts, active, pressed, armed)
     if badge:
         d = ImageDraw.Draw(img)
         f = font(110, True)
@@ -185,7 +188,7 @@ def main():
            font=font(36, True), fill=TEXT_BRIGHT)
     d.text((42, 88), "芯片数 = 曲目声部表长度；单个宽度 = min(240, (1040 − 12×(N−1)) / N)：2 件是 240 宽条，5 件压到 198 正好一行",
            font=font(24), fill=TEXT)
-    d.text((42, 124), "判定线不动；底栏吃掉最底一条的触摸（uGUI 挡住判定层），键帽整体上移 132px；长按（拇指歇着）抬起不触发切换",
+    d.text((42, 124), "判定线不动；底栏吃掉最底一条的触摸（uGUI 挡住判定层），键帽整体上移 132px；防误触＝快速轻点 + 双击确认（第一下只点亮待确认）",
            font=font(24), fill=TEXT)
 
     y_shot, y_bar = 200, 200 + fh + 26
@@ -203,13 +206,13 @@ def main():
         d.text((x + 6, y_bar + bar_h + 42), note, font=font(22), fill=TEXT)
 
     y_state = y_bar + bar_h + 120
-    d.text((40, y_state), "切换条状态（2 件版）：当前声部实底高亮 / 另一件压暗可点 / 按下变亮 / 切换瞬间的徽记仍在判定线以上",
+    d.text((40, y_state), "切换条状态：当前声部实底高亮 / 第一下点亮“待确认” / 第二下确认切换（徽记仍在判定线以上）/ 5 件乐器的排布",
            font=font(32, True), fill=TEXT_BRIGHT)
     y_state += 54
-    states = [("Guitar 生效", mock(DEMO_PARTS, "Guitar")),
-              ("Drums 生效", mock(DEMO_PARTS, "Drums")),
-              ("按下 DRUMS", mock(DEMO_PARTS, "Guitar", pressed="Drums")),
-              ("切换瞬间", mock(DEMO_PARTS, "Drums", badge=True))]
+    states = [("当前 Guitar", mock(DEMO_PARTS, "Guitar")),
+              ("第一下：DRUMS 待确认", mock(DEMO_PARTS, "Guitar", armed="Drums")),
+              ("第二下：确认切换", mock(DEMO_PARTS, "Drums", badge=True)),
+              ("5 件乐器 · 当前 Keys", mock(FIVE_PARTS, "Keys"))]
     for i, (label, img) in enumerate(states):
         x = 40 + i * (sw + 16)
         sheet.paste(img.resize((sw, sh), Image.LANCZOS), (x, y_state))
