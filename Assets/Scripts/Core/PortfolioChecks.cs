@@ -15,7 +15,7 @@ namespace FallenAngel.Core
         private static int checks;
         private static readonly List<string> results = new List<string>();
 
-        [MenuItem("Tools/FallenAngel/Print Stage-Chart Bindings")]
+        [MenuItem("Tools/FallenAngel/Charts/Print Stage-Chart Bindings", false, 103)]
         public static void PrintStageChartBindings()
         {
             // 编辑器直查：把"关卡→谱面"对照打进 Console（含资源存在性检查，无需进 Play）
@@ -28,7 +28,7 @@ namespace FallenAngel.Core
             }
         }
 
-        [MenuItem("Tools/FallenAngel/Validate Portfolio Config and Talents")]
+        [MenuItem("Tools/FallenAngel/Validation/Content/Validate Portfolio Config and Talents", false, 701)]
         public static void Run()
         {
             checks = 0;
@@ -51,6 +51,7 @@ namespace FallenAngel.Core
                 ValidateLegacy(temporary);
                 ValidateReset(temporary);
                 ValidateMap();
+                ValidateRoomOptions();
                 ValidateIncomeAndDiscounts();
                 WriteReport("PASS");
                 Debug.Log("[PortfolioChecks] PASS: " + checks + " checks. Temporary profiles only; gameplay not tested.");
@@ -443,6 +444,164 @@ namespace FallenAngel.Core
             Check(r.outcome == "CLEARED" && r.completedSongs == 7 && r.creditedPoints == 850 && r.runCash == 0
                 && r.layer == ChapterCatalog.LayerCount,
                 "Finale settles the run after seven performances (layer tracked to 3)");
+        }
+
+        /// <summary>
+        /// 房间选项的结算链路（docs/condition-effect-spec.md）：条件组 → 效果组，一次提交，
+        /// 重复提交不重复发奖，没被这间房提供的选项不能隔空选。
+        /// 表的形状与异常路径在 RoomContentChecks 里验，这里只验"进程内真的能落地"。
+        /// </summary>
+        private static void ValidateRoomOptions()
+        {
+            var store = new MemoryStore();
+            var talents = new PortfolioTalentService(store);
+            var growth = new PortfolioGrowthService(store);
+            var p = talents.CreateProfile("Room option check");
+            var r = growth.Begin(p.profileId, 30, 100, true);
+
+            growth.EnterRoom(p.profileId, r.runId, "R1A");
+            growth.MarkPlaying(p.profileId, r.runId);
+            growth.CompleteSong(p.profileId, r.runId, 0, true);
+            growth.Continue(p.profileId, r.runId);
+            growth.EnterRoom(p.profileId, r.runId, "R2A");   // 事件房 RC_VISITED：一眼 / 离开
+            r = growth.ReadRun(talents.ReadProfile(p.profileId));
+
+            Check(r.phase == "ROOM" && r.resolvedRoomChoices.Count == 0,
+                "Event room starts with no resolved options");
+
+            string why;
+            Check(growth.CanApplyRoomOption(p.profileId, r.runId, "OP_LOOK", out why),
+                "Offered room option passes the dry run");
+            Check(!growth.CanApplyRoomOption(p.profileId, r.runId, "OP_TAKE_HOTBAG", out why),
+                "Option this room does not offer is rejected before commit");
+            Reject(() => growth.ApplyRoomOption(p.profileId, r.runId, "OP_NOPE"),
+                "Unknown room option id is rejected");
+
+            int before = r.runCash;
+            growth.ApplyRoomOption(p.profileId, r.runId, "OP_LOOK");
+            r = growth.ReadRun(talents.ReadProfile(p.profileId));
+            Check(r.runCash == before + 20 && r.resolvedRoomChoices.Count == 1,
+                "Room option pays out through its effect group");
+
+            growth.ApplyRoomOption(p.profileId, r.runId, "OP_LOOK");
+            r = growth.ReadRun(talents.ReadProfile(p.profileId));
+            Check(r.runCash == before + 20 && r.resolvedRoomChoices.Count == 1,
+                "Repeating the same room option does not pay twice");
+
+            // 终房离开时会结算整局，顺带确认新加的幂等键会被清零、不跨局残留。
+            growth.LeaveRoom(p.profileId, r.runId);
+            r = growth.ReadRun(talents.ReadProfile(p.profileId));
+            Check(r.phase == "MAP" && r.resolvedRoomChoices.Count == 1,
+                "Leaving the room keeps the run going with its choice log intact");
+
+            // 给器材这条链路要真的落进存档再读回来（快照校验认不认 CG 系，只有走一遍才知道）。
+            // 目标房间从表里找，路径不写死——路线表改了这份检查也不会假红。
+            string gearRoom = FindRoomWithGearOption();
+            Check(!string.IsNullOrEmpty(gearRoom), "Chapter has a room whose option hands out gear");
+            r = WalkToRoom(growth, talents, p.profileId, r, gearRoom);
+            Check(r.phase == "ROOM" && r.currentNodeId == gearRoom, "Walked to the gear room");
+
+            string gearOption = FindGearOptionAt(gearRoom);
+            Check(!string.IsNullOrEmpty(gearOption), "Gear room offers a gear option");
+            Check(growth.CanApplyRoomOption(p.profileId, r.runId, gearOption, out why),
+                "Gear option passes the dry run");
+            growth.ApplyRoomOption(p.profileId, r.runId, gearOption);
+            r = growth.ReadRun(talents.ReadProfile(p.profileId));
+            Check(r.heldEquipmentIds.Count == 1 && GearCatalog.Find(r.heldEquipmentIds[0]) != null,
+                "Granted gear survives the snapshot round trip");
+
+            growth.ApplyRoomOption(p.profileId, r.runId, gearOption);
+            r = growth.ReadRun(talents.ReadProfile(p.profileId));
+            Check(r.heldEquipmentIds.Count == 1, "Re-applying the same gear option is a no-op");
+        }
+
+        /// <summary>找一个"选项会发器材"的房间（内容表改了这份检查也不用改）。</summary>
+        private static string FindRoomWithGearOption()
+        {
+            foreach (var node in PortfolioConfig.MapNodes)
+            {
+                if (string.IsNullOrEmpty(node.ContentId)) continue;
+                var content = RoomContentCatalog.FindContent(node.ContentId);
+                if (content == null) continue;
+                foreach (string optionId in content.OptionIds)
+                {
+                    var option = RoomContentCatalog.FindOption(optionId);
+                    if (option == null || string.IsNullOrEmpty(option.EffectGroupId)) continue;
+                    foreach (var entry in EffectCatalog.EntriesOf(option.EffectGroupId))
+                    {
+                        if (entry.Type == EffectType.GiveEquipment) return node.NodeId;
+                    }
+                }
+            }
+            return null;
+        }
+
+        /// <summary>该房间里第一个发器材的选项 id。</summary>
+        private static string FindGearOptionAt(string roomId)
+        {
+            var node = PortfolioConfig.MapNodes.Single(n => n.NodeId == roomId);
+            var content = RoomContentCatalog.FindContent(node.ContentId);
+            if (content == null) return null;
+            foreach (string optionId in content.OptionIds)
+            {
+                var option = RoomContentCatalog.FindOption(optionId);
+                if (option == null || string.IsNullOrEmpty(option.EffectGroupId)) continue;
+                foreach (var entry in EffectCatalog.EntriesOf(option.EffectGroupId))
+                {
+                    if (entry.Type == EffectType.GiveEquipment) return optionId;
+                }
+            }
+            return null;
+        }
+
+        /// <summary>沿表走到指定房间：岔口优先选"还能走到目标"的那条边，走不到就退化成第一个后继。</summary>
+        private static PortfolioGrowthRunData WalkToRoom(PortfolioGrowthService growth,
+            PortfolioTalentService talents, string profileId, PortfolioGrowthRunData r, string target)
+        {
+            r = growth.ReadRun(talents.ReadProfile(profileId));
+            for (int guard = 0; guard < 64 && r != null && r.phase != "FINISHED" && r.currentNodeId != target; guard++)
+            {
+                if (r.phase == "MAP")
+                {
+                    string next = null;
+                    foreach (var edge in PortfolioConfig.MapEdges)
+                    {
+                        if (edge.FromNodeId != r.currentNodeId) continue;
+                        if (next == null) next = edge.ToNodeId;
+                        if (CanReach(edge.ToNodeId, target)) { next = edge.ToNodeId; break; }
+                    }
+                    growth.EnterRoom(profileId, r.runId, next);
+                }
+                else if (r.phase == "READY")
+                {
+                    growth.MarkPlaying(profileId, r.runId);
+                    growth.CompleteSong(profileId, r.runId, r.completedSongs, true);
+                }
+                else if (r.phase == "RESULT") growth.Continue(profileId, r.runId);
+                else if (r.phase == "ROOM") growth.LeaveRoom(profileId, r.runId);
+                r = growth.ReadRun(talents.ReadProfile(profileId));
+            }
+            return r;
+        }
+
+        /// <summary>沿地图前向连线，能不能从 from 走到 to。</summary>
+        private static bool CanReach(string from, string to)
+        {
+            if (from == to) return true;
+            var seen = new HashSet<string> { from };
+            var queue = new Queue<string>();
+            queue.Enqueue(from);
+            while (queue.Count > 0)
+            {
+                string node = queue.Dequeue();
+                foreach (var edge in PortfolioConfig.MapEdges)
+                {
+                    if (edge.FromNodeId != node) continue;
+                    if (edge.ToNodeId == to) return true;
+                    if (seen.Add(edge.ToNodeId)) queue.Enqueue(edge.ToNodeId);
+                }
+            }
+            return false;
         }
 
         /// <summary>某个房间的全部后继（按表顺序）——自检用来验"这一步给了几个候选"。</summary>

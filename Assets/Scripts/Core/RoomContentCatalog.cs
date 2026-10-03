@@ -4,8 +4,10 @@ using System.Collections.Generic;
 namespace FallenAngel.Core
 {
     /// <summary>
-    /// 房间能给的东西 / 要走的代价（**效果词表**）。内容表只能先用"已接线"的词——
-    /// 这样"表里写了但代码没实现"这种半成品状态不可能出现。
+    /// 旧的"一给一拿"词表（**给钱 / 给器材**）。房间选项从 2026-10-01 起改用
+    /// 条件组 + 效果组（见 docs/condition-effect-spec.md），这个枚举只剩**改路消耗**在用
+    /// （<see cref="RerouteCatalog"/> 仍靠 <see cref="RoomContentCatalog.IsWired"/> 把关）。
+    /// 改路要不要并到同一套效果组，留给下一个切片决定。
     /// </summary>
     public enum RoomEffectKind
     {
@@ -21,32 +23,28 @@ namespace FallenAngel.Core
         FavorCost = 9,    // 花人情（未接线）
     }
 
-    /// <summary>房间里的一个选项：给什么、要什么。</summary>
+    /// <summary>
+    /// 房间里的一个选项：**能不能选**（条件组）+ **选了之后发生什么**（效果组）。
+    /// 两个 id 都指向 Core 里的代码持表：条件组在 <see cref="ConditionCatalog"/>，
+    /// 效果组在 <see cref="EffectCatalog"/>。空的效果组 = 什么都不发生（"离开"就是这样）。
+    /// </summary>
     public sealed class RoomOptionRow
     {
         public string OptionId { get; }
         public string LabelKey { get; }
-        public RoomEffectKind GiveKind { get; }
-        public string GiveId { get; }        // Gear 用 gearId；其余留空
-        public int GiveAmount { get; }
-        public RoomEffectKind TakeKind { get; }
-        public string TakeId { get; }
-        public int TakeAmount { get; }
+        /// <summary>能不能选；空 = 无条件可选。</summary>
+        public string ConditionGroupId { get; }
+        /// <summary>选了之后要一起提交的效果；空 = 无事发生。</summary>
+        public string EffectGroupId { get; }
         public bool Enabled { get; }
 
         public RoomOptionRow(string optionId, string labelKey,
-            RoomEffectKind giveKind = RoomEffectKind.None, string giveId = null, int giveAmount = 0,
-            RoomEffectKind takeKind = RoomEffectKind.None, string takeId = null, int takeAmount = 0,
-            bool enabled = true)
+            string effectGroupId = null, string conditionGroupId = null, bool enabled = true)
         {
             OptionId = optionId;
             LabelKey = labelKey;
-            GiveKind = giveKind;
-            GiveId = giveId;
-            GiveAmount = giveAmount;
-            TakeKind = takeKind;
-            TakeId = takeId;
-            TakeAmount = takeAmount;
+            ConditionGroupId = conditionGroupId;
+            EffectGroupId = effectGroupId;
             Enabled = enabled;
         }
     }
@@ -91,14 +89,15 @@ namespace FallenAngel.Core
         };
 
         // ── 占位房（作者口径 2026-09-27："当前房间可以都做几类占位房，房间类型走配表"）──
-        // 效果只允许用已接线的词（None / Gear / Money）；文案走 Loc key，改文案不用改代码。
+        // 选项只写"选了之后发生什么"（效果组 id），具体动作在 EffectCatalog；
+        // 文案走 Loc key，改文案不用改代码。
         private static readonly RoomOptionRow[] options = new RoomOptionRow[]
         {
             new RoomOptionRow("OP_LEAVE", "room.op.leave"),
-            new RoomOptionRow("OP_LOOK", "room.op.look", giveKind: RoomEffectKind.Money, giveAmount: 20),
-            new RoomOptionRow("OP_TAKE_HOTBAG", "room.op.take.hotbag", giveKind: RoomEffectKind.Gear, giveId: "CG06"),
-            new RoomOptionRow("OP_TAKE_BANDAGE", "room.op.take.bandage", giveKind: RoomEffectKind.Gear, giveId: "CG13"),
-            new RoomOptionRow("OP_TAKE_PLIERS", "room.op.take.pliers", giveKind: RoomEffectKind.Gear, giveId: "CG01"),
+            new RoomOptionRow("OP_LOOK", "room.op.look", "EG_LOOK"),
+            new RoomOptionRow("OP_TAKE_HOTBAG", "room.op.take.hotbag", "EG_TAKE_HOTBAG"),
+            new RoomOptionRow("OP_TAKE_BANDAGE", "room.op.take.bandage", "EG_TAKE_BANDAGE"),
+            new RoomOptionRow("OP_TAKE_PLIERS", "room.op.take.pliers", "EG_TAKE_PLIERS"),
         };
 
         private static readonly RoomContentRow[] events = new RoomContentRow[]
@@ -196,9 +195,10 @@ namespace FallenAngel.Core
 
         /// <summary>
         /// 校验三张内容表，返回错误说明列表（空 = 通过）。空表必须通过（内容还没铺是正常状态）。
-        /// 抓的是"写错了但不会立刻报错"的几类：id 空/重复、启用行缺文案、金额为负、
-        /// **用了还没接线的效果**、Gear 没给 id 或指向不存在的器材、内容行选项数不在 1–3、
+        /// 抓的是"写错了但不会立刻报错"的几类：id 空/重复、启用行缺文案、
+        /// **选项引用了不存在的条件组 / 效果组**、内容行选项数不在 1–3、
         /// 引用不存在的选项、房间类型不对（演奏/商店不能有内容行）、层号越界。
+        /// （效果词本身合不合法由 <see cref="EffectCatalog.Validate"/> 管，不在这张表重复判一次。）
         /// </summary>
         public static List<string> Validate(IReadOnlyList<RoomOptionRow> optionTable,
             IReadOnlyList<RoomContentRow> eventTable, IReadOnlyList<RoomContentRow> restTable,
@@ -217,22 +217,10 @@ namespace FallenAngel.Core
                 else if (!seenOptions.Add(row.OptionId)) errors.Add("选项表：" + row.OptionId + " 重复");
                 if (row.Enabled && string.IsNullOrEmpty(row.LabelKey))
                     errors.Add("选项表：" + label + " 缺 labelKey（玩家可见文本要走 Loc）");
-                if (row.GiveAmount < 0 || row.TakeAmount < 0)
-                    errors.Add("选项表：" + label + " 的金额不能为负");
-                if (!IsWired(row.GiveKind))
-                    errors.Add("选项表：" + label + " 想给 " + row.GiveKind + "，但这个效果还没接线");
-                if (!IsWired(row.TakeKind))
-                    errors.Add("选项表：" + label + " 想要 " + row.TakeKind + "，但这个效果还没接线");
-                if (row.GiveKind == RoomEffectKind.Gear)
-                {
-                    if (string.IsNullOrEmpty(row.GiveId)) errors.Add("选项表：" + label + " 给器材却没写 gearId");
-                    else if (GearCatalog.Find(row.GiveId) == null)
-                        errors.Add("选项表：" + label + " 指向不存在的器材 " + row.GiveId);
-                }
-                else if (!string.IsNullOrEmpty(row.GiveId))
-                {
-                    errors.Add("选项表：" + label + " 不是给器材，却写了 gearId");
-                }
+                if (!string.IsNullOrEmpty(row.EffectGroupId) && EffectCatalog.FindGroup(row.EffectGroupId) == null)
+                    errors.Add("选项表：" + label + " 引用了不存在的效果组 " + row.EffectGroupId);
+                if (!string.IsNullOrEmpty(row.ConditionGroupId) && ConditionCatalog.FindGroup(row.ConditionGroupId) == null)
+                    errors.Add("选项表：" + label + " 引用了不存在的条件组 " + row.ConditionGroupId);
             }
 
             var seenRows = new HashSet<string>(StringComparer.Ordinal);

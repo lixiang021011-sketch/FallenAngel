@@ -58,7 +58,10 @@ namespace FallenAngel.Core
             if (run.heldEquipmentIds == null
                 || run.heldEquipmentIds.Distinct().Count() != run.heldEquipmentIds.Count
                 || run.heldEquipmentIds.Count > PortfolioDefaults.EquipmentCapacity
-                || run.heldEquipmentIds.Any(id => !PortfolioConfig.EquipmentBase.Any(e => e.EquipmentId == id)))
+                // 两套器材并存（见 docs/condition-effect-spec.md §5）：商店与掉落走 equipment_base 的 E 系，
+                // 房间给的是 GearCatalog 的 CG 系。并成一套之前，快照两边都认。
+                || run.heldEquipmentIds.Any(id => !PortfolioConfig.EquipmentBase.Any(e => e.EquipmentId == id)
+                    && GearCatalog.Find(id) == null))
                 throw new InvalidOperationException("Invalid held equipment snapshot.");
             if (run.shopCandidates == null
                 || run.shopCandidates.Distinct().Count() != run.shopCandidates.Count
@@ -72,6 +75,12 @@ namespace FallenAngel.Core
                 throw new InvalidOperationException("Invalid layer snapshot.");
             if (run.optionalPurchaseDiscountUsed < 0 || run.optionalRouteDiscountUsed < 0)
                 throw new InvalidOperationException("Invalid optional discount snapshot.");
+            // 房间选项的幂等键：这一列是后加的，旧档读出来是 null，归一成空表而不是当作损坏。
+            if (run.resolvedRoomChoices == null) run.resolvedRoomChoices = new List<string>();
+            if (run.resolvedRoomChoices.Distinct().Count() != run.resolvedRoomChoices.Count
+                || run.resolvedRoomChoices.Any(k => string.IsNullOrEmpty(k)
+                    || k.IndexOf('|') <= 0 || k.IndexOf('|') == k.Length - 1))
+                throw new InvalidOperationException("Invalid room choice snapshot.");
             if (run.openingCash < 0 || run.incomeBreakdown == null
                 || run.incomeBreakdown.Any(l => l == null || string.IsNullOrEmpty(l.key)
                     || l.amount < 0 || !new[] { "DIRECT", "BONUS", "FLOOR", "CAP", "ECONOMY" }.Contains(l.kind)))
@@ -325,6 +334,89 @@ namespace FallenAngel.Core
             }
             r.phase = "MAP";
             Save(p, r);
+        }
+
+        /// <summary>
+        /// 房间选项能不能选：把结算器跑一遍**试算**（不修改任何状态）。
+        /// 面板据此决定按钮的可点状态与禁用原因——和真正提交走的是同一段代码，
+        /// 不会出现"按钮能点、点下去却报错"。
+        /// </summary>
+        public bool CanApplyRoomOption(string profileId, string runId, string optionId, out string reason)
+        {
+            reason = null;
+            var p = talents.ReadProfile(profileId);
+            var r = Require(p, runId);
+            RoomOptionRow option;
+            if (!ResolveRoomOption(r, optionId, out option, out reason)) return false;
+            if (r.resolvedRoomChoices.Contains(RoomChoiceKey(r.currentNodeId, optionId))) return true;
+
+            var ctx = new RunEffectContext(r);
+            if (!string.IsNullOrEmpty(option.ConditionGroupId)
+                && !ConditionCatalog.Evaluate(option.ConditionGroupId, ctx, out reason)) return false;
+            RoomEffectOutcome outcome = RoomEffectRunner.Run(option.EffectGroupId, r, ctx, false);
+            if (!outcome.Ok) { reason = outcome.Reason; return false; }
+            return true;
+        }
+
+        /// <summary>
+        /// 结算一个房间选项：条件组 → 效果组，两段式一次提交（见 docs/condition-effect-spec.md）。
+        /// 同一个"节点|选项"重复提交直接返回，不重复发奖。
+        /// </summary>
+        public void ApplyRoomOption(string profileId, string runId, string optionId)
+        {
+            var p = talents.ReadProfile(profileId);
+            var r = Require(p, runId);
+            string reason;
+            RoomOptionRow option;
+            if (!ResolveRoomOption(r, optionId, out option, out reason))
+                throw new InvalidOperationException(reason);
+
+            string key = RoomChoiceKey(r.currentNodeId, optionId);
+            if (r.resolvedRoomChoices.Contains(key))
+            {
+                Debug.Log("[PortfolioGrowthService] 房间选项 " + key + " 已经结算过，跳过");
+                return;
+            }
+
+            var ctx = new RunEffectContext(r);
+            if (!string.IsNullOrEmpty(option.ConditionGroupId)
+                && !ConditionCatalog.Evaluate(option.ConditionGroupId, ctx, out reason))
+                throw new InvalidOperationException(reason);
+
+            RoomEffectOutcome outcome = RoomEffectRunner.Run(option.EffectGroupId, r, ctx, true);
+            if (!outcome.Ok) throw new InvalidOperationException(outcome.Reason);
+
+            r.resolvedRoomChoices.Add(key);
+            Save(p, r);
+            Debug.Log(string.Format("[PortfolioGrowthService] 房间选项 {0} 结算：{1}；现金 {2}",
+                key, outcome.Summary, r.runCash));
+        }
+
+        /// <summary>选项必须真的出现在当前房间的候选里（不能凭 id 隔空选别的房间的选项）。</summary>
+        private bool ResolveRoomOption(PortfolioGrowthRunData r, string optionId,
+            out RoomOptionRow option, out string reason)
+        {
+            option = null;
+            reason = null;
+            if (!r.useMap || r.phase != "ROOM") { reason = "当前不在房间里"; return false; }
+            var node = PortfolioConfig.MapNodes.SingleOrDefault(n => n.NodeId == r.currentNodeId);
+            if (node == null) { reason = "找不到当前节点"; return false; }
+            RoomContentRow content = RoomContentCatalog.FindContent(node.ContentId);
+            if (content == null) { reason = "这间房没有内容"; return false; }
+            bool offered = false;
+            for (int i = 0; i < content.OptionIds.Count; i++)
+            {
+                if (content.OptionIds[i] == optionId) { offered = true; break; }
+            }
+            if (!offered) { reason = "这间房没有这个选项：" + optionId; return false; }
+            option = RoomContentCatalog.FindOption(optionId);
+            if (option == null || !option.Enabled) { reason = "选项不存在或未启用：" + optionId; return false; }
+            return true;
+        }
+
+        private static string RoomChoiceKey(string nodeId, string optionId)
+        {
+            return nodeId + "|" + optionId;
         }
 
         /// <summary>
@@ -646,6 +738,7 @@ namespace FallenAngel.Core
             r.heldEquipmentIds.Clear(); // 局终清空（装备是局内资源，不跨局）
             r.shopCandidates.Clear();   // 商店状态同局内资源
             r.shopRefreshBudget = 0;
+            r.resolvedRoomChoices.Clear();   // 房间选项的幂等键也是局内状态
         }
 
         private void Save(PortfolioProfileData p, PortfolioGrowthRunData r)

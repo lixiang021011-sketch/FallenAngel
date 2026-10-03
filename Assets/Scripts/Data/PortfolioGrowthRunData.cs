@@ -57,5 +57,10 @@ namespace FallenAngel.Data
         public int optionalPurchaseDiscountUsed;
         /// <summary>E08 可选路费减免已使用次数（成功进房才 +1）</summary>
         public int optionalRouteDiscountUsed;
+        /// <summary>
+        /// 本局已经结算过的房间选项，存 "节点ID|选项ID"。
+        /// 幂等键：同一个选项重复提交只返回原结果，不重复发奖（关掉游戏重进同一间房不会白拿第二份）。
+        /// </summary>
+        public List<string> resolvedRoomChoices = new List<string>();
     }
 }
