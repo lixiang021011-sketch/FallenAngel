@@ -166,11 +166,22 @@ namespace FallenAngel.Core
                 Check(Mathf.Abs(gm.Parts.Energy - 3f) < 1e-3f, "switch bonus pays 1.5x for the first notes");
                 gm.BackToMenu();
 
-                Check(PartPrototype.Charts.Guitar.notes.Count == 88 && PartPrototype.Charts.Drums.notes.Count == 128 &&
+                Check(PartPrototype.Charts.Guitar.notes.Count == 96 && PartPrototype.Charts.Drums.notes.Count == 120 &&
                     PartPrototype.Audio.length == 36f, "audible 36-second two-part demo available");
+                var demoDrums = PartPrototype.Charts.Drums.notes;
                 Check(PartPrototype.Charts.Guitar.notes.Exists(n => n.type == NoteType.LongStart) &&
-                    PartPrototype.Charts.Drums.notes.FindAll(n => n.time >= 26f && n.time < 34f).Count == 64,
-                    "demo has a long-note steady section and a 8-notes-per-second drum solo");
+                    demoDrums.FindAll(n => n.time >= 26f && n.time < 34f).Count == 56,
+                    "demo has a long-note steady section and a 56-note drum solo");
+                int trillBar = demoDrums.FindAll(n => n.time >= 26f && n.time < 28f).Count;
+                int jackBar = demoDrums.FindAll(n => n.time >= 28f && n.time < 29f && n.lane == 1).Count;
+                var burst = demoDrums.FindAll(n => n.time >= 32f && n.time < 32.6f);
+                float shortestGap = float.MaxValue;
+                for (int i = 1; i < burst.Count; i++)
+                    shortestGap = Mathf.Min(shortestGap, burst[i].time - burst[i - 1].time);
+                Check(trillBar == 12 && jackBar == 8 && burst.Count == 8 && shortestGap <= 0.063f,
+                    "drum solo is a real wall: 16th trill, same-lane jack and a 32nd burst");
+                Check(PartPrototype.Charts.Guitar.notes.FindAll(n => n.time >= 26f && n.type == NoteType.LongStart).Count == 8,
+                    "guitar keeps a low-risk long-note retreat during the drum wall");
 
                 // ── 声部视觉（2026-10-03 过稿：全色相 + G2 半场；占位，未来换商用素材）──
                 Check(PartPalette.KnownParts.Length == 5 &&

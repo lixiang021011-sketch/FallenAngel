@@ -19,8 +19,11 @@ namespace FallenAngel.Core
         ///   1) 主题 A（0–8s）   ：Guitar 密（每小节 8）、Drums 疏（4）——吉他肥
         ///   2) 鼓组 B（8–16s）  ：Drums 密（8）、Guitar 疏（4）——鼓肥
         ///   3) 稳段（16–24s）   ：Guitar 每小节 2 条长音（权重 2×）+ 4 颗单击，Drums 4——稀疏但值钱
-        ///   4) 鼓 Solo（24–32s）：Drums 每小节 16 颗（8 音/秒）+ Guitar 极稀——理论产率最高、失误也最贵
+        ///   4) 鼓 Solo（26–34s）：Drums 从 8 分一路加难到 32 分爆点（宽跳 trill / 同轨连打 / 跑动 / 爆点），
+        ///      Guitar 是同段的长音（稀疏但值钱）——理论产率最高、失误也最贵，且**真的打不动**。
         /// 为什么要非对称：均匀循环只能验"切换是否顺手"，验不了"熟悉歌曲后预判切换"。
+        /// 为什么鼓 Solo 不能只是"密"：整段单击的话手快的玩家照样全 Perfect，
+        /// Risk/Reward 就只活在数值表里；所以这里加的是手速门槛（同轨连打、宽跳、32 分）。
         /// </summary>
         public static SongParts Charts
         {
@@ -47,13 +50,7 @@ namespace FallenAngel.Core
                     else if (section == 2)
                     {
                         // 稳段：两条 1 秒长音（尾判权重 2×）+ 四颗单击，六颗换来八点理论能量
-                        for (int i = 0; i < 2; i++)
-                        {
-                            float start = t0 + i * 1f;
-                            guitar.notes.Add(new NoteData(i * 2, start, NoteType.LongStart, 1f, longId));
-                            guitar.notes.Add(new NoteData(i * 2, start + 1f, NoteType.LongEnd, 0f, longId));
-                            longId++;
-                        }
+                        AddLongNotes(guitar, bar, t0, 2, ref longId);
                         // 四颗单击落在长音的缝隙里（0.25/0.75/1.25/1.75s），不与长音头同刻同轨
                         for (int i = 0; i < 4; i++)
                             guitar.notes.Add(new NoteData((i + bar) % 4, t0 + .25f + i * .5f, NoteType.Normal));
@@ -61,8 +58,8 @@ namespace FallenAngel.Core
                     }
                     else
                     {
-                        AddSteps(guitar, bar, t0, 2);
-                        AddSteps(drums, bar, t0, 16);
+                        AddDrumSoloBar(drums, bar, t0);
+                        AddLongNotes(guitar, bar, t0, 2, ref longId);
                     }
                 }
                 charts = new SongParts(guitar, drums);
@@ -75,6 +72,59 @@ namespace FallenAngel.Core
         {
             for (int i = 0; i < steps; i++)
                 chart.notes.Add(new NoteData((i + bar) % 4, startTime + i * BarSeconds / steps, NoteType.Normal));
+        }
+
+        /// <summary>每小节 count 条长音（时值 0.9 小节），尾巴单列一条 LongEnd 供视图用。</summary>
+        private static void AddLongNotes(ChartData chart, int bar, float startTime, int count, ref int longId)
+        {
+            float span = BarSeconds / count;
+            for (int i = 0; i < count; i++)
+            {
+                float start = startTime + i * span;
+                chart.notes.Add(new NoteData(i * 2, start, NoteType.LongStart, span * 0.9f, longId));
+                chart.notes.Add(new NoteData(i * 2, start + span * 0.9f, NoteType.LongEnd, 0f, longId));
+                longId++;
+            }
+        }
+
+        /// <summary>
+        /// 鼓 Solo 的四小节墙（第 12–15 小节），难度是递进的，玩家能学到"这里该撤"：
+        ///   12 小节：前半 8 分（4 颗）+ 后半 16 分宽跳 trill（轨 0 ↔ 3）
+        ///   13 小节：16 分同轨连打（轨 1 八连 → 轨 2 八连）——一根手指要连点
+        ///   14 小节：16 分跑动（上行 8 颗 → 下行 8 颗）
+        ///   15 小节：32 分爆点（0.0625s 间隔，轨 0 ↔ 1）+ 后半 8 分收尾
+        /// </summary>
+        private static void AddDrumSoloBar(ChartData drums, int bar, float startTime)
+        {
+            float step16 = BarSeconds / 16f;
+            switch (bar - 12)
+            {
+                case 0:
+                    for (int i = 0; i < 4; i++)
+                        drums.notes.Add(new NoteData(i % 4, startTime + i * BarSeconds / 4f, NoteType.Normal));
+                    for (int i = 0; i < 8; i++)
+                        drums.notes.Add(new NoteData(i % 2 == 0 ? 0 : 3, startTime + BarSeconds * 0.5f + i * step16, NoteType.Normal));
+                    break;
+                case 1:
+                    for (int i = 0; i < 8; i++)
+                        drums.notes.Add(new NoteData(1, startTime + i * step16, NoteType.Normal));
+                    for (int i = 0; i < 8; i++)
+                        drums.notes.Add(new NoteData(2, startTime + BarSeconds * 0.5f + i * step16, NoteType.Normal));
+                    break;
+                case 2:
+                    for (int i = 0; i < 16; i++)
+                    {
+                        int lane = i < 8 ? i : 15 - i;
+                        drums.notes.Add(new NoteData(lane % 4, startTime + i * step16, NoteType.Normal));
+                    }
+                    break;
+                default:
+                    for (int i = 0; i < 8; i++)
+                        drums.notes.Add(new NoteData(i % 2, startTime + i * BarSeconds / 32f, NoteType.Normal));
+                    for (int i = 0; i < 4; i++)
+                        drums.notes.Add(new NoteData((i + 2) % 4, startTime + BarSeconds * 0.5f + i * BarSeconds / 8f, NoteType.Normal));
+                    break;
+            }
         }
 
         private static ChartData NewChart() => new ChartData
