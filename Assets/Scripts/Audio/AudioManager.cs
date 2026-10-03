@@ -50,6 +50,48 @@ namespace FallenAngel.Audio
         [Tooltip("结算时BGM淡出时长（秒）")]
         [SerializeField] private float endFadeOutDuration = 1.5f;
 
+        [Header("分轨（当前演奏轨增强）")]
+        [Tooltip("当前演奏轨的音量倍率（相对歌曲总音量）")]
+        [Range(0f, 2f)] public float activeStemGain = StemMix.ActiveGain;
+        [Tooltip("其余轨的音量倍率；不做静音，否则整首歌会缺一块")]
+        [Range(0f, 2f)] public float inactiveStemGain = StemMix.InactiveGain;
+
+        /// <summary>当前正在播放的分轨（0 号复用 bgmSource，作为主时钟）</summary>
+        private readonly System.Collections.Generic.List<AudioSource> stemSources =
+            new System.Collections.Generic.List<AudioSource>();
+        private readonly System.Collections.Generic.List<AudioSource> stemPool =
+            new System.Collections.Generic.List<AudioSource>();
+        private readonly System.Collections.Generic.List<string> stemParts =
+            new System.Collections.Generic.List<string>();
+        private string activeStem;
+        private bool hasStems;
+
+        /// <summary>当前演奏的是哪条分轨（由 GameManager 在开局与换声部时同步）</summary>
+        public void SetActiveStem(string partName)
+        {
+            activeStem = partName;
+        }
+
+        /// <summary>这条轨该有的目标音量（没有分轨概念的单文件曲目恒为总音量）</summary>
+        private float TargetVolume(int index)
+        {
+            if (index < 0 || index >= stemParts.Count || string.IsNullOrEmpty(stemParts[index]))
+                return bgmVolume;
+            return bgmVolume * StemMix.GainFor(stemParts[index] == activeStem, activeStemGain, inactiveStemGain);
+        }
+
+        /// <summary>把音量推到目标（instant = 开局/复位时直接到位，不做过渡）</summary>
+        private void ApplyStemVolumes(bool instant)
+        {
+            for (int i = 0; i < stemSources.Count; i++)
+            {
+                float target = TargetVolume(i);
+                stemSources[i].volume = instant
+                    ? target
+                    : StemMix.Approach(stemSources[i].volume, target, StemMix.RampSeconds, Time.unscaledDeltaTime);
+            }
+        }
+
         /// <summary>真实音频是否正在播放</summary>
         public bool IsPlaying => audioStarted && bgmSource.isPlaying;
 
@@ -147,6 +189,10 @@ namespace FallenAngel.Audio
 
         private void Update()
         {
+            // 分轨音量过渡（换声部时把当前轨推出来）；暂停时 unscaledDeltaTime 仍在走，
+            // 但换声部本来就不允许在暂停态发生，所以这里不需要额外门控。
+            if (audioStarted && hasStems) ApplyStemVolumes(false);
+
             // 虚拟钟推进：仅在无真实音频时进行（真实音频以播放位置为准）
             if (audioStarted) return;
 
@@ -167,9 +213,7 @@ namespace FallenAngel.Audio
         {
             audioStarted = false;
             virtualTime = 0f;
-
-            bgmSource.Stop();
-            bgmSource.clip = null;
+            StopAllStems();
 
             if (chart == null || chart.metadata == null ||
                 string.IsNullOrEmpty(chart.metadata.audioFileName))
@@ -178,15 +222,112 @@ namespace FallenAngel.Audio
                 return;
             }
 
-            AudioClip clip = chart.metadata.audioFileName == PartPrototype.AudioName
-                ? PartPrototype.Audio : Resources.Load<AudioClip>($"Audio/{chart.metadata.audioFileName}");
+            // ① 分轨路径：一首歌多条音频同时播，当前演奏轨增强
+            if (chart.metadata.stems != null && chart.metadata.stems.Count > 0)
+            {
+                var loaded = new System.Collections.Generic.List<SongStem>();
+                var clips = new System.Collections.Generic.List<AudioClip>();
+                foreach (SongStem stem in chart.metadata.stems)
+                {
+                    if (stem == null) continue;
+                    AudioClip stemClip = ResolveClip(stem.audioFileName);
+                    if (stemClip == null)
+                    {
+                        Debug.LogWarning($"[AudioManager] 分轨缺失：{stem.partName} → Audio/{stem.audioFileName}");
+                        continue;
+                    }
+                    loaded.Add(stem);
+                    clips.Add(stemClip);
+                }
+                if (loaded.Count == 0)
+                {
+                    Debug.LogWarning("[AudioManager] 谱面配了分轨但一条都没加载成功，使用虚拟钟模式");
+                    return;
+                }
+                SetupStemSources(loaded, clips);
+                Debug.Log(string.Format("[AudioManager] 分轨就绪：{0} 条（{1}）", loaded.Count,
+                    string.Join(" / ", loaded.ConvertAll(s => s.partName).ToArray())));
+                return;
+            }
+
+            // ② 单文件路径（旧行为）：一条混音当作唯一轨，不做增强
+            AudioClip clip = ResolveClip(chart.metadata.audioFileName);
             if (clip == null)
             {
                 Debug.LogWarning($"[AudioManager] 找不到音频文件: Audio/{chart.metadata.audioFileName}，使用虚拟钟模式");
                 return;
             }
+            SetupSingleSource(clip);
+        }
 
-            bgmSource.clip = clip;
+        /// <summary>音频文件解析：原型合成轨优先，其次 Resources/Audio</summary>
+        private static AudioClip ResolveClip(string fileName)
+        {
+            if (string.IsNullOrEmpty(fileName)) return null;
+            if (fileName == PartPrototype.AudioName) return PartPrototype.Audio;
+            AudioClip stemClip;
+            if (PartPrototype.TryResolveStem(fileName, out stemClip)) return stemClip;
+            return Resources.Load<AudioClip>($"Audio/{fileName}");
+        }
+
+        private void StopAllStems()
+        {
+            for (int i = 0; i < stemPool.Count; i++)
+            {
+                stemPool[i].Stop();
+                stemPool[i].clip = null;
+            }
+            stemSources.Clear();
+            stemParts.Clear();
+            hasStems = false;
+        }
+
+        private void SetupSingleSource(AudioClip clip)
+        {
+            EnsureStemPoolSize(1);
+            AudioSource source = stemPool[0];
+            source.clip = clip;
+            source.loop = false;
+            source.playOnAwake = false;
+            source.volume = bgmVolume;
+            stemSources.Clear();
+            stemParts.Clear();
+            stemSources.Add(source);
+            stemParts.Add(null);      // 没有分轨概念：恒为总音量
+            hasStems = false;
+        }
+
+        private void SetupStemSources(System.Collections.Generic.List<SongStem> stems,
+            System.Collections.Generic.List<AudioClip> clips)
+        {
+            EnsureStemPoolSize(clips.Count);
+            stemSources.Clear();
+            stemParts.Clear();
+            for (int i = 0; i < clips.Count; i++)
+            {
+                AudioSource source = stemPool[i];
+                source.clip = clips[i];
+                source.loop = false;
+                source.playOnAwake = false;
+                source.volume = bgmVolume * inactiveStemGain;
+                stemSources.Add(source);
+                stemParts.Add(stems[i].partName);
+            }
+            hasStems = true;
+        }
+
+        private void EnsureStemPoolSize(int count)
+        {
+            while (stemPool.Count < count)
+            {
+                stemPool.Add(stemPool.Count == 0 ? bgmSource
+                    : GetOrCreateAudioSource("BGM_Stem" + stemPool.Count));
+            }
+            for (int i = 0; i < stemPool.Count; i++)
+            {
+                stemPool[i].Stop();
+                stemPool[i].clip = null;
+            }
         }
 
         /// <summary>
@@ -196,13 +337,22 @@ namespace FallenAngel.Audio
         {
             if (!isInitialized) return;
 
-            if (bgmSource.clip != null)
+            if (stemSources.Count > 0 && stemSources[0].clip != null)
             {
-                bgmSource.time = 0f;
-                bgmSource.volume = bgmVolume;  // 复位上一局淡出期间被改动的音量
-                bgmSource.Play();
+                // 当前演奏轨：开局就按 GameManager 的当前声部定好（不等到第一次切换才推出来）
+                SetActiveStem(GameManager.Instance != null && GameManager.Instance.Parts != null
+                    ? GameManager.Instance.Parts.PartName : null);
+                // 多条轨必须同一时刻起播，否则分轨之间会错位：用 dsp 时间统一调度
+                double startAt = AudioSettings.dspTime + 0.1;
+                for (int i = 0; i < stemSources.Count; i++)
+                {
+                    stemSources[i].time = 0f;
+                    stemSources[i].PlayScheduled(startAt);
+                }
+                ApplyStemVolumes(true);   // 开局直接到位，不做过渡
                 audioStarted = true;
-                Debug.Log("[AudioManager] BGM 开始播放（音频时钟模式）");
+                Debug.Log(string.Format("[AudioManager] BGM 开始播放（{0}，{1} 条轨）",
+                    hasStems ? "分轨时钟模式" : "音频时钟模式", stemSources.Count));
             }
             else
             {
@@ -225,7 +375,7 @@ namespace FallenAngel.Audio
             if (!bgmSource.isPlaying)
             {
                 // 音频已播完（曲终信号路径），无需淡出，仅确保状态干净
-                bgmSource.Stop();
+                StopAllStems();
                 bgmSource.volume = bgmVolume;
                 return;
             }
@@ -235,19 +385,22 @@ namespace FallenAngel.Audio
 
         private System.Collections.IEnumerator FadeOutCoroutine()
         {
-            float startVolume = bgmSource.volume;
             float duration = Mathf.Max(0.05f, endFadeOutDuration);
             float timer = 0f;
+            var startVolumes = new float[stemSources.Count];
+            for (int i = 0; i < stemSources.Count; i++) startVolumes[i] = stemSources[i].volume;
 
             // 用 unscaledDeltaTime：淡出属于演出表现，与游戏时间缩放解耦（架构约定 §7）
             while (timer < duration)
             {
                 timer += Time.unscaledDeltaTime;
-                bgmSource.volume = Mathf.Lerp(startVolume, 0f, Mathf.Clamp01(timer / duration));
+                float k = Mathf.Clamp01(timer / duration);
+                for (int i = 0; i < stemSources.Count; i++)
+                    stemSources[i].volume = Mathf.Lerp(startVolumes[i], 0f, k);
                 yield return null;
             }
 
-            bgmSource.Stop();
+            StopAllStems();
             bgmSource.volume = bgmVolume;   // 恢复默认音量，供下一局使用
             audioStarted = false;           // 真实音频已停止，供时状态复位
             fadeOutCoroutine = null;

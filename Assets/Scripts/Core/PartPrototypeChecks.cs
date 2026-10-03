@@ -222,6 +222,83 @@ namespace FallenAngel.Core
                 Check(PartSwitchTap.ConfirmSeconds > 0.2f && PartSwitchTap.ConfirmSeconds < 0.8f,
                     "double-tap window stays in a usable range");
 
+                // ── 切换时机可配：立即 / 下一拍 / 下一小节 + 最短间隔 ──
+                Check(Mathf.Abs(PartSwitchConfig.TargetTime(PartSwitchMode.Immediate, 1.2f, 120f, 4f) - 1.2f) < 1e-4f &&
+                    Mathf.Abs(PartSwitchConfig.TargetTime(PartSwitchMode.NextBeat, 1.2f, 120f, 4f) - 1.5f) < 1e-4f &&
+                    Mathf.Abs(PartSwitchConfig.TargetTime(PartSwitchMode.NextBeat, 1.5f, 120f, 4f) - 2.0f) < 1e-4f &&
+                    Mathf.Abs(PartSwitchConfig.TargetTime(PartSwitchMode.NextBar, 1.2f, 120f, 4f) - 2.0f) < 1e-4f,
+                    "switch timing quantizes to the strict next beat / bar (120bpm: beat 0.5s, bar 2s)");
+                Check(Mathf.Abs(PartSwitchConfig.TargetTime(PartSwitchMode.NextBar, 1.2f, 0f, 4f) - 1.2f) < 1e-4f,
+                    "no bpm -> no quantization, falls back to immediate");
+
+                gm.LoadChart(guitar, set);
+                gm.StartGame();
+                gm.SetSwitchMode(PartSwitchMode.NextBeat);
+                SetTime(gm, 1.2f);
+                Check(gm.RequestPartSwitch("Drums") && gm.Parts.PartName == "Guitar" &&
+                    gm.PendingPart == "Drums" && Mathf.Abs(gm.PendingSwitchTime - 1.5f) < 1e-3f,
+                    "beat-quantized request queues instead of switching now");
+                SetTime(gm, 1.3f);
+                gm.TickPartSwitch();
+                Check(gm.Parts.PartName == "Guitar", "queued switch waits for the beat");
+                SetTime(gm, 1.55f);
+                gm.TickPartSwitch();
+                Check(gm.Parts.PartName == "Drums" && gm.PendingPart == null,
+                    "queued switch lands on the beat");
+                gm.SetSwitchMode(PartSwitchMode.Immediate);
+                gm.SetSwitchConfig(new PartSwitchConfig
+                {
+                    mode = PartSwitchMode.Immediate, minIntervalSeconds = 0.8f, beatsPerBar = 4f
+                });
+                SetTime(gm, 1.6f);
+                Check(!gm.RequestPartSwitch("Guitar") && gm.Parts.PartName == "Drums",
+                    "min interval blocks a too-soon switch");
+                SetTime(gm, 2.4f);
+                Check(gm.RequestPartSwitch("Guitar") && gm.Parts.PartName == "Guitar",
+                    "after the interval the switch goes through again");
+                Check(!gm.RequestPartSwitch("Bass") && gm.Parts.PartName == "Guitar",
+                    "unknown part is rejected by the request path too");
+                gm.BackToMenu();
+
+                // ── 分轨：每首歌多条音频同时播，当前演奏轨增强 ──
+                Check(Mathf.Abs(StemMix.GainFor(true) - StemMix.ActiveGain) < 1e-4f &&
+                    Mathf.Abs(StemMix.GainFor(false) - StemMix.InactiveGain) < 1e-4f &&
+                    StemMix.InactiveGain < StemMix.ActiveGain,
+                    "stem mix boosts the played track and keeps the others audible");
+                Check(Mathf.Abs(StemMix.Approach(0f, 1f, 0.35f, 0.12f) - Mathf.Lerp(0f, 1f, 3f * 0.12f / 0.35f)) < 1e-4f &&
+                    Mathf.Abs(StemMix.Approach(0f, 1f, 0f, 0.12f) - 1f) < 1e-4f,
+                    "stem gain ramps toward the target (and jumps when ramp is 0)");
+                var demoStems = demoParts.Song.metadata.stems;
+                bool stemsOk = demoStems != null && demoStems.Count == demoParts.PartNames.Length;
+                for (int i = 0; stemsOk && i < demoStems.Count; i++)
+                {
+                    AudioClip stemClip;
+                    stemsOk = demoStems[i].partName == demoParts.PartNames[i] &&
+                              PartPrototype.TryResolveStem(demoStems[i].audioFileName, out stemClip) &&
+                              stemClip != null && Mathf.Abs(stemClip.length - 36f) < 0.01f;
+                }
+                Check(stemsOk, "demo ships one 36s stem per part, matching the part table");
+                var meta = new ChartMetadata
+                {
+                    bpm = 128f,
+                    switchTiming = new PartSwitchConfig
+                    {
+                        mode = PartSwitchMode.NextBar, minIntervalSeconds = 1.5f, beatsPerBar = 3f
+                    },
+                    stems = new System.Collections.Generic.List<SongStem>
+                    {
+                        new SongStem { partName = "Guitar", audioFileName = "song_guitar" },
+                        new SongStem { partName = "Drums", audioFileName = "song_drums" },
+                    }
+                };
+                var roundTrip = JsonUtility.FromJson<ChartMetadata>(JsonUtility.ToJson(meta));
+                Check(roundTrip.stems != null && roundTrip.stems.Count == 2 &&
+                    roundTrip.stems[1].partName == "Drums" && roundTrip.stems[1].audioFileName == "song_drums" &&
+                    roundTrip.switchTiming.mode == PartSwitchMode.NextBar &&
+                    Mathf.Abs(roundTrip.switchTiming.minIntervalSeconds - 1.5f) < 1e-4f &&
+                    Mathf.Abs(roundTrip.switchTiming.beatsPerBar - 3f) < 1e-4f,
+                    "chart metadata round-trips stems and per-song switch timing");
+
                 // ── 声部视觉（2026-10-03 过稿：全色相 + G2 半场；占位，未来换商用素材）──
                 Check(PartPalette.KnownParts.Length == 5 &&
                     PartPalette.HueGap(PartPalette.HueDrums, PartPalette.HueGuitar) >= 45f &&

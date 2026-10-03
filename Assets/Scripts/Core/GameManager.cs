@@ -59,18 +59,113 @@ namespace FallenAngel.Core
         public float SongDuration => Parts?.Definition.Duration ?? CurrentChart?.GetTotalDuration() ?? 0f;
         public event System.Action OnPartChanged;
 
+        /// <summary>切换生效时机（每首歌可配：立即 / 下一拍 / 下一小节 + 最短间隔）</summary>
+        public PartSwitchConfig SwitchConfig { get; private set; } = PartSwitchConfig.Immediate;
+
+        /// <summary>已排队、尚未生效的声部（等拍点用）；没有则为 null</summary>
+        public string PendingPart { get; private set; }
+        /// <summary>排队切换的生效时刻（SongTime）</summary>
+        public float PendingSwitchTime { get; private set; }
+        /// <summary>排队事件：界面据此把芯片显示成"待生效"</summary>
+        public event System.Action OnPartSwitchQueued;
+
+        private float lastSwitchSongTime = -999f;
+
         /// <summary>
-        /// 在同一 SongTime 换声部，不触发 Loading 或重新播放音频。
-        /// 不传名字 = 循环到谱面表里的下一件（键盘 Tab）；传名字 = 直接选那一件（底部切换条用）。
+        /// 玩家发起的切换请求：按 <see cref="SwitchConfig"/> 决定**立刻生效**还是**等到拍点**。
+        /// 不传名字 = 循环到谱面表里的下一件（键盘 Tab）；传名字 = 直接请求那一件（底部切换条用）。
+        /// </summary>
+        public bool RequestPartSwitch(string partName = null)
+        {
+            if (CurrentState != GameState.Playing || Parts == null) return false;
+            string target = string.IsNullOrEmpty(partName) ? Parts.NextPartName() : partName;
+            if (Parts.Definition.ChartOf(target) == null) return false;
+            if (target == Parts.PartName)
+            {
+                PendingPart = null;   // 点当前声部 = 取消排队
+                return false;
+            }
+            if (SwitchConfig.minIntervalSeconds > 0f &&
+                SongTime - lastSwitchSongTime < SwitchConfig.minIntervalSeconds)
+            {
+                Debug.Log(string.Format("[GameManager] 切换被最短间隔挡住（{0:0.0}s < {1:0.0}s）",
+                    SongTime - lastSwitchSongTime, SwitchConfig.minIntervalSeconds));
+                return false;
+            }
+
+            float at = SwitchConfig.TargetTime(SongTime, CurrentBpm);
+            if (at <= SongTime + 0.0001f) return ApplyPartSwitch(target);
+
+            PendingPart = target;
+            PendingSwitchTime = at;
+            Debug.Log(string.Format("[GameManager] 切换排队：{0} 于 {1:0.00}s 生效（{2}）",
+                target, at, SwitchConfig.Describe()));
+            OnPartSwitchQueued?.Invoke();
+            return true;
+        }
+
+        /// <summary>等拍点用：每帧推进一次（由 Update 调用；自检也可以直接调）</summary>
+        public void TickPartSwitch()
+        {
+            if (CurrentState != GameState.Playing || Parts == null)
+            {
+                PendingPart = null;
+                return;
+            }
+            if (string.IsNullOrEmpty(PendingPart)) return;
+            if (SongTime + 0.0001f < PendingSwitchTime) return;
+            ApplyPartSwitch(PendingPart);
+        }
+
+        /// <summary>改切换时机（原型面板/自检用；正式内容走谱面的 switchTiming）</summary>
+        public void SetSwitchMode(PartSwitchMode mode)
+        {
+            PartSwitchConfig config = SwitchConfig;
+            config.mode = mode;
+            SetSwitchConfig(config);
+        }
+
+        /// <summary>整份替换切换配置（模式 / 最短间隔 / 每小节拍数）</summary>
+        public void SetSwitchConfig(PartSwitchConfig config)
+        {
+            if (config.beatsPerBar <= 0f) config.beatsPerBar = 4f;
+            SwitchConfig = config;
+            PendingPart = null;      // 改完就清排队，避免"换了模式还在等上一拍的旧请求"
+            PendingSwitchTime = 0f;
+            Debug.Log("[GameManager] 切换时机改为：" + SwitchConfig.Describe());
+        }
+
+        /// <summary>
+        /// 立刻换声部（不经过时机配置）：内部与自检用。
+        /// 不传名字 = 循环到下一件。
         /// </summary>
         public bool SwitchPart(string partName = null)
         {
             if (CurrentState != GameState.Playing || Parts == null) return false;
             string target = string.IsNullOrEmpty(partName) ? Parts.NextPartName() : partName;
-            if (!Parts.Select(target, SongTime)) return false;
+            return ApplyPartSwitch(target);
+        }
+
+        private bool ApplyPartSwitch(string partName)
+        {
+            if (!Parts.Select(partName, SongTime)) return false;
+            lastSwitchSongTime = SongTime;
+            PendingPart = null;
+            PendingSwitchTime = 0f;
+            AudioManager.Instance?.SetActiveStem(Parts.PartName);   // 分轨：当前轨推出来
             OnPartChanged?.Invoke();
             Debug.Log($"[GameManager] Part={Parts.PartName} SongTime={SongTime:F3} Energy={Parts.Energy:F1}");
             return true;
+        }
+
+        /// <summary>量化用的 BPM（谱面缺省按 120）</summary>
+        private float CurrentBpm
+        {
+            get
+            {
+                return CurrentChart != null && CurrentChart.metadata != null && CurrentChart.metadata.bpm > 0.01f
+                    ? CurrentChart.metadata.bpm : 120f;
+            }
         }
 
         /// <summary>歌曲当前播放时间（秒，含偏移补偿）</summary>
@@ -153,6 +248,13 @@ namespace FallenAngel.Core
             if (Parts != null) ModifierManager.Instance?.EndSong();
             CurrentChart = chart;
             Parts = parts == null ? null : new SongPartSession(parts);
+            // 切换时机是**每首歌**的属性：谱面没配就是"立即生效、不限间隔"
+            PartSwitchConfig timing = chart.metadata != null ? chart.metadata.switchTiming : PartSwitchConfig.Immediate;
+            if (timing.beatsPerBar <= 0f) timing.beatsPerBar = 4f;
+            SwitchConfig = timing;
+            PendingPart = null;
+            PendingSwitchTime = 0f;
+            lastSwitchSongTime = -999f;
             // 键数驱动轨道布局（4K/5K 动态化唯一入口：LaneLayout/InputManager/NoteSpawner/JudgeManager 均读它）
             LaneLayout.SetActiveLaneCount(chart.LaneCount);
             ChangeState(GameState.Loading);
@@ -291,6 +393,9 @@ namespace FallenAngel.Core
             if (CurrentState != GameState.Playing || !isInitialized)
                 return;
 
+            // 等拍点的切换先推进（只看 SongTime，用量上一帧的时间即可）
+            TickPartSwitch();
+
             // 唯一权威时间：从 AudioManager 读取（真实音频钟或虚拟钟），在此统一扣除谱面偏移
             if (AudioManager.Instance == null)
             {
@@ -331,6 +436,7 @@ namespace FallenAngel.Core
         {
             if (CurrentState == GameState.Result) return;
             ChangeState(GameState.Result);
+            PendingPart = null;   // 结算后不再补发排队中的切换
             // 曲终音乐淡出（音频长于谱面时结算页不再残留播放；音频已播完时为空操作）
             AudioManager.Instance?.FadeOutBGM();
             OnGameEnd?.Invoke();
@@ -405,6 +511,7 @@ namespace FallenAngel.Core
                 AudioManager.Instance.StopAll();
             CurrentChart = null;
             Parts = null;
+            PendingPart = null;
             SongTime = 0f;
             IsSongStarted = false;
             ChangeState(GameState.Menu);

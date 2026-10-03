@@ -52,6 +52,13 @@ namespace FallenAngel.Data
         public float bpm;               // BPM
         public float offset;            // 音频偏移（秒，用于谱面对齐）
         public string audioFileName;    // 音频文件名（不含扩展名）
+        /// <summary>
+        /// 分轨（可选）：填了就走"多轨同时播放 + 当前演奏轨增强"，不填就是单条混音（旧路径）。
+        /// 每条轨对应一个声部名，顺序与谱面声部表对齐。
+        /// </summary>
+        public List<SongStem> stems;
+        /// <summary>切换生效时机（可选；缺省 = 立即生效、不限间隔）</summary>
+        public PartSwitchConfig switchTiming;
         public float previewStartTime;  // 试听开始时间
         public float previewDuration;   // 试听持续时间
         public int formatVersion;       // 谱面格式版本（v1 缺失=0；v2=2）

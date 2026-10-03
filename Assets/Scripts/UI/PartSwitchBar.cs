@@ -61,6 +61,8 @@ namespace FallenAngel.UI
             gm.OnGameStart += HandleGameStart;
             gm.OnPartChanged -= Refresh;
             gm.OnPartChanged += Refresh;
+            gm.OnPartSwitchQueued -= Refresh;
+            gm.OnPartSwitchQueued += Refresh;
         }
 
         private void Unsubscribe()
@@ -69,6 +71,7 @@ namespace FallenAngel.UI
             if (gm == null) return;
             gm.OnGameStart -= HandleGameStart;
             gm.OnPartChanged -= Refresh;
+            gm.OnPartSwitchQueued -= Refresh;
         }
 
         private void HandleGameStart()
@@ -199,7 +202,7 @@ namespace FallenAngel.UI
                 return;
             }
             Debug.Log("[PartSwitchBar] 双击确认，切换到 " + partName);
-            gm.SwitchPart(partName);
+            gm.RequestPartSwitch(partName);
         }
 
         /// <summary>芯片宽度：装满一行，但不超过 <see cref="ChipMaxWidth"/>（2 件时不至于拉成两条巨条）。</summary>
@@ -214,12 +217,15 @@ namespace FallenAngel.UI
         {
             GameManager gm = Gm;
             string active = gm != null && gm.Parts != null ? gm.Parts.PartName : null;
+            string queued = gm != null ? gm.PendingPart : null;
             for (int i = 0; i < chips.Count; i++)
             {
                 if (chips[i] == null) continue;
                 bool isActive = chips[i].partName == active;
                 chips[i].SetActivePart(isActive);
-                chips[i].SetArmed(!isActive && chips[i].partName == tap.PendingPart);
+                // "待确认"（第一下已点）与"待生效"（等拍点）用同一种高亮，玩家只需要知道"还没换"
+                chips[i].SetArmed(!isActive &&
+                    (chips[i].partName == tap.PendingPart || chips[i].partName == queued));
             }
         }
     }

@@ -1,4 +1,5 @@
 using FallenAngel.Core;
+using FallenAngel.Data;
 using UnityEngine;
 
 namespace FallenAngel.UI
@@ -12,6 +13,14 @@ namespace FallenAngel.UI
         {
             if (Input.GetKeyDown(KeyCode.F8)) StartPrototype();
             if (Input.GetKeyDown(KeyCode.F9)) item = PartEnergyRules.Next(item);
+            if (Input.GetKeyDown(KeyCode.F10)) CycleSwitchMode();
+        }
+
+        private void CycleSwitchMode()
+        {
+            var gm = GameManager.Instance;
+            if (gm == null) return;
+            gm.SetSwitchMode((PartSwitchMode)(((int)gm.SwitchConfig.mode + 1) % 3));
         }
 
         private void StartPrototype()
@@ -43,6 +52,9 @@ namespace FallenAngel.UI
                 GUILayout.Label($"{parts.PartName} | {gm.SongTime:F2}s | Energy {parts.Energy:F1} | Hits {parts.HitCount}");
                 GUILayout.Label($"D / F / J / K | Energy x{PlayRules.EnergyMultiplier:F1}");
                 GUILayout.Label($"[C] {PartEnergyRules.DisplayName(item)}（F9 或按钮切换）");
+                GUILayout.Label($"[时机] {gm.SwitchConfig.Describe()}（F10 或按钮切换）");
+                if (!string.IsNullOrEmpty(gm.PendingPart))
+                    GUILayout.Label($"待生效：{gm.PendingPart} @ {gm.PendingSwitchTime:F2}s");
                 if (item == PartItem.StayRamp)
                     GUILayout.Label($"留守 {stay:F1}s → 本颗 x{PartEnergyRules.StayMultiplier(item, stay):F2}");
                 else if (item == PartItem.SwitchBonus)
@@ -51,6 +63,7 @@ namespace FallenAngel.UI
                 GUI.enabled = playing;
                 if (GUILayout.Button(Loc.T("Switch Guitar / Drums (Tab)"), GUILayout.Height(30))) gm.SwitchPart();
                 if (GUILayout.Button(Loc.T("Cycle part item (F9)"), GUILayout.Height(26))) item = PartEnergyRules.Next(item);
+                if (GUILayout.Button(Loc.T("Cycle switch timing (F10)"), GUILayout.Height(26))) CycleSwitchMode();
                 if (GUILayout.Button(Loc.T("Test modifier: Energy x2 for 5s"), GUILayout.Height(24)))
                     ModifierManager.EnsureInstance().Apply(new ModifierDef("PART_ENERGY_TEST",
                         ModifierKind.EnergyMultiplier, 2f, 5f, source: ModifierSource.Debug));

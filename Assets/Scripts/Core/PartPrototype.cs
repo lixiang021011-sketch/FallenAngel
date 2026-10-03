@@ -7,6 +7,26 @@ namespace FallenAngel.Core
     public static class PartPrototype
     {
         public const string AudioName = "__part_prototype";
+        /// <summary>分轨文件名前缀：原型把每件乐器各自合成一条轨（真实曲目用 Resources/Audio 下的四条文件）</summary>
+        public const string StemPrefix = "__part_stem_";
+        private static readonly System.Collections.Generic.Dictionary<string, AudioClip> stemClips =
+            new System.Collections.Generic.Dictionary<string, AudioClip>();
+
+        public static string StemName(string partName) { return StemPrefix + partName; }
+
+        /// <summary>原型分轨解析：文件名形如 __part_stem_Guitar 时合成对应那条轨</summary>
+        public static bool TryResolveStem(string fileName, out AudioClip clip)
+        {
+            clip = null;
+            if (string.IsNullOrEmpty(fileName) || !fileName.StartsWith(StemPrefix)) return false;
+            string partName = fileName.Substring(StemPrefix.Length);
+            if (!stemClips.TryGetValue(partName, out clip) || clip == null)
+            {
+                clip = Synthesize(StemName(partName), partName);
+                stemClips[partName] = clip;
+            }
+            return clip != null;
+        }
         /// <summary>每小节秒数（120 BPM、4/4）</summary>
         public const float BarSeconds = 2f;
         /// <summary>段长：4 小节 = 8 秒（一届"资源地形"）</summary>
@@ -136,19 +156,43 @@ namespace FallenAngel.Core
 
         private static ChartData NewChart() => new ChartData
         {
-            metadata = new ChartMetadata { songName = "Guitar / Drums Prototype", songArtist = "Synthesized demo",
-                bpm = 120f, audioFileName = AudioName, difficulty = Difficulty.Normal, level = 3 }
+            metadata = new ChartMetadata
+            {
+                songName = "Guitar / Drums / Bass Prototype", songArtist = "Synthesized demo",
+                bpm = 120f, audioFileName = AudioName, difficulty = Difficulty.Normal, level = 3,
+                // 三件乐器各一条轨同时播，当前演奏的那条增强（见 Core/StemMix）
+                stems = new System.Collections.Generic.List<SongStem>
+                {
+                    new SongStem { partName = "Guitar", audioFileName = StemName("Guitar") },
+                    new SongStem { partName = "Drums", audioFileName = StemName("Drums") },
+                    new SongStem { partName = "Bass", audioFileName = StemName("Bass") },
+                },
+                switchTiming = PartSwitchConfig.Immediate,
+            }
         };
 
-        /// <summary>只在显式选择演示曲时生成；整曲混音只播放一次，切换不会改音源。</summary>
+        /// <summary>单条混音（旧路径/兜底）：三件乐器合在一起，不做分轨增强。</summary>
         public static AudioClip Audio
         {
             get
             {
                 if (clip != null) return clip;
-                const int rate = 22050;
-                var samples = new float[rate * 36];
-                var random = new System.Random(713);
+                clip = Synthesize(AudioName, null);
+                return clip;
+            }
+        }
+
+        /// <summary>
+        /// 合成音频。onlyPart = null 时是整曲混音，否则只合成那一件乐器（分轨路径）。
+        /// 三件乐器共用同一段节拍数据，所以分轨之间天然对齐。
+        /// </summary>
+        private static AudioClip Synthesize(string clipName, string onlyPart)
+        {
+            const int rate = 22050;
+            var samples = new float[rate * 36];
+            var random = new System.Random(713);
+            if (onlyPart == null || onlyPart == "Guitar")
+            {
                 foreach (NoteData note in Charts.Guitar.notes)
                 {
                     if (note.type == NoteType.LongBody || note.type == NoteType.LongEnd) continue;
@@ -161,11 +205,15 @@ namespace FallenAngel.Core
                     for (int j = 0; j < length; j++)
                     {
                         float t = j / (float)rate;
-                        float envelope = note.type == NoteType.LongStart ? .12f + .10f * Mathf.Exp(-6f * t) : .22f * Mathf.Exp(-12f * t);
+                        float envelope = note.type == NoteType.LongStart
+                            ? .12f + .10f * Mathf.Exp(-6f * t) : .22f * Mathf.Exp(-12f * t);
                         samples[start + j] += envelope *
                             (Mathf.Sin(2f * Mathf.PI * hz * t) + .3f * Mathf.Sin(4f * Mathf.PI * hz * t));
                     }
                 }
+            }
+            if (onlyPart == null || onlyPart == "Drums")
+            {
                 foreach (NoteData note in Charts.Drums.notes)
                 {
                     if (note.type != NoteType.Normal) continue;
@@ -179,6 +227,9 @@ namespace FallenAngel.Core
                             : .18f * Mathf.Exp(-45f * t) * noise;
                     }
                 }
+            }
+            if (onlyPart == null || onlyPart == "Bass")
+            {
                 foreach (NoteData note in Charts.Bass.notes)
                 {
                     if (note.type != NoteType.Normal) continue;
@@ -191,10 +242,10 @@ namespace FallenAngel.Core
                         samples[start + j] += .20f * Mathf.Exp(-2.6f * t) * Mathf.Sin(2f * Mathf.PI * hz * t);
                     }
                 }
-                clip = AudioClip.Create(AudioName, samples.Length, 1, rate, false);
-                clip.SetData(samples, 0);
-                return clip;
             }
+            AudioClip result = AudioClip.Create(clipName, samples.Length, 1, rate, false);
+            result.SetData(samples, 0);
+            return result;
         }
     }
 }
