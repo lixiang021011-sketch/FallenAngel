@@ -57,7 +57,6 @@ namespace FallenAngel.Gameplay
         private NoteBandGraphic bodyGraphic;
         private RectTransform bodyRect;
         private bool bodyCreatedLogged;
-        private float bodyShrink = 1f;                   // 身体可见比例（1 = 全长；按住时随 HoldProgress 收缩）
 
         // ===== 视觉增强：近大远小 / 鼓件图标 / 命中扩散环 =====
         // 出生（屏幕顶部）时的缩放下限已统一到 PlayPerspective.MinScale（0.35，作者 2026-09-20 选型 B）；
@@ -222,7 +221,6 @@ namespace FallenAngel.Gameplay
             // 池复用重置：带子的形状由"画布高度 → 轨道半宽"决定，缩放恒为 1
             //（收缩不再走 localScale，见 UpdatePosition —— 按 scaleY 压扁会让带子跟着变窄，反而脱离轨道）
             bodyRect.localScale = Vector3.one;
-            bodyShrink = 1f;
 
             bodyGraphic.gameObject.SetActive(true);
             // 身体配色并入部件统一着色：贴近头部 0.9 实体 → 远端 0.18 半透明
@@ -761,7 +759,7 @@ namespace FallenAngel.Gameplay
 
             if (Data.type == NoteType.LongStart && bodyRect != null)
             {
-                canvasY = bodyRect.sizeDelta.y * Mathf.Clamp01(bodyShrink);
+                canvasY = bodyRect.sizeDelta.y;      // 带子顶端（长度每帧按透视曲线重算，见 UpdatePosition）
             }
             else if (Data.type == NoteType.Slide && Data.path != null && Data.path.Count >= 2)
             {
@@ -848,11 +846,13 @@ namespace FallenAngel.Gameplay
                     : null;
                 if (head != null && head.IsHolding && head.Data.type == NoteType.LongStart)
                 {
-                    float fallDistance = Mathf.Abs(spawnPosY - judgePosY);
-                    // 与身体同一条**真值**公式（不带像素 clamp）：尾巴到判定线的距离 = 剩余时间 × 速度。
-                    // 长条未按住时标记停在屏幕上方（看不见），按到"还剩一个落距"时它正好进屏 —— 与上游一致。
-                    float holdDistance = fallDistance * (head.Data.duration / fallTime);
-                    float y = judgePosY + holdDistance * (1f - Mathf.Clamp01(head.HoldProgress));
+                    // 尾部位置 = 尾巴时间进度在**透视曲线**上的落点（2026-10-04 修正）：
+                    // 此前用线性公式 judgeY + 落距×(1−HoldProgress)，在透视下尾巴的到线时刻会偏晚，
+                    // 手感就是"长条比别的音符消失得慢"。现在与音符走同一条曲线，尾巴正好在时长末点到线。
+                    // 注意符号：尾巴的事件时刻 = 头 + 时长（**更晚**），所以它的进度**更小**（位置更高）。
+                    float headRaw = (currentSongTime - head.Data.time) / Mathf.Max(0.05f, fallTime);
+                    float tailProgress = headRaw + 1f - head.Data.duration / Mathf.Max(0.05f, fallTime);
+                    float y = PlayPerspective.PositionY(tailProgress, spawnPosY, judgePosY);
                     rectTransform.anchoredPosition = new Vector2(rectTransform.anchoredPosition.x, y);
                 }
                 // 未按住/已释放：停在生成点（离屏不可见），由 CleanupMissedNotes 静默回收
@@ -865,15 +865,24 @@ namespace FallenAngel.Gameplay
                 rectTransform.anchoredPosition = new Vector2(rectTransform.anchoredPosition.x, y);
             }
 
-            // 更新长按身体长度（按住时）
-            if (Data.type == NoteType.LongStart && IsHolding && isLongNoteConfigured && bodyRect != null)
+            // 长条身体长度：**每帧按透视曲线重算**（头与尾各自的时间进度求差）。
+            // 为什么不是"生成时算一次 + 按住时按比例收缩"：音符下落走 ViewProgress01 指数曲线，
+            // 线性长度（落距×时长/下落时长）在透视下并不等于"尾巴时间进度"的屏幕距离，
+            // 结果就是尾巴比音符慢（作者 2026-10-04 反馈）——按住时更明显。
+            if (Data.type == NoteType.LongStart && isLongNoteConfigured &&
+                bodyRect != null && bodyGraphic != null)
             {
                 HoldProgress = Mathf.Clamp01((currentSongTime - Data.time) / Mathf.Max(0.01f, Data.duration));
-                // 收缩不再靠 localScale.y：带子的宽度是"每个高度上轨道的半宽"，
-                // 纵向压扁会把上半段挪到轨道更窄的高度，宽窄就对不上了。
-                // 改成把「剩余长度」交给带子重采样（12 段 = 48 顶点，网格很小），底边始终贴住头部。
-                bodyShrink = Mathf.Clamp01(1f - HoldProgress);
-                bodyGraphic.SetStraightBand(bodyRect.sizeDelta.y * bodyShrink);
+                // 尾巴比头**晚** `duration` 到达判定线 → 它的进度**更小**（屏幕位置更高）。
+                float tailProgress = rawProgress - Data.duration / Mathf.Max(0.05f, fallTime);
+                float tailY = PlayPerspective.PositionY(tailProgress, spawnPosY, judgePosY);
+                float bandLength = Mathf.Max(0f, tailY - rectTransform.anchoredPosition.y);
+                if (Mathf.Abs(bandLength - bodyRect.sizeDelta.y) > 0.5f)
+                {
+                    bodyRect.sizeDelta = new Vector2(bodyRect.sizeDelta.x, bandLength);
+                    bodyGraphic.SetStraightBand(bandLength);
+                    bodyGraphic.SetAllDirty();
+                }
                 bodyRect.anchoredPosition = Vector2.zero; // 底边始终贴住头部
             }
 

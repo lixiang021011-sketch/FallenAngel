@@ -141,12 +141,14 @@ def _gen_slide_path(kind: str, ev: NoteEvent, params: Dict[str, Any], x0: float)
 
 def _gen_strum_drags(ev: NoteEvent, params: Dict[str, Any], rel: Optional[int]) -> List[Dict[str, Any]]:
     """扫弦 → 快速跨轨 drag 序列（协议：扫弦 = 快速跨轨 drag；Phigros 语义宽松不 miss）。
-    多音按琴弦顺序绝对映射（跨轨表演本身依弦序）；单音用相对轨道"""
+    轨道来源：优先 position.strum_lanes（前端按乐句音域归一化算好的轨位，协议 §3.4 相对音高），
+    否则退回绝对音高映射（兼容既有前端）；单音用相对轨道。"""
     pitches = (ev.position or {}).get("strum_pitches") or [ev.pitch]
     pitches = [p for p in pitches if p is not None]
     n = len(pitches)
     if n == 0:
         return [{"type": "drag", "time": round(ev.time, 3), "lane": 1}]
+    given_lanes = (ev.position or {}).get("strum_lanes") or []
     span = float(params.get("strum_span_seconds", 0.08))
     if n == 1:
         return [{"type": "drag", "time": round(ev.time, 3),
@@ -154,8 +156,9 @@ def _gen_strum_drags(ev: NoteEvent, params: Dict[str, Any], rel: Optional[int]) 
     out = []
     for i, p in enumerate(pitches):
         t = ev.time + span * i / (n - 1)
+        lane = int(given_lanes[i]) if i < len(given_lanes) else pitch_to_lane(p, params)
         out.append({"type": "drag", "time": round(t, 3),
-                    "lane": pitch_to_lane(p, params)})
+                    "lane": max(0, min(LANE_MAX, lane))})
     return out
 
 
@@ -390,8 +393,15 @@ class RuleEngine:
         self.defaults = rules.get("defaults", {})
         self.post = rules.get("post", {})
 
-    def apply(self, ir: IRStream) -> Tuple[List[Dict[str, Any]], List[str]]:
-        """IR → (chart notes, 警告清单)。纯函数：同输入同输出。"""
+    def apply(self, ir: IRStream, trace: Optional[List[Tuple[NoteEvent, List[Dict[str, Any]]]]] = None
+              ) -> Tuple[List[Dict[str, Any]], List[str]]:
+        """IR → (chart notes, 警告清单)。纯函数：同输入同输出。
+
+        trace（可选）：传入列表时，逐个 IR 事件追加 (NoteEvent, 该事件产出的 chart 音符)，
+        供谱面溯源（Chart Note → Musical Event → 原始 MIDI 音符）使用；不传则零开销。
+        注意：追加的是 emit 后的对象引用，`_post_process` 可能就地修改它们（如翻轨/降级），
+        trace 里看到的就是最终结果。
+        """
         warnings: List[str] = []
         events = ir.sorted().events
         ctx = {"params": self.params, "defaults": self.defaults,
@@ -409,8 +419,13 @@ class RuleEngine:
                 unmatched = self.defaults.get("unmatched", "tap")
                 if unmatched == "drop":
                     warnings.append(f"⚠ 未命中规则已丢弃 t={ev.time:.2f}s pitch={ev.pitch}")
+                    if trace is not None:
+                        trace.append((ev, []))
                     continue
-                notes.extend(emit_event({"name": "unmatched", "emit": {"type": "tap"}}, ev, ctx, warnings))
+                emitted = emit_event({"name": "unmatched", "emit": {"type": "tap"}}, ev, ctx, warnings)
+                notes.extend(emitted)
+                if trace is not None:
+                    trace.append((ev, emitted))
                 matched += 1
                 continue
             # flick_enabled=false → flick 降级 tap（风格参数，协议对照表 §6）
@@ -421,7 +436,10 @@ class RuleEngine:
                                     f"t={ev.time:.2f}s")
                     hit = {"name": hit.get("name"), "emit": {"type": "tap",
                                                               "lane": hit.get("emit", {}).get("lane", "from_pitch")}}
-            notes.extend(emit_event(hit, ev, ctx, warnings))
+            emitted = emit_event(hit, ev, ctx, warnings)
+            notes.extend(emitted)
+            if trace is not None:
+                trace.append((ev, emitted))
             matched += 1
         notes = _post_process(notes, self.post, self.params, warnings)
         _validate(notes, warnings)

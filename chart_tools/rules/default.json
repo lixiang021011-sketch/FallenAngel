@@ -31,7 +31,7 @@
     { "name": "melodic-gliss-flick", "match": { "articulations": ["gliss"], "duration_max": "param:slide_min_duration" }, "emit": { "type": "flick", "lane": "from_pitch_delta", "direction": "from_pitch" } },
     { "name": "melodic-tremolo", "match": { "articulations": ["tremolo"] },                                       "emit": { "type": "drag", "lane": "from_pitch_delta" } },
     { "name": "melodic-grace",   "match": { "articulations": ["grace"] },                                         "emit": { "type": "flick", "lane": "from_pitch_delta", "direction": "from_pitch" } },
-    { "name": "melodic-hold",    "match": { "tied": true, "duration_beats_min": "param:hold_threshold_beats" },   "emit": { "type": "hold", "lane": "from_pitch_delta" } },
+    { "name": "melodic-hold",    "match": { "tied": true },   "emit": { "type": "hold", "lane": "from_pitch_delta" } },
     { "name": "melodic-hold-long","match": { "duration_beats_min": "param:hold_threshold_beats" },                "emit": { "type": "hold", "lane": "from_pitch_delta" } }
   ],
   "post": {

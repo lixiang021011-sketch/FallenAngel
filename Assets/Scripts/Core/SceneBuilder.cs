@@ -515,6 +515,10 @@ namespace FallenAngel.Core
             // 宽度跟着轨组走：2026-09-18 轨道加宽后轨组 = 可用宽（1080 − 两侧留白）
             jlRect.sizeDelta = new Vector2(LaneLayout.GetUsableWidth(LaneLayout.MaxLaneCount),
                                            PlayVisualSpec.JudgeLineThickness);
+            // 画线必须在**运行时**按真实画布高度对齐到判定位置：
+            // 静态的 JudgeLineAnchoredY 只在画布高恰为 1920（参考分辨率）时与判定重合，
+            // 真机上会差约 100 UI（≈0.7 拍）——见 JudgeLineAligner 的注释。
+            judgeLine.AddComponent<JudgeLineAligner>();
             Image jlImg = judgeLine.GetComponent<Image>();
             jlImg.color = Color.white;
             jlImg.raycastTarget = false;
@@ -1263,7 +1267,10 @@ namespace FallenAngel.Core
             RectTransform jbr = (RectTransform)judgeBar.transform;
             jbr.anchorMin = jbr.anchorMax = new Vector2(0.5f, 0.5f);
             jbr.pivot = new Vector2(0.5f, 0.5f);
-            jbr.anchoredPosition = Vector2.zero;
+            // 与游戏本体的判定位置同源（父容器是画布中心锚点，所以直接用 JudgeLineY）：
+            // 曾经写成 0（画布正中），校准界面看到的那条线比实际游玩高 560 UI → 校准永远对不上
+            //（作者 2026-10-05 反馈"校准的界面示意和实际游玩不一样，校准没有实际作用"）。
+            jbr.anchoredPosition = new Vector2(0f, PlayVisualSpec.JudgeLineY);
             jbr.sizeDelta = new Vector2(420, 6);
             Image jbi = judgeBar.GetComponent<Image>();
             jbi.color = new Color(0.81f, 0.94f, 0.92f, 0.95f);
@@ -1415,7 +1422,7 @@ namespace FallenAngel.Core
             RectTransform jbr = (RectTransform)judgeBar.transform;
             jbr.anchorMin = jbr.anchorMax = new Vector2(0.5f, 0.5f);
             jbr.pivot = new Vector2(0.5f, 0.5f);
-            jbr.anchoredPosition = Vector2.zero;
+            jbr.anchoredPosition = new Vector2(0f, PlayVisualSpec.JudgeLineY);   // 同上：与判定同源
             jbr.sizeDelta = new Vector2(420, 6);
             Image jbi = judgeBar.GetComponent<Image>();
             jbi.color = new Color(0.81f, 0.94f, 0.92f, 0.95f);

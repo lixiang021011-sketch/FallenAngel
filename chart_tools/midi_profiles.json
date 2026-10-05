@@ -1,0 +1,146 @@
+{
+  "version": 2,
+  "_comment": "MIDI → IR 前端配置（谱面转换协议 §2 MIDI 职责）。所有参数可调，代码不硬编码。映射层规则仍在 rules/*.json。",
+  "_calibration": {
+    "source": "人类谱统计基线来自开源项目 rhythm-chart-diffusion（MIT，© 2026 Jeonghyun Moon 等）的 docs/_stats/*.csv：tempo_density.csv（各难度中位 NPS）、hold_stats.csv（长键占比/长度/短长键比例）、coverage.csv（网格覆盖率）、pattern_baseline.csv（pattern 覆盖率）。",
+    "nps": "人类 4K mania 中位 NPS：Easy 3.74 / Normal 6.44 / Hard 9.55 / Insane 12.90 / Expert 15.76。本作两指可打（fix_charts.MAX_FINGERS=2；docs/reference_opensekai.md：同一手指 1/6 s 内不判下一个 → 单指上限 6 音/秒，两指 ≈ 12 音/秒），按 12/15.76≈0.76 折算 → Easy 2.85 / Normal 4.90 / Hard 7.27 / Expert 12.0；取整为 3.0 / 5.0 / 7.5 / 11.0（Expert 留余量，Hard 贴近本作 >8 音/秒 警告线）。",
+    "grid": "coverage.csv：1/16 单网格覆盖 94.8%，加入 1/6、1/12 三连音族后约 99%。故 quantize.minDivision 取 48（=1/12 拍，与人谱 token 网格一致），难度粗化一律用 straight+triplet 两族并集。",
+    "hold": "hold_stats.csv：长键占 onset 约 15%（Easy 0.152 / Normal 0.149 / Hard 0.151 / Insane 0.132 / Expert 0.163）；长键长度中位 3~12 个 1/12 拍（Expert 4 → 0.33 拍，Easy 12 → 1.0 拍）；短于 1/4 拍的长键占比 Easy 0.3% / Hard 2% / Expert 8%。故 holdMinLengthBeats 取 0.25~0.5、holdReleaseMarginBeats=0.05；holdThresholdBeats 默认保持 docs/note-types.md 已拍板的 2 拍，另给 holdTargetShare（按乐句时值分位自适应，0=关闭）作为可选开关。"
+  },
+  "quantize": {
+    "mode": "Straight",
+    "minDivision": 48,
+    "timingTolerance": 0.09,
+    "swingRatio": 0.667,
+    "preserveExpressiveTiming": false
+  },
+  "importance": {
+    "beatStrengthWeight": 0.30,
+    "velocityWeight": 0.20,
+    "melodicWeight": 0.20,
+    "phraseBoundaryWeight": 0.15,
+    "durationWeight": 0.15,
+    "phraseGapBeats": 1.0,
+    "beatStrengthTable": { "1": 1.0, "3": 0.75, "2": 0.55, "4": 0.55 },
+    "beatStrengthFallback": 0.5
+  },
+  "_importance_comment": "强拍 = 小节内拍位权重（1 最强、3 次强、2/4 弱）× 拍内细分权重（1/2=0.6、1/3=0.5、1/4=0.45、1/6=0.32、1/12=0.22，见 midi_to_ir.SUBDIVISION_WEIGHTS）。",
+  "difficulty": {
+    "Easy": {
+      "maxNotesPerSecond": 3.0,
+      "minSubdivision": 8,
+      "maxChordSize": 1,
+      "keepOrnaments": false,
+      "keepGhostNotes": false,
+      "simplifySyncopation": true,
+      "maxRepeatedNotes": 1,
+      "holdThresholdBeats": 2.0,
+      "holdTargetShare": 0.0,
+      "holdMinGapBeats": 1.0,
+      "holdMinLengthBeats": 0.5,
+      "holdReleaseMarginBeats": 0.05,
+      "densityReductionStrength": 1.0,
+      "strumStyle": "tap"
+    },
+    "Normal": {
+      "maxNotesPerSecond": 5.0,
+      "minSubdivision": 16,
+      "maxChordSize": 1,
+      "keepOrnaments": false,
+      "keepGhostNotes": false,
+      "simplifySyncopation": true,
+      "maxRepeatedNotes": 2,
+      "holdThresholdBeats": 2.0,
+      "holdTargetShare": 0.0,
+      "holdMinGapBeats": 0.75,
+      "holdMinLengthBeats": 0.4,
+      "holdReleaseMarginBeats": 0.05,
+      "densityReductionStrength": 1.0,
+      "strumStyle": "tap"
+    },
+    "Hard": {
+      "maxNotesPerSecond": 7.5,
+      "minSubdivision": 24,
+      "maxChordSize": 2,
+      "keepOrnaments": true,
+      "keepGhostNotes": false,
+      "simplifySyncopation": false,
+      "maxRepeatedNotes": 2,
+      "holdThresholdBeats": 2.0,
+      "holdTargetShare": 0.0,
+      "holdMinGapBeats": 0.5,
+      "holdMinLengthBeats": 0.35,
+      "holdReleaseMarginBeats": 0.05,
+      "densityReductionStrength": 1.0,
+      "strumStyle": "tap"
+    },
+    "Expert": {
+      "maxNotesPerSecond": 11.0,
+      "minSubdivision": 0,
+      "maxChordSize": 2,
+      "keepOrnaments": true,
+      "keepGhostNotes": true,
+      "simplifySyncopation": false,
+      "maxRepeatedNotes": 4,
+      "holdThresholdBeats": 2.0,
+      "holdTargetShare": 0.0,
+      "holdMinGapBeats": 0.5,
+      "holdMinLengthBeats": 0.25,
+      "holdReleaseMarginBeats": 0.05,
+      "densityReductionStrength": 1.0,
+      "strumStyle": "tap"
+    }
+  },
+  "_difficulty_comment": "minSubdivision = 每四分音符等分数（0 = 不粗化）；粗化时自动并上三连音族（division 与 division*1.5），如 16 与 24 并存。holdTargetShare>0 时按乐句时值分位自适应长键阈值（人类谱约 0.15），默认关闭以保持已拍板的 2 拍规则。strumStyle: tap = 和弦压成 1~2 个落手（默认，稳）；drag_partial/drag_full = 吉他扫弦渲染成跨轨 drag 序列（表演向，需 strum_lanes 归一化）。",
+  "instruments": {
+    "lead":   { "irInstrument": "other",  "polyphonic": false, "chordGroupingToleranceBeats": 0.03, "jackReduction": false },
+    "bass":   { "irInstrument": "bass",   "polyphonic": false, "chordGroupingToleranceBeats": 0.03, "jackReduction": true },
+    "guitar": { "irInstrument": "guitar", "polyphonic": true,  "chordGroupingToleranceBeats": 0.05, "jackReduction": true, "strumSpreadMs": 30 },
+    "keys":   { "irInstrument": "keys",   "polyphonic": true,  "chordGroupingToleranceBeats": 0.05, "jackReduction": false },
+    "drums":  { "irInstrument": "drums",  "polyphonic": true,  "chordGroupingToleranceBeats": 0.03, "jackReduction": false, "hold": false }
+  },
+  "chord": {
+    "representative": "top",
+    "keepPitchOrder": "highest_first"
+  },
+  "drumClasses": {
+    "kick":  [35, 36],
+    "snare": [37, 38, 40],
+    "hihat": [42, 44, 46],
+    "ride":  [51, 59],
+    "crash": [49, 52, 55, 57, 58],
+    "tom":   [41, 43, 45, 47, 48, 50]
+  },
+  "drumKeep": {
+    "Easy":   ["kick", "snare", "crash"],
+    "Normal": ["kick", "snare", "crash", "hihat"],
+    "Hard":   ["kick", "snare", "crash", "hihat", "tom", "ride"],
+    "Expert": ["kick", "snare", "crash", "hihat", "tom", "ride", "other"]
+  },
+  "playability": {
+    "maxNPS": 12.0,
+    "minSameLaneIntervalBeats": 0.5,
+    "maxChordSize": 2,
+    "maxJackCount": 2,
+    "maxHoldOverlap": 0,
+    "maxLaneJump": 3,
+    "repair": true,
+    "_comment": "maxNPS=12 = 两指上限（单指 1/6 s 内不判下一个 → 6 音/秒/指）。midi_chart 会按难度自己的 maxNotesPerSecond 覆盖该项。"
+  },
+  "trackDetect": {
+    "drumChannel": 9,
+    "nameKeywords": {
+      "drums":  ["drum", "drumkit", "kick", "perc", "beat", "鼓", "ドラム"],
+      "bass":   ["bass", "贝斯", "ベース", "contrabass", "upright"],
+      "guitar": ["guitar", "gt.", "gtr", "吉他", "ギター"],
+      "keys":   ["piano", "keys", "keyboard", "synth", "organ", "epiano", "钢", "ピアノ"],
+      "lead":   ["sax", "trumpet", "lead", "brass", "flute", "violin", "melody", "vocal", "萨克斯", "主旋律"]
+    },
+    "programRanges": {
+      "keys":   [[0, 7], [16, 23]],
+      "guitar": [[24, 31]],
+      "bass":   [[32, 39]],
+      "lead":   [[56, 63], [64, 71], [72, 79], [40, 47]]
+    }
+  }
+}

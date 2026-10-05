@@ -63,6 +63,9 @@ namespace FallenAngel.Audio
             new System.Collections.Generic.List<AudioSource>();
         private readonly System.Collections.Generic.List<string> stemParts =
             new System.Collections.Generic.List<string>();
+        /// <summary>每条分轨的基础音量（SongStem.gain；原型合成轨缺省 1）</summary>
+        private readonly System.Collections.Generic.List<float> stemGains =
+            new System.Collections.Generic.List<float>();
         private string activeStem;
         private bool hasStems;
 
@@ -77,7 +80,8 @@ namespace FallenAngel.Audio
         {
             if (index < 0 || index >= stemParts.Count || string.IsNullOrEmpty(stemParts[index]))
                 return bgmVolume;
-            return bgmVolume * StemMix.GainFor(stemParts[index] == activeStem, activeStemGain, inactiveStemGain);
+            float gain = index < stemGains.Count ? stemGains[index] : 1f;
+            return bgmVolume * gain * StemMix.GainFor(stemParts[index] == activeStem, activeStemGain, inactiveStemGain);
         }
 
         /// <summary>把音量推到目标（instant = 开局/复位时直接到位，不做过渡）</summary>
@@ -139,6 +143,7 @@ namespace FallenAngel.Audio
         private bool audioStarted;   // 真实音频是否已开始播放（clip 已装载且 Play 成功）
         private float virtualTime;   // 虚拟钟累计时间（仅无音频时推进）
         private Coroutine fadeOutCoroutine;  // 曲终淡出协程引用（可中断）
+        private float lastAudioDiagTime;      // 临时诊断用（见 Update）
 
         private void Awake()
         {
@@ -189,6 +194,21 @@ namespace FallenAngel.Audio
 
         private void Update()
         {
+            // ── 临时诊断（2026-10-04 音画对不上排查；定位后删除）──────────────
+            // 打印"游戏时钟"与"每条分轨的真实播放位置"，用来判断是音频起播偏晚
+            // 还是时钟跑在了音频前面（作者反馈：音符早到、在线上停一下、到点才释放）。
+            if (audioStarted && Time.unscaledTime - lastAudioDiagTime >= 1f)
+            {
+                lastAudioDiagTime = Time.unscaledTime;
+                var sb = new System.Text.StringBuilder();
+                sb.AppendFormat("[AudioDiag] 时钟 {0:F3}s", CurrentTime);
+                for (int i = 0; i < stemSources.Count; i++)
+                {
+                    sb.AppendFormat(" | {0}:{1:F3}{2}", stemParts.Count > i ? stemParts[i] : "?",
+                        stemSources[i].time, stemSources[i].isPlaying ? "" : "(停)");
+                }
+                Debug.Log(sb.ToString());
+            }
             // 分轨音量过渡（换声部时把当前轨推出来）；暂停时 unscaledDeltaTime 仍在走，
             // 但换声部本来就不允许在暂停态发生，所以这里不需要额外门控。
             if (audioStarted && hasStems) ApplyStemVolumes(false);
@@ -244,6 +264,14 @@ namespace FallenAngel.Audio
                     Debug.LogWarning("[AudioManager] 谱面配了分轨但一条都没加载成功，使用虚拟钟模式");
                     return;
                 }
+                // 预解码：四条长分轨（各 ~35MB PCM）若等到 PlayScheduled 那一刻才解码，
+                // 各轨会先后进入播放 → 分轨之间错位，听感就是"音画不同步"。
+                // 这里在加载页内一次性解码完（会卡一下加载页，但演奏开始即同步）。
+                foreach (AudioClip stemClipToLoad in clips)
+                {
+                    if (!stemClipToLoad.LoadAudioData())
+                        Debug.LogWarning($"[AudioManager] 分轨预解码失败：{stemClipToLoad.name}（可能仍能播放）");
+                }
                 SetupStemSources(loaded, clips);
                 Debug.Log(string.Format("[AudioManager] 分轨就绪：{0} 条（{1}）", loaded.Count,
                     string.Join(" / ", loaded.ConvertAll(s => s.partName).ToArray())));
@@ -279,6 +307,7 @@ namespace FallenAngel.Audio
             }
             stemSources.Clear();
             stemParts.Clear();
+            stemGains.Clear();
             hasStems = false;
         }
 
@@ -292,8 +321,10 @@ namespace FallenAngel.Audio
             source.volume = bgmVolume;
             stemSources.Clear();
             stemParts.Clear();
+            stemGains.Clear();
             stemSources.Add(source);
             stemParts.Add(null);      // 没有分轨概念：恒为总音量
+            stemGains.Add(1f);
             hasStems = false;
         }
 
@@ -303,15 +334,18 @@ namespace FallenAngel.Audio
             EnsureStemPoolSize(clips.Count);
             stemSources.Clear();
             stemParts.Clear();
+            stemGains.Clear();
             for (int i = 0; i < clips.Count; i++)
             {
                 AudioSource source = stemPool[i];
                 source.clip = clips[i];
                 source.loop = false;
                 source.playOnAwake = false;
-                source.volume = bgmVolume * inactiveStemGain;
+                float gain = stems[i].gain > 0f ? stems[i].gain : 1f;
+                source.volume = bgmVolume * gain * inactiveStemGain;
                 stemSources.Add(source);
                 stemParts.Add(stems[i].partName);
+                stemGains.Add(gain);
             }
             hasStems = true;
         }
@@ -342,7 +376,10 @@ namespace FallenAngel.Audio
                 // 当前演奏轨：开局就按 GameManager 的当前声部定好（不等到第一次切换才推出来）
                 SetActiveStem(GameManager.Instance != null && GameManager.Instance.Parts != null
                     ? GameManager.Instance.Parts.PartName : null);
-                // 多条轨必须同一时刻起播，否则分轨之间会错位：用 dsp 时间统一调度
+                // 多条轨必须同一时刻起播，否则分轨之间会错位：用 dsp 时间统一调度。
+                // 余量回到 0.1s（2026-10-04：一度改成 0.35s 试图避免漏调度，但那会让
+                // 开局多出 0.35s 的"时钟冻结"，观感是音画不同步 —— 分轨数据已在
+                // LoadBGM 里预解码，这里不需要更大的余量）。
                 double startAt = AudioSettings.dspTime + 0.1;
                 for (int i = 0; i < stemSources.Count; i++)
                 {
@@ -458,19 +495,25 @@ namespace FallenAngel.Audio
         }
 
         /// <summary>
-        /// 暂停BGM（虚拟钟由状态门控自动冻结，无需处理）
+        /// 暂停BGM（虚拟钟由状态门控自动冻结，无需处理）。
+        /// 分轨：**所有**分轨都要暂停——只停主音源的话，其余三条会继续播下去
+        /// （作者 2026-10-04 报："暂停后音乐还不停"）。
         /// </summary>
         public void PauseBGM()
         {
-            if (bgmSource.isPlaying) bgmSource.Pause();
+            for (int i = 0; i < stemSources.Count; i++)
+                if (stemSources[i] != null && stemSources[i].isPlaying) stemSources[i].Pause();
+            if (stemSources.Count == 0 && bgmSource.isPlaying) bgmSource.Pause();
         }
 
         /// <summary>
-        /// 恢复BGM
+        /// 恢复BGM（分轨逐条 UnPause，对齐暂停前的播放位置）
         /// </summary>
         public void ResumeBGM()
         {
-            bgmSource.UnPause();
+            for (int i = 0; i < stemSources.Count; i++)
+                if (stemSources[i] != null) stemSources[i].UnPause();
+            if (stemSources.Count == 0) bgmSource.UnPause();
         }
 
         /// <summary>
@@ -483,6 +526,9 @@ namespace FallenAngel.Audio
                 StopCoroutine(fadeOutCoroutine);
                 fadeOutCoroutine = null;
             }
+            // 分轨必须一并停掉：StopAll 以前只停主音源，另外三条分轨会继续播下去
+            // （作者 2026-10-04 报："退出后音频还不停"）。
+            StopAllStems();
             bgmSource.Stop();
             sfxSource.Stop();
             hitSource.Stop();

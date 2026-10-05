@@ -23,6 +23,8 @@ namespace FallenAngel.UI
         [SerializeField] private GameStarter gameStarter;
 
         private readonly List<GameObject> entries = new List<GameObject>();
+        /// <summary>当前歌单快照（组装"同曲切谱"用）</summary>
+        private readonly List<ChartData> pool = new List<ChartData>();
 
         private void OnEnable()
         {
@@ -75,7 +77,8 @@ namespace FallenAngel.UI
 
             if (content == null || entryTemplate == null) return;
 
-            List<ChartData> pool = ChartLoader.LoadAllChartPool(includeDemo: true);
+            pool.Clear();
+            pool.AddRange(ChartLoader.LoadAllChartPool(includeDemo: true));
             foreach (ChartData chart in pool)
             {
                 GameObject clone = Instantiate(entryTemplate, content);
@@ -107,11 +110,55 @@ namespace FallenAngel.UI
 
             if (gameStarter != null)
             {
-                gameStarter.StartChart(chart);
+                gameStarter.StartChart(chart, BuildPartSet(chart));
             }
             else
             {
                 Debug.LogError("[SongSelectPanelController] 未注入 GameStarter，无法开谱（请重建场景）");
+            }
+        }
+
+        /// <summary>
+        /// 同曲切谱：把歌单里"同一首歌 + 各自带 partName"的谱面组装成声部集合，
+        /// 玩家点哪张就从哪个声部开始（局内可切）。单声部谱面返回 null，走旧路径。
+        /// 顺序按 PartPalette.KnownParts（鼓/吉/键/贝/人声），切换条芯片顺序才稳定。
+        /// </summary>
+        private SongParts BuildPartSet(ChartData chart)
+        {
+            if (chart?.metadata == null || string.IsNullOrEmpty(chart.metadata.partName)) return null;
+            string audio = chart.metadata.audioFileName;
+            if (string.IsNullOrEmpty(audio)) return null;
+
+            var found = new List<ChartData>();
+            foreach (ChartData candidate in pool)
+            {
+                if (candidate?.metadata == null || string.IsNullOrEmpty(candidate.metadata.partName)) continue;
+                if (candidate.metadata.audioFileName != audio) continue;
+                bool duplicate = false;
+                foreach (ChartData already in found)
+                    if (already.metadata.partName == candidate.metadata.partName) { duplicate = true; break; }
+                if (!duplicate) found.Add(candidate);
+            }
+            if (found.Count < 2) return null;
+
+            int Order(ChartData c)
+            {
+                for (int i = 0; i < PartPalette.KnownParts.Length; i++)
+                    if (PartPalette.KnownParts[i] == c.metadata.partName) return i;
+                return PartPalette.KnownParts.Length;
+            }
+            found.Sort((a, b) => Order(a).CompareTo(Order(b)));
+
+            var names = new string[found.Count];
+            for (int i = 0; i < found.Count; i++) names[i] = found[i].metadata.partName;
+            try
+            {
+                return new SongParts(names, found.ToArray());
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning("[SongSelectPanelController] 同曲切谱组装失败（音频/偏移/键数不一致？）：" + e.Message);
+                return null;
             }
         }
     }

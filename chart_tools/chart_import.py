@@ -59,6 +59,9 @@ def finish(chart):
         n.setdefault("wide", False)
         n.setdefault("path", [])
     chart["noteCounts"] = counts
+    # v2 协议与游戏加载侧都读 metadata.noteCounts（ChartData.ChartMetadata.noteCounts）；
+    # 顶层那份是历史写法，保留给既有脚本/测试读，但游戏不认。
+    chart.setdefault("metadata", {})["noteCounts"] = counts
     return chart
 
 
@@ -679,6 +682,81 @@ def parse_pec(text, flick_direction="up"):
     return finish(chart)
 
 
+def holds_to_taps(chart, min_beats):
+    """把短于 min_beats 拍的长键降级为单击，返回改动数。
+
+    为什么需要：osu!mania 的长键常是 0.25~0.5 拍的"短划"，而本作的长键阈值是
+    **2 拍**（docs/note-types.md 已拍板）。从 osu!/AI 生成谱导入时，短长键直接搬进游戏
+    会变成"按不动的短长条"，故按本作规则降级（只改类型，不改节奏/时间）。
+    """
+    meta = chart.get("metadata") or {}
+    bpm = float(meta.get("bpm") or 0.0) or 120.0
+    limit = min_beats * 60.0 / bpm
+    changed = 0
+    for note in chart.get("notes") or []:
+        if note.get("type") == "hold" and float(note.get("duration") or 0.0) < limit:
+            note["type"] = "tap"
+            note["duration"] = 0.0
+            changed += 1
+    return changed
+
+
+def thin_to_nps(chart, max_nps, window=1.0):
+    """超密减音：1 秒窗口内超过 max_nps 就丢音，返回 (减音数, 剩余峰值)。
+
+    为什么需要：osu!/AI 谱的瞬时密度远超本作两指上限（现有谱平均 3.5~6.2 音/秒）。
+    保留优先级：整拍 > 半拍 > 其它细分；同一档次里优先丢"贴着邻居"的音（连打中最挤的那个）。
+    只减音不移动既有音符，时间轴不变。
+    """
+    import math
+    notes = chart.get("notes") or []
+    if not notes or max_nps <= 0:
+        return 0, 0
+    meta = chart.get("metadata") or {}
+    bpm = float(meta.get("bpm") or 0.0) or 120.0
+    offset = float(meta.get("offset") or 0.0)
+    beat = 60.0 / bpm
+
+    def strength(note):
+        pos = (float(note.get("time", 0.0)) - offset) / beat
+        frac = abs(pos - round(pos))
+        if frac < 0.03:
+            return 1.0
+        if abs(frac - 0.5) < 0.03:
+            return 0.6
+        if abs(frac - 0.25) < 0.03 or abs(frac - 0.75) < 0.03:
+            return 0.4
+        return 0.15
+
+    def peak():
+        times = sorted(n["time"] for n in notes)
+        best = 0
+        for i, t in enumerate(times):
+            best = max(best, sum(1 for x in times[i:] if x - t < window))
+        return best
+
+    removed = 0
+    guard = 0
+    while guard < 20000:
+        guard += 1
+        times = sorted(n["time"] for n in notes)
+        worst_start, worst_count = None, 0
+        for i, t in enumerate(times):
+            count = sum(1 for x in times[i:] if x - t < window)
+            if count > worst_count:
+                worst_start, worst_count = t, count
+        if worst_start is None or worst_count <= max_nps:
+            break
+        window_notes = [n for n in notes if worst_start <= n["time"] < worst_start + window]
+        ranked = sorted(window_notes, key=lambda n: (strength(n), -min(
+            abs(n["time"] - o["time"]) for o in notes if o is not n) if len(notes) > 1 else 0.0))
+        victim = ranked[0]
+        notes.remove(victim)
+        removed += 1
+    chart["notes"] = notes
+    return removed, peak()
+
+
 def validate(chart):
     """返回问题列表（空 = 通过）。"""
     problems = []
@@ -710,6 +788,12 @@ def main(argv=None):
                         help="Phigros/PEC 的 flick 没有方向信息，用它决定（alternate=上下交替，便于测试方向判定）")
     parser.add_argument("--max-hold", type=float, default=4.0,
                         help="谱面护栏：长按超过这个秒数就裁到上限（0 = 不裁；测试期默认 4s）")
+    parser.add_argument("--hold-min-beats", type=float, default=0.0,
+                        help="短于这个拍数的长键降级为单击（本作长键阈值是 2 拍；0 = 不处理）")
+    parser.add_argument("--time-shift-ms", type=float, default=0.0,
+                        help="整谱时间平移（毫秒）：谱面比音乐早到就填正数，晚到填负数")
+    parser.add_argument("--max-nps", type=float, default=0.0,
+                        help="超密减音：1 秒窗口内超过这个密度就丢音（0 = 不减；本作两指上限约 12）")
     parser.add_argument("--no-guardrails", action="store_true",
                         help="跳过谱面护栏（去重 / flick 补 direction / 长按裁剪 / 两指化），只在需要原始输出时用")
     args = parser.parse_args(argv)
@@ -721,6 +805,22 @@ def main(argv=None):
         chart["metadata"]["songName"] = args.title
     if args.artist:
         chart["metadata"]["songArtist"] = args.artist
+    if args.hold_min_beats > 0:
+        changed = holds_to_taps(chart, args.hold_min_beats)
+        if changed:
+            print("  · 短长键 → 单击 %d 个（短于 %.2f 拍；本作长键阈值 2 拍）"
+                  % (changed, args.hold_min_beats))
+    if args.time_shift_ms:
+        shift = args.time_shift_ms / 1000.0
+        for note in chart.get("notes") or []:
+            note["time"] = round(float(note.get("time", 0.0)) + shift, 3)
+        meta = chart.get("metadata") or {}
+        meta["offset"] = round(float(meta.get("offset") or 0.0) + shift, 3)
+        print("  · 整谱时间平移 %+.0f ms（谱面比音乐早到填正数）" % args.time_shift_ms)
+    if args.max_nps > 0:
+        removed, peak = thin_to_nps(chart, args.max_nps)
+        if removed:
+            print("  · 超密减音 %d 个（上限 %.1f 音/秒，减后峰值 %d）" % (removed, args.max_nps, peak))
 
     # ── 谱面护栏（2026-09-21）：导入即清洗 + 导入后体检，脏数据不进仓库 ──
     if not args.no_guardrails:

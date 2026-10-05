@@ -10,7 +10,11 @@ namespace FallenAngel.Core
     {
         /// <summary>当前演奏轨的音量倍率（相对歌曲总音量）</summary>
         public const float ActiveGain = 1.0f;
-        /// <summary>其余轨的音量倍率：0.7 ≈ 相对 −3.1dB，听得出来但不会让曲子塌掉</summary>
+        /// <summary>
+        /// 其余轨的音量倍率：0.7 ≈ 相对 −3.1dB，听得出来但不会让曲子塌掉。
+        /// 2026-10-04：一度试过 0.45（拉大对比），作者听感后要求**回退**——"增强"改由
+        /// 单条轨的基础音量（SongStem.gain）承担，例如贝斯 1.5（只保留贝斯的大幅增强）。
+        /// </summary>
         public const float InactiveGain = 0.7f;
         /// <summary>换声部时音量过渡时长（秒）——比硬切更耐听</summary>
         public const float RampSeconds = 0.35f;

@@ -62,6 +62,8 @@ namespace FallenAngel.Gameplay
 
         // 谱面扫描指针
         private int nextNoteIndex;
+        /// <summary>上一次生成用的谱面表（切声部时 ActiveChart 会换表 → 游标必须重置）</summary>
+        private ChartData lastSpawnedChart;
         private bool isPlaying;
 
         /// <summary>
@@ -360,6 +362,21 @@ namespace FallenAngel.Gameplay
         {
             if (GameManager.Instance.CurrentChart == null) return;
             var notes = GameManager.Instance.ActiveChart.notes;
+
+            // 切声部：ActiveChart 换成了**按当前时刻过滤过的新表**，而 nextNoteIndex 是旧表的游标 ——
+            // 不重置的话，新表里"本该已经在半空"的音符会被整段跳过（作者 2026-10-05 反馈
+            // "切换乐器再切回来，音符没有按当下时点下落，像是继承了切换前的位置"）。
+            // 新表本身已保证 time ≥ 切换时刻，所以重置到 0 正好补生成该在下落窗口里的那些。
+            if (!ReferenceEquals(lastSpawnedChart, GameManager.Instance.ActiveChart))
+            {
+                int dueCount = 0;
+                for (int i = 0; i < notes.Count && notes[i].time <= spawnTimeThreshold; i++) dueCount++;
+                Debug.Log(string.Format(
+                    "[NoteSpawner] 声部切换：扫描指针 {0} → 0，新表 {1} 个音符，需要补生成 {2} 个（当前 {3:F2}s）",
+                    nextNoteIndex, notes.Count, dueCount, GameManager.Instance.SongTime));
+                lastSpawnedChart = GameManager.Instance.ActiveChart;
+                nextNoteIndex = 0;
+            }
 
             while (nextNoteIndex < notes.Count && notes[nextNoteIndex].time <= spawnTimeThreshold)
             {

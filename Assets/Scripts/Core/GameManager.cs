@@ -239,7 +239,8 @@ namespace FallenAngel.Core
                 return;
             }
 
-            if (parts != null && !ReferenceEquals(chart, parts.Song))
+            // 同曲切谱：选中的可以是集合里的任意一声部（从它开始演奏），不要求一定是第一个
+            if (parts != null && !parts.Contains(chart))
             {
                 Debug.LogError("[GameManager] 声部集合与主谱不一致，无法加载");
                 return;
@@ -247,7 +248,7 @@ namespace FallenAngel.Core
             // 原型重试/换歌是新演奏：上次本曲道具不能沿用旧的到期时刻。
             if (Parts != null) ModifierManager.Instance?.EndSong();
             CurrentChart = chart;
-            Parts = parts == null ? null : new SongPartSession(parts);
+            Parts = parts == null ? null : new SongPartSession(parts, parts.PartNameOf(chart));
             // 切换时机是**每首歌**的属性：谱面没配就是"立即生效、不限间隔"
             PartSwitchConfig timing = chart.metadata != null ? chart.metadata.switchTiming : PartSwitchConfig.Immediate;
             if (timing.beatsPerBar <= 0f) timing.beatsPerBar = 4f;

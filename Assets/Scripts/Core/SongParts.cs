@@ -66,6 +66,24 @@ namespace FallenAngel.Core
                 if (PartNames[i] == partName) return charts[i];
             return null;
         }
+
+        /// <summary>这张谱面是不是本集合里的某一员（同曲切谱：选哪张就从哪个声部开始）。</summary>
+        public bool Contains(ChartData chart)
+        {
+            if (chart == null) return false;
+            for (int i = 0; i < charts.Length; i++)
+                if (ReferenceEquals(charts[i], chart)) return true;
+            return false;
+        }
+
+        /// <summary>这张谱面对应的声部名；不在集合里返回 null。</summary>
+        public string PartNameOf(ChartData chart)
+        {
+            if (chart == null) return null;
+            for (int i = 0; i < charts.Length; i++)
+                if (ReferenceEquals(charts[i], chart)) return PartNames[i];
+            return null;
+        }
     }
 
     /// <summary>一次演奏的声部和资源账本；不拥有时钟，不修改源谱。</summary>
@@ -92,10 +110,13 @@ namespace FallenAngel.Core
         /// <summary>切换后已经打掉几颗（换手类道具的输入）</summary>
         public int NotesSinceSwitch => notesSinceSwitch;
 
-        public SongPartSession(SongParts definition)
+        public SongPartSession(SongParts definition, string initialPartName = null)
         {
             Definition = definition ?? throw new ArgumentNullException(nameof(definition));
-            Select(definition.PartNames.Length > 0 ? definition.PartNames[0] : null, 0f);
+            string first = definition.PartNames.Length > 0 ? definition.PartNames[0] : null;
+            string want = !string.IsNullOrEmpty(initialPartName) ? initialPartName : first;
+            if (want != null && !Select(want, 0f) && first != null && want != first)
+                Select(first, 0f);      // 声部名不认识 → 退回第一个声部，避免空谱面
         }
 
         /// <summary>

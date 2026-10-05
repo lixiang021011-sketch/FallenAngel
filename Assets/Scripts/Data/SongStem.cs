@@ -17,6 +17,12 @@ namespace FallenAngel.Data
         public string partName;
         /// <summary>音频文件名（不含扩展名，放 Resources/Audio 下；原型用合成轨的名字）</summary>
         public string audioFileName;
+        /// <summary>
+        /// 这条轨的基础音量倍率（可选，缺省 1）。与"当前轨增强"相乘：
+        /// 最终音量 = 主音量 × gain × (当前轨 ? activeGain : inactiveGain)。
+        /// 用来压人声这类"一直在但不该抢戏"的轨。
+        /// </summary>
+        public float gain = 1f;
     }
 
     /// <summary>切换生效时机（每首歌可配，见 <see cref="PartSwitchConfig"/>）</summary>

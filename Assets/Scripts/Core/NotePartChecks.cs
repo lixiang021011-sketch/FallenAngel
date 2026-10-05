@@ -248,9 +248,11 @@ namespace FallenAngel.Core
                     if (Mathf.Abs(bodyRect.localScale.y - 1f) > 0.001f)
                     { ok = false; notes.Add($"身体被缩放 {bodyRect.localScale.y:0.###}（带子靠画布高度取宽，缩放会让宽窄对不上轨道）"); }
 
-                    // ⑥ 身体长度 = **真值**：落距 × 时长 / 下落时长（照抄上游 NoteLineView 的"头/尾由时间推"）。
-                    //    这里刻意不做像素上下限 —— 一但夹住，"尾巴到判定线的距离 = 剩余时间 × 速度"就不成立
-                    //    （长条尾巴变慢 0.50×、短条在慢速下尾巴变快 6.82×，作者 2026-09-22 报的"长条下落速度会变慢"）。
+                    // ⑥ 身体长度 = **生成时的初值**：落距 × 时长 / 下落时长。
+                    //    刻意不做像素上下限（夹住会让尾巴变慢/变快，作者 2026-09-22 报过）。
+                    //    注意：**运行期每帧会按透视曲线重算**（Note.UpdatePosition，2026-10-04 修
+                    //    "长条比其他音符消失得慢"）——因为音符下落走 ViewProgress01 指数曲线，
+                    //    线性长度在透视下并不等于"尾巴时间进度"的屏幕距离。自检只验生成时的初值，
                     //    自检环境没有 GameManager，Generator 里用的是默认 2s 下落时长。
                     float fallDistance = Mathf.Abs(SpawnPos.y - JudgePos.y);
                     float expectHeight = fallDistance * (c.Data.duration / 2f);

@@ -1,0 +1,72 @@
+{
+  "_source": "rhythm-chart-diffusion (https://github.com/qxxiit/rhythm-chart-diffusion) docs/_stats/*.csv，2026-08-11 数据快照：tempo_density.csv / hold_stats.csv / pattern_baseline.csv / coverage.csv / outliers.csv。",
+  "_license": "MIT License, Copyright (c) 2026 Jeonghyun Moon, Hyunwoo Ji, Youngbok Pyo —— 数据按 .py 头部注释注明来源使用，本项目未修改其数值。",
+  "_units": {
+    "nps": "音符/秒（长键只计 onset）",
+    "npb": "每个四分音符的音符数",
+    "cell": "1/12 拍（与 origin 的 token 网格一致）；holdLenCells = 长键长度（1/12 拍）",
+    "share": "占 onset 的比例"
+  },
+  "_caveat": "基线来自 osu!mania 4K 人类谱（可用 4 根手指）；本作是 5 轨两指可打，绝对 NPS 需按 twoFinger.maxNps 折算后再比较（见 midi_profiles.json 的 _calibration）。",
+  "twoFinger": {
+    "maxNps": 12.0,
+    "perFingerNps": 6.0,
+    "note": "同一手指 1/6 s 内不会判下一个音符（docs/reference_opensekai.md）→ 单指 6 音/秒；两指交互上限约 12 音/秒。"
+  },
+  "grades": {
+    "Easy": {
+      "npsMedian": 3.744, "npbMedian": 1.388, "bpmMedian": 163.0,
+      "lnShareP50": 0.152, "lnShareP75": 0.247, "lnShareP90": 0.349,
+      "holdLenCellsP10": 6.0, "holdLenCellsP25": 9.0, "holdLenCellsP50": 12.0,
+      "shortHoldShare": 0.0031, "gap1": 0.0001, "gap2": 0.0013, "gap3_5": 0.0111,
+      "patternCoverage": 0.0, "patternChance": 0.0046,
+      "patternP1": 0.0, "patternP2": 0.0, "patternP3plus": 0.0, "patternRunLength": 0.0
+    },
+    "Normal": {
+      "npsMedian": 6.436, "npbMedian": 2.3, "bpmMedian": 170.3,
+      "lnShareP50": 0.149, "lnShareP75": 0.259, "lnShareP90": 0.393,
+      "holdLenCellsP10": 5.0, "holdLenCellsP25": 6.0, "holdLenCellsP50": 6.0,
+      "shortHoldShare": 0.0059, "gap1": 0.0003, "gap2": 0.0035, "gap3_5": 0.0611,
+      "patternCoverage": 0.0144, "patternChance": 0.0039,
+      "patternP1": 0.0, "patternP2": 0.0, "patternP3plus": 0.0095, "patternRunLength": 7.31
+    },
+    "Hard": {
+      "npsMedian": 9.546, "npbMedian": 3.374, "bpmMedian": 174.0,
+      "lnShareP50": 0.151, "lnShareP75": 0.28, "lnShareP90": 0.438,
+      "holdLenCellsP10": 3.0, "holdLenCellsP25": 4.0, "holdLenCellsP50": 6.0,
+      "shortHoldShare": 0.0201, "gap1": 0.0008, "gap2": 0.01, "gap3_5": 0.2001,
+      "patternCoverage": 0.0239, "patternChance": 0.0037,
+      "patternP1": 0.0, "patternP2": 0.0, "patternP3plus": 0.0164, "patternRunLength": 8.0
+    },
+    "Insane": {
+      "npsMedian": 12.901, "npbMedian": 4.156, "bpmMedian": 185.0,
+      "lnShareP50": 0.132, "lnShareP75": 0.304, "lnShareP90": 0.475,
+      "holdLenCellsP10": 3.0, "holdLenCellsP25": 3.0, "holdLenCellsP50": 6.0,
+      "shortHoldShare": 0.0509, "gap1": 0.0034, "gap2": 0.0297, "gap3_5": 0.3615,
+      "patternCoverage": 0.0391, "patternChance": 0.0039,
+      "patternP1": 0.0, "patternP2": 0.0065, "patternP3plus": 0.0223, "patternRunLength": 9.2
+    },
+    "Expert": {
+      "npsMedian": 15.757, "npbMedian": 4.522, "bpmMedian": 208.0,
+      "lnShareP50": 0.163, "lnShareP75": 0.394, "lnShareP90": 0.551,
+      "holdLenCellsP10": 3.0, "holdLenCellsP25": 3.0, "holdLenCellsP50": 4.0,
+      "shortHoldShare": 0.0818, "gap1": 0.0103, "gap2": 0.064, "gap3_5": 0.463,
+      "patternCoverage": 0.0528, "patternChance": 0.0053,
+      "patternP1": 0.0, "patternP2": 0.0106, "patternP3plus": 0.0282, "patternRunLength": 10.08
+    }
+  },
+  "gridCoverage": [
+    { "divisorPerBeat": 4, "tol10ms": 0.9288, "note": "1/16 单网格" },
+    { "divisorPerBeat": 6, "tol10ms": 0.8157, "note": "1/6 拍（十六分三连音族）" },
+    { "divisorPerBeat": 8, "tol10ms": 0.9507, "note": "1/32" },
+    { "divisorPerBeat": 12, "tol10ms": 0.98, "note": "1/12 拍 = 人谱 token 网格" },
+    { "divisorPerBeat": 24, "tol10ms": 0.99922 },
+    { "divisorPerBeat": 48, "tol10ms": 0.999997 }
+  ],
+  "outliers": {
+    "laneImbalanceRatioMax": 2.0,
+    "holdShorterThanCellBeats": 0.0833,
+    "maxNpsTwoFinger": 12.0,
+    "maxSimultaneous": 2
+  }
+}

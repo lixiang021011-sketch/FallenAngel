@@ -57,6 +57,12 @@ namespace FallenAngel.Data
         /// 每条轨对应一个声部名，顺序与谱面声部表对齐。
         /// </summary>
         public List<SongStem> stems;
+        /// <summary>
+        /// 本谱面演奏的声部名（可选；留空 = 单声部谱面，不做"同曲切谱"）。
+        /// 同一首歌的多张切谱共用 audioFileName，各自填自己的声部名（与 SongStem.partName /
+        /// PartPalette.KnownParts 对齐，如 Bass / Drums / Guitar）。
+        /// </summary>
+        public string partName;
         /// <summary>切换生效时机（可选；缺省 = 立即生效、不限间隔）</summary>
         public PartSwitchConfig switchTiming;
         public float previewStartTime;  // 试听开始时间
