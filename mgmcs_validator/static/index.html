@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MGMCS 验证器 v0.1</title>
+<!-- The ?v= is not decoration: a static server that only sends Last-Modified lets
+     the browser keep an old copy of a script for a long time, and a fix that is
+     not loaded is not a fix. Bump it whenever one of these files changes. -->
+<link rel="stylesheet" href="style.css?v=16">
+</head>
+<body>
+
+<header class="top">
+  <div class="title">
+    <strong>MGMCS 验证器</strong>
+    <span class="muted">v0.1 · 把手机给的校准和事件放回真实音乐上</span>
+  </div>
+  <label class="file">导入音频<input type="file" id="audio-file" accept="audio/*"></label>
+  <label class="file">导入 JSON<input type="file" id="json-file" accept=".json,application/json"></label>
+</header>
+
+<div id="warnings" class="warnings" hidden></div>
+
+<section class="transport">
+  <button id="play" class="primary" title="播放 / 暂停（空格）">▶</button>
+  <button id="restart" title="回到 0 秒">↺</button>
+  <span id="clock" class="clock">00:00.000 / 00:00.000</span>
+  <span id="source-note" class="muted"></span>
+  <span class="spacer"></span>
+  <label class="zoom" title="滚轮也可以缩放：滚轮向上放大，向下缩小">
+    缩放<input type="range" id="zoom" min="0" max="1000" value="0">
+  </label>
+  <button id="zoom-fit">适应全曲</button>
+  <span id="zoom-read" class="muted">—</span>
+  <label class="follow"><input type="checkbox" id="follow" checked>跟随播放头</label>
+  <label class="follow" title="点小节或拍点：跳过去并开始播。不勾就只跳，播放状态不变。"><input type="checkbox" id="play-on-seek" checked>点了就播</label>
+  <label class="follow" title="围绕每根小节线画 ±0.5 拍的关联窗口：事件是否算“发生在小节切换附近”就看它。默认关，网格多时开着会糊。"><input type="checkbox" id="show-near">显示边界邻域</label>
+</section>
+
+<main>
+  <div class="timeline-wrap">
+    <div id="timeline" class="timeline">
+      <div id="content" class="content">
+        <div id="lanes"></div>
+        <div id="playhead" class="playhead" hidden><i></i></div>
+      </div>
+    </div>
+    <div id="empty" class="empty">
+      <p><strong>先导入一首歌，再导入它的 <code>.mgmcs.json</code>。</strong></p>
+      <p class="muted">音频只在本机读取，不上传任何地方。没有音频也能导入 JSON，先看坐标。</p>
+      <p class="muted">想先试试：<code>demo/demo_120.mgmcs.json</code> 配 <code>demo/demo_120.wav</code>。</p>
+      <p class="muted">也可以把音频和 JSON（或整个文件夹）一起拖进这个窗口，按名字自动配对。</p>
+    </div>
+  </div>
+
+  <aside class="panel">
+    <section>
+      <h2>当前位置</h2>
+      <div id="current" class="coords"><p class="muted">还没有网格。</p></div>
+    </section>
+
+    <section>
+      <h2>相位差</h2>
+      <div id="phase"><p class="muted">至少要有两条同速度同拍号的网格。</p></div>
+      <p class="fineprint">只表示两条网格的数学关系，不表示音乐里一定发生了什么。</p>
+    </section>
+
+    <section>
+      <h2>网格对比（Grid Pair Diff）</h2>
+      <div class="two">
+        <select id="diff-a"></select>
+        <select id="diff-b"></select>
+      </div>
+      <div class="save-row" style="margin-top:6px">
+        <button class="tiny" id="diff-next">跳到下一处热区</button>
+      </div>
+      <label class="follow" title="这批文档里的事件几乎全是机器拍点；勾上就只看人产生的那些（通常只剩播放器标记）。"><input type="checkbox" id="diff-human">只看人产生的事件</label>
+      <div id="diff-read"><p class="fineprint">选两条网格，看同一个事件能不能被两边都解释成"发生在小节切换附近"。</p></div>
+    </section>
+
+    <section>
+      <h2>网格</h2>
+      <div id="grids"></div>
+    </section>
+
+    <section>
+      <h2>事件筛选</h2>
+      <div id="filters"></div>
+    </section>
+
+    <section>
+      <h2>选中的内容</h2>
+      <div id="details"><p class="muted">点时间轴上的事件，或者点某条网格的一小节。</p></div>
+    </section>
+
+    <section>
+      <h2>打一个变化点标记</h2>
+      <div class="marker-form">
+        <select id="marker-type">
+          <option value="meter_change">meter_change（拍号变化）</option>
+          <option value="tempo_change">tempo_change（速度变化）</option>
+          <option value="half_bar">half_bar（半小节）</option>
+          <option value="phase_shift">phase_shift（相位移动）</option>
+          <option value="grid_reentry">grid_reentry（重新进入旧网格）</option>
+          <option value="uncertain">uncertain（说不准）</option>
+        </select>
+        <div class="two">
+          <input id="marker-from" placeholder="从（可选）4/4">
+          <input id="marker-to" placeholder="到（可选）3/4">
+        </div>
+        <input id="marker-note" placeholder="备注（可选）">
+        <button id="marker-add">在播放头打点</button>
+      </div>
+      <div id="markers"></div>
+    </section>
+
+    <section>
+      <h2>检验结果</h2>
+      <div class="save-row">
+        <button id="save" class="primary">保存 song.validation.json</button>
+        <button id="clear" class="ghost">清空</button>
+      </div>
+      <div id="save-state" class="fineprint"></div>
+    </section>
+  </aside>
+</main>
+
+<div id="tooltip" class="tooltip" hidden></div>
+<audio id="audio" preload="metadata"></audio>
+
+<script src="mgmcs.js?v=13"></script>
+<script src="events.js?v=13"></script>
+<script src="pairing.js?v=13"></script>
+<script src="boundary.js?v=16"></script>
+<script src="app.js?v=16"></script>
+</body>
+</html>
+
+

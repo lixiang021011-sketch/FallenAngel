@@ -1,0 +1,12 @@
+# 音频不进 git：那是别人有版权的曲子，而且这个工具只在本地读它、不上传。
+static/audio/
+
+# 生成出来的歌单页（_mgmcs_index/build_index.py 随时能重跑）
+static/songs.html
+
+# 手机的会话文档与机器网格：都是可再拉、可重算的产物（tools/from_listening_ai.py +
+# machine_beats.py + downbeats_madmom.py）。demo/ 里那份手写的演示数据照旧进 git。
+static/docs/
+
+__pycache__/
+*.pyc
