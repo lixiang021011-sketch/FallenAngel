@@ -260,7 +260,8 @@
       "mergedFrom": [],
       "passesAgreeing": 1,
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "human_unquantized"
     },
     {
       "calibrationId": "cal_02",
@@ -482,7 +483,8 @@
       "mergedFrom": [],
       "passesAgreeing": 1,
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "human_unquantized"
     },
     {
       "calibrationId": "cal_03",
@@ -639,10 +641,11 @@
       "mergedFrom": [],
       "passesAgreeing": 1,
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "human_unquantized"
     },
     {
-      "calibrationId": "machine",
+      "calibrationId": "librosa",
       "audioTime": 0.0,
       "bpm": 156.605,
       "beatsPerBar": 4,
@@ -1243,7 +1246,8 @@
         226.905
       ],
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "librosa"
     },
     {
       "calibrationId": "madmom",
@@ -1331,7 +1335,8 @@
       ],
       "audioFileName": "back number - アイラブユー (I Love You).ogg",
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "madmom"
     }
   ],
   "events": [

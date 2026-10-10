@@ -181,7 +181,8 @@
       ],
       "passesAgreeing": 2,
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "human_snapped"
     },
     {
       "calibrationId": "cal_03",
@@ -314,10 +315,11 @@
       "mergedFrom": [],
       "passesAgreeing": 1,
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "human_snapped"
     },
     {
-      "calibrationId": "machine",
+      "calibrationId": "librosa",
       "audioTime": 0.244,
       "bpm": 120.185,
       "beatsPerBar": 4,
@@ -974,7 +976,8 @@
         321.26
       ],
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "librosa"
     },
     {
       "calibrationId": "madmom",
@@ -1149,7 +1152,22 @@
       ],
       "audioFileName": "Mrs_ GREEN APPLE - 天国 (1).ogg",
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "madmom"
+    },
+    {
+      "calibrationId": "workbench",
+      "source": "machine",
+      "bpm": 120.004,
+      "audioTime": 0.735128,
+      "beatsPerBar": 4,
+      "beatUnit": 4,
+      "note": "隔壁 workbench 的读法：鼓起音定 16 分格 + Beat This! 定相位与强拍；速度恒定才成立",
+      "sixteenthLock": 0.18968183996544977,
+      "beatThisLock": 0.9644156419253855,
+      "health": "ok",
+      "suspectReasons": [],
+      "reading": "workbench"
     }
   ],
   "events": [

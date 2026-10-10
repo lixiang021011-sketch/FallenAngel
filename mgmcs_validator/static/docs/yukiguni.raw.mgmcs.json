@@ -650,7 +650,8 @@
       ],
       "passesAgreeing": 2,
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "human_unquantized"
     },
     {
       "calibrationId": "cal_02",
@@ -730,7 +731,8 @@
       ],
       "passesAgreeing": 2,
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "human_unquantized"
     },
     {
       "calibrationId": "cal_04",
@@ -777,10 +779,11 @@
       "health": "suspect",
       "suspectReasons": [
         "tempoUnrelated: 191.08 对共识 142.18 是 1.34 倍，不属于 1/2/3/4 家族"
-      ]
+      ],
+      "reading": "human_unquantized"
     },
     {
-      "calibrationId": "machine",
+      "calibrationId": "librosa",
       "audioTime": 0.128,
       "bpm": 70.794,
       "beatsPerBar": 4,
@@ -1126,7 +1129,8 @@
         286.372
       ],
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "librosa"
     },
     {
       "calibrationId": "madmom",
@@ -1224,7 +1228,22 @@
       ],
       "audioFileName": "ヨルシカ - 雪国 (1).ogg",
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "madmom"
+    },
+    {
+      "calibrationId": "workbench",
+      "source": "machine",
+      "bpm": 70.0,
+      "audioTime": 1.060181,
+      "beatsPerBar": 4,
+      "beatUnit": 4,
+      "note": "隔壁 workbench 的读法：鼓起音定 16 分格 + Beat This! 定相位与强拍；速度恒定才成立",
+      "sixteenthLock": 0.1754468365819974,
+      "beatThisLock": 0.9593401976595356,
+      "health": "ok",
+      "suspectReasons": [],
+      "reading": "workbench"
     }
   ],
   "events": [

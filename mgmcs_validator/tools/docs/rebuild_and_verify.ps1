@@ -46,6 +46,10 @@ Write-Output "3/5 每首歌并机器网格（慢，15–20 分钟）"
 Write-Output "4/5 未吸附变体 + health 标注 + 歌单页"
 & $py tools\docs\un_snap.py | Out-File -Encoding utf8 "$env:TEMP\rebuild_step4a.log"
 & $py tools\docs\mark_health.py | Out-File -Encoding utf8 "$env:TEMP\rebuild_step4b.log"
+# 顺序要紧：workbench 那条先并进来，再由 name_readings 统一命名——
+# 名字只有这一个出处，不给导入脚本自己起名的机会（否则两处会打架）。
+& $py tools\docs\import_workbench_grid.py | Out-File -Encoding utf8 "$env:TEMP\rebuild_step4e.log"
+& $py tools\docs\name_readings.py | Out-File -Encoding utf8 "$env:TEMP\rebuild_step4d.log"
 & $py tools\docs\build_song_index.py | Out-File -Encoding utf8 "$env:TEMP\rebuild_step4c.log"
 
 Write-Output "5/5 比对"

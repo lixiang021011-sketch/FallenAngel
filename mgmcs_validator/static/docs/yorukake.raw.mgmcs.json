@@ -285,10 +285,11 @@
       ],
       "passesAgreeing": 2,
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "human_unquantized"
     },
     {
-      "calibrationId": "machine",
+      "calibrationId": "librosa",
       "audioTime": 0.0,
       "bpm": 126.048,
       "beatsPerBar": 4,
@@ -929,7 +930,8 @@
         302.231
       ],
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "librosa"
     },
     {
       "calibrationId": "madmom",
@@ -1101,7 +1103,22 @@
       ],
       "audioFileName": "Spitz - 夜を駆ける (策夜疾驰).ogg",
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "madmom"
+    },
+    {
+      "calibrationId": "workbench",
+      "source": "machine",
+      "bpm": 125.046,
+      "audioTime": 0.389216,
+      "beatsPerBar": 4,
+      "beatUnit": 4,
+      "note": "隔壁 workbench 的读法：鼓起音定 16 分格 + Beat This! 定相位与强拍；速度恒定才成立",
+      "sixteenthLock": 0.24541362191341787,
+      "beatThisLock": 0.9892531633313983,
+      "health": "ok",
+      "suspectReasons": [],
+      "reading": "workbench"
     }
   ],
   "events": [

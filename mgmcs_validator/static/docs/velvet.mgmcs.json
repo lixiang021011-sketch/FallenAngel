@@ -228,7 +228,8 @@
       "mergedFrom": [],
       "passesAgreeing": 1,
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "human_snapped"
     },
     {
       "calibrationId": "cal_02",
@@ -1277,10 +1278,11 @@
       ],
       "passesAgreeing": 3,
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "human_snapped"
     },
     {
-      "calibrationId": "machine",
+      "calibrationId": "librosa",
       "audioTime": 0.0,
       "bpm": 147.656,
       "beatsPerBar": 4,
@@ -1914,7 +1916,8 @@
         252.621
       ],
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "librosa"
     },
     {
       "calibrationId": "madmom",
@@ -2005,7 +2008,266 @@
       ],
       "audioFileName": "back number - ベルベットの詩 (天鹅绒之诗).ogg",
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "madmom"
+    },
+    {
+      "calibrationId": "workbench",
+      "source": "machine",
+      "bpm": 74.014,
+      "audioTime": 0.119257,
+      "beatsPerBar": 4,
+      "beatUnit": 4,
+      "note": "隔壁 workbench 的读法：鼓起音定 16 分格 + Beat This! 定相位与强拍；速度恒定才成立；含 3 个规则推出来的短小节（needsEars，只作人工审校提示）",
+      "sixteenthLock": 0.20196341205814433,
+      "beatThisLock": 0.9957724190643581,
+      "barLines": [
+        {
+          "time": 0.119257
+        },
+        {
+          "time": 3.361887
+        },
+        {
+          "time": 6.604517
+        },
+        {
+          "time": 9.847146
+        },
+        {
+          "time": 13.089776
+        },
+        {
+          "time": 16.332406
+        },
+        {
+          "time": 19.575036
+        },
+        {
+          "time": 22.817665
+        },
+        {
+          "time": 26.060295
+        },
+        {
+          "time": 29.302925
+        },
+        {
+          "time": 32.545555
+        },
+        {
+          "time": 35.788185
+        },
+        {
+          "time": 39.030814
+        },
+        {
+          "time": 42.273444
+        },
+        {
+          "time": 45.516074
+        },
+        {
+          "time": 48.758704
+        },
+        {
+          "time": 52.001333
+        },
+        {
+          "time": 55.243963
+        },
+        {
+          "time": 58.486593
+        },
+        {
+          "time": 61.729223
+        },
+        {
+          "time": 64.971853
+        },
+        {
+          "time": 68.214482
+        },
+        {
+          "time": 71.457112
+        },
+        {
+          "time": 74.699742
+        },
+        {
+          "time": 77.942372
+        },
+        {
+          "time": 81.185001
+        },
+        {
+          "time": 84.427631
+        },
+        {
+          "time": 87.670261
+        },
+        {
+          "time": 90.912891
+        },
+        {
+          "time": 94.15552
+        },
+        {
+          "time": 97.39815
+        },
+        {
+          "time": 100.64078
+        },
+        {
+          "time": 103.88341
+        },
+        {
+          "time": 107.12604
+        },
+        {
+          "time": 110.368669
+        },
+        {
+          "time": 113.611299
+        },
+        {
+          "time": 116.853929
+        },
+        {
+          "time": 120.096559
+        },
+        {
+          "time": 123.339188
+        },
+        {
+          "time": 126.581818
+        },
+        {
+          "time": 129.824448
+        },
+        {
+          "time": 133.067078
+        },
+        {
+          "time": 136.309708
+        },
+        {
+          "time": 139.552337
+        },
+        {
+          "time": 142.794967
+        },
+        {
+          "time": 146.037597
+        },
+        {
+          "time": 149.280227
+        },
+        {
+          "time": 152.522856
+        },
+        {
+          "time": 155.765486
+        },
+        {
+          "time": 159.008116
+        },
+        {
+          "time": 162.250746
+        },
+        {
+          "time": 165.493375
+        },
+        {
+          "time": 168.736005
+        },
+        {
+          "time": 171.978635
+        },
+        {
+          "time": 175.221265
+        },
+        {
+          "time": 178.463895
+        },
+        {
+          "time": 181.706524
+        },
+        {
+          "time": 184.949154
+        },
+        {
+          "time": 188.191784
+        },
+        {
+          "time": 191.434414
+        },
+        {
+          "time": 194.677043
+        },
+        {
+          "time": 197.919673
+        },
+        {
+          "time": 201.162303
+        },
+        {
+          "time": 204.404933
+        },
+        {
+          "time": 207.647563
+        },
+        {
+          "time": 210.890192
+        },
+        {
+          "time": 214.132822
+        },
+        {
+          "time": 217.375452
+        },
+        {
+          "time": 220.618082
+        },
+        {
+          "time": 223.860711
+        },
+        {
+          "time": 227.103341
+        },
+        {
+          "time": 230.345971
+        },
+        {
+          "time": 233.588601
+        },
+        {
+          "time": 236.83123
+        },
+        {
+          "time": 240.07386
+        },
+        {
+          "time": 243.31649
+        },
+        {
+          "time": 246.55912
+        },
+        {
+          "time": 249.80175
+        },
+        {
+          "time": 253.044379
+        },
+        {
+          "time": 256.287009
+        }
+      ],
+      "needsEars": true,
+      "needsEarsNote": "含 3 个规则推出来的短小节：这是本读法按当前规则提出的局部 bar-structure 假设，需要耳朵确认；不是测量结果",
+      "health": "ok",
+      "suspectReasons": [],
+      "reading": "workbench"
     }
   ],
   "events": [

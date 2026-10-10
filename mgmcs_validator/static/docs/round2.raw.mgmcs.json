@@ -575,7 +575,8 @@
       ],
       "passesAgreeing": 4,
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "human_unquantized"
     },
     {
       "calibrationId": "cal_03",
@@ -870,10 +871,11 @@
       ],
       "passesAgreeing": 2,
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "human_unquantized"
     },
     {
-      "calibrationId": "machine",
+      "calibrationId": "librosa",
       "audioTime": 0.267,
       "bpm": 105.469,
       "beatsPerBar": 4,
@@ -1263,7 +1265,8 @@
         216.155
       ],
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "librosa"
     },
     {
       "calibrationId": "madmom",
@@ -1371,7 +1374,8 @@
       ],
       "audioFileName": "Cö shu Nie - 消えちゃう前に.ogg",
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "madmom"
     }
   ],
   "events": [

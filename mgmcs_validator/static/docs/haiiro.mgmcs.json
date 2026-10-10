@@ -42,7 +42,8 @@
       "mergedFrom": [],
       "passesAgreeing": 1,
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "human_snapped"
     },
     {
       "calibrationId": "cal_02",
@@ -95,10 +96,11 @@
       "mergedFrom": [],
       "passesAgreeing": 1,
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "human_snapped"
     },
     {
-      "calibrationId": "machine",
+      "calibrationId": "librosa",
       "audioTime": 0.0,
       "bpm": 107.666,
       "beatsPerBar": 4,
@@ -598,7 +600,8 @@
         272.73
       ],
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "librosa"
     },
     {
       "calibrationId": "madmom",
@@ -735,7 +738,8 @@
       ],
       "audioFileName": "東雲絵名 - 限りなく灰色へ (1).ogg",
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "madmom"
     }
   ],
   "events": [

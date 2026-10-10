@@ -420,7 +420,8 @@
       "mergedFrom": [],
       "passesAgreeing": 1,
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "human_unquantized"
     },
     {
       "calibrationId": "cal_03",
@@ -709,7 +710,8 @@
       "mergedFrom": [],
       "passesAgreeing": 1,
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "human_unquantized"
     },
     {
       "calibrationId": "cal_04",
@@ -956,10 +958,11 @@
       "mergedFrom": [],
       "passesAgreeing": 1,
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "human_unquantized"
     },
     {
-      "calibrationId": "machine",
+      "calibrationId": "librosa",
       "audioTime": 1.95,
       "bpm": 151.999,
       "beatsPerBar": 4,
@@ -1722,7 +1725,8 @@
         295.172
       ],
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "librosa"
     },
     {
       "calibrationId": "madmom",
@@ -1845,7 +1849,22 @@
       ],
       "audioFileName": "酔シグレ - 藍悼花.ogg",
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "madmom"
+    },
+    {
+      "calibrationId": "workbench",
+      "source": "machine",
+      "bpm": 154.0,
+      "audioTime": 0.435523,
+      "beatsPerBar": 4,
+      "beatUnit": 4,
+      "note": "隔壁 workbench 的读法：鼓起音定 16 分格 + Beat This! 定相位与强拍；速度恒定才成立",
+      "sixteenthLock": 0.32008528660806923,
+      "beatThisLock": 0.9837254806497758,
+      "health": "ok",
+      "suspectReasons": [],
+      "reading": "workbench"
     }
   ],
   "events": [

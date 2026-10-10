@@ -373,7 +373,8 @@
       "mergedFrom": [],
       "passesAgreeing": 1,
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "human_snapped"
     },
     {
       "calibrationId": "cal_02",
@@ -740,10 +741,11 @@
       "mergedFrom": [],
       "passesAgreeing": 1,
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "human_snapped"
     },
     {
-      "calibrationId": "machine",
+      "calibrationId": "librosa",
       "audioTime": 0.639,
       "bpm": 151.999,
       "beatsPerBar": 4,
@@ -1365,7 +1367,8 @@
         244.68
       ],
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "librosa"
     },
     {
       "calibrationId": "madmom",
@@ -1481,7 +1484,8 @@
       ],
       "audioFileName": "说说Crystal - 月.ogg",
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "madmom"
     }
   ],
   "events": [

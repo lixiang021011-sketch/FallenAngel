@@ -399,7 +399,8 @@
       ],
       "passesAgreeing": 2,
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "human_snapped"
     },
     {
       "calibrationId": "cal_02",
@@ -638,7 +639,8 @@
       "mergedFrom": [],
       "passesAgreeing": 1,
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "human_snapped"
     },
     {
       "calibrationId": "cal_03",
@@ -901,7 +903,8 @@
       ],
       "passesAgreeing": 2,
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "human_snapped"
     },
     {
       "calibrationId": "cal_06",
@@ -1202,7 +1205,8 @@
       "health": "suspect",
       "suspectReasons": [
         "outOfRange: 起点 231.2s 不在音频 [0, 224.6] 内"
-      ]
+      ],
+      "reading": "human_snapped"
     },
     {
       "calibrationId": "cal_07",
@@ -1623,10 +1627,11 @@
       "health": "suspect",
       "suspectReasons": [
         "outOfRange: 起点 6574.9s 不在音频 [0, 224.6] 内"
-      ]
+      ],
+      "reading": "human_snapped"
     },
     {
-      "calibrationId": "machine",
+      "calibrationId": "librosa",
       "audioTime": 0.267,
       "bpm": 105.469,
       "beatsPerBar": 4,
@@ -2016,7 +2021,8 @@
         216.155
       ],
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "librosa"
     },
     {
       "calibrationId": "madmom",
@@ -2124,7 +2130,314 @@
       ],
       "audioFileName": "Cö shu Nie - 消えちゃう前に.ogg",
       "health": "ok",
-      "suspectReasons": []
+      "suspectReasons": [],
+      "reading": "madmom"
+    },
+    {
+      "calibrationId": "workbench",
+      "source": "machine",
+      "bpm": 105.004,
+      "audioTime": 1.399867,
+      "beatsPerBar": 4,
+      "beatUnit": 4,
+      "note": "隔壁 workbench 的读法：鼓起音定 16 分格 + Beat This! 定相位与强拍；速度恒定才成立；含 1 个规则推出来的短小节（needsEars，只作人工审校提示）",
+      "sixteenthLock": 0.2023435726677324,
+      "beatThisLock": 0.9819136843979661,
+      "barLines": [
+        {
+          "time": 1.399867
+        },
+        {
+          "time": 3.685494
+        },
+        {
+          "time": 5.971121
+        },
+        {
+          "time": 8.256748
+        },
+        {
+          "time": 10.542375
+        },
+        {
+          "time": 12.828003
+        },
+        {
+          "time": 15.11363
+        },
+        {
+          "time": 17.399257
+        },
+        {
+          "time": 19.684884
+        },
+        {
+          "time": 21.970511
+        },
+        {
+          "time": 24.256139
+        },
+        {
+          "time": 26.541766
+        },
+        {
+          "time": 28.827393
+        },
+        {
+          "time": 31.11302
+        },
+        {
+          "time": 33.398648
+        },
+        {
+          "time": 35.684275
+        },
+        {
+          "time": 37.969902
+        },
+        {
+          "time": 40.255529
+        },
+        {
+          "time": 42.541156
+        },
+        {
+          "time": 44.826784
+        },
+        {
+          "time": 47.112411
+        },
+        {
+          "time": 49.398038
+        },
+        {
+          "time": 51.683665
+        },
+        {
+          "time": 53.969292
+        },
+        {
+          "time": 56.25492
+        },
+        {
+          "time": 58.540547
+        },
+        {
+          "time": 60.826174
+        },
+        {
+          "time": 63.111801
+        },
+        {
+          "time": 65.397429
+        },
+        {
+          "time": 67.683056
+        },
+        {
+          "time": 69.968683
+        },
+        {
+          "time": 72.25431
+        },
+        {
+          "time": 74.539937
+        },
+        {
+          "time": 76.825565
+        },
+        {
+          "time": 79.111192
+        },
+        {
+          "time": 81.396819
+        },
+        {
+          "time": 83.682446
+        },
+        {
+          "time": 85.968073
+        },
+        {
+          "time": 88.253701
+        },
+        {
+          "time": 90.539328
+        },
+        {
+          "time": 92.824955
+        },
+        {
+          "time": 95.110582
+        },
+        {
+          "time": 97.39621
+        },
+        {
+          "time": 99.681837
+        },
+        {
+          "time": 101.967464
+        },
+        {
+          "time": 104.253091
+        },
+        {
+          "time": 106.538718
+        },
+        {
+          "time": 108.824346
+        },
+        {
+          "time": 111.109973
+        },
+        {
+          "time": 113.3956
+        },
+        {
+          "time": 115.681227
+        },
+        {
+          "time": 117.966854
+        },
+        {
+          "time": 120.252482
+        },
+        {
+          "time": 122.538109
+        },
+        {
+          "time": 124.823736
+        },
+        {
+          "time": 127.109363
+        },
+        {
+          "time": 129.394991
+        },
+        {
+          "time": 131.680618
+        },
+        {
+          "time": 133.966245
+        },
+        {
+          "time": 136.251872
+        },
+        {
+          "time": 138.537499
+        },
+        {
+          "time": 140.823127
+        },
+        {
+          "time": 143.108754
+        },
+        {
+          "time": 145.394381
+        },
+        {
+          "time": 147.680008
+        },
+        {
+          "time": 149.965635
+        },
+        {
+          "time": 152.251263
+        },
+        {
+          "time": 154.53689
+        },
+        {
+          "time": 156.822517
+        },
+        {
+          "time": 159.108144
+        },
+        {
+          "time": 161.393772
+        },
+        {
+          "time": 163.679399
+        },
+        {
+          "time": 165.965026
+        },
+        {
+          "time": 168.250653
+        },
+        {
+          "time": 170.53628
+        },
+        {
+          "time": 172.821908
+        },
+        {
+          "time": 175.107535
+        },
+        {
+          "time": 177.393162
+        },
+        {
+          "time": 179.678789
+        },
+        {
+          "time": 181.964416
+        },
+        {
+          "time": 184.250044
+        },
+        {
+          "time": 186.535671
+        },
+        {
+          "time": 188.821298
+        },
+        {
+          "time": 191.106925
+        },
+        {
+          "time": 193.392553
+        },
+        {
+          "time": 195.67818
+        },
+        {
+          "time": 197.963807
+        },
+        {
+          "time": 200.249434
+        },
+        {
+          "time": 202.535061
+        },
+        {
+          "time": 204.820689
+        },
+        {
+          "time": 207.106316
+        },
+        {
+          "time": 209.391943
+        },
+        {
+          "time": 211.67757
+        },
+        {
+          "time": 213.963197
+        },
+        {
+          "time": 216.248825
+        },
+        {
+          "time": 218.534452
+        }
+      ],
+      "needsEars": true,
+      "needsEarsNote": "含 1 个规则推出来的短小节：这是本读法按当前规则提出的局部 bar-structure 假设，需要耳朵确认；不是测量结果",
+      "health": "ok",
+      "suspectReasons": [],
+      "reading": "workbench"
     }
   ],
   "events": [
