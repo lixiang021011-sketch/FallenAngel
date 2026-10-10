@@ -129,6 +129,45 @@ Mapperatorinator 打了一个 `dump_timing_events=true`（补丁存在
   happyend 一开始那条假的"整段都错"就是这么来的
 - 折算完还是对不上（或者长度比根本不是整数关系，比如 1.5）→ 照实说"相位不可比"，不硬凑
 
+## 跑满全库：`run_mapperatorinator_batch.py`
+
+```powershell
+python tools/docs/run_mapperatorinator_batch.py --all          # 缺哪首跑哪首
+python tools/docs/run_mapperatorinator_batch.py --all --force  # 全部重跑
+```
+
+每首独立一次推理（约 20–45 秒），音频按 `<歌>_full.<ext>` 摆进 Mapperatorinator 的 `in\`，
+输出落在 `out\<歌>_timing_events\`。**给进去的是音频、接出来的是它自己的 observation**，
+不重采样、不拟合、不合并——piecewise timing 原样保留。
+
+## 全库体检表：`timing_health_table.py`
+
+```powershell
+python tools/docs/timing_health_table.py            # 打印
+python tools/docs/timing_health_table.py --write    # 写 reports/timing_health.md
+```
+
+一首歌一行，只汇总 A/B 两层的**现有**结论，不引入新指标。分类是机械规则：
+
+```
+clean                  两层都干净
+local drift            B 层干净，A 层显示拍子在局部漂
+2-beat counting error  有停在半小节（±2 拍）的段，且嫌疑那条自己把一小节数成了 2 拍
+1-beat phase error     有停在整拍（±1 拍）的段
+continuous slide       段多、k 走遍正负、残差悬在中间 —— 相位滑过整数拍，不是停错在某格
+unresolved             机器读法之间没有一对能对上
+```
+
+判据上有三条是踩过坑才加的，别退回去：
+
+1. **"停错一格"和"滑过去"必须分开**。停错：段少、残差小（真停在那一格）；
+   滑过去：段多、k 走遍正负、残差悬在中间（chichunhua 的 5 段 ±1/±2 就是这么来的）。
+   只看"有没有出现过 ±1"会把连续滑读成一堆相位错位。
+2. **一处跳变不给整首歌定性**（规格 §16 要求"持续多个 measure"）。单点的
+   登记成 `single flip（只一处，未持续）`，不进分类。
+3. **人那条不进分类**。手机按的小节头多数只有 2–10 票，拿它判"这首歌是什么错"没有依据；
+   它照样出现在详情里（"人：n 票"）。
+
 ## 四条读法，不投票（研究者 2026-10-10 定的方向）
 
 同一首歌上我们要并排看的是**四组 observation**，不是一个"正确的网格"：

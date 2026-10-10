@@ -34,6 +34,7 @@ REPO = Path(__file__).resolve().parents[2]
 TOOL = "import_mapperatorinator_timing.py"
 OBSERVATIONS = REPO / "static" / "observations"
 ARCHIVE = OBSERVATIONS / "source"
+DOCS = REPO / "static" / "docs"
 
 
 def audio_duration(song: str) -> float | None:
@@ -157,7 +158,7 @@ def health_of(observations: dict, duration: float | None) -> dict:
     if bar > 0 and len(shifts) > 1:
         dense = [a for a, b in zip(shifts, shifts[1:]) if b - a < bar]
         if dense:
-            notes.append("timing point 变化过密 %d 处（相邻两个小于一个小节，最早在 %.1fs）"
+            notes.append("模型报的 timing point 变化过密 %d 处（相邻两个小于一个小节，最早在 %.1fs）"
                          % (len(dense), dense[0]))
     end = max(measures[-1], beats[-1])
     if duration and end > duration + 0.5:
@@ -181,18 +182,29 @@ def redline_points(osu: Path | None) -> list[dict]:
              "meter": point["meter"]} for point in redlines if point["time"] > 0]
 
 
-def with_redline_metadata(observations: dict, redlines: list[dict]) -> dict:
-    """给 timing point observation 补上 bpm / meter。
+def with_redline_metadata(observations: dict, redlines: list[dict], tolerance: float = 0.02) -> dict:
+    """给模型自己的 timing point observation 补上 bpm / meter，并另存导出器插入的红线。
 
-    模型的 TIMING_POINT token 只带时刻；bpm 与 meter 是导出成 .osu 时按拍数推出来的。
-    所以这两个字段的来源要写清楚：**红线（导出时推的）**，不是"模型说的"。
-    取不到就留空，不补猜测（§7）。
+    两件事必须分开，否则会得出错误结论：
+
+    * **模型报的** TIMING_POINT：只有时刻。bpm / meter 是导出成 .osu 时按拍数推出来的，
+      所以只在能对上红线时补进去（来源写清楚是红线），对不上就留空（§7）。
+    * **导出器插入的红线**：为了"每拍都吸附正确"，导出时经常一个 TIMING_POINT 旁边
+      再插好几条红线（flyway：模型报 1 处，导出成 9 条）。这些**不是**模型说的变速，
+      不能拿来当"timing point 变化过密"的证据，所以单列一份，只作参考。
     """
-    if not redlines:
-        return observations
     observations = dict(observations)
-    observations["timingPoints"] = [{"time": point["time"], "bpm": point["bpm"],
-                                     "meter": point["meter"]} for point in redlines]
+    observations["exportedRedlines"] = list(redlines)
+    if not redlines or not observations.get("timingPoints"):
+        return observations
+    enriched = []
+    for point in observations["timingPoints"]:
+        nearest = min(redlines, key=lambda redline: abs(redline["time"] - point["time"]))
+        row = {"time": point["time"]}
+        if abs(nearest["time"] - point["time"]) <= tolerance:
+            row["bpm"], row["meter"] = nearest["bpm"], nearest["meter"]
+        enriched.append(row)
+    observations["timingPoints"] = enriched
     return observations
 
 
@@ -226,9 +238,11 @@ def source_record(song: str, events: list[dict], redlines: list[dict], origin: s
 
 
 def build_song(song: str, out_root: Path, archive: bool) -> dict:
-    events_path = out_root / ("%s_timing_events" % song) / "timing_events.json"
-    osu_dir = out_root / ("%s_timing" % song)
-    osu = (sorted(osu_dir.glob("beatmap*.osu")) or [None])[-1]
+    events_dir = out_root / ("%s_timing_events" % song)
+    events_path = events_dir / "timing_events.json"
+    # 导出时 .osu 与 timing_events.json 落在同一个目录里；早先那次只跑输出的目录叫 <歌>_timing。
+    osu = ((sorted(events_dir.glob("beatmap*.osu"))
+            or sorted((out_root / ("%s_timing" % song)).glob("beatmap*.osu"))) or [None])[-1]
     if events_path.exists():
         events, origin = read_events_json(events_path), "timing_events.json（模型自己那串 observation）"
         if archive:
@@ -237,12 +251,12 @@ def build_song(song: str, out_root: Path, archive: bool) -> dict:
             record = source_record(song, events, redline_points(osu), origin)
             (ARCHIVE / ("%s.mapperatorinator.source.json" % song)).write_text(
                 json.dumps(record, ensure_ascii=False, indent=1), encoding="utf-8", newline="\n")
-    elif list(osu_dir.glob("beatmap*.osu")):
+    elif osu is not None and osu.exists():
         events, _ = read_osu_redlines(osu)
         origin = "osu 红线折算（从红线起每 meter 拍算一个小节——这是假设，不是模型报的；只有红线时 measure 是推出来的）"
     else:
         raise FileNotFoundError("没有 %s 的 timing 输出（%s 与 %s 都不存在）"
-                                % (song, events_path, osu_dir))
+                                % (song, events_path, out_root / ("%s_timing" % song)))
     return assemble(song, events, origin, TOOL, redline_points(osu))
 
 
@@ -273,6 +287,8 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--song", action="append", default=[])
+    parser.add_argument("--all", action="store_true",
+                        help="static/docs 里的每一首歌（不含 .raw 变体）")
     parser.add_argument("--out-root", default=str(MAPPER_OUT))
     parser.add_argument("--rebuild", action="store_true",
                         help="不碰 Mapperatorinator，只从归档层重算派生层")
@@ -286,8 +302,14 @@ def main(argv=None) -> int:
         print("从归档重算 %d 首 → %s" % (rebuild_from_archive(ARCHIVE, derived_root),
                                       derived_root or OBSERVATIONS))
         return 0
-    songs = args.song or [path.name[: -len(".mapperatorinator.source.json")]
-                          for path in ARCHIVE.glob("*.mapperatorinator.source.json")]
+    if args.song:
+        songs = args.song
+    elif args.all:
+        songs = sorted(path.name[: -len(".mgmcs.json")] for path in DOCS.glob("*.mgmcs.json")
+                       if not path.name.endswith(".raw.mgmcs.json"))
+    else:
+        songs = [path.name[: -len(".mapperatorinator.source.json")]
+                 for path in ARCHIVE.glob("*.mapperatorinator.source.json")]
     if not songs:
         print("没有指定歌，归档层也是空的。先跑 Mapperatorinator（dump_timing_events=true）。")
         return 1

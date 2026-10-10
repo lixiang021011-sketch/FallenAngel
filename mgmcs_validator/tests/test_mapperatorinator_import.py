@@ -33,10 +33,16 @@ class ImportCase(unittest.TestCase):
     def setUp(self):
         self.temp = Path(tempfile.mkdtemp(prefix="mapper_test_"))
         self.out_root = self.temp / "out"
+        # 这两个模块级常量是指向仓库的。改它们必须改回来，否则同一轮里的别的测试文件
+        # 会看不到 static/observations（体检表那次就是这么被带偏的）。
+        self.saved = (mapper.OBSERVATIONS, mapper.ARCHIVE, mapper.MAPPER_IN, dev.OBSERVATIONS)
         mapper.OBSERVATIONS = self.temp / "observations"
         mapper.ARCHIVE = self.temp / "observations" / "source"
         mapper.MAPPER_IN = self.temp / "in"
         dev.OBSERVATIONS = mapper.OBSERVATIONS
+
+    def tearDown(self):
+        mapper.OBSERVATIONS, mapper.ARCHIVE, mapper.MAPPER_IN, dev.OBSERVATIONS = self.saved
 
     def write_events(self, song, events):
         path = self.out_root / ("%s_timing_events" % song) / "timing_events.json"
@@ -176,7 +182,10 @@ class TestReadingRules(ImportCase):
         self.assertAlmostEqual(pulse[0], 1.0, places=6)
 
     def test_redlines_are_the_only_place_bpm_and_meter_come_from(self):
-        self.write_events("meta", steady(1.0, 2.0, 4, 8))
+        # 模型自己在 1.0s 报了一次 timing change，红线也正好在 1.0s。
+        events = steady(1.0, 2.0, 4, 8) + [{"type": "timing_point", "time": 1.0}]
+        events.sort(key=lambda event: event["time"])
+        self.write_events("meta", events)
         osu_dir = self.out_root / "meta_timing"
         osu_dir.mkdir(parents=True, exist_ok=True)
         (osu_dir / "beatmap1.osu").write_text(
@@ -185,6 +194,13 @@ class TestReadingRules(ImportCase):
         self.assertEqual(doc["observations"]["timingPoints"],
                          [{"time": 1.0, "bpm": 120.0, "meter": 4}])
         self.assertIn("红线", doc["observationsFrom"])
+        # 导出器为了对齐拍子另插的红线单列一份，不算模型说的变速
+        self.assertEqual(len(doc["observations"]["exportedRedlines"]), 1)
+
+    def test_the_model_may_report_no_timing_point_at_all(self):
+        doc = self.build("notimingpoint", steady(1.0, 2.0, 4, 8))
+        self.assertEqual(doc["observations"]["timingPoints"], [])
+        self.assertEqual(doc["health"]["status"], "usable")
 
     def test_without_the_events_dump_measures_are_marked_as_an_assumption(self):
         osu_dir = self.out_root / "osuonly_timing"

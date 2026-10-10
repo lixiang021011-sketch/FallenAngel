@@ -364,6 +364,8 @@ def mapperatorinator_reading(song: str) -> dict | None:
     "和 Beat This 不一致"不会被算进去——分歧只是证据（§13）。
     """
     path = OBSERVATIONS / ("%s.mapperatorinator.json" % song)
+    if not path.exists() and song.endswith(".raw"):
+        path = OBSERVATIONS / ("%s.mapperatorinator.json" % song[: -len(".raw")])
     if not path.exists():
         return None
     doc = json.loads(path.read_text(encoding="utf-8"))
@@ -510,7 +512,7 @@ def pair_phase_trend(votes: list[dict], bar_beats: float) -> dict:
     跳一格（≈整数拍）才是真的相位错位。只量，不解释原因。
     """
     matched = [vote for vote in votes if vote["k"] is not None]
-    out = {"beatsPerMinute": None, "maxJump": None, "count": len(matched)}
+    out = {"beatsPerMinute": None, "maxJump": None, "jumpTime": None, "count": len(matched)}
     if len(matched) < 3:
         return out
     times = [vote["time"] for vote in matched]
@@ -520,9 +522,10 @@ def pair_phase_trend(votes: list[dict], bar_beats: float) -> dict:
     denom = sum((t - mean_t) ** 2 for t in times)
     slope = sum((t - mean_t) * (p - mean_p) for t, p in zip(times, phases)) / denom if denom else 0.0
     out["beatsPerMinute"] = slope * 60.0
-    out["maxJump"] = max((abs((p2 - p1) - slope * (t2 - t1))
-                          for t1, t2, p1, p2 in zip(times, times[1:], phases, phases[1:])),
-                         default=0.0)
+    jumps = [(abs((p2 - p1) - slope * (t2 - t1)), t2)
+             for t1, t2, p1, p2 in zip(times, times[1:], phases, phases[1:])]
+    if jumps:
+        out["maxJump"], out["jumpTime"] = max(jumps, key=lambda jump: jump[0])
     return out
 
 
@@ -535,8 +538,12 @@ def pair_verdict(row: dict) -> str:
     jump = trend.get("maxJump")
     slide = trend.get("beatsPerMinute")
     if jump is not None and jump >= 0.4:
-        return "%s；有一处 %+.2f 拍的跳变（这才是错位），平时 %+.2f 拍/分钟" % (
-            pair_shape(row["runs"], row["beatsPerBarB"]), jump, slide or 0.0)
+        where = "" if trend.get("jumpTime") is None else " @%s" % clock(trend["jumpTime"])
+        if row["runs"] and all(run["k"] == 0 for run in row["runs"]):
+            return ("其余全段一致，只在这一处跳了 %+.2f 拍%s（一处≠一段：可能就是漏了一拍），"
+                    "平时 %+.2f 拍/分钟" % (jump, where, slide or 0.0))
+        return "%s；有一处 %+.2f 拍的跳变（这才是错位）%s，平时 %+.2f 拍/分钟" % (
+            pair_shape(row["runs"], row["beatsPerBarB"]), jump, where, slide or 0.0)
     if slide is not None and abs(slide) >= 0.05:
         return "两条小节长度略有出入：相位连续滑 %+.2f 拍/分钟，最大跳变只有 %.2f 拍（没有突变）" % (
             slide, jump or 0.0)

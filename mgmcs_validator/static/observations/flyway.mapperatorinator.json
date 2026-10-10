@@ -614,47 +614,34 @@
   "timingPoints": [
    {
     "time": 0.325,
-    "bpm": 190.01,
+    "bpm": 190.02,
+    "meter": 4
+   }
+  ],
+  "exportedRedlines": [
+   {
+    "time": 0.325,
+    "bpm": 190.02,
     "meter": 4
    },
    {
-    "time": 77.372,
+    "time": 73.579,
     "bpm": 190.0,
     "meter": 4
    },
    {
-    "time": 92.22,
-    "bpm": 200.0,
-    "meter": 4
-   },
-   {
-    "time": 92.52,
-    "bpm": 189.8,
-    "meter": 4
-   },
-   {
-    "time": 108.956,
+    "time": 81.157,
     "bpm": 190.0,
     "meter": 4
    },
    {
-    "time": 153.47,
-    "bpm": 190.0,
+    "time": 165.471,
+    "bpm": 194.0,
     "meter": 4
    },
    {
-    "time": 154.418,
-    "bpm": 190.0,
-    "meter": 4
-   },
-   {
-    "time": 170.533,
-    "bpm": 200.0,
-    "meter": 4
-   },
-   {
-    "time": 170.833,
-    "bpm": 189.9,
+    "time": 165.781,
+    "bpm": 189.95,
     "meter": 4
    }
   ]
@@ -1879,9 +1866,7 @@
  "health": {
   "status": "usable",
   "reasons": [],
-  "notes": [
-   "timing point 变化过密 3 处（相邻两个小于一个小节，最早在 92.2s）"
-  ]
+  "notes": []
  },
  "audioDurationSeconds": 193.894739
 }
