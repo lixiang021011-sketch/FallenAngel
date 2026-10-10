@@ -45,6 +45,9 @@
   .flag { font-size: 11.5px; color: #98a2b3; border: 1px solid #30363d; border-radius: 6px;
           padding: 1px 6px; }
   .flag.warn { color: #e3b341; border-color: #d2992266; }
+  .triage { padding: 0 14px 10px; font-size: 13px; color: #8b949e; }
+  .triage.human { color: #ff9b95; }
+  .triage.auto { color: #79d18a; }
   .detail { border-top: 1px solid #21262d; padding: 10px 14px 14px; }
   .segment { border: 1px solid #21262d; border-radius: 8px; padding: 8px 10px; margin-bottom: 8px;
              background: #0f141b; }
@@ -71,16 +74,23 @@
     </p>
   </div>
   <span class="spacer"></span>
+  <a href="queue.html">听审队列</a>
   <a href="songs.html">曲库歌单</a>
   <a href="index.html">验证器</a>
 </header>
 
 <div class="chips" id="counts"><span class="muted">读 timing_health.json…</span></div>
-<label class="filter"><input type="checkbox" id="only-review" checked>只看 REVIEW</label>
+<label class="filter">看哪些
+  <select id="filter">
+    <option value="human" selected>需要人听的（分诊没解释掉的）</option>
+    <option value="review">全部 REVIEW</option>
+    <option value="all">全部 31 首</option>
+  </select>
+</label>
 
 <h2>① 歌曲级摘要 → ② 异常区段（点开）→ ③ 原始读法（再展开）</h2>
 <div id="songs"></div>
 
-<script src="timing.js?v=2"></script>
+<script src="timing.js?v=3"></script>
 </body>
 </html>

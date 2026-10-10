@@ -32,13 +32,32 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import deviation_report as dr  # noqa: E402
+import triage as tri  # noqa: E402
 
 REPO = Path(__file__).resolve().parents[2]
 REPORT_PATH = REPO / "reports" / "timing_health.md"
+TRIAGE_PATH = REPO / "reports" / "timing_triage.md"
 JSON_PATH = REPO / "static" / "timing_health.json"
 MUSIC_BASE = "http://127.0.0.1:8125"
 VALIDATOR_PAGE = "index.html"
 HALF = 1e-9
+
+# 每一类该怎么听、要回答的那一个问题。写在这里，页面直接显示——
+# 免得每次都要回来翻聊天记录找"我到底在判什么"。
+QUESTIONS = {
+    "persistent ±2-beat disagreement":
+        "这一带是真的两拍一小节，还是某条读法把一小节数成了两拍？（听鼓型是否每 4 拍循环、军鼓落在第几拍）",
+    "persistent ±1-beat disagreement":
+        "小节头该落在哪一根拍上？（听贝斯/和弦变换落在哪一拍；两派各执一辞，只需要判这一处）",
+    "continuous slide":
+        "数一下这两处各 30 秒里有几小节：长度一样 → 是读法的速度估计差（不是音乐问题）；真变了 → tempo change",
+    "local drift":
+        "A 层说这里的拍子偏得最多：是真的局部变速 / 自由节拍，还是模型在抖？",
+    "single flip":
+        "那里是多出来一根小节线、少了一根，还是真有一个短小节？",
+    "clean":
+        "读法之间没有分歧，正常情况下不必听。",
+}
 
 
 def machine_sources(song: str) -> dict:
@@ -70,7 +89,7 @@ def classify(song: str) -> dict:
              if comparable(row) and "human" not in row["a"] and "human" not in row["b"]]
     flags, note = [], []
     one_beat, two_beat, slides, fixed, weird = [], [], [], [], []
-    single = []
+    single, singles = [], []
     for row in pairs:
         verdict = dr.pair_verdict(row)
         pair_name = "%s↔%s" % (row["a"], row["b"])
@@ -104,6 +123,7 @@ def classify(song: str) -> dict:
         jump = jump_beats(row)
         if jump is not None and not offsets:
             single.append("%s @%s" % (pair_name, dr.clock(row["trend"]["jumpTime"])))
+            singles.append({"pair": pair_name, "time": row["trend"]["jumpTime"], "jump": jump})
         if "连续滑" in verdict:
             slides.append(pair_name)
             continue
@@ -191,10 +211,43 @@ def classify(song: str) -> dict:
         note.append("单点跳变（没持续成一段，先记着）：%s" % "、".join(single))
     return {"song": song, "class": klass, "oneBeat": one_beat, "twoBeat": two_beat,
             "slides": slides, "suspects": sorted(suspects), "layerA": layer_a,
-            "flags": flags, "single": single, "phase": phase_state, "human": human_note,
+            "flags": flags, "single": single, "singles": singles,
+            "phase": phase_state, "human": human_note,
             "notes": note, "pairs": len(pairs),
             "readings": [(reading["name"], reading["health"], reading.get("meterMix", "—"),
                           len(reading["measures"])) for reading in sources["readings"]]}
+
+
+def diagnose_song(song: str, row: dict) -> dict:
+    """把现有量出来的东西喂给分诊规则（triage.py），拿回"要不要人来听"。"""
+    sources = dr.measure_phase(song)
+    facts = {
+        "song": song,
+        # 只把能比的那些对喂进去：不可比的对连 runs / trend 都没有，
+        # 分诊看它们会以为"没有分歧"，那是最危险的默认值。
+        "pairs": [{"a": pair["a"], "b": pair["b"], "usable": True,
+                   "runs": pair["runs"], "trend": pair["trend"],
+                   "beatsPerBarB": pair["beatsPerBarB"]}
+                  for pair in sources["pairs"] if comparable(pair)],
+        "readings": [{"name": reading["name"], "health": reading["health"],
+                      "measures": reading["measures"], "meterMix": reading.get("meterMix", "")}
+                     for reading in sources["readings"]],
+        "layerA": row["layerA"],
+        "singles": row["singles"],
+        "driftRange": [],
+    }
+    spot = drift_spot(song)
+    if spot and row["class"] == "local drift":
+        facts["driftRange"] = [{"start": spot["start"], "end": spot["end"],
+                                "seconds": round(spot["end"] - spot["start"], 1)}]
+    try:
+        item = tri.diagnose(facts)
+    except Exception as error:                  # 分诊坏了要看得见，不能默默当 clean
+        return {"song": song, "diagnosis": "triage_error", "affectedRange": [],
+                "suspectSource": None, "evidence": {"error": str(error)},
+                "resolution": "分诊规则自己出错了：%s" % error, "needsHumanReview": True}
+    # 单点跳变不在 offset 段里，分诊要单独看到它
+    return item
 
 
 def meter_warnings(reading: dict) -> bool:
@@ -351,15 +404,26 @@ def payload(songs: list[str]) -> dict:
     for row in rows:
         counts[row["class"]] = counts.get(row["class"], 0) + 1
     out = []
+    diagnoses = []
     for row in rows:
         path = dr.DOCS / ("%s.mgmcs.json" % row["song"])
         title = ""
+        audio = ""
         if path.exists():
-            title = (json.loads(path.read_text(encoding="utf-8")).get("song") or {}).get("title") or ""
+            song = json.loads(path.read_text(encoding="utf-8")).get("song") or {}
+            title = song.get("title") or ""
+            audio = song.get("audioPath") or song.get("audioFileName") or ""
+        item = diagnose_song(row["song"], row)
+        diagnoses.append(item)
         out.append({"song": row["song"], "title": title, "class": row["class"],
                     "status": "OK" if row["class"] == "clean" else "REVIEW",
                     "flags": row["flags"], "suspects": row["suspects"], "notes": row["notes"],
                     "phase": row["phase"], "human": row["human"],
+                    "audioPath": audio, "driftSpot": drift_spot(row["song"]),
+                    "singleFlips": row["singles"],
+                    "triage": {key: item[key] for key in
+                               ("diagnosis", "affectedRange", "suspectSource", "resolution",
+                                "needsHumanReview", "attribution", "evidence")},
                     "layerA": row["layerA"],
                     "readings": [{"name": name, "health": health, "meterMix": mix, "measures": count}
                                  for name, health, mix, count in row["readings"]],
@@ -369,7 +433,125 @@ def payload(songs: list[str]) -> dict:
             "note": "观测事实 + 来源 health + 异常区段；原因解释在 notes 里，永远带『待人工确认』。"
                     "support 是连续多少个 matched measure 支持这个 offset，不是投票。",
             "musicBase": MUSIC_BASE, "validator": VALIDATOR_PAGE,
-            "counts": counts, "songs": out}
+            "counts": counts, "songs": out, "queue": queue_of(out),
+            "triageCounts": tri.summarise(diagnoses)}
+
+
+def drift_spot(song: str) -> dict | None:
+    """A 层偏得最多的那个 4 小节窗（页面用它做"只听 A 层问题"的那几条）。
+
+    窗口是从第一颗鼓点起按 4 小节滚的，所以起点要按 min(事件时间) 算，
+    不能拿网格起点当 0——这两件事差 4 倍，早先算错过一次。
+    """
+    grid = dr.affine_grid(song)
+    events = dr.events_of(song)
+    if not grid or not events:
+        return None
+    fit = dr.subdivision_fit(events, grid["origin"], grid["beatSeconds"])
+    windows = fit.get("windows") or []
+    if len(windows) < 2:
+        return None
+    span = 16 * grid["beatSeconds"]
+    start0 = min(time for time, _ in dr.raw_deltas(events, grid["origin"], grid["beatSeconds"]))
+    worst = max(range(len(windows)), key=lambda index: abs(windows[index]))
+    start = start0 + worst * span
+    return {"start": start, "end": start + span, "offsetSixteenths": round(windows[worst], 3),
+            "windows": len(windows)}
+
+
+def queue_of(song_rows: list[dict]) -> list[dict]:
+    """听审队列：一处一条，直接带音频与要回答的问题，按重要性排。
+
+    页面不该让人一首一首点开再自己去比时间——那是人工搬砖。队列把 31 首里的
+    16 处异常拧成一条清单：点一下放到那一段、放完停住、按 N 下一处。
+
+    每处只留一段**听得了的窗口**（默认 24 秒，往前带 2 秒）。像 kaitou 那种整首差一拍的，
+    真正要判的其实就一处，没必要把 3 分钟都听完，所以窗口掐短、同时在卡片上写明它原本有多长。
+    """
+    severity = {"persistent ±1-beat disagreement": 0, "persistent ±2-beat disagreement": 1,
+                "continuous slide": 2, "unresolved": 3, "local drift": 4, "single flip": 5,
+                "clean": 6}
+    window = 24.0
+
+    def spot_of(row, kind, start, end, display_class=None, **extra):
+        listen_start = max(0.0, start - 2.0)
+        spot = {"song": row["song"], "title": row["title"], "class": row["class"],
+                # 这一条在队列里按什么排、卡片上写什么：整体干净但有一处单点跳变的歌，
+                # 这一处的类别就是单点跳变，不能写成"clean"。
+                "queueClass": display_class or row["class"],
+                "audioPath": row["audioPath"], "kind": kind,
+                "start": start, "end": end,
+                "listenStart": listen_start,
+                "listenEnd": min(end + 2.0, listen_start + window),
+                "spanSeconds": round(end - start, 1),
+                "longSpan": (end - start) > 60.0}
+        spot.update(extra)
+        return spot
+
+    spots = []
+    for row in song_rows:
+        triage = row.get("triage") or {}
+        # 队列默认只放"分诊没解释掉"的：人工只听那些。其余照样在页面上，
+        # 但要显式勾一下才出现（"已自动解释"不是"不用看"，是"不必专门听"）。
+        review = bool(triage.get("needsHumanReview"))
+        if row["class"] == "local drift" and row.get("driftSpot"):
+            spot = row["driftSpot"]
+            spots.append(spot_of(row, "drift", spot["start"], spot["end"], support=0,
+                                 review=review, diagnosis=triage.get("diagnosis"),
+                                 pairCount=0, pairs=[], others=[], reconverges=False,
+                                 reconvergeAt=None,
+                                 suspicion="A 层最偏的一窗：偏移 %+.2f 个 16 分"
+                                           % spot["offsetSixteenths"],
+                                 question=QUESTIONS["local drift"]))
+        for segment in row["segments"]:
+            spots.append(spot_of(row, "segment", segment["start"], segment["end"],
+                                 review=review, diagnosis=triage.get("diagnosis"),
+                                 support=segment["support"], pairCount=segment["pairCount"],
+                                 pairs=segment["pairs"], others=segment["others"],
+                                 reconverges=segment["reconverges"],
+                                 reconvergeAt=segment["reconvergeAt"],
+                                 suspicion=next((text for text in row["notes"]
+                                                 if text.startswith("疑似")), ""),
+                                 question=QUESTIONS.get(row["class"], "")))
+        # 同一处跳变会在好几对来源各报一次（它们指的是同一个时刻），合成一条，
+        # 否则 haiiro 04:22 会在队列里连着出现两遍、happyend 05:01 出现三遍。
+        flips = []
+        for flip in sorted(row.get("singleFlips") or [], key=lambda item: item["time"]):
+            if flips and flip["time"] - flips[-1]["time"] <= 3.0:
+                flips[-1]["pairs"].append(flip["pair"])
+                flips[-1]["jump"] = max(flips[-1]["jump"], flip["jump"])
+                continue
+            flips.append({"time": flip["time"], "jump": flip["jump"], "pairs": [flip["pair"]]})
+        for flip in flips:
+            spots.append(spot_of(row, "single", max(0.0, flip["time"] - 6.0),
+                                 flip["time"] + 6.0, support=1, pairCount=len(flip["pairs"]),
+                                 review=review, diagnosis=triage.get("diagnosis"),
+                                 pairs=[], others=["%s：这里跳了 %.2f 拍" % (name, flip["jump"])
+                                                   for name in flip["pairs"]],
+                                 reconverges=False, reconvergeAt=None,
+                                 suspicion="只一处、没持续成一段（%s）"
+                                           % "、".join(flip["pairs"]),
+                                 question=QUESTIONS["single flip"],
+                                 display_class="single flip"))
+    spots.sort(key=lambda spot: (severity.get(spot["queueClass"], 9), -spot["support"],
+                                 spot["song"], spot["start"]))
+    # 第一遍：每一类挑"最值得先学的那一处"。不是挑支持量最大的——那是给统计看的，
+    # 给人看的第一处应该短、有多条来源互相印证、而且已经能指出嫌疑来源。
+    def worth(spot):
+        span = spot["spanSeconds"]
+        return (spot["pairCount"] >= 2,                            # 多于一对来源指这里
+                bool(spot.get("suspicion")),                       # 已经能指出嫌疑
+                3.0 <= span <= 60.0,                               # 听得了的一段，不是整首
+                spot.get("offsetSixteenths") or 0,                  # 漂移类：偏得多的
+                spot["support"])
+    best = {}
+    for spot in spots:
+        key = spot["queueClass"]
+        if key not in best or worth(spot) > worth(best[key]):
+            best[key] = spot
+    for spot in spots:
+        spot["firstPass"] = any(spot is chosen for chosen in best.values())
+    return spots
 
 
 def report(songs: list[str]) -> tuple[str, list[dict]]:
@@ -432,6 +614,72 @@ def report(songs: list[str]) -> tuple[str, list[dict]]:
     return "\n".join(lines), rows
 
 
+def triage_markdown(songs: list[str]) -> str:
+    """分诊表：成功标准是"要人听的有多少首"，不是"分类有多细"。"""
+    rows = [(song, classify(song)) for song in songs]
+    items = [(song, diagnose_song(song, row)) for song, row in rows]
+    buckets = tri.summarise([item for _song, item in items])
+    total = len(items)
+    lines = ["# 全库 timing 分诊表", "",
+             "只基于已经量出来的东西（来源 health、小节数、offset 段、持续多少个 matched measure、"
+             "是否 reconverge），不新增测量、也不判哪条网格是真值。", "",
+             "## 结论：%d 首里只有 %d 首需要人听" % (total, len(buckets["humanReview"])), "",
+             "| 处理结果 | 首数 | 歌 |", "|---|---|---|",
+             "| 自动通过（读法之间无分歧） | %d | %s |"
+             % (len(buckets["autoPass"]), "、".join(buckets["autoPass"]) or "—"),
+             "| 自动解释并局部降级某条来源 | %d | %s |"
+             % (len(buckets["autoExplained"]), "、".join(buckets["autoExplained"]) or "—"),
+             "| 只标 timing drift，仍可继续分析 | %d | %s |"
+             % (len(buckets["driftOnly"]), "、".join(buckets["driftOnly"]) or "—"),
+             "| 登记为局部（单点 / 合回来），不升级 | %d | %s |"
+             % (len(buckets["logged"]), "、".join(buckets["logged"]) or "—"),
+             "| **需要人工听** | %d | %s |"
+             % (len(buckets["humanReview"]), "、".join(buckets["humanReview"]) or "—"),
+             "",
+             "## 一首歌一行", "",
+             "| 歌 | diagnosis | 受影响区段 | 嫌疑来源 | 归因 | 人工？ | evidence（来源 / health / offset / 小节异常 / reconverge） |",
+             "|---|---|---|---|---|---|---|"]
+    for song, item in items:
+        ranges = "、".join("%s–%s" % (dr.clock(span["start"]), dr.clock(span["end"]))
+                          for span in item["affectedRange"]) or "—"
+        evidence = item["evidence"]
+        sources = "、".join("%s %s" % (reading["name"], reading["health"]) for reading in evidence["sources"])
+        offsets = "、".join("%s k=%+d(support %d)" % (offset["pair"], offset["k"], offset["support"])
+                           for offset in evidence["offsets"][:4]) or "—"
+        anomalies = "、".join("%s 异常小节 %d" % (item["source"], item["oddBars"])
+                             for item in evidence["barLengthAnomaly"]) or "无"
+        reconverge = ("%d 处" % len(evidence["reconvergence"])) if evidence["reconvergence"] else "无"
+        lines.append("| %s | %s | %s | %s | %s | %s | %s ｜ %s ｜ 小节异常：%s ｜ reconverge：%s |"
+                     % (song, item["diagnosis"], ranges, item["suspectSource"] or "—",
+                        item["attribution"] or "—", "**是**" if item["needsHumanReview"] else "否",
+                        sources, offsets, anomalies, reconverge))
+    lines += ["", "## 需要人听的那几首（六字段全量）", ""]
+    for song, item in items:
+        if not item["needsHumanReview"]:
+            continue
+        lines.append("### %s — %s" % (song, item["diagnosis"]))
+        lines.append("- affectedRange：" + ("、".join(
+            "%s–%s（%.0fs）" % (dr.clock(span["start"]), dr.clock(span["end"]), span["seconds"])
+            for span in item["affectedRange"]) or "—"))
+        lines.append("- suspectSource：" + (item["suspectSource"] or "没有能归因的来源"))
+        lines.append("- resolution：" + item["resolution"])
+        lines.append("")
+    lines += ["## 自动解释了谁（局部降级，不进人工）", ""]
+    for song, item in items:
+        if item["diagnosis"] in ("source_measure_count_error", "source_self_anomaly"):
+            lines.append("- **%s** → 降级 %s：%s"
+                         % (song, item["suspectSource"], item["resolution"]))
+    lines += ["", "## 只标范围、不动结论的", ""]
+    for song, item in items:
+        if item["diagnosis"] in ("continuous_drift", "local_timing_drift",
+                                 "single_flip", "reconvergence"):
+            lines.append("- **%s** → %s：%s" % (song, item["diagnosis"], item["resolution"]))
+    lines += ["", "第一版不做：全库 ensemble、不信 Mapperatorinator 单次采样、"
+                  "不自动改任何网格、不改人工校准。分诊的降级只影响下游读这条结论时的准入，"
+                  "原始 observation 一个数都不动。", ""]
+    return "\n".join(lines)
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -439,6 +687,8 @@ def main(argv=None) -> int:
     parser.add_argument("--write", action="store_true")
     parser.add_argument("--json", action="store_true",
                         help="给页面用的 static/timing_health.json")
+    parser.add_argument("--triage", action="store_true",
+                        help="分诊表 reports/timing_triage.md")
     args = parser.parse_args(argv)
     songs = args.song or sorted(path.name[: -len(".mgmcs.json")] for path in dr.DOCS.glob("*.mgmcs.json")
                                 if not path.name.endswith(".raw.mgmcs.json"))
@@ -462,6 +712,10 @@ def main(argv=None) -> int:
         JSON_PATH.write_text(json.dumps(payload(songs), ensure_ascii=False, indent=1),
                              encoding="utf-8", newline="\n")
         print("已写 %s" % JSON_PATH)
+    if args.triage or args.write:
+        TRIAGE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        TRIAGE_PATH.write_text(triage_markdown(songs) + "\n", encoding="utf-8", newline="\n")
+        print("已写 %s" % TRIAGE_PATH)
     return 0
 
 

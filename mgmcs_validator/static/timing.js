@@ -104,6 +104,23 @@ globalThis.MGTiming = (function () {
     return row.status === 'OK' ? 'ok' : 'review';
   }
 
+  /** What the triage layer decided to do with this song (see tools/docs/triage.py). */
+  function triageOf(row) {
+    return row.triage || {};
+  }
+
+  /** One line: the diagnosis, and who got downgraded if anyone did. */
+  function reviewText(row) {
+    const triage = triageOf(row);
+    if (!triage.diagnosis) return '';
+    return triage.diagnosis + (triage.suspectSource ? '（降级 ' + triage.suspectSource + '）' : '');
+  }
+
+  /** The only question that decides where a human should spend ears. */
+  function needsHuman(row) {
+    return Boolean(triageOf(row).needsHumanReview);
+  }
+
   return {
     severity: severity,
     sortedSongs: sortedSongs,
@@ -112,6 +129,9 @@ globalThis.MGTiming = (function () {
     segmentLine: segmentLine,
     suspicion: suspicion,
     suspectSources: suspectSources,
+    triageOf: triageOf,
+    reviewText: reviewText,
+    needsHuman: needsHuman,
     statusClass: statusClass,
   };
 })();
@@ -125,7 +145,7 @@ globalThis.MGTiming = (function () {
   const T = globalThis.MGTiming;
   const list = document.getElementById('songs');
   const summary = document.getElementById('counts');
-  const onlyReview = document.getElementById('only-review');
+  const filter = document.getElementById('filter');
   let data = null;
   const open = {};
 
@@ -172,9 +192,13 @@ globalThis.MGTiming = (function () {
     const where = first ? T.clockText(first.start) + '–' + T.clockText(first.end) : '—';
     const suspicion = T.suspicion(row);
     const suspect = T.suspectSources(row);
+    const human = T.needsHuman(row);
+    const reviewLine = human ? '这个要人听一次' : '这条已经自动解释掉了，不必专门听';
     const flags = (row.flags || []).map((flag) => '<span class="flag">' + escapeHtml(flag) + '</span>').join('')
       + suspect.map((name) => '<span class="flag warn">' + escapeHtml(name)
           + ' health 有问题（它自己那条不算数）</span>').join('');
+    const triageLine = '<div class="triage ' + (human ? 'human' : 'auto') + '">'
+      + escapeHtml(T.reviewText(row) || '—') + ' · ' + reviewLine + '</div>';
     const layer = row.layerA || {};
     const body = open[row.song]
       ? '<div class="detail">'
@@ -196,12 +220,22 @@ globalThis.MGTiming = (function () {
       + '</button>'
       + (suspicion ? '<div class="suspicion">' + escapeHtml(suspicion) + '</div>' : '')
       + (flags ? '<div class="flags">' + flags + '</div>' : '')
+      + triageLine
       + body + '</article>';
   }
 
   function draw() {
-    const rows = T.sortedSongs(data).filter((row) => !onlyReview.checked || row.status !== 'OK');
+    const mode = filter.value;
+    const rows = T.sortedSongs(data).filter((row) => {
+      if (mode === 'human') return T.needsHuman(row);
+      if (mode === 'review') return row.status !== 'OK';
+      return true;
+    });
     list.innerHTML = rows.map(songHtml).join('');
+    if (!rows.length) {
+      list.innerHTML = '<p class="muted">这一档里没有歌。'
+        + (mode === 'human' ? '（这是好消息：说明没有需要人听的）' : '') + '</p>';
+    }
     list.querySelectorAll('button.row').forEach((button) => {
       button.addEventListener('click', () => {
         const song = button.dataset.song;
@@ -219,7 +253,9 @@ globalThis.MGTiming = (function () {
       (name === 'clean' ? 'ok' : 'review') + '">' + escapeHtml(name) + ' ' + counts[name] + '</span>');
     const total = (data.songs || []).length;
     const review = (data.songs || []).filter((row) => row.status !== 'OK').length;
+    const human = (data.songs || []).filter((row) => T.needsHuman(row)).map((row) => row.song);
     summary.innerHTML = '<span class="chip">共 ' + total + ' 首</span>'
+      + '<span class="chip review">要人听 ' + human.length + '</span>'
       + '<span class="chip review">REVIEW ' + review + '</span>'
       + '<span class="chip ok">OK ' + (total - review) + '</span>' + chips.join('');
   }
@@ -233,7 +269,7 @@ globalThis.MGTiming = (function () {
       data = loaded;
       drawCounts();
       draw();
-      onlyReview.addEventListener('change', draw);
+      filter.addEventListener('change', draw);
     })
     .catch((error) => {
       list.innerHTML = '<p class="bad">读不到 timing_health.json：' + escapeHtml(error.message)

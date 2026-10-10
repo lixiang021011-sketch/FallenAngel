@@ -189,6 +189,37 @@ python tools/docs/timing_health_table.py --write   # 同时写 reports/timing_he
 它等到文档与音频的 metadata **都到齐**才跳一次（时钟循环每帧都拿 `audio.currentTime`
 覆盖播放头，早于音频就位去跳会被悄悄抹掉）。
 
+## 自动分诊：`triage.py`（第 5 步的前半）
+
+目标只有一个：**把要人听的压到极少**。规则只看已经量出来的东西（来源 health、小节数、
+每小节拍数、offset 段、持续多少个 matched measure、有没有 reconverge），不新增测量，
+也不判断哪条网格是真值。每首歌输出固定六字段：
+
+```
+diagnosis / affectedRange / suspectSource / evidence / resolution / needsHumanReview
+```
+
+第一版六条规则（`diagnose()` 里从上到下就是这个顺序）：
+
+1. 半小节分歧 + 嫌疑来源自己报了异常小节长度（2 拍小节、接缝、不等长）+ 其余独立来源互相一致
+   → `source_measure_count_error`，**局部降级那条来源**，不进人工。
+   没有症状、但形状是"只有它一条不同、其余互相一致"时也降级，`attribution` 记成 `structure`。
+2. 整拍分歧 → 来源自身有问题（health≠ok / 异常小节 / 小节头明显偏少）就降级它；
+   两边都健康、而且**到结尾都没合回来**才 `unresolved_phase` 进人工。
+3. 连续滑 → `continuous_drift`：这是 tempo / affine 假设的风险，**不是相位错位**。
+4. 单点跳变 → `single_flip`，只登记。
+5. B 层干净、A 层局部漂 → `local_timing_drift`，不判小节错。
+6. 分歧后合回来 → `reconvergence`：只标区段；只有"没合回来的那段还不小（support ≥ 4）"
+   才继续留人工标记。
+
+三条踩过坑的边界，别退回去：
+
+- **人那条不进分诊**。它只有几个小节头，按"小节太少"会被误判成来源自身有问题。
+- **滑过去的那几对不能用来说"停错了几拍"**。它们的 ±1/±2 是相位走过整数格的痕迹；
+  早先不分，chichunhua 直接被打成 `unresolved_phase` 进人工。
+- **归因要挑证据最强的那条**。几条来源都有毛病时，`health` 被标过问题的优先
+  （round2 同一份音频两次采样：该降级的是 health=suspect 的那次，不是 madmom）。
+
 ## 四条读法，不投票（研究者 2026-10-10 定的方向）
 
 同一首歌上我们要并排看的是**四组 observation**，不是一个"正确的网格"：
