@@ -168,6 +168,19 @@ class TestGrain(unittest.TestCase):
         self.assertIsNone(row["reason"])
         self.assertEqual(row["aligned"], row["matched"])
 
+    def test_the_offset_that_lands_on_the_bar_head_wins(self):
+        """happyend 的真实形状：细的那条两半里，只有一半落在对方的小节头上。
+
+        挑偏移时不能只看"对上了几票"——落在半小节上的那一半同样"差整数拍"，
+        必须优先挑真的落在小节头上的那个偏移，否则会把整体相位差读成局部错位。
+        """
+        coarse = [3.0 + index * 3.0 for index in range(30)]
+        fine = [1.5 + index * 1.5 for index in range(60)]      # 偶数小节落在对方半小节上
+        row = dev.pair_measure_phase(reading("fine", fine, 0.375), reading("coarse", coarse, 0.75))
+        self.assertEqual(row["grain"], "1:2")
+        self.assertEqual(row["grainOffset"], 1)
+        self.assertEqual({vote["k"] for vote in row["votes"] if vote["k"] is not None}, {0})
+
 
 class TestHumanReading(unittest.TestCase):
     def make_taps(self, downbeat_times, beats_between, tap_seconds):

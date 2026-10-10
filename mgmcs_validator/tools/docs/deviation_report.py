@@ -470,7 +470,9 @@ def pair_shape(runs: list[dict], bar_beats: float = 4.0) -> str:
     if all(k == 0 for k in heads):
         return "全段一致"
     if 0 not in heads:
-        return "整段都对不上相位"
+        if len(set(heads)) == 1:
+            return "全段固定差 %s（整体相位差，不是局部错位）" % slip_phrase(heads[0], bar_beats)
+        return "整段都对不上相位（几条关系轮着来）"
     first, last = heads[0], heads[-1]
     slipped = [k for k in heads if k != 0]
     if first == 0 and last == 0:
@@ -571,11 +573,13 @@ def grain_matched(fine: dict, coarse: dict, residual_cap: float = 0.25) -> tuple
             votes = pair_phase_votes(head, coarse["measures"],
                                      coarse["beatSeconds"], coarse["beatsPerBar"], residual_cap)
             matched = sum(1 for vote in votes if vote["k"] is not None)
-            score = matched / len(votes) if votes else 0.0
-            if best is None or score > best[0]:
-                best = (score, offset, candidate)
-        if best and best[0] >= 0.8:
-            return best[2], {"label": "1:%d" % stride, "offset": best[1]}, ""
+            aligned = sum(1 for vote in votes if vote["k"] == 0)
+            # 先看"对上了几票"，再看"是不是落在同一个小节位置"。只按匹配数挑的话，
+            # 落在对方半小节上的那个偏移会跟真正的小节头一样得满分（两边都"差整数拍"）。
+            if best is None or (aligned, matched) > (best[2], best[1]):
+                best = (offset, matched, aligned, candidate, len(votes))
+        if best and best[4] and best[1] / best[4] >= 0.8:
+            return best[3], {"label": "1:%d" % stride, "offset": best[0]}, ""
         return fine["measures"], {"label": "1:1", "offset": 0}, (
             "%s 的小节约是 %s 的 1/%d（%.3fs vs %.3fs），按这个粒度折算也对不上——相位不可比"
             % (fine["name"], coarse["name"], stride, bar_fine, bar_coarse))
