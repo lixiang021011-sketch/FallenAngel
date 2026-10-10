@@ -240,6 +240,29 @@ diagnosis / affectedRange / suspectSource / evidence / resolution / needsHumanRe
 它目前的实例只有一个（seiza；kaitou 与 kiechau 是靠人点名定案的，不是靠形状）。
 所以它是"形状 + 构造上的理由"推出来的，不是统计出来的——**一旦出现反例，第一个信号就是它**。
 
+### 出口：`static/timing_admission.json`（给下游的准入契约）
+
+这一层的产物不是"哪条网格对"，而是**下游能不能用、用哪几条、哪几段要带保留**。
+下游（Workbench / 编曲分析）只读这个文件，不再自己判断网格。
+
+```json
+{"schemaVersion": "timing-admission-0.1",
+ "songs": [{
+   "song": "flyway", "eligibility": "eligible", "diagnosis": "source_measure_count_error",
+   "soundReadings": ["madmom", "mapperatorinator", "workbench"],
+   "downgraded": [{"source": "BeatThis", "ranges": [[135.477, 155.71]], "why": "…"}],
+   "cautionRanges": [], "reasons": ["…"]}]}
+```
+
+- `eligibility`：`eligible` 整曲可用；`caution` 可用但 `cautionRanges` 里的小节结论要带保留；
+  `ineligible` 先别用（等人工或换坐标）
+- `soundReadings`：还站得住的读法（被降级的不在内）。人工定案的歌只有那一条，但它是**验证过**的
+- `downgraded`：哪条来源、在哪几段、为什么别用
+- `cautionRanges`：连可用读法也要带保留的段（滑 / 重新汇合 / 单点跳变这类"结构没定论"的段）
+- 不写时间戳：这份文件要能逐字节重建
+
+2026-10-11 的结果：eligible 17 / caution 14 / ineligible 0。
+
 ## 四条读法，不投票（研究者 2026-10-10 定的方向）
 
 同一首歌上我们要并排看的是**四组 observation**，不是一个"正确的网格"：

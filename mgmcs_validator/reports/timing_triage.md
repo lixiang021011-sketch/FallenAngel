@@ -80,3 +80,11 @@
 
 第一版不做：全库 ensemble、不信 Mapperatorinator 单次采样、不自动改任何网格、不改人工校准。分诊的降级只影响下游读这条结论时的准入，原始 observation 一个数都不动。
 
+## 下游准入（`static/timing_admission.json`）
+
+这是这一层的出口：下游只读它，不再自己判断哪条网格对。
+
+- **eligible**（可以整曲用）17 首：dubai、flyway、flywayleo、henceforth、hitchcock、kaitou、kiechau、knowme、natsuyuki、sakuranoko、seiza、soragoto、taishou、tao、tengoku、velvet、yukiguni
+- **caution**（能用，但标出的区段要带保留）14 首：chichunhua、eine、haiiro、happyend、iloveyou、kaluo、landaohua、lulu、onewish、round2、sacra、spica、yorukake、yue
+- **ineligible**（先别用）0 首：—
+

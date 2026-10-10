@@ -38,6 +38,7 @@ REPO = Path(__file__).resolve().parents[2]
 REPORT_PATH = REPO / "reports" / "timing_health.md"
 TRIAGE_PATH = REPO / "reports" / "timing_triage.md"
 JSON_PATH = REPO / "static" / "timing_health.json"
+ADMISSION_PATH = REPO / "static" / "timing_admission.json"
 VERDICTS_PATH = REPO / "human_verdicts.json"
 MUSIC_BASE = "http://127.0.0.1:8125"
 VALIDATOR_PAGE = "index.html"
@@ -442,6 +443,7 @@ def payload(songs: list[str]) -> dict:
                     "triage": {key: item[key] for key in
                                ("diagnosis", "affectedRange", "suspectSource", "resolution",
                                 "needsHumanReview", "attribution", "evidence")},
+                    "admission": admission_for(row["song"], row, item),
                     "layerA": row["layerA"],
                     "readings": [{"name": name, "health": health, "meterMix": mix, "measures": count}
                                  for name, health, mix, count in row["readings"]],
@@ -632,6 +634,90 @@ def report(songs: list[str]) -> tuple[str, list[dict]]:
     return "\n".join(lines), rows
 
 
+def admission_for(song: str, row: dict, item: dict) -> dict:
+    """下游准入契约：这首歌的小节坐标能不能用、用哪几条、哪几段要带保留。
+
+    这是这一层的出口。下游（Workbench / 编曲分析）只读这个结果，
+    不再自己判断"哪条网格对"——那件事已经在这一层做完并且留了证据。
+    """
+    diagnosis = item["diagnosis"]
+    sources = [reading["name"] for reading in dr.measure_phase(song)["readings"]
+               if not reading["name"].startswith("human")]
+    downgraded = []
+    if item.get("suspectSource") and diagnosis in ("source_measure_count_error",
+                                                   "source_self_anomaly"):
+        ranges_at = [[round(span["start"], 3), round(span["end"], 3)]
+                     for span in item["affectedRange"]]
+        for name in item["suspectSource"].split("、"):
+            downgraded.append({"source": name, "ranges": ranges_at, "why": item["resolution"]})
+    elif diagnosis == "half_bar_in_music":
+        # 这里"降级"的是那几条周期性读法：不是它们坏，是它们表示不了这一段。
+        ranges_at = [[round(span["start"], 3), round(span["end"], 3)]
+                     for span in item["affectedRange"]]
+        for name in (item["suspectSource"] or "").split("、"):
+            if name:
+                downgraded.append({"source": name, "ranges": ranges_at,
+                                   "why": "这一带音乐里真的有半小节，周期性读法表示不了"})
+    elif diagnosis == "human_confirmed_source":
+        ranges_at = [[round(span["start"], 3), round(span["end"], 3)]
+                     for span in item["affectedRange"]]
+        for name in (item["suspectSource"] or "").split("、"):
+            if name:
+                downgraded.append({"source": name, "ranges": ranges_at,
+                                   "why": "人工听审定案：" + item["resolution"]})
+    down_names = {entry["source"] for entry in downgraded}
+    sound = [name for name in sources if name not in down_names]
+    reasons = [item["resolution"]]
+    # cautionRanges 说的是"连可用的读法也要带保留"的段（时序本身有风险）；
+    # 某条来源被降级的段写在 downgraded 里，那是"这条别用"，不是"这一段不能分析"。
+    caution = [(round(span["start"], 3), round(span["end"], 3))
+               for span in item["affectedRange"]] \
+        if diagnosis in ("continuous_drift", "local_timing_drift", "single_flip",
+                         "reconvergence", "structure_only_attribution") else []
+    if item.get("needsHumanReview"):
+        eligibility = "ineligible"
+        reasons.append("分诊没能解释掉，等人工听审")
+    elif diagnosis in ("continuous_drift", "local_timing_drift", "single_flip",
+                       "reconvergence", "structure_only_attribution"):
+        # 「局部但已经解释掉」：仍可用，但这些段的小节结论要带保留——
+        # 滑的情况是长度没定论，reconvergence / 单点的情况是这一段的结构没定论。
+        eligibility = "caution"
+    elif diagnosis in ("clean", "human_confirmed_source"):
+        eligibility = "eligible"          # 人已经交叉验证过的那两条：那一条就是准的
+    elif len(sound) == 0:
+        eligibility = "ineligible"
+        reasons.append("没有一条读法还能用")
+    elif len(sound) < 2:
+        # 只剩一条可用（round2 就是）：能用，但没法交叉核对，下游要当心。
+        eligibility = "caution"
+        reasons.append("只剩 %s 一条可用读法，无法交叉核对" % "、".join(sound))
+    else:
+        eligibility = "eligible"
+    return {"song": song, "eligibility": eligibility,
+            "status": "OK" if row["class"] == "clean" else "REVIEW", "diagnosis": diagnosis,
+            "soundReadings": sound, "downgraded": downgraded,
+            "cautionRanges": [list(rng) for rng in caution],
+            "reasons": reasons}
+
+
+def admission_payload(songs: list[str]) -> dict:
+    """给下游读的那份：每首歌一条准入结论。带 schemaVersion，别写时间戳（要能逐字节重建）。"""
+    rows = [(song, classify(song)) for song in songs]
+    entries = [admission_for(song, row, diagnose_song(song, row)) for song, row in rows]
+    counts = {}
+    for entry in entries:
+        counts[entry["eligibility"]] = counts.get(entry["eligibility"], 0) + 1
+    return {"schemaVersion": "timing-admission-0.1",
+            "what": "小节坐标的准入结论。下游只读这个，不要自己判断哪条网格对。",
+            "fields": {
+                "eligibility": "eligible=可以整曲用；caution=能用但这些区段要带保留；"
+                               "ineligible=先别用（等人工或换坐标）",
+                "soundReadings": "还站得住的读法（降级的不在内）",
+                "downgraded": "被局部降级的来源 + 区段 + 原因",
+                "cautionRanges": "下游做小节级特征时应当标 caution 的区段（秒）"},
+            "counts": counts, "songs": entries}
+
+
 def triage_markdown(songs: list[str]) -> str:
     """分诊表：成功标准是"要人听的有多少首"，不是"分类有多细"。"""
     rows = [(song, classify(song)) for song in songs]
@@ -697,6 +783,16 @@ def triage_markdown(songs: list[str]) -> str:
     lines += ["", "第一版不做：全库 ensemble、不信 Mapperatorinator 单次采样、"
                   "不自动改任何网格、不改人工校准。分诊的降级只影响下游读这条结论时的准入，"
                   "原始 observation 一个数都不动。", ""]
+    admit = admission_payload(songs)
+    lines += ["## 下游准入（`static/timing_admission.json`）", "",
+              "这是这一层的出口：下游只读它，不再自己判断哪条网格对。", ""]
+    for level, meaning in (("eligible", "可以整曲用"),
+                           ("caution", "能用，但标出的区段要带保留"),
+                           ("ineligible", "先别用")):
+        names = [entry["song"] for entry in admit["songs"] if entry["eligibility"] == level]
+        lines.append("- **%s**（%s）%d 首：%s" % (level, meaning, len(names),
+                                                "、".join(names) or "—"))
+    lines.append("")
     return "\n".join(lines)
 
 
@@ -736,6 +832,10 @@ def main(argv=None) -> int:
         TRIAGE_PATH.parent.mkdir(parents=True, exist_ok=True)
         TRIAGE_PATH.write_text(triage_markdown(songs) + "\n", encoding="utf-8", newline="\n")
         print("已写 %s" % TRIAGE_PATH)
+    if args.write:
+        ADMISSION_PATH.write_text(json.dumps(admission_payload(songs), ensure_ascii=False, indent=1),
+                                  encoding="utf-8", newline="\n")
+        print("已写 %s" % ADMISSION_PATH)
     return 0
 
 

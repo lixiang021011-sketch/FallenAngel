@@ -59,6 +59,35 @@ class TestClasses(unittest.TestCase):
 
 
 class TestReport(unittest.TestCase):
+    def test_the_admission_contract_covers_every_song_and_the_three_levels(self):
+        """下游只读这一份：每首歌都必须有一个准入结论，而且说的清"哪几条还能用"。"""
+        songs = sorted(path.name[: -len(".mgmcs.json")] for path in table.dr.DOCS.glob("*.mgmcs.json")
+                       if not path.name.endswith(".raw.mgmcs.json"))
+        admit = table.admission_payload(songs)
+        self.assertEqual(admit["schemaVersion"], "timing-admission-0.1")
+        self.assertEqual(len(admit["songs"]), len(songs))
+        self.assertEqual(sum(admit["counts"].values()), len(songs))
+        for entry in admit["songs"]:
+            self.assertIn(entry["eligibility"], ("eligible", "caution", "ineligible"), entry["song"])
+            self.assertTrue(entry["soundReadings"] or entry["eligibility"] == "ineligible", entry["song"])
+            for item in entry["downgraded"]:
+                self.assertTrue(item["ranges"], entry["song"])
+
+    def test_a_human_confirmed_song_is_usable_with_that_one_reading(self):
+        admit = table.admission_payload(["seiza"])
+        entry = admit["songs"][0]
+        self.assertEqual(entry["eligibility"], "eligible")
+        self.assertEqual(entry["soundReadings"], ["workbench"])
+        self.assertEqual({item["source"] for item in entry["downgraded"]},
+                         {"BeatThis", "madmom", "mapperatorinator"})
+
+    def test_drift_and_reconvergence_are_caution_with_ranges(self):
+        admit = {entry["song"]: entry for entry in table.admission_payload(["chichunhua", "eine"])["songs"]}
+        self.assertEqual(admit["chichunhua"]["eligibility"], "caution")
+        self.assertTrue(admit["chichunhua"]["cautionRanges"])
+        self.assertEqual(admit["eine"]["eligibility"], "caution")
+        self.assertTrue(admit["eine"]["cautionRanges"])
+
     def test_every_song_gets_a_row_and_a_class(self):
         songs = sorted(path.name[: -len(".mgmcs.json")] for path in table.dr.DOCS.glob("*.mgmcs.json")
                        if not path.name.endswith(".raw.mgmcs.json"))

@@ -224,6 +224,41 @@
      ]
     }
    },
+   "admission": {
+    "song": "velvet",
+    "eligibility": "eligible",
+    "status": "REVIEW",
+    "diagnosis": "source_measure_count_error",
+    "soundReadings": [
+     "madmom",
+     "mapperatorinator",
+     "workbench"
+    ],
+    "downgraded": [
+     {
+      "source": "BeatThis",
+      "ranges": [
+       [
+        63.324,
+        178.464
+       ],
+       [
+        3.362,
+        40.638
+       ],
+       [
+        212.492,
+        248.179
+       ]
+      ],
+      "why": "只在这一段降级 BeatThis 的小节线（小节长度异常 32 处（短 31 / 长 1）），其余读法互相一致；不进人工。"
+     }
+    ],
+    "cautionRanges": [],
+    "reasons": [
+     "只在这一段降级 BeatThis 的小节线（小节长度异常 32 处（短 31 / 长 1）），其余读法互相一致；不进人工。"
+    ]
+   },
    "layerA": {
     "drift": "几乎没有",
     "residual": 7.974150090987564,
@@ -898,6 +933,44 @@
       }
      ]
     }
+   },
+   "admission": {
+    "song": "chichunhua",
+    "eligibility": "caution",
+    "status": "REVIEW",
+    "diagnosis": "continuous_drift",
+    "soundReadings": [
+     "BeatThis",
+     "madmom",
+     "mapperatorinator",
+     "workbench"
+    ],
+    "downgraded": [],
+    "cautionRanges": [
+     [
+      124.08,
+      156.62
+     ],
+     [
+      78.1,
+      109.34
+     ],
+     [
+      171.82,
+      200.42
+     ],
+     [
+      274.32,
+      297.286
+     ],
+     [
+      0.31,
+      9.46
+     ]
+    ],
+    "reasons": [
+     "相位连续滑：这是 tempo / affine 假设的风险（两条线的小节长度略有出入），不是相位错位；不判小节错。"
+    ]
    },
    "layerA": {
     "drift": "局部明显",
@@ -1692,6 +1765,51 @@
      ]
     }
    },
+   "admission": {
+    "song": "kiechau",
+    "eligibility": "eligible",
+    "status": "REVIEW",
+    "diagnosis": "human_confirmed_source",
+    "soundReadings": [
+     "workbench"
+    ],
+    "downgraded": [
+     {
+      "source": "BeatThis",
+      "ranges": [
+       [
+        1.4,
+        215.087
+       ]
+      ],
+      "why": "人工听审定案：人工听过（00:01、00:32、02:12、02:38、02:49）并确认 workbench 的小节线是对的：与它分歧的读法按错处理（madmom↔workbench、madmom↔workbench、madmom↔workbench、madmom↔workbench、madmom↔workbench、madmom↔workbench、madmom↔workbench、mapperatorinator↔workbench、mapperatorinator↔workbench、mapperatorinator↔workbench、workbench↔BeatThis）。这一首不再需要人工。"
+     },
+     {
+      "source": "madmom",
+      "ranges": [
+       [
+        1.4,
+        215.087
+       ]
+      ],
+      "why": "人工听审定案：人工听过（00:01、00:32、02:12、02:38、02:49）并确认 workbench 的小节线是对的：与它分歧的读法按错处理（madmom↔workbench、madmom↔workbench、madmom↔workbench、madmom↔workbench、madmom↔workbench、madmom↔workbench、madmom↔workbench、mapperatorinator↔workbench、mapperatorinator↔workbench、mapperatorinator↔workbench、workbench↔BeatThis）。这一首不再需要人工。"
+     },
+     {
+      "source": "mapperatorinator",
+      "ranges": [
+       [
+        1.4,
+        215.087
+       ]
+      ],
+      "why": "人工听审定案：人工听过（00:01、00:32、02:12、02:38、02:49）并确认 workbench 的小节线是对的：与它分歧的读法按错处理（madmom↔workbench、madmom↔workbench、madmom↔workbench、madmom↔workbench、madmom↔workbench、madmom↔workbench、madmom↔workbench、mapperatorinator↔workbench、mapperatorinator↔workbench、mapperatorinator↔workbench、workbench↔BeatThis）。这一首不再需要人工。"
+     }
+    ],
+    "cautionRanges": [],
+    "reasons": [
+     "人工听过（00:01、00:32、02:12、02:38、02:49）并确认 workbench 的小节线是对的：与它分歧的读法按错处理（madmom↔workbench、madmom↔workbench、madmom↔workbench、madmom↔workbench、madmom↔workbench、madmom↔workbench、madmom↔workbench、mapperatorinator↔workbench、mapperatorinator↔workbench、mapperatorinator↔workbench、workbench↔BeatThis）。这一首不再需要人工。"
+    ]
+   },
    "layerA": {
     "drift": "局部明显",
     "residual": 157.53216815124915,
@@ -2185,6 +2303,45 @@
       }
      ]
     }
+   },
+   "admission": {
+    "song": "yukiguni",
+    "eligibility": "eligible",
+    "status": "REVIEW",
+    "diagnosis": "source_measure_count_error",
+    "soundReadings": [
+     "madmom",
+     "mapperatorinator",
+     "workbench"
+    ],
+    "downgraded": [
+     {
+      "source": "BeatThis",
+      "ranges": [
+       [
+        13.04,
+        26.76
+       ],
+       [
+        187.9,
+        201.62
+       ],
+       [
+        163.96,
+        174.22
+       ],
+       [
+        270.16,
+        280.48
+       ]
+      ],
+      "why": "只在这一段降级 BeatThis 的小节线（小节长度异常 38 处（短 4 / 长 34）），其余读法互相一致；不进人工。"
+     }
+    ],
+    "cautionRanges": [],
+    "reasons": [
+     "只在这一段降级 BeatThis 的小节线（小节长度异常 38 处（短 4 / 长 34）），其余读法互相一致；不进人工。"
+    ]
    },
    "layerA": {
     "drift": "轻微",
@@ -2696,6 +2853,32 @@
      ]
     }
    },
+   "admission": {
+    "song": "eine",
+    "eligibility": "caution",
+    "status": "REVIEW",
+    "diagnosis": "reconvergence",
+    "soundReadings": [
+     "BeatThis",
+     "madmom",
+     "mapperatorinator",
+     "workbench"
+    ],
+    "downgraded": [],
+    "cautionRanges": [
+     [
+      73.11,
+      224.83
+     ],
+     [
+      242.756,
+      248.279
+     ]
+    ],
+    "reasons": [
+     "分歧之后都合回来了：只标这些区段，不把整首歌定性为异常。"
+    ]
+   },
    "layerA": {
     "drift": "轻微",
     "residual": 1017.7026393656234,
@@ -3089,6 +3272,32 @@
      ]
     }
    },
+   "admission": {
+    "song": "round2",
+    "eligibility": "caution",
+    "status": "REVIEW",
+    "diagnosis": "source_measure_count_error",
+    "soundReadings": [
+     "madmom"
+    ],
+    "downgraded": [
+     {
+      "source": "mapperatorinator",
+      "ranges": [
+       [
+        63.114,
+        147.677
+       ]
+      ],
+      "why": "只在这一段降级 mapperatorinator 的小节线（health=suspect；小节长度异常 29 处（短 0 / 长 29）），其余读法互相一致；不进人工。"
+     }
+    ],
+    "cautionRanges": [],
+    "reasons": [
+     "只在这一段降级 mapperatorinator 的小节线（health=suspect；小节长度异常 29 处（短 0 / 长 29）），其余读法互相一致；不进人工。",
+     "只剩 madmom 一条可用读法，无法交叉核对"
+    ]
+   },
    "layerA": {
     "drift": "无网格",
     "residual": null,
@@ -3318,6 +3527,33 @@
      ],
      "reconvergence": []
     }
+   },
+   "admission": {
+    "song": "henceforth",
+    "eligibility": "eligible",
+    "status": "REVIEW",
+    "diagnosis": "source_measure_count_error",
+    "soundReadings": [
+     "madmom",
+     "mapperatorinator",
+     "workbench"
+    ],
+    "downgraded": [
+     {
+      "source": "BeatThis",
+      "ranges": [
+       [
+        208.657,
+        231.47
+       ]
+      ],
+      "why": "只在这一段降级 BeatThis 的小节线（小节长度异常 2 处（短 2 / 长 0）），其余读法互相一致；不进人工。"
+     }
+    ],
+    "cautionRanges": [],
+    "reasons": [
+     "只在这一段降级 BeatThis 的小节线（小节长度异常 2 处（短 2 / 长 0）），其余读法互相一致；不进人工。"
+    ]
    },
    "layerA": {
     "drift": "轻微",
@@ -3597,6 +3833,37 @@
      ]
     }
    },
+   "admission": {
+    "song": "knowme",
+    "eligibility": "eligible",
+    "status": "REVIEW",
+    "diagnosis": "source_measure_count_error",
+    "soundReadings": [
+     "madmom",
+     "mapperatorinator",
+     "workbench"
+    ],
+    "downgraded": [
+     {
+      "source": "BeatThis",
+      "ranges": [
+       [
+        93.498,
+        202.469
+       ],
+       [
+        2.215,
+        22.841
+       ]
+      ],
+      "why": "只在这一段降级 BeatThis 的小节线（小节长度异常 3 处（短 3 / 长 0）；小节头只有 72 个（同类中位数 122）），其余读法互相一致；不进人工。"
+     }
+    ],
+    "cautionRanges": [],
+    "reasons": [
+     "只在这一段降级 BeatThis 的小节线（小节长度异常 3 处（短 3 / 长 0）；小节头只有 72 个（同类中位数 122）），其余读法互相一致；不进人工。"
+    ]
+   },
    "layerA": {
     "drift": "几乎没有",
     "residual": 5.328382455331848,
@@ -3846,6 +4113,28 @@
      ]
     }
    },
+   "admission": {
+    "song": "onewish",
+    "eligibility": "caution",
+    "status": "REVIEW",
+    "diagnosis": "reconvergence",
+    "soundReadings": [
+     "BeatThis",
+     "madmom",
+     "mapperatorinator",
+     "workbench"
+    ],
+    "downgraded": [],
+    "cautionRanges": [
+     [
+      198.26,
+      205.04
+     ]
+    ],
+    "reasons": [
+     "分歧都没合回来，但每段只有 3 个 matched measure 支持（低于 4）：登记为局部单点，不占人工。"
+    ]
+   },
    "layerA": {
     "drift": "轻微",
     "residual": 1189.7667270632014,
@@ -4078,6 +4367,33 @@
      ]
     }
    },
+   "admission": {
+    "song": "flyway",
+    "eligibility": "eligible",
+    "status": "REVIEW",
+    "diagnosis": "source_measure_count_error",
+    "soundReadings": [
+     "madmom",
+     "mapperatorinator",
+     "workbench"
+    ],
+    "downgraded": [
+     {
+      "source": "BeatThis",
+      "ranges": [
+       [
+        135.477,
+        155.71
+       ]
+      ],
+      "why": "只在这一段降级 BeatThis 的小节线（小节长度异常 24 处（短 24 / 长 0）），其余读法互相一致；不进人工。"
+     }
+    ],
+    "cautionRanges": [],
+    "reasons": [
+     "只在这一段降级 BeatThis 的小节线（小节长度异常 24 处（短 24 / 长 0）），其余读法互相一致；不进人工。"
+    ]
+   },
    "layerA": {
     "drift": "局部明显",
     "residual": 142.8985559762026,
@@ -4264,6 +4580,33 @@
       }
      ]
     }
+   },
+   "admission": {
+    "song": "flywayleo",
+    "eligibility": "eligible",
+    "status": "REVIEW",
+    "diagnosis": "source_measure_count_error",
+    "soundReadings": [
+     "madmom",
+     "mapperatorinator",
+     "workbench"
+    ],
+    "downgraded": [
+     {
+      "source": "BeatThis",
+      "ranges": [
+       [
+        138.292,
+        153.47
+       ]
+      ],
+      "why": "只在这一段降级 BeatThis 的小节线（小节长度异常 9 处（短 9 / 长 0）），其余读法互相一致；不进人工。"
+     }
+    ],
+    "cautionRanges": [],
+    "reasons": [
+     "只在这一段降级 BeatThis 的小节线（小节长度异常 9 处（短 9 / 长 0）），其余读法互相一致；不进人工。"
+    ]
    },
    "layerA": {
     "drift": "局部明显",
@@ -4560,6 +4903,28 @@
      ]
     }
    },
+   "admission": {
+    "song": "iloveyou",
+    "eligibility": "caution",
+    "status": "REVIEW",
+    "diagnosis": "reconvergence",
+    "soundReadings": [
+     "BeatThis",
+     "madmom",
+     "mapperatorinator",
+     "workbench"
+    ],
+    "downgraded": [],
+    "cautionRanges": [
+     [
+      1.89,
+      166.481
+     ]
+    ],
+    "reasons": [
+     "分歧之后都合回来了：只标这些区段，不把整首歌定性为异常。"
+    ]
+   },
    "layerA": {
     "drift": "轻微",
     "residual": 9.395271438876307,
@@ -4845,6 +5210,51 @@
      "reconvergence": []
     }
    },
+   "admission": {
+    "song": "kaitou",
+    "eligibility": "eligible",
+    "status": "REVIEW",
+    "diagnosis": "human_confirmed_source",
+    "soundReadings": [
+     "workbench"
+    ],
+    "downgraded": [
+     {
+      "source": "BeatThis",
+      "ranges": [
+       [
+        2.465,
+        192.49
+       ]
+      ],
+      "why": "人工听审定案：人工听过（00:00–00:24）并确认 workbench 的小节线是对的：与它分歧的读法按错处理（madmom↔workbench、mapperatorinator↔workbench、workbench↔BeatThis、workbench↔BeatThis）。这一首不再需要人工。"
+     },
+     {
+      "source": "madmom",
+      "ranges": [
+       [
+        2.465,
+        192.49
+       ]
+      ],
+      "why": "人工听审定案：人工听过（00:00–00:24）并确认 workbench 的小节线是对的：与它分歧的读法按错处理（madmom↔workbench、mapperatorinator↔workbench、workbench↔BeatThis、workbench↔BeatThis）。这一首不再需要人工。"
+     },
+     {
+      "source": "mapperatorinator",
+      "ranges": [
+       [
+        2.465,
+        192.49
+       ]
+      ],
+      "why": "人工听审定案：人工听过（00:00–00:24）并确认 workbench 的小节线是对的：与它分歧的读法按错处理（madmom↔workbench、mapperatorinator↔workbench、workbench↔BeatThis、workbench↔BeatThis）。这一首不再需要人工。"
+     }
+    ],
+    "cautionRanges": [],
+    "reasons": [
+     "人工听过（00:00–00:24）并确认 workbench 的小节线是对的：与它分歧的读法按错处理（madmom↔workbench、mapperatorinator↔workbench、workbench↔BeatThis、workbench↔BeatThis）。这一首不再需要人工。"
+    ]
+   },
    "layerA": {
     "drift": "几乎没有",
     "residual": 7.272576856303559,
@@ -5102,6 +5512,33 @@
      ]
     }
    },
+   "admission": {
+    "song": "sakuranoko",
+    "eligibility": "eligible",
+    "status": "REVIEW",
+    "diagnosis": "source_measure_count_error",
+    "soundReadings": [
+     "madmom",
+     "mapperatorinator",
+     "workbench"
+    ],
+    "downgraded": [
+     {
+      "source": "BeatThis",
+      "ranges": [
+       [
+        154.978,
+        158.53
+       ]
+      ],
+      "why": "只在这一段降级 BeatThis 的小节线（小节长度异常 9 处（短 9 / 长 0）），其余读法互相一致；不进人工。"
+     }
+    ],
+    "cautionRanges": [],
+    "reasons": [
+     "只在这一段降级 BeatThis 的小节线（小节长度异常 9 处（短 9 / 长 0）），其余读法互相一致；不进人工。"
+    ]
+   },
    "layerA": {
     "drift": "几乎没有",
     "residual": 5.574898256593741,
@@ -5339,6 +5776,51 @@
      "reconvergence": []
     }
    },
+   "admission": {
+    "song": "seiza",
+    "eligibility": "eligible",
+    "status": "REVIEW",
+    "diagnosis": "human_confirmed_source",
+    "soundReadings": [
+     "workbench"
+    ],
+    "downgraded": [
+     {
+      "source": "BeatThis",
+      "ranges": [
+       [
+        208.94,
+        251.87
+       ]
+      ],
+      "why": "人工听审定案：人工听过（整曲（重点 03:28 附近））并确认 workbench 的小节线是对的：与它分歧的读法按错处理（madmom↔workbench、madmom↔workbench、mapperatorinator↔workbench、workbench↔BeatThis、workbench↔BeatThis、workbench↔BeatThis）。这一首不再需要人工。"
+     },
+     {
+      "source": "madmom",
+      "ranges": [
+       [
+        208.94,
+        251.87
+       ]
+      ],
+      "why": "人工听审定案：人工听过（整曲（重点 03:28 附近））并确认 workbench 的小节线是对的：与它分歧的读法按错处理（madmom↔workbench、madmom↔workbench、mapperatorinator↔workbench、workbench↔BeatThis、workbench↔BeatThis、workbench↔BeatThis）。这一首不再需要人工。"
+     },
+     {
+      "source": "mapperatorinator",
+      "ranges": [
+       [
+        208.94,
+        251.87
+       ]
+      ],
+      "why": "人工听审定案：人工听过（整曲（重点 03:28 附近））并确认 workbench 的小节线是对的：与它分歧的读法按错处理（madmom↔workbench、madmom↔workbench、mapperatorinator↔workbench、workbench↔BeatThis、workbench↔BeatThis、workbench↔BeatThis）。这一首不再需要人工。"
+     }
+    ],
+    "cautionRanges": [],
+    "reasons": [
+     "人工听过（整曲（重点 03:28 附近））并确认 workbench 的小节线是对的：与它分歧的读法按错处理（madmom↔workbench、madmom↔workbench、mapperatorinator↔workbench、workbench↔BeatThis、workbench↔BeatThis、workbench↔BeatThis）。这一首不再需要人工。"
+    ]
+   },
    "layerA": {
     "drift": "几乎没有",
     "residual": 321.96072641369256,
@@ -5531,6 +6013,28 @@
      "reconvergence": []
     }
    },
+   "admission": {
+    "song": "lulu",
+    "eligibility": "caution",
+    "status": "REVIEW",
+    "diagnosis": "local_timing_drift",
+    "soundReadings": [
+     "BeatThis",
+     "madmom",
+     "mapperatorinator",
+     "workbench"
+    ],
+    "downgraded": [],
+    "cautionRanges": [
+     [
+      99.761,
+      105.247
+     ]
+    ],
+    "reasons": [
+     "B 层干净，只有 A 层显示拍子在局部漂：不判小节错，下游用到拍层结论时带保留。"
+    ]
+   },
    "layerA": {
     "drift": "局部明显",
     "residual": 5891.437426248956,
@@ -5636,6 +6140,28 @@
      "barLengthAnomaly": [],
      "reconvergence": []
     }
+   },
+   "admission": {
+    "song": "yorukake",
+    "eligibility": "caution",
+    "status": "REVIEW",
+    "diagnosis": "local_timing_drift",
+    "soundReadings": [
+     "BeatThis",
+     "madmom",
+     "mapperatorinator",
+     "workbench"
+    ],
+    "downgraded": [],
+    "cautionRanges": [
+     [
+      189.461,
+      197.138
+     ]
+    ],
+    "reasons": [
+     "B 层干净，只有 A 层显示拍子在局部漂：不判小节错，下游用到拍层结论时带保留。"
+    ]
    },
    "layerA": {
     "drift": "局部明显",
@@ -5751,6 +6277,28 @@
      "reconvergence": []
     }
    },
+   "admission": {
+    "song": "yue",
+    "eligibility": "caution",
+    "status": "REVIEW",
+    "diagnosis": "local_timing_drift",
+    "soundReadings": [
+     "BeatThis",
+     "madmom",
+     "mapperatorinator",
+     "workbench"
+    ],
+    "downgraded": [],
+    "cautionRanges": [
+     [
+      162.542,
+      167.662
+     ]
+    ],
+    "reasons": [
+     "B 层干净，只有 A 层显示拍子在局部漂：不判小节错，下游用到拍层结论时带保留。"
+    ]
+   },
    "layerA": {
     "drift": "局部明显",
     "residual": 1742.6803157700447,
@@ -5861,6 +6409,23 @@
      ],
      "reconvergence": []
     }
+   },
+   "admission": {
+    "song": "dubai",
+    "eligibility": "eligible",
+    "status": "OK",
+    "diagnosis": "clean",
+    "soundReadings": [
+     "BeatThis",
+     "madmom",
+     "mapperatorinator",
+     "workbench"
+    ],
+    "downgraded": [],
+    "cautionRanges": [],
+    "reasons": [
+     "机器读法之间无显著分歧；不等于真值正确。"
+    ]
    },
    "layerA": {
     "drift": "几乎没有",
@@ -5985,6 +6550,32 @@
      ],
      "reconvergence": []
     }
+   },
+   "admission": {
+    "song": "haiiro",
+    "eligibility": "caution",
+    "status": "OK",
+    "diagnosis": "single_flip",
+    "soundReadings": [
+     "BeatThis",
+     "madmom",
+     "mapperatorinator",
+     "workbench"
+    ],
+    "downgraded": [],
+    "cautionRanges": [
+     [
+      262.84,
+      274.84
+     ],
+     [
+      262.84,
+      274.84
+     ]
+    ],
+    "reasons": [
+     "单点跳变，前后立即恢复：只登记，不当异常。"
+    ]
    },
    "layerA": {
     "drift": "轻微",
@@ -6128,6 +6719,36 @@
      "reconvergence": []
     }
    },
+   "admission": {
+    "song": "happyend",
+    "eligibility": "caution",
+    "status": "OK",
+    "diagnosis": "single_flip",
+    "soundReadings": [
+     "BeatThis",
+     "madmom",
+     "mapperatorinator",
+     "workbench"
+    ],
+    "downgraded": [],
+    "cautionRanges": [
+     [
+      291.66,
+      303.66
+     ],
+     [
+      301.371,
+      313.371
+     ],
+     [
+      301.389,
+      313.389
+     ]
+    ],
+    "reasons": [
+     "单点跳变，前后立即恢复：只登记，不当异常。"
+    ]
+   },
    "layerA": {
     "drift": "轻微",
     "residual": 1340.387483192771,
@@ -6241,6 +6862,23 @@
      ],
      "reconvergence": []
     }
+   },
+   "admission": {
+    "song": "hitchcock",
+    "eligibility": "eligible",
+    "status": "OK",
+    "diagnosis": "clean",
+    "soundReadings": [
+     "BeatThis",
+     "madmom",
+     "mapperatorinator",
+     "workbench"
+    ],
+    "downgraded": [],
+    "cautionRanges": [],
+    "reasons": [
+     "机器读法之间无显著分歧；不等于真值正确。"
+    ]
    },
    "layerA": {
     "drift": "几乎没有",
@@ -6376,6 +7014,32 @@
      ],
      "reconvergence": []
     }
+   },
+   "admission": {
+    "song": "kaluo",
+    "eligibility": "caution",
+    "status": "OK",
+    "diagnosis": "single_flip",
+    "soundReadings": [
+     "BeatThis",
+     "madmom",
+     "mapperatorinator",
+     "workbench"
+    ],
+    "downgraded": [],
+    "cautionRanges": [
+     [
+      220.79,
+      232.79
+     ],
+     [
+      220.803,
+      232.803
+     ]
+    ],
+    "reasons": [
+     "单点跳变，前后立即恢复：只登记，不当异常。"
+    ]
    },
    "layerA": {
     "drift": "几乎没有",
@@ -6542,6 +7206,40 @@
      "reconvergence": []
     }
    },
+   "admission": {
+    "song": "landaohua",
+    "eligibility": "caution",
+    "status": "OK",
+    "diagnosis": "single_flip",
+    "soundReadings": [
+     "BeatThis",
+     "madmom",
+     "mapperatorinator",
+     "workbench"
+    ],
+    "downgraded": [],
+    "cautionRanges": [
+     [
+      144.06,
+      156.06
+     ],
+     [
+      86.38,
+      98.38
+     ],
+     [
+      86.38,
+      98.38
+     ],
+     [
+      288.981,
+      300.981
+     ]
+    ],
+    "reasons": [
+     "单点跳变，前后立即恢复：只登记，不当异常。"
+    ]
+   },
    "layerA": {
     "drift": "几乎没有",
     "residual": 7263.313528469012,
@@ -6649,6 +7347,23 @@
      "barLengthAnomaly": [],
      "reconvergence": []
     }
+   },
+   "admission": {
+    "song": "natsuyuki",
+    "eligibility": "eligible",
+    "status": "OK",
+    "diagnosis": "clean",
+    "soundReadings": [
+     "BeatThis",
+     "madmom",
+     "mapperatorinator",
+     "workbench"
+    ],
+    "downgraded": [],
+    "cautionRanges": [],
+    "reasons": [
+     "机器读法之间无显著分歧；不等于真值正确。"
+    ]
    },
    "layerA": {
     "drift": "轻微",
@@ -6783,6 +7498,32 @@
      "reconvergence": []
     }
    },
+   "admission": {
+    "song": "sacra",
+    "eligibility": "caution",
+    "status": "OK",
+    "diagnosis": "single_flip",
+    "soundReadings": [
+     "BeatThis",
+     "madmom",
+     "mapperatorinator",
+     "workbench"
+    ],
+    "downgraded": [],
+    "cautionRanges": [
+     [
+      76.77,
+      88.77
+     ],
+     [
+      74.577,
+      86.577
+     ]
+    ],
+    "reasons": [
+     "单点跳变，前后立即恢复：只登记，不当异常。"
+    ]
+   },
    "layerA": {
     "drift": "几乎没有",
     "residual": 236.56149422623685,
@@ -6872,6 +7613,23 @@
      "barLengthAnomaly": [],
      "reconvergence": []
     }
+   },
+   "admission": {
+    "song": "soragoto",
+    "eligibility": "eligible",
+    "status": "OK",
+    "diagnosis": "clean",
+    "soundReadings": [
+     "BeatThis",
+     "madmom",
+     "mapperatorinator",
+     "workbench"
+    ],
+    "downgraded": [],
+    "cautionRanges": [],
+    "reasons": [
+     "机器读法之间无显著分歧；不等于真值正确。"
+    ]
    },
    "layerA": {
     "drift": "几乎没有",
@@ -6977,6 +7735,28 @@
      "reconvergence": []
     }
    },
+   "admission": {
+    "song": "spica",
+    "eligibility": "caution",
+    "status": "OK",
+    "diagnosis": "single_flip",
+    "soundReadings": [
+     "BeatThis",
+     "madmom",
+     "mapperatorinator",
+     "workbench"
+    ],
+    "downgraded": [],
+    "cautionRanges": [
+     [
+      153.98,
+      165.98
+     ]
+    ],
+    "reasons": [
+     "单点跳变，前后立即恢复：只登记，不当异常。"
+    ]
+   },
    "layerA": {
     "drift": "几乎没有",
     "residual": 5.3512039089227414,
@@ -7077,6 +7857,23 @@
      "reconvergence": []
     }
    },
+   "admission": {
+    "song": "taishou",
+    "eligibility": "eligible",
+    "status": "OK",
+    "diagnosis": "clean",
+    "soundReadings": [
+     "BeatThis",
+     "madmom",
+     "mapperatorinator",
+     "workbench"
+    ],
+    "downgraded": [],
+    "cautionRanges": [],
+    "reasons": [
+     "机器读法之间无显著分歧；不等于真值正确。"
+    ]
+   },
    "layerA": {
     "drift": "几乎没有",
     "residual": 6.1659554986306375,
@@ -7176,6 +7973,23 @@
      "barLengthAnomaly": [],
      "reconvergence": []
     }
+   },
+   "admission": {
+    "song": "tao",
+    "eligibility": "eligible",
+    "status": "OK",
+    "diagnosis": "clean",
+    "soundReadings": [
+     "BeatThis",
+     "madmom",
+     "mapperatorinator",
+     "workbench"
+    ],
+    "downgraded": [],
+    "cautionRanges": [],
+    "reasons": [
+     "机器读法之间无显著分歧；不等于真值正确。"
+    ]
    },
    "layerA": {
     "drift": "几乎没有",
@@ -7293,6 +8107,23 @@
      ],
      "reconvergence": []
     }
+   },
+   "admission": {
+    "song": "tengoku",
+    "eligibility": "eligible",
+    "status": "OK",
+    "diagnosis": "clean",
+    "soundReadings": [
+     "BeatThis",
+     "madmom",
+     "mapperatorinator",
+     "workbench"
+    ],
+    "downgraded": [],
+    "cautionRanges": [],
+    "reasons": [
+     "机器读法之间无显著分歧；不等于真值正确。"
+    ]
    },
    "layerA": {
     "drift": "轻微",

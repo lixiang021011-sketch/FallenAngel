@@ -127,6 +127,15 @@ globalThis.MGTiming = (function () {
     return Boolean(triageOf(row).needsHumanReview);
   }
 
+  /**
+   * The downstream verdict: can bar-level work use this song, and where must it be
+   * careful. Downstream reads this field and nothing else - that is the whole point
+   * of the admission layer.
+   */
+  function admissionOf(row) {
+    return row.admission || {};
+  }
+
   return {
     severity: severity,
     sortedSongs: sortedSongs,
@@ -138,6 +147,7 @@ globalThis.MGTiming = (function () {
     triageOf: triageOf,
     reviewText: reviewText,
     needsHuman: needsHuman,
+    admissionOf: admissionOf,
     statusClass: statusClass,
   };
 })();
@@ -207,6 +217,17 @@ globalThis.MGTiming = (function () {
           + ' health 有问题（它自己那条不算数）</span>').join('');
     const triageLine = '<div class="triage ' + (human ? 'human' : 'auto') + '">'
       + escapeHtml(T.reviewText(row) || '—') + ' · ' + reviewLine + '</div>';
+    const admission = T.admissionOf(row);
+    const admissionLine = admission.eligibility
+      ? '<div class="admission ' + escapeHtml(admission.eligibility) + '">下游准入：'
+        + escapeHtml({ eligible: 'eligible（可整曲用）', caution: 'caution（可用，但标出的区段要带保留）',
+                       ineligible: 'ineligible（先别用）' }[admission.eligibility]
+                     || admission.eligibility)
+        + (admission.soundReadings && admission.soundReadings.length
+            ? '｜可用读法：' + escapeHtml(admission.soundReadings.join('、')) : '')
+        + (admission.downgraded && admission.downgraded.length
+            ? '｜已降级：' + escapeHtml(admission.downgraded.map((d) => d.source).join('、')) : '')
+        + '</div>' : '';
     const layer = row.layerA || {};
     const body = open[row.song]
       ? '<div class="detail">'
@@ -229,6 +250,7 @@ globalThis.MGTiming = (function () {
       + (suspicion ? '<div class="suspicion">' + escapeHtml(suspicion) + '</div>' : '')
       + (flags ? '<div class="flags">' + flags + '</div>' : '')
       + triageLine
+      + admissionLine
       + body + '</article>';
   }
 
