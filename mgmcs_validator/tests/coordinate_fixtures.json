@@ -1,0 +1,120 @@
+{
+ "_comment": "Times Coordinate Map v0.1 的验收数据。期望值按规格里的公式手算，不从任何一份实现里跑出来——两边（static/mgmcs.js 和 tools/coordinate_map.py）都拿它当尺子。",
+ "document": {
+  "schemaVersion": "0.1",
+  "songId": "song_001",
+  "duration": 210.35,
+  "grids": [
+   { "gridId": "grid_A", "originTime": 31.428, "bpm": 120.0, "beatsPerBar": 4, "beatUnit": 4 },
+   { "gridId": "grid_B", "originTime": 63.211, "bpm": 120.0, "beatsPerBar": 3, "beatUnit": 4 },
+   { "gridId": "grid_T", "originTime": 30.0, "bpm": 120.0, "beatsPerBar": 4, "beatUnit": 4 },
+   { "gridId": "grid_C", "originTime": 31.428, "bpm": 119.6, "beatsPerBar": 4, "beatUnit": 4 },
+   { "gridId": "grid_zero", "originTime": 10.0, "bpm": 0.0, "beatsPerBar": 4, "beatUnit": 4 }
+  ]
+ },
+ "refused": ["grid_zero"],
+ "timeToCoordinate": [
+  { "why": "规格 §3A 的例子", "audioTime": 72.5, "gridId": "grid_A", "bar": 20, "beat": 2.144 },
+  { "why": "起点自身", "audioTime": 31.428, "gridId": "grid_A", "bar": 0, "beat": 0.0 },
+  { "why": "Test 1", "audioTime": 30.0, "gridId": "grid_T", "bar": 0, "beat": 0.0 },
+  { "why": "Test 2：起点前一小节", "audioTime": 28.0, "gridId": "grid_T", "bar": -1, "beat": 0.0 },
+  { "why": "Test 3", "audioTime": 35.0, "gridId": "grid_T", "bar": 2, "beat": 2.0 },
+  { "why": "§3C：同一时刻落在 3/4 网格上", "audioTime": 72.5, "gridId": "grid_B", "bar": 6, "beat": 0.578 },
+  { "why": "超出音频范围仍然算得出", "audioTime": 220.0, "gridId": "grid_A", "bar": 94, "beat": 1.144, "outOfAudioRange": true },
+  { "why": "换拍速，同一起点", "audioTime": 72.5, "gridId": "grid_C", "bar": 20, "beat": 1.8701866666666664 }
+ ],
+ "coordinateToTime": [
+  { "why": "规格 §3B 的例子", "bar": 20, "beat": 2.144, "gridId": "grid_A", "audioTime": 72.5 },
+  { "why": "Test 3 反过来", "bar": 2, "beat": 2, "gridId": "grid_T", "audioTime": 35.0 },
+  { "why": "Test 2 反过来", "bar": -1, "beat": 0, "gridId": "grid_T", "audioTime": 28.0 },
+  { "why": "3/4 网格的起点", "bar": 0, "beat": 0, "gridId": "grid_B", "audioTime": 63.211 },
+  { "why": "119.6 BPM 的起点", "bar": 0, "beat": 0, "gridId": "grid_C", "audioTime": 31.428 }
+ ],
+ "projectTime": [
+  {
+   "why": "§3C：一个时刻，四套坐标，谁也不许被选中",
+   "audioTime": 72.5,
+   "coordinates": [
+    { "gridId": "grid_A", "bar": 20, "beat": 2.144 },
+    { "gridId": "grid_B", "bar": 6, "beat": 0.578 },
+    { "gridId": "grid_T", "bar": 21, "beat": 1.0 },
+    { "gridId": "grid_C", "bar": 20, "beat": 1.8701866666666664 }
+   ]
+  }
+ ],
+ "generateAnchors": [
+  {
+   "why": "§3D：只画窗口里的线，不预生成整首歌",
+   "gridId": "grid_T",
+   "from": 29.0,
+   "to": 32.0,
+   "expect": [
+    { "audioTime": 29.0, "bar": -1, "beat": 2.0, "isDownbeat": false },
+    { "audioTime": 29.5, "bar": -1, "beat": 3.0, "isDownbeat": false },
+    { "audioTime": 30.0, "bar": 0, "beat": 0.0, "isDownbeat": true },
+    { "audioTime": 30.5, "bar": 0, "beat": 1.0, "isDownbeat": false },
+    { "audioTime": 31.0, "bar": 0, "beat": 2.0, "isDownbeat": false },
+    { "audioTime": 31.5, "bar": 0, "beat": 3.0, "isDownbeat": false },
+    { "audioTime": 32.0, "bar": 1, "beat": 0.0, "isDownbeat": true }
+   ]
+  }
+ ],
+ "errors": [
+  { "call": "timeToCoordinate", "args": [1.0, "nope"], "why": "gridId 不存在" },
+  { "call": "timeToCoordinate", "args": [1.0, "grid_zero"], "why": "bpm 不是正数的那条被拒收，查它也没有" },
+  { "call": "timeToCoordinate", "args": ["72.5", "grid_A"], "why": "audioTime 非数字" },
+  { "call": "coordinateToTime", "args": [0, 0, "nope"], "why": "gridId 不存在" },
+  { "call": "coordinateToTime", "args": ["0", 0, "grid_A"], "why": "bar 非数字" },
+  { "call": "generateAnchors", "args": ["grid_A", 10.0, 5.0], "why": "窗口倒置" }
+ ],
+ "roundTrip": {
+  "grids": ["grid_A", "grid_B", "grid_T", "grid_C"],
+  "times": [0.0, 10.0, 31.428, 35.0, 72.5, 128.125, 199.999, 210.35],
+  "toleranceSeconds": 0.001
+ },
+ "irregular": {
+  "_comment": "小节不等长的网格：120 BPM（半秒一拍），小节线 10/12/14/15/17 —— 第 2 小节只有两拍。期望值按同一套公式手算。",
+  "document": {
+   "schemaVersion": "0.1",
+   "songId": "irregular_001",
+   "duration": 30.0,
+   "grids": [
+    { "gridId": "g_list", "bpm": 120.0, "beatsPerBar": 4, "beatUnit": 4,
+      "barLines": [10.0, 12.0, 14.0, 15.0, 17.0] }
+   ]
+  },
+  "timeToCoordinate": [
+   { "why": "短小节内部：bar 2 只有两拍", "audioTime": 14.5, "gridId": "g_list", "bar": 2, "beat": 1.0 },
+   { "why": "短小节之后立刻回到 4 拍", "audioTime": 15.0, "gridId": "g_list", "bar": 3, "beat": 0.0 },
+   { "why": "列表之前按名义小节往回推", "audioTime": 9.0, "gridId": "g_list", "bar": -1, "beat": 2.0 },
+   { "why": "列表之后按名义小节继续数", "audioTime": 20.0, "gridId": "g_list", "bar": 5, "beat": 2.0 }
+  ],
+  "coordinateToTime": [
+   { "why": "短小节里的第 2 拍", "bar": 2, "beat": 1.0, "gridId": "g_list", "audioTime": 14.5 },
+   { "why": "短小节之后的小节头", "bar": 3, "beat": 0.0, "gridId": "g_list", "audioTime": 15.0 },
+   { "why": "列表之前的外推", "bar": -1, "beat": 0.0, "gridId": "g_list", "audioTime": 8.0 }
+  ],
+  "generateAnchors": [
+   {
+    "why": "短小节只吐两拍，其余小节吐四拍",
+    "gridId": "g_list",
+    "from": 14.0,
+    "to": 17.0,
+    "expect": [
+     { "audioTime": 14.0, "bar": 2, "beat": 0.0, "isDownbeat": true },
+     { "audioTime": 14.5, "bar": 2, "beat": 1.0, "isDownbeat": false },
+     { "audioTime": 15.0, "bar": 3, "beat": 0.0, "isDownbeat": true },
+     { "audioTime": 15.5, "bar": 3, "beat": 1.0, "isDownbeat": false },
+     { "audioTime": 16.0, "bar": 3, "beat": 2.0, "isDownbeat": false },
+     { "audioTime": 16.5, "bar": 3, "beat": 3.0, "isDownbeat": false },
+     { "audioTime": 17.0, "bar": 4, "beat": 0.0, "isDownbeat": true }
+    ]
+   }
+  ],
+  "roundTrip": {
+   "grids": ["g_list"],
+   "times": [10.0, 14.5, 15.0, 16.5, 19.0],
+   "toleranceSeconds": 0.001
+  }
+ }
+}
