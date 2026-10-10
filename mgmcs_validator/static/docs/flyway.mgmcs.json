@@ -550,6 +550,22 @@
       "health": "ok",
       "suspectReasons": [],
       "reading": "madmom"
+    },
+    {
+      "calibrationId": "workbench",
+      "source": "machine",
+      "bpm": 142.502,
+      "audioTime": 1.584166,
+      "beatsPerBar": 4,
+      "beatUnit": 4,
+      "note": "隔壁 workbench 的读法：鼓起音定 16 分格 + Beat This! 定相位与强拍；速度恒定才成立",
+      "sixteenthLock": 0.2769448585694584,
+      "beatThisLock": 0.002463438630391667,
+      "health": "suspect",
+      "suspectReasons": [
+        "beatThisLock 0.00（< 0.9）：这是 **workbench 这条校准**的 source-health 规则——Beat This! 与鼓起音那条格子没对上；它不代表歌曲健康，也不代表 Beat This! 本身不可信：若这条读法在局部与人 / librosa / madmom 一致，仍有研究价值"
+      ],
+      "reading": "workbench"
     }
   ],
   "events": [
