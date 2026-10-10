@@ -236,7 +236,7 @@ def build_song(song: str, out_root: Path, archive: bool) -> dict:
             shutil.copyfile(events_path, ARCHIVE / ("%s.timing_events.json" % song))
             record = source_record(song, events, redline_points(osu), origin)
             (ARCHIVE / ("%s.mapperatorinator.source.json" % song)).write_text(
-                json.dumps(record, ensure_ascii=False, indent=1), encoding="utf-8")
+                json.dumps(record, ensure_ascii=False, indent=1), encoding="utf-8", newline="\n")
     elif list(osu_dir.glob("beatmap*.osu")):
         events, _ = read_osu_redlines(osu)
         origin = "osu 红线折算（从红线起每 meter 拍算一个小节——这是假设，不是模型报的；只有红线时 measure 是推出来的）"
@@ -250,7 +250,9 @@ def write_song(song: str, doc: dict, root: Path | None = None) -> Path:
     root = OBSERVATIONS if root is None else root
     root.mkdir(parents=True, exist_ok=True)
     path = root / ("%s.mapperatorinator.json" % song)
-    path.write_text(json.dumps(doc, ensure_ascii=False, indent=1), encoding="utf-8")
+    # 换行固定成 LF：仓库的 .gitattributes 就是这么规定的，否则"删掉重建"会多出一堆
+    # 与内容无关的 CRLF 差异，看着像不可重现，其实只是写文件的方式不一样。
+    path.write_text(json.dumps(doc, ensure_ascii=False, indent=1), encoding="utf-8", newline="\n")
     return path
 
 
