@@ -132,6 +132,43 @@ class TestPairRules(unittest.TestCase):
         self.assertEqual(row["eligibility"], "caution")
 
 
+class TestGrain(unittest.TestCase):
+    """一小节被切成两半在数，是 pulse 层的分歧，不是两条网格打架。"""
+
+    def test_one_to_two_is_folded_instead_of_rejected(self):
+        coarse = grid(0.0, 2.0, 20)
+        fine = grid(0.0, 1.0, 40)
+        row = dev.pair_measure_phase(reading("fine", fine, 0.25), reading("coarse", coarse, 0.5))
+        self.assertIsNone(row["reason"])
+        self.assertEqual(row["grain"], "1:2")
+        self.assertEqual(row["a"], "fine")
+        self.assertEqual(row["aligned"], row["matched"])
+        self.assertGreater(row["matched"], 10)
+
+    def test_a_shifted_grain_still_reports_the_offset(self):
+        coarse = grid(0.0, 2.0, 20)
+        fine = [index * 1.0 + 0.5 for index in range(40)]
+        row = dev.pair_measure_phase(reading("fine", fine, 0.25), reading("coarse", coarse, 0.5))
+        self.assertEqual(row["grain"], "1:2")
+        self.assertEqual({vote["k"] for vote in row["votes"] if vote["k"] is not None}, {1})
+
+    def test_a_grain_that_lands_between_beats_is_refused(self):
+        coarse = grid(0.0, 2.0, 20)
+        fine = [index * 1.0 + 0.25 for index in range(40)]
+        row = dev.pair_measure_phase(reading("fine", fine, 0.25), reading("coarse", coarse, 0.5))
+        self.assertIsNotNone(row["reason"])
+        self.assertEqual(row["votes"], [])
+
+    def test_mapperatorinator_style_half_bar_against_a_four_four_grid(self):
+        # flyway 的真实形状：一条每 1.263s 报一次小节，另一条每 2.52s。
+        coarse = [1.61 + index * 2.52 for index in range(40)]
+        fine = [1.585 + index * 1.263 for index in range(80)]
+        row = dev.pair_measure_phase(reading("mapper", fine, 0.3158), reading("madmom", coarse, 0.63))
+        self.assertEqual(row["grain"], "1:2")
+        self.assertIsNone(row["reason"])
+        self.assertEqual(row["aligned"], row["matched"])
+
+
 class TestHumanReading(unittest.TestCase):
     def make_taps(self, downbeat_times, beats_between, tap_seconds):
         """按手机真实的写法造一条：`songTime` 一步一跳，`captureTime` 才准。"""

@@ -494,35 +494,88 @@ def pair_verdict(row: dict) -> str:
         pair_shape(row["runs"]), slide or 0.0, jump or 0.0)
 
 
+def grain_matched(fine: dict, coarse: dict, residual_cap: float = 0.25) -> tuple[list[float], dict, str]:
+    """小节长度不一样时，先问一句：是不是同一个小节被切成了几份？
+
+    这是 pulse 层的分歧，不是"两条网格打架"：Mapperatorinator 在 flyway 上每 1.263s
+    报一次小节，madmom 每 2.52s 报一次——正好 1:2。这种时候按粒度折算之后相位依然可比
+    （它把一小节切成两个半数在数），直接判"不可比"会把真正的问题一起扔掉；
+    但折算不上就是折算不上，不许凑。
+
+    返回（用来提问的小节头、粒度标签、不可比时的理由）。
+    """
+    bar_fine = median_step(fine["measures"]) or fine["beatsPerBar"] * fine["beatSeconds"]
+    bar_coarse = median_step(coarse["measures"]) or coarse["beatsPerBar"] * coarse["beatSeconds"]
+    ratio = bar_coarse / bar_fine if bar_fine > 0 else 0.0
+    if abs(ratio - 1) <= 0.15:
+        return fine["measures"], {"label": "1:1", "offset": 0}, ""
+    for stride in (2, 3, 4):
+        if abs(ratio - stride) / stride > 0.05:
+            continue
+        best = None
+        for offset in range(stride):
+            candidate = fine["measures"][offset::stride]
+            if len(candidate) < 2:
+                continue
+            # 用开头这十几个小节判断"从哪一个开始对"：偏移本身是个局部问题，
+            # 再往后的偏差是两条线各自的拍速差攒出来的，那由趋势单独报。
+            head = candidate[:20] if len(candidate) > 20 else candidate
+            votes = pair_phase_votes(head, coarse["measures"],
+                                     coarse["beatSeconds"], coarse["beatsPerBar"], residual_cap)
+            matched = sum(1 for vote in votes if vote["k"] is not None)
+            score = matched / len(votes) if votes else 0.0
+            if best is None or score > best[0]:
+                best = (score, offset, candidate)
+        if best and best[0] >= 0.8:
+            return best[2], {"label": "1:%d" % stride, "offset": best[1]}, ""
+        return fine["measures"], {"label": "1:1", "offset": 0}, (
+            "%s 的小节约是 %s 的 1/%d（%.3fs vs %.3fs），按这个粒度折算也对不上——相位不可比"
+            % (fine["name"], coarse["name"], stride, bar_fine, bar_coarse))
+    return fine["measures"], {"label": "1:1", "offset": 0}, (
+        "小节长度比 %.2f（%.3fs vs %.3fs）不是 1:1…1:4 的粒度，相位不可比"
+        % (ratio, bar_fine, bar_coarse))
+
+
 def pair_measure_phase(reading_a: dict, reading_b: dict) -> dict:
     """一对来源之间的相位关系。
 
     票数少的那条当 A：拿它自己说的那几个小节头去问"你在 B 里是第几拍"，
     这样稀疏来源（人只按了几下）不会被稠密来源的票数淹掉。
-    小节长度差太多就直接说不可比，绝不硬凑成相位。
+
+    小节长度差太多时先看是不是整数粒度（一条把一小节切成 2 份或 3 份在数）。
+    是就按那个粒度折算再比，折算不了才说不可比——绝不硬凑成相位。
     """
     if len(reading_a["measures"]) > len(reading_b["measures"]):
         reading_a, reading_b = reading_b, reading_a
-    bar_a = median_step(reading_a["measures"]) or reading_a["beatsPerBar"] * reading_a["beatSeconds"]
-    bar_b = median_step(reading_b["measures"]) or reading_b["beatsPerBar"] * reading_b["beatSeconds"]
-    row = {"a": reading_a["name"], "b": reading_b["name"], "barA": bar_a, "barB": bar_b,
-           "beatSecondsB": reading_b["beatSeconds"], "beatsPerBarB": reading_b["beatsPerBar"],
+    asked, reference = reading_a, reading_b
+    measures = asked["measures"]
+    row = {"a": asked["name"], "b": reference["name"],
+           "barA": median_step(asked["measures"]) or asked["beatsPerBar"] * asked["beatSeconds"],
+           "barB": median_step(reference["measures"]) or reference["beatsPerBar"] * reference["beatSeconds"],
+           "beatSecondsB": reference["beatSeconds"], "beatsPerBarB": reference["beatsPerBar"],
            "votes": [], "runs": [], "matched": 0, "aligned": 0, "unmatched": 0,
-           "barGapPct": None, "residualRange": None,
+           "barGapPct": None, "residualRange": None, "grain": "1:1", "grainOffset": 0,
            "reason": None, "eligibility": "eligible"}
-    if bar_a <= 0 or bar_b <= 0:
+    if row["barA"] <= 0 or row["barB"] <= 0:
         row["reason"] = "小节长度取不出来"
         return row
-    row["barGapPct"] = abs(bar_a - bar_b) / bar_b * 100
+    row["barGapPct"] = abs(row["barA"] - row["barB"]) / row["barB"] * 100
     if row["barGapPct"] > 15:
-        row["reason"] = "小节长度差 %.0f%%（%.3fs vs %.3fs），相位不可比" % (
-            row["barGapPct"], bar_a, bar_b)
-        return row
-    votes = pair_phase_votes(reading_a["measures"], reading_b["measures"],
-                             reading_b["beatSeconds"], reading_b["beatsPerBar"])
+        fine, coarse = ((asked, reference) if row["barA"] <= row["barB"] else (reference, asked))
+        measures, grain, reason = grain_matched(fine, coarse)
+        if reason:
+            row["reason"] = reason
+            return row
+        asked, reference = fine, coarse
+        row["a"], row["b"] = fine["name"], coarse["name"]
+        row["beatSecondsB"], row["beatsPerBarB"] = coarse["beatSeconds"], coarse["beatsPerBar"]
+        row["grain"], row["grainOffset"] = grain["label"], grain["offset"]
+    bar_asked = median_step(measures) or asked["beatsPerBar"] * asked["beatSeconds"]
+    votes = pair_phase_votes(measures, reference["measures"],
+                             row["beatSecondsB"], row["beatsPerBarB"])
     row["votes"] = votes
-    row["trend"] = pair_phase_trend(votes, reading_b["beatsPerBar"])
-    row["runs"] = phase_runs(votes, bar_a, len(reading_a["measures"]))
+    row["trend"] = pair_phase_trend(votes, row["beatsPerBarB"])
+    row["runs"] = phase_runs(votes, bar_asked, len(measures))
     matched = [vote for vote in votes if vote["k"] is not None]
     row["unmatched"] = len(votes) - len(matched)
     row["matched"] = len(matched)
@@ -530,7 +583,7 @@ def pair_measure_phase(reading_a: dict, reading_b: dict) -> dict:
     if matched:
         row["residualRange"] = (min(vote["residual"] for vote in matched),
                                 max(vote["residual"] for vote in matched))
-    if reading_a["health"] != "ok" or reading_b["health"] != "ok":
+    if asked["health"] != "ok" or reference["health"] != "ok":
         row["eligibility"] = "caution"
     return row
 
@@ -653,6 +706,8 @@ def measures_lines(phase: dict) -> list[str]:
                 row["a"], row["unmatched"], row["b"])
         if row["barGapPct"] is not None and row["barGapPct"] > 2:
             extra += "；两条小节长度差 %.1f%%" % row["barGapPct"]
+        if row["grain"] != "1:1":
+            extra += "；粒度 %s（%s 从第 %d 个起折算）" % (row["grain"], row["a"], row["grainOffset"])
         if len(row["votes"]) < 4:
             extra += "；证据少（只有 %d 票）" % len(row["votes"])
         if row["eligibility"] != "eligible":
