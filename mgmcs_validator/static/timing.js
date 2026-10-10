@@ -113,7 +113,13 @@ globalThis.MGTiming = (function () {
   function reviewText(row) {
     const triage = triageOf(row);
     if (!triage.diagnosis) return '';
-    return triage.diagnosis + (triage.suspectSource ? '（降级 ' + triage.suspectSource + '）' : '');
+    if (!triage.suspectSource) return triage.diagnosis;
+    // "形状指向谁"和"降级了谁"是两件事：只报形状的那种没有降级任何人，
+    // 写成"降级 X"会让人以为已经处理过了。
+    const downgrades = ['source_measure_count_error', 'source_self_anomaly',
+                        'human_confirmed_source'].indexOf(triage.diagnosis) >= 0;
+    return triage.diagnosis + (downgrades ? '（降级 ' + triage.suspectSource + '）'
+                                          : '（形状指向 ' + triage.suspectSource + '，未降级）');
   }
 
   /** The only question that decides where a human should spend ears. */
