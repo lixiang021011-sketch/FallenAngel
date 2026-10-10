@@ -84,7 +84,11 @@ def main(argv=None) -> int:
             missing.append(path.name)
             continue
         doc = json.loads(path.read_text(encoding="utf-8"))
-        if any(c.get("calibrationId") == "workbench" for c in doc.get("calibrations") or []):
+        existing = next((c for c in doc.get("calibrations") or []
+                         if c.get("calibrationId") == "workbench"), None)
+        # 幂等：已经有这条**而且把 gates 也抄进来了**才跳过。早先那版只抄了 lock，
+        # 没抄 gates——"这条读法的小节线其实是退让来的"就没写进文档，所以缺 gates 的要重刷。
+        if existing is not None and existing.get("gateNotes"):
             skipped.append(path.name)
             continue
         report = json.loads(report_path.read_text(encoding="utf-8"))
@@ -120,6 +124,9 @@ def main(argv=None) -> int:
                                          "局部 bar-structure 假设，需要耳朵确认；不是测量结果" % len(odd))
                 grid["note"] += "；含 %d 个规则推出来的短小节（needsEars，只作人工审校提示）" % len(odd)
 
+        if report.get("gates"):
+            # 原样带上：上游哪条判据没过、有没有因此退回某个读法，读的人必须看得见
+            grid["gateNotes"] = report["gates"]
         grid["health"] = "ok" if lock >= LOCK_OK else "suspect"
         grid["suspectReasons"] = ([] if lock >= LOCK_OK else
                                   ["beatThisLock %.2f（< %.1f）：这是 **workbench 这条校准**的 "
@@ -127,7 +134,14 @@ def main(argv=None) -> int:
                                    "它不代表歌曲健康，也不代表 Beat This! 本身不可信："
                                    "若这条读法在局部与人 / librosa / madmom 一致，仍有研究价值"
                                    % (lock, LOCK_OK)])
-        doc.setdefault("calibrations", []).append(grid)
+        if existing is not None:                       # 重刷：就地更新，别把命名冲掉
+            reading = existing.get("reading")
+            existing.clear()
+            existing.update(grid)
+            if reading:
+                existing["reading"] = reading          # reading 由 name_readings 管
+        else:
+            doc.setdefault("calibrations", []).append(grid)
         if not args.dry_run:
             path.write_text(json.dumps(doc, ensure_ascii=False, indent=2), encoding="utf-8")
         added.append((path.name, round(bpm, 3), round(origin, 3), lock, len(odd), grid["health"]))

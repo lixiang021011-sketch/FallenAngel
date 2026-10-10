@@ -561,6 +561,20 @@
       "note": "隔壁 workbench 的读法：鼓起音定 16 分格 + Beat This! 定相位与强拍；速度恒定才成立",
       "sixteenthLock": 0.2769448585694584,
       "beatThisLock": 0.002463438630391667,
+      "gateNotes": [
+        {
+          "check": "beat_this_lock",
+          "value": 0.0025,
+          "threshold": 0.9,
+          "verdict": "fail",
+          "message": "Beat This disagrees with the drum tempo (lock 0.00 < 0.9)"
+        },
+        {
+          "check": "stable_downbeat_phase",
+          "verdict": "fail",
+          "message": "no stable downbeat phase found：退回到『第一个 Beat This! 强拍 + 每 4 拍一小节』的读法，没有短小节；这不是测量出来的小节结构"
+        }
+      ],
       "health": "suspect",
       "suspectReasons": [
         "beatThisLock 0.00（< 0.9）：这是 **workbench 这条校准**的 source-health 规则——Beat This! 与鼓起音那条格子没对上；它不代表歌曲健康，也不代表 Beat This! 本身不可信：若这条读法在局部与人 / librosa / madmom 一致，仍有研究价值"
