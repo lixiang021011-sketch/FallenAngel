@@ -193,7 +193,9 @@ globalThis.MGTiming = (function () {
     const suspicion = T.suspicion(row);
     const suspect = T.suspectSources(row);
     const human = T.needsHuman(row);
-    const reviewLine = human ? '这个要人听一次' : '这条已经自动解释掉了，不必专门听';
+    const byHuman = T.triageOf(row).attribution === 'human';
+    const reviewLine = human ? '这个要人听一次'
+      : byHuman ? '人工已听过并定案，不必再听' : '这条已经自动解释掉了，不必专门听';
     const flags = (row.flags || []).map((flag) => '<span class="flag">' + escapeHtml(flag) + '</span>').join('')
       + suspect.map((name) => '<span class="flag warn">' + escapeHtml(name)
           + ' health 有问题（它自己那条不算数）</span>').join('');

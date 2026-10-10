@@ -38,9 +38,21 @@ REPO = Path(__file__).resolve().parents[2]
 REPORT_PATH = REPO / "reports" / "timing_health.md"
 TRIAGE_PATH = REPO / "reports" / "timing_triage.md"
 JSON_PATH = REPO / "static" / "timing_health.json"
+VERDICTS_PATH = REPO / "human_verdicts.json"
 MUSIC_BASE = "http://127.0.0.1:8125"
 VALIDATOR_PAGE = "index.html"
 HALF = 1e-9
+
+
+def human_verdicts() -> dict:
+    """人工听审的定案（输入，不是产物）。分诊优先读它，规则只在没有定案时才起作用。"""
+    if not VERDICTS_PATH.exists():
+        return {}
+    try:
+        data = json.loads(VERDICTS_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return {item["song"]: item for item in data.get("verdicts") or []}
 
 # 每一类该怎么听、要回答的那一个问题。写在这里，页面直接显示——
 # 免得每次都要回来翻聊天记录找"我到底在判什么"。
@@ -235,6 +247,7 @@ def diagnose_song(song: str, row: dict) -> dict:
         "layerA": row["layerA"],
         "singles": row["singles"],
         "driftRange": [],
+        "verdict": human_verdicts().get(song),
     }
     spot = drift_spot(song)
     if spot and row["class"] == "local drift":
@@ -633,6 +646,8 @@ def triage_markdown(songs: list[str]) -> str:
              % (len(buckets["driftOnly"]), "、".join(buckets["driftOnly"]) or "—"),
              "| 登记为局部（单点 / 合回来），不升级 | %d | %s |"
              % (len(buckets["logged"]), "、".join(buckets["logged"]) or "—"),
+             "| 人工已听过并定案（按人的判定收口） | %d | %s |"
+             % (len(buckets["humanConfirmed"]), "、".join(buckets["humanConfirmed"]) or "—"),
              "| **需要人工听** | %d | %s |"
              % (len(buckets["humanReview"]), "、".join(buckets["humanReview"]) or "—"),
              "",

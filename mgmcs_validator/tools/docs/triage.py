@@ -131,6 +131,8 @@ def reconverges(pair: dict, run: dict) -> float | None:
 
 def diagnose(facts: dict) -> dict:
     """一首歌的分诊结论。facts 由 timing_health_table 从现有计算里挑出来喂进来。"""
+    # 人工定案优先：人已经听过并且指出哪条读法是对的，就不再让规则去猜。
+    verdict = facts.get("verdict")
     readings = {reading["name"]: reading for reading in facts["readings"]}
     machines = [reading for reading in facts["readings"]
                 if not reading["name"].startswith("human")]
@@ -204,6 +206,24 @@ def diagnose(facts: dict) -> dict:
            "resolution": "机器读法之间无显著分歧；不等于真值正确。",
            "needsHumanReview": False, "attribution": None}
 
+    if verdict and verdict.get("correctSource"):
+        correct = verdict["correctSource"]
+        others = sorted({name for pair, _run in offsets for name in (pair["a"], pair["b"])
+                         if name != correct})
+        wrong = [pair["a"] + "↔" + pair["b"] for pair, _run in offsets
+                 if correct in (pair["a"], pair["b"])]
+        if not offsets:
+            return {**out, "diagnosis": "human_confirmed_clean",
+                    "resolution": "人工听过并确认 %s 的小节线是对的（范围 %s）；读法之间本来也没有分歧。"
+                                  % (correct, "、".join(verdict.get("scope") or []))}
+        return {**out, "diagnosis": "human_confirmed_source",
+                "affectedRange": ranges(offsets), "suspectSource": "、".join(others) or None,
+                "attribution": "human", "needsHumanReview": False,
+                "resolution": "人工听过（%s）并确认 %s 的小节线是对的：与它分歧的读法按错处理"
+                              "（%s）。这一首不再需要人工。"
+                              % ("、".join(verdict.get("scope") or ["—"]), correct,
+                                 "、".join(wrong) or "—")}
+
     def structural_attribution(runs_here: list[tuple]) -> str | None:
         """结构归因：唯一一条来源站在所有分歧的另一边，而其余两条以上互相一致。
 
@@ -252,12 +272,16 @@ def diagnose(facts: dict) -> dict:
                     "evidence": evidence}
         odd = structural_attribution(half)
         if odd:
-            return {**out, "diagnosis": "source_measure_count_error",
+            # 结构归因不再是"自动降级"：2026-10-11 的人工定案给出反例——
+            # kaitou 上"只有 workbench 一条不同"，而 workbench 才是准的。
+            # 所以只报形状，结论交给人。
+            return {**out, "diagnosis": "structure_only_attribution",
                     "affectedRange": ranges(half), "suspectSource": odd,
                     "attribution": "structure",
-                    "resolution": "只在这一段降级 %s 的小节线：分歧的形状是「只有它不同、"
-                                  "其余独立来源互相一致」（它自己没报出异常小节长度，"
-                                  "所以证据是结构而非症状）；不进人工。" % odd,
+                    "needsHumanReview": True,
+                    "resolution": "分歧的形状是「只有 %s 一条不同、其余互相一致」，但它自己没报出"
+                                  "异常小节长度。这类形状有过反例（kaitou：与众不同的那条才是准的），"
+                                  "所以只报形状、不自动降级。" % odd,
                     "evidence": evidence}
     if whole:
         blamed = pick_blame(suspects, readings, median_measures)
@@ -271,11 +295,12 @@ def diagnose(facts: dict) -> dict:
                     "evidence": evidence}
         odd = structural_attribution(whole)
         if odd:
-            return {**out, "diagnosis": "source_self_anomaly",
+            return {**out, "diagnosis": "structure_only_attribution",
                     "affectedRange": ranges(whole), "suspectSource": odd,
                     "attribution": "structure",
-                    "resolution": "整拍分歧，形状是「只有 %s 不同、其余独立来源互相一致」："
-                                  "局部降级它，不进人工。" % odd,
+                    "needsHumanReview": True,
+                    "resolution": "整拍分歧，形状是「只有 %s 不同、其余互相一致」，但它没有自身异常"
+                                  "症状：只报形状，不自动降级（这类形状有过反例）。" % odd,
                     "evidence": evidence}
         # 支持量很小的（< 4 个 matched measure）到结尾没合回来，也不值得占人工：
         # 登记成单点，写清 support。
@@ -330,7 +355,7 @@ def diagnose(facts: dict) -> dict:
 
 
 def summarise(diagnoses: list[dict]) -> dict:
-    buckets = {"autoPass": [], "autoExplained": [], "driftOnly": [],
+    buckets = {"autoPass": [], "autoExplained": [], "driftOnly": [], "humanConfirmed": [],
                "logged": [], "humanReview": []}
     for item in diagnoses:
         name = item["diagnosis"]
@@ -338,6 +363,8 @@ def summarise(diagnoses: list[dict]) -> dict:
         # 它照样要人来听，不能因为名字落在 logged 里就被统计漏掉。
         if item.get("needsHumanReview"):
             buckets["humanReview"].append(item["song"])
+        elif name in ("human_confirmed_source", "human_confirmed_clean"):
+            buckets["humanConfirmed"].append(item["song"])
         elif name == "clean":
             buckets["autoPass"].append(item["song"])
         elif name in ("source_measure_count_error", "source_self_anomaly"):

@@ -1303,18 +1303,18 @@
    },
    "singleFlips": [],
    "triage": {
-    "diagnosis": "reconvergence",
+    "diagnosis": "human_confirmed_source",
     "affectedRange": [
      {
-      "start": 169.376,
+      "start": 1.399867,
       "end": 215.087,
-      "seconds": 45.7
+      "seconds": 213.7
      }
     ],
-    "suspectSource": null,
-    "resolution": "部分区段分歧后合回来了（那些只标范围）；剩下 4 段到结尾没合回来（support 最大 15），需要人听一次。",
-    "needsHumanReview": true,
-    "attribution": null,
+    "suspectSource": "BeatThis、madmom、mapperatorinator",
+    "resolution": "人工听过（00:01、00:32、02:12、02:38、02:49）并确认 workbench 的小节线是对的：与它分歧的读法按错处理（madmom↔workbench、madmom↔workbench、madmom↔workbench、madmom↔workbench、madmom↔workbench、madmom↔workbench、madmom↔workbench、mapperatorinator↔workbench、mapperatorinator↔workbench、mapperatorinator↔workbench、workbench↔BeatThis）。这一首不再需要人工。",
+    "needsHumanReview": false,
+    "attribution": "human",
     "evidence": {
      "sources": [
       {
@@ -4697,7 +4697,7 @@
     }
    ],
    "triage": {
-    "diagnosis": "unresolved_phase",
+    "diagnosis": "human_confirmed_source",
     "affectedRange": [
      {
       "start": 2.465,
@@ -4705,10 +4705,10 @@
       "seconds": 190.0
      }
     ],
-    "suspectSource": null,
-    "resolution": "整拍分歧（madmom↔mapperatorinator、mapperatorinator↔BeatThis、mapperatorinator↔workbench），相关来源自身都没有异常、到结尾也没合回来：这才是需要人听的一类。",
-    "needsHumanReview": true,
-    "attribution": null,
+    "suspectSource": "BeatThis、madmom、mapperatorinator",
+    "resolution": "人工听过（00:00–00:24）并确认 workbench 的小节线是对的：与它分歧的读法按错处理（madmom↔workbench、mapperatorinator↔workbench、workbench↔BeatThis、workbench↔BeatThis）。这一首不再需要人工。",
+    "needsHumanReview": false,
+    "attribution": "human",
     "evidence": {
      "sources": [
       {
@@ -5235,7 +5235,7 @@
     }
    ],
    "triage": {
-    "diagnosis": "source_measure_count_error",
+    "diagnosis": "structure_only_attribution",
     "affectedRange": [
      {
       "start": 208.94,
@@ -5244,8 +5244,8 @@
      }
     ],
     "suspectSource": "workbench",
-    "resolution": "只在这一段降级 workbench 的小节线：分歧的形状是「只有它不同、其余独立来源互相一致」（它自己没报出异常小节长度，所以证据是结构而非症状）；不进人工。",
-    "needsHumanReview": false,
+    "resolution": "分歧的形状是「只有 workbench 一条不同、其余互相一致」，但它自己没报出异常小节长度。这类形状有过反例（kaitou：与众不同的那条才是准的），所以只报形状、不自动降级。",
+    "needsHumanReview": true,
     "attribution": "structure",
     "evidence": {
      "sources": [
@@ -7344,8 +7344,8 @@
    "listenEnd": 24.465,
    "spanSeconds": 190.0,
    "longSpan": true,
-   "review": true,
-   "diagnosis": "unresolved_phase",
+   "review": false,
+   "diagnosis": "human_confirmed_source",
    "support": 91,
    "pairCount": 5,
    "pairs": [
@@ -7896,8 +7896,8 @@
    "listenEnd": 54.23,
    "spanSeconds": 98.3,
    "longSpan": true,
-   "review": true,
-   "diagnosis": "reconvergence",
+   "review": false,
+   "diagnosis": "human_confirmed_source",
    "support": 43,
    "pairCount": 4,
    "pairs": [
@@ -8040,8 +8040,8 @@
    "listenEnd": 230.94,
    "spanSeconds": 42.9,
    "longSpan": false,
-   "review": false,
-   "diagnosis": "source_measure_count_error",
+   "review": true,
+   "diagnosis": "structure_only_attribution",
    "support": 22,
    "pairCount": 3,
    "pairs": [
@@ -8106,8 +8106,8 @@
    "listenEnd": 191.376,
    "spanSeconds": 45.7,
    "longSpan": false,
-   "review": true,
-   "diagnosis": "reconvergence",
+   "review": false,
+   "diagnosis": "human_confirmed_source",
    "support": 20,
    "pairCount": 2,
    "pairs": [
@@ -8199,8 +8199,8 @@
    "listenEnd": 24.0,
    "spanSeconds": 27.4,
    "longSpan": false,
-   "review": true,
-   "diagnosis": "reconvergence",
+   "review": false,
+   "diagnosis": "human_confirmed_source",
    "support": 13,
    "pairCount": 2,
    "pairs": [
@@ -8794,8 +8794,8 @@
    "listenEnd": 154.779,
    "spanSeconds": 22.9,
    "longSpan": false,
-   "review": true,
-   "diagnosis": "reconvergence",
+   "review": false,
+   "diagnosis": "human_confirmed_source",
    "support": 7,
    "pairCount": 4,
    "pairs": [
@@ -9008,8 +9008,8 @@
    "listenEnd": 169.178,
    "spanSeconds": 9.1,
    "longSpan": false,
-   "review": true,
-   "diagnosis": "reconvergence",
+   "review": false,
+   "diagnosis": "human_confirmed_source",
    "support": 5,
    "pairCount": 1,
    "pairs": [
@@ -9920,8 +9920,8 @@
    "longSpan": false,
    "support": 1,
    "pairCount": 1,
-   "review": true,
-   "diagnosis": "unresolved_phase",
+   "review": false,
+   "diagnosis": "human_confirmed_source",
    "pairs": [],
    "others": [
     "madmom↔BeatThis：这里跳了 1.98 拍"
@@ -10113,8 +10113,8 @@
    "longSpan": false,
    "support": 1,
    "pairCount": 1,
-   "review": false,
-   "diagnosis": "source_measure_count_error",
+   "review": true,
+   "diagnosis": "structure_only_attribution",
    "pairs": [],
    "others": [
     "mapperatorinator↔madmom：这里跳了 1.95 拍"
@@ -10197,7 +10197,6 @@
    "knowme",
    "round2",
    "sakuranoko",
-   "seiza",
    "velvet",
    "yukiguni"
   ],
@@ -10206,6 +10205,10 @@
    "lulu",
    "yorukake",
    "yue"
+  ],
+  "humanConfirmed": [
+   "kaitou",
+   "kiechau"
   ],
   "logged": [
    "eine",
@@ -10219,8 +10222,7 @@
    "spica"
   ],
   "humanReview": [
-   "kaitou",
-   "kiechau"
+   "seiza"
   ]
  }
 }

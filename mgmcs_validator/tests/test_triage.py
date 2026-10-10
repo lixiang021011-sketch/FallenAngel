@@ -57,19 +57,6 @@ class TestRuleOne(unittest.TestCase):
         self.assertFalse(result["needsHumanReview"])
         self.assertEqual(result["attribution"], "bar-length")
 
-    def test_without_a_symptom_the_shape_still_blames_the_lonely_source(self):
-        result = triage.diagnose(facts(
-            [pair("madmom", "workbench", [run(2, 10, 30, 8)]),
-             pair("mapperatorinator", "workbench", [run(2, 10, 30, 8)]),
-             pair("workbench", "BeatThis", [run(-2, 10, 30, 6)])],
-            [reading("BeatThis", steady(0, 2.0, 20)), reading("madmom", steady(0, 2.0, 20)),
-             reading("mapperatorinator", steady(0, 2.0, 20)),
-             reading("workbench", steady(0, 2.0, 20))]))
-        self.assertEqual(result["diagnosis"], "source_measure_count_error")
-        self.assertEqual(result["suspectSource"], "workbench")
-        self.assertEqual(result["attribution"], "structure")
-        self.assertFalse(result["needsHumanReview"])
-
     def test_a_conflict_between_two_views_is_left_for_a_human(self):
         """半小节那一档指向 A，整拍那一档指向 B —— 谁都不该被自动降级。"""
         result = triage.diagnose(facts(
@@ -160,6 +147,41 @@ class TestRuleSix(unittest.TestCase):
 
 
 class TestBoundaries(unittest.TestCase):
+    def test_a_human_verdict_overrides_the_rules(self):
+        """人听过并指出哪条准，规则就不再猜——但错的那几条照旧记账。"""
+        result = triage.diagnose({**facts(
+            [pair("madmom", "workbench", [run(2, 10, 60, 20)]),
+             pair("mapperatorinator", "workbench", [run(1, 10, 200, 91)])],
+            [reading("BeatThis", steady(0, 2.0, 40)), reading("madmom", steady(0, 2.0, 40)),
+             reading("mapperatorinator", steady(0, 2.0, 40)),
+             reading("workbench", steady(0, 2.0, 40))]),
+            "verdict": {"song": "song", "correctSource": "workbench", "scope": ["00:00–00:24"]}})
+        self.assertEqual(result["diagnosis"], "human_confirmed_source")
+        self.assertFalse(result["needsHumanReview"])
+        self.assertIn("workbench", result["resolution"])
+        self.assertEqual(set((result["suspectSource"] or "").split("、")),
+                         {"madmom", "mapperatorinator"})
+
+    def test_a_human_verdict_on_a_quiet_song_says_so(self):
+        result = triage.diagnose({**facts([], [reading("BeatThis", steady(0, 2.0, 30))]),
+                                  "verdict": {"song": "song", "correctSource": "BeatThis",
+                                              "scope": ["01:00"]}})
+        self.assertEqual(result["diagnosis"], "human_confirmed_clean")
+        self.assertFalse(result["needsHumanReview"])
+
+    def test_structure_alone_is_not_enough_to_downgrade(self):
+        """kaitou 的反例：与众不同的那一条才是准的。只报形状，交给人。"""
+        result = triage.diagnose(facts(
+            [pair("madmom", "workbench", [run(2, 10, 30, 8)]),
+             pair("mapperatorinator", "workbench", [run(2, 10, 30, 8)]),
+             pair("workbench", "BeatThis", [run(-2, 10, 30, 6)])],
+            [reading("BeatThis", steady(0, 2.0, 20)), reading("madmom", steady(0, 2.0, 20)),
+             reading("mapperatorinator", steady(0, 2.0, 20)),
+             reading("workbench", steady(0, 2.0, 20))]))
+        self.assertEqual(result["diagnosis"], "structure_only_attribution")
+        self.assertEqual(result["suspectSource"], "workbench")
+        self.assertTrue(result["needsHumanReview"])
+
     def test_human_readings_are_never_blamed(self):
         """人按的小节头只有几个，按"小节太少"会被误判成来源自身有问题。"""
         result = triage.diagnose(facts(
