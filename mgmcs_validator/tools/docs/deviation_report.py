@@ -150,6 +150,83 @@ def phase_series(downbeats: list[float], beats_per_bar: int = 4) -> list[tuple[f
     return [(time, index % beats_per_bar) for index, time in enumerate(sorted(downbeats))]
 
 
+def osu_timing_points(path: Path) -> list[dict]:
+    """读 .osu 的 [TimingPoints]，取红线（uninherited=1）：每条是一个 timing section 的开头。"""
+    if not path.exists():
+        return []
+    points, inside = [], False
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        text = line.strip()
+        if text.startswith("["):
+            inside = text.lower() == "[timingpoints]"
+            continue
+        if not inside or not text or text.startswith("//"):
+            continue
+        parts = text.split(",")
+        if len(parts) < 8:
+            continue
+        try:
+            time_ms, beat_length = float(parts[0]), float(parts[1])
+            meter, uninherited = int(float(parts[2])), parts[6].strip()
+        except ValueError:
+            continue
+        if uninherited != "1" or beat_length <= 0:
+            continue                                   # 绿线（SV）不进 timing
+        points.append({"time": time_ms / 1000.0, "bpm": 60000.0 / beat_length, "meter": meter})
+    return sorted(points, key=lambda point: point["time"])
+
+
+def piecewise_sections(path: Path, song_end: float) -> list[dict]:
+    points = osu_timing_points(path)
+    out = []
+    for index, point in enumerate(points):
+        end = points[index + 1]["time"] if index + 1 < len(points) else song_end
+        out.append({"start": point["time"], "end": end, "bpm": point["bpm"], "meter": point["meter"],
+                    "seconds": max(0.0, end - point["time"])})
+    return out
+
+
+def subdivision_fit_piecewise(events: list[float], sections: list[dict]) -> dict:
+    """piecewise 来源：**逐 section 评分再汇总**。
+
+    绝不先把红线摊成一条整曲 pseudo-grid——那等于把分段 timing 压回 affine，而它全部价值
+    就在那段一段的局部性。太短或事件太少的 section 标成"不可评"、不入汇总：这正是那两条
+    只持续 300 ms 的抖动红线该有的下场（自然降权，而不是被抹掉）。
+    """
+    rows = []
+    for section in sections:
+        inside = [time for time in events if section["start"] <= time < section["end"]]
+        if len(inside) < 8 or section["seconds"] < 4 * 60.0 / section["bpm"]:
+            rows.append({"section": section, "scorable": False, "count": len(inside)})
+            continue
+        fit = subdivision_fit(inside, section["start"], 60.0 / section["bpm"])
+        fit["section"], fit["scorable"] = section, True
+        rows.append(fit)
+    scored = [row for row in rows if row.get("scorable")]
+    total = sum(row["count"] for row in scored) or 1
+    aggregate = {"sections": len(sections), "scored": len(scored),
+                 "unscorable": len(rows) - len(scored), "events": total,
+                 "heldOut": [sum(row["heldOut"][i] * row["count"] for row in scored) / total
+                             for i in range(3)],
+                 "offsets": [row["phaseOffset"] for row in scored]}
+    if aggregate["offsets"]:
+        values = aggregate["offsets"]
+        aggregate["offsetSpread"] = max(values) - min(values)
+        aggregate["maxStep"] = max((abs(b - a) for a, b in zip(values, values[1:])), default=0.0)
+        aggregate["drift"] = ("几乎没有" if aggregate["offsetSpread"] <= 0.10
+                              else "轻微" if aggregate["offsetSpread"] <= 0.25 else "局部明显")
+    return {"rows": rows, "aggregate": aggregate}
+
+
+MAPPER_OUT = Path(r"D:\fa_tools\mapperatorinator\out")
+
+
+def mapper_osu(song: str) -> Path | None:
+    """这首歌的 Mapperatorinator timing 输出（`<song>_timing/beatmap*.osu`）。"""
+    found = sorted((MAPPER_OUT / ("%s_timing" % song)).glob("beatmap*.osu"))
+    return found[-1] if found else None
+
+
 def measure_phase(song: str, window_seconds: float = 24.0) -> list[dict]:
     """B 层：逐窗对比各来源的 measure-relative phase，只报关系不判真值。"""
     sources = {}
@@ -191,6 +268,28 @@ def report_for(song: str) -> str:
                          % (ls["residualMs"], ls["worstMs"], ls["bpm"]))
             lines.append("      含义严格限定为：**一条固定 BPM 的直线描述不了这组 beat**。"
                          "不等于 'Beat This 坏了'——也可能是这首歌本来就有局部变速。")
+    osu = mapper_osu(song)
+    if osu and events:
+        sections = piecewise_sections(osu, max(events) + 5)
+        piece = subdivision_fit_piecewise(events, sections)
+        agg = piece["aggregate"]
+        lines.append("")
+        lines.append("SUBDIVISION FIT — Mapperatorinator（piecewise，逐 section 评分再汇总）")
+        lines.append("  红线 %d 条 → %d 段；可评 %d 段、不可评 %d 段（太短或事件 <8 的不入汇总）"
+                     % (agg["sections"], agg["sections"], agg["scored"], agg["unscorable"]))
+        for row in piece["rows"]:
+            section = row["section"]
+            if not row.get("scorable"):
+                lines.append("    %7.1fs 起 %5.1fs  %7.3f BPM  事件 %2d  → 不可评"
+                             % (section["start"], section["seconds"], section["bpm"], row["count"]))
+                continue
+            lines.append("    %7.1fs 起 %5.1fs  %7.3f BPM  事件 %3d  偏移 %+.3f  校正后 ≤0.10 %.0f%% / ≤0.25 %.0f%%  漂移 %s"
+                         % (section["start"], section["seconds"], section["bpm"], row["count"],
+                            row["phaseOffset"], row["heldOut"][0] * 100, row["heldOut"][1] * 100, row["drift"]))
+        lines.append("  汇总（按事件数加权）：校正后 ≤0.10 %.0f%% · ≤0.25 %.0f%% · ≤0.50 %.0f%%；"
+                     "段间偏移极差 %.2f，最大相邻跳变 %.2f → %s"
+                     % (agg["heldOut"][0] * 100, agg["heldOut"][1] * 100, agg["heldOut"][2] * 100,
+                        agg.get("offsetSpread", 0.0), agg.get("maxStep", 0.0), agg.get("drift", "-")))
     lines.append("")
     lines.append("MEASURE PHASE     （B 层：不碰 16 分距离，只比各来源的小节相位）")
     rows = measure_phase(song)
