@@ -1,0 +1,83 @@
+{
+ "schemaVersion": "0.1",
+ "generatedBy": "coordinate_map.py",
+ "songId": "round2",
+ "duration": null,
+ "grids": [
+  {
+   "gridId": "cal_01",
+   "originTime": 4.818,
+   "bpm": 105.469,
+   "beatsPerBar": 4,
+   "beatUnit": 4
+  },
+  {
+   "gridId": "cal_03",
+   "originTime": 42.934,
+   "bpm": 105.469,
+   "beatsPerBar": 4,
+   "beatUnit": 4
+  },
+  {
+   "gridId": "machine",
+   "originTime": 0.267,
+   "bpm": 105.469,
+   "beatsPerBar": 4,
+   "beatUnit": 4
+  },
+  {
+   "gridId": "madmom",
+   "originTime": 1.43,
+   "bpm": 105.263,
+   "beatsPerBar": 4,
+   "beatUnit": 4
+  }
+ ],
+ "note": "每个 grid 独立；坐标实时计算。t = originTime + (bar × beatsPerBar + beat) × 60 / bpm，反向 bar = floor(q / beatsPerBar)，beat = q - bar × beatsPerBar。",
+ "anchors": {
+  "cal_01": [
+   {
+    "audioTime": 20.17796359119741,
+    "bar": 6,
+    "beat": 3,
+    "isDownbeat": false
+   },
+   {
+    "audioTime": 20.746851131612132,
+    "bar": 7,
+    "beat": 0,
+    "isDownbeat": true
+   },
+   {
+    "audioTime": 21.315738672026853,
+    "bar": 7,
+    "beat": 1,
+    "isDownbeat": false
+   },
+   {
+    "audioTime": 21.884626212441567,
+    "bar": 7,
+    "beat": 2,
+    "isDownbeat": false
+   },
+   {
+    "audioTime": 22.45351375285629,
+    "bar": 7,
+    "beat": 3,
+    "isDownbeat": false
+   },
+   {
+    "audioTime": 23.02240129327101,
+    "bar": 8,
+    "beat": 0,
+    "isDownbeat": true
+   },
+   {
+    "audioTime": 23.591288833685724,
+    "bar": 8,
+    "beat": 1,
+    "isDownbeat": false
+   }
+  ]
+ }
+}
