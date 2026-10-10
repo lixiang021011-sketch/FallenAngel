@@ -458,7 +458,7 @@ def slip_phrase(k: int, bar_beats: float) -> str:
     if k == 0:
         return "aligned"
     if abs(abs(k) * 2 - bar_beats) < 0.01:
-        return "半小节错位（±%g 拍）" % abs(k)
+        return "±%g 拍（半小节）" % abs(k)
     return "局部 %+d 拍" % k
 
 
@@ -739,7 +739,7 @@ def measures_lines(phase: dict) -> list[str]:
         parts = []
         for run in row["runs"]:
             label = slip_phrase(run["k"], row["beatsPerBarB"])
-            if run["k"] != 0:
+            if run["k"] != 0 and "半小节" not in label:
                 label += "（%+.2f 小节）" % (run["k"] * row["beatSecondsB"] / row["barB"])
             span = "%s–%s" % (clock(run["start"]), clock(run["end"]))
             parts.append("%s %s（%d 票）" % (label, span, run["count"]))

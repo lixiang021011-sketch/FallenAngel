@@ -107,7 +107,7 @@ class TestCaseC(ImportCase):
                                       "beatSeconds": 0.5, "beatsPerBar": 4.0, "health": "ok"})
         verdict = dev.pair_verdict(row)
         self.assertIn("reconvergence", verdict)
-        self.assertIn("半小节错位", verdict)
+        self.assertIn("半小节", verdict)
 
 
 class TestCaseD(ImportCase):
