@@ -185,6 +185,23 @@ def meter_warnings(reading: dict) -> bool:
     return "2 拍×" in (reading.get("meterMix") or "")
 
 
+def audio_twins(songs: list[str]) -> dict:
+    """同一份音频被两个文档引用（round2 与 kiechau 就是这种）。
+
+    必须说出来：同一首歌上两次采样可能一次干净、一次有洞——那是**模型采样的差别**，
+    不是歌的问题。单次采样的 Mapperatorinator 输出不能当稳定参照，能当证据的是跨来源的一致/分歧。
+    """
+    seen = {}
+    for song in songs:
+        path = dr.DOCS / ("%s.mgmcs.json" % song)
+        if not path.exists():
+            continue
+        name = (json.loads(path.read_text(encoding="utf-8")).get("song") or {}).get("audioFileName")
+        if name:
+            seen.setdefault(name, []).append(song)
+    return {name: group for name, group in seen.items() if len(group) > 1}
+
+
 def detail(song: str) -> list[str]:
     """这首歌该听哪儿：把异常区段与它涉及的来源列出来。"""
     lines = []
@@ -201,8 +218,38 @@ def detail(song: str) -> list[str]:
     return lines
 
 
+def hot_spans(song: str, keep: int = 3) -> list[str]:
+    """该听的那几段：按"这段有多少票"排，重叠的只留最有分量的一条。
+
+    同一处差异会在好几对来源上各留一段（BeatThis↔madmom、BeatThis↔mapperatorinator……），
+    逐段列出来读不动。这里每段都带上是哪一对、差了几拍、多少票，人工复核一次只该听这几处。
+    """
+    raw = []
+    for row in machine_sources(song)["pairs"]:
+        if "human" in row["a"] or "human" in row["b"] or not comparable(row):
+            continue
+        for run in row["runs"]:
+            if run["k"] != 0:
+                raw.append({"start": run["start"], "end": run["end"], "voted": run["count"],
+                            "pair": row["a"] + "↔" + row["b"], "k": run["k"],
+                            "bar": row["beatsPerBarB"]})
+    raw.sort(key=lambda span: (-span["voted"], span["start"]))
+    chosen = []
+    for span in raw:
+        if any(not (span["end"] < other["start"] or span["start"] > other["end"]) for other in chosen):
+            continue                                   # 和已经选中的那段重叠，跳过
+        chosen.append(span)
+        if len(chosen) >= keep:
+            break
+    return ["%s–%s：%s 停差 %s（%d 票）"
+            % (dr.clock(span["start"]), dr.clock(span["end"]), span["pair"],
+               dr.slip_phrase(span["k"], span["bar"]), span["voted"]) for span in chosen]
+
+
 def report(songs: list[str]) -> tuple[str, list[dict]]:
     rows = [classify(song) for song in songs]
+    twins = audio_twins(songs)
+    twin_of = {song: group for group in twins.values() for song in group}
     counts = {}
     for row in rows:
         counts[row["class"]] = counts.get(row["class"], 0) + 1
@@ -230,6 +277,11 @@ def report(songs: list[str]) -> tuple[str, list[dict]]:
     for row in rows:
         lines.append("- **%s**：" % row["song"] + "、".join(
             "%s %s" % (name, health) for name, health, _mix, _count in row["readings"]) or "—")
+        if row["song"] in twin_of:
+            others = [name for name in twin_of[row["song"]] if name != row["song"]]
+            lines.append("  - 与 %s 是**同一份音频**，各跑了一次 Mapperatorinator，两次采样不一样"
+                         "（一次干净、一次有洞或拍间距异常）：这是采样的差别，不是歌的问题——"
+                         "单次采样不能当稳定参照。" % "、".join(others))
     lines.append("")
     lines.append("## 哪首歌要听哪一段")
     lines.append("")
@@ -239,6 +291,9 @@ def report(songs: list[str]) -> tuple[str, list[dict]]:
         if row["class"] == "clean" and not row["notes"]:
             continue
         lines.append("### %s — %s" % (row["song"], row["class"]))
+        hot = hot_spans(row["song"])
+        if hot:
+            lines.append("- **先听**：" + "；".join(hot))
         for line in detail(row["song"]):
             lines.append("- " + line)
         lines.append("- 人那条：%s" % row["human"])

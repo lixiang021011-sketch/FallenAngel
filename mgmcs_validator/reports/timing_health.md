@@ -57,12 +57,14 @@
 - **kaitou**：BeatThis ok、madmom ok、human:cal_01 ok、mapperatorinator ok、workbench ok
 - **kaluo**：BeatThis ok、madmom ok、human:cal_01 ok、human:cal_02 ok、mapperatorinator ok、workbench ok
 - **kiechau**：BeatThis ok、madmom ok、human:cal_01 ok、human:cal_02 ok、human:cal_03 ok、human:cal_06 suspect、human:cal_07 suspect、mapperatorinator ok、workbench ok
+  - 与 round2 是**同一份音频**，各跑了一次 Mapperatorinator，两次采样不一样（一次干净、一次有洞或拍间距异常）：这是采样的差别，不是歌的问题——单次采样不能当稳定参照。
 - **knowme**：BeatThis ok、madmom ok、mapperatorinator ok、workbench ok
 - **landaohua**：BeatThis ok、madmom ok、human:cal_02 ok、human:cal_03 ok、human:cal_04 ok、mapperatorinator ok、workbench ok
 - **lulu**：BeatThis ok、madmom ok、human:cal_01 ok、human:cal_04 ok、mapperatorinator ok、workbench ok
 - **natsuyuki**：BeatThis ok、madmom ok、mapperatorinator ok、workbench ok
 - **onewish**：BeatThis ok、madmom ok、mapperatorinator ok、workbench ok
 - **round2**：madmom ok、human:cal_01 ok、human:cal_03 ok、mapperatorinator suspect
+  - 与 kiechau 是**同一份音频**，各跑了一次 Mapperatorinator，两次采样不一样（一次干净、一次有洞或拍间距异常）：这是采样的差别，不是歌的问题——单次采样不能当稳定参照。
 - **sacra**：BeatThis ok、madmom ok、mapperatorinator ok、workbench suspect
 - **sakuranoko**：BeatThis ok、madmom ok、human:cal_02 ok、human:cal_03 ok、mapperatorinator ok、workbench ok
 - **seiza**：BeatThis ok、madmom ok、human:cal_01 ok、human:cal_03 ok、mapperatorinator ok、workbench ok
@@ -81,6 +83,7 @@
 有 B 层分歧、或 A 层有提示（局部漂移 / 拍序列不成直线）的歌列在这里；其余两层都干净的歌曲不必整曲审。
 
 ### chichunhua — continuous slide
+- **先听**：01:18–01:42：madmom↔workbench 停差 局部 +1 拍（15 票）；02:51–03:18：madmom↔workbench 停差 局部 -1 拍（15 票）；04:34–04:53：madmom↔workbench 停差 局部 +1 拍（12 票）
 - BeatThis↔madmom：两条小节长度略有出入：相位连续滑 -1.24 拍/分钟，最大跳变只有 0.15 拍（没有突变）｜异常区段 00:00–00:09、01:19–01:42、02:05–02:20、02:22–02:34、02:57–03:20
 - BeatThis↔mapperatorinator：两条小节长度略有出入：相位连续滑 -1.24 拍/分钟，最大跳变只有 0.18 拍（没有突变）｜异常区段 00:02–00:09、01:24–01:49、02:12–02:22、02:24–02:36、03:02–03:20
 - madmom↔workbench：两条小节长度略有出入：相位连续滑 +1.24 拍/分钟，最大跳变只有 0.11 拍（没有突变）｜异常区段 00:00–00:07、01:18–01:42、02:04–02:16、02:18–02:28、02:51–03:18、04:34–04:53
@@ -97,6 +100,7 @@
 - A 层：Beat This 的拍序列不能被一条直线描述（残差 2157 ms）——这是拍层的事，和小节相位是两回事
 
 ### eine — 1-beat phase error
+- **先听**：01:46–03:31：mapperatorinator↔workbench 停差 局部 +1 拍（39 票）；01:20–01:42：mapperatorinator↔madmom 停差 ±2 拍（半小节）（9 票）；03:36–03:44：mapperatorinator↔BeatThis 停差 ±2 拍（半小节）（3 票）
 - madmom↔BeatThis：局部错位后又合上（reconvergence）：错位 ±2 拍（半小节）；有一处 +2.00 拍的跳变（这才是错位） @01:29，平时 +0.06 拍/分钟｜异常区段 01:13–01:24
 - mapperatorinator↔BeatThis：局部错位后又合上（reconvergence）：错位 ±2 拍（半小节）, 局部 -1 拍；有一处 +2.01 拍的跳变（这才是错位） @03:53，平时 -0.24 拍/分钟｜异常区段 02:31–02:55、03:06–03:31、03:36–03:44、04:02–04:08
 - mapperatorinator↔madmom：局部错位后又合上（reconvergence）：错位 ±2 拍（半小节）, 局部 -1 拍；有一处 +2.03 拍的跳变（这才是错位） @01:20，平时 -0.24 拍/分钟｜异常区段 01:20–01:42、02:42–03:01、03:06–03:31
@@ -107,12 +111,14 @@
 - A 层：Beat This 的拍序列不能被一条直线描述（残差 1018 ms）——这是拍层的事，和小节相位是两回事
 
 ### flyway — 2-beat counting error
+- **先听**：02:15–02:35：mapperatorinator↔BeatThis 停差 ±2 拍（半小节）（9 票）
 - madmom↔BeatThis：局部错位后又合上（reconvergence）：错位 ±2 拍（半小节）；有一处 +1.98 拍的跳变（这才是错位） @02:38，平时 +0.24 拍/分钟｜异常区段 02:15–02:20、02:25–02:35
 - mapperatorinator↔BeatThis：局部错位后又合上（reconvergence）：错位 ±2 拍（半小节）；有一处 +1.97 拍的跳变（这才是错位） @02:15，平时 +0.24 拍/分钟｜异常区段 02:15–02:35
 - 人那条：没有小节头按压
 - workbench 那条校准的 source-health：Beat This 与鼓起音格子没对上（lock 0.002），这是它自己的规则，不是歌曲健康
 
 ### flywayleo — 2-beat counting error
+- **先听**：02:18–02:33：mapperatorinator↔BeatThis 停差 ±2 拍（半小节）（7 票）
 - madmom↔BeatThis：局部错位后又合上（reconvergence）：错位 ±2 拍（半小节）；有一处 +1.99 拍的跳变（这才是错位） @02:36，平时 +0.18 拍/分钟｜异常区段 02:18–02:33
 - mapperatorinator↔BeatThis：局部错位后又合上（reconvergence）：错位 ±2 拍（半小节）；有一处 +1.98 拍的跳变（这才是错位） @02:35，平时 +0.18 拍/分钟｜异常区段 02:18–02:33
 - 人那条：human:cal_01 2 票、human:cal_02 7 票
@@ -134,6 +140,7 @@
 - 单点跳变（没持续成一段，先记着）：BeatThis↔madmom @04:57、mapperatorinator↔BeatThis @05:07、workbench↔BeatThis @05:07
 
 ### henceforth — 2-beat counting error
+- **先听**：03:28–03:40：workbench↔BeatThis 停差 ±2 拍（半小节）（9 票）；03:43–03:51：workbench↔BeatThis 停差 ±2 拍（半小节）（6 票）
 - madmom↔BeatThis：有一头是错位的（±2 拍（半小节） 那端没回来）；有一处 +1.91 拍的跳变（这才是错位） @03:28，平时 +0.29 拍/分钟｜异常区段 03:28–03:40、03:43–03:51
 - mapperatorinator↔BeatThis：有一头是错位的（±2 拍（半小节） 那端没回来）；有一处 +1.91 拍的跳变（这才是错位） @03:28，平时 +0.17 拍/分钟｜异常区段 03:28–03:39
 - workbench↔BeatThis：有一头是错位的（±2 拍（半小节） 那端没回来）；有一处 +1.94 拍的跳变（这才是错位） @03:28，平时 +0.28 拍/分钟｜异常区段 03:28–03:40、03:43–03:51
@@ -145,6 +152,7 @@
 - workbench 那条校准的 source-health：Beat This 与鼓起音格子没对上（lock 0.013），这是它自己的规则，不是歌曲健康
 
 ### iloveyou — 2-beat counting error
+- **先听**：00:03–01:11：mapperatorinator↔madmom 停差 ±2 拍（半小节）（23 票）；01:51–02:46：mapperatorinator↔madmom 停差 ±2 拍（半小节）（18 票）；01:17–01:44：mapperatorinator↔madmom 停差 ±2 拍（半小节）（10 票）
 - madmom↔BeatThis：有一头是错位的（±2 拍（半小节） 那端没回来）；有一处 +1.92 拍的跳变（这才是错位） @00:14，平时 +1.60 拍/分钟｜异常区段 00:01–00:08、01:21–01:31、01:37–01:49、01:55–02:23
 - mapperatorinator↔BeatThis：局部错位后又合上（reconvergence）：错位 ±2 拍（半小节）；有一处 +2.09 拍的跳变（这才是错位） @00:15，平时 +1.89 拍/分钟｜异常区段 00:15–01:17、02:31–02:46
 - mapperatorinator↔madmom：有一头是错位的（±2 拍（半小节） 那端没回来）；有一处 +1.92 拍的跳变（这才是错位） @02:51，平时 +0.62 拍/分钟｜异常区段 00:03–01:11、01:17–01:44、01:51–02:46
@@ -152,6 +160,7 @@
 - workbench 那条校准的 source-health：Beat This 与鼓起音格子没对上（lock 0.004），这是它自己的规则，不是歌曲健康
 
 ### kaitou — 1-beat phase error
+- **先听**：00:02–03:11：mapperatorinator↔workbench 停差 局部 +1 拍（91 票）
 - madmom↔BeatThis：其余全段一致，只在这一处跳了 +1.98 拍 @00:16（一处≠一段：可能就是漏了一拍），平时 -0.44 拍/分钟
 - madmom↔mapperatorinator：整段都对不上相位（几条关系轮着来）；有一处 +0.98 拍的跳变（这才是错位） @02:19，平时 +0.79 拍/分钟｜异常区段 00:03–02:14、02:19–03:12
 - madmom↔workbench：有一头是错位的（±2 拍（半小节） 那端没回来）；有一处 +0.98 拍的跳变（这才是错位） @02:19，平时 +0.79 拍/分钟｜异常区段 02:19–03:12
@@ -167,6 +176,7 @@
 - 单点跳变（没持续成一段，先记着）：madmom↔BeatThis @03:46、workbench↔BeatThis @03:46
 
 ### kiechau — 2-beat counting error
+- **先听**：00:32–02:10：mapperatorinator↔BeatThis 停差 ±2 拍（半小节）（43 票）；02:49–03:21：mapperatorinator↔madmom 停差 ±2 拍（半小节）（15 票）；00:01–00:28：workbench↔BeatThis 停差 ±2 拍（半小节）（13 票）
 - madmom↔BeatThis：有一头是错位的（±2 拍（半小节） 那端没回来）；有一处 +1.95 拍的跳变（这才是错位） @01:01，平时 -0.42 拍/分钟｜异常区段 00:01–00:06、00:08–00:15、00:21–00:28、01:01–01:24、01:33–01:43、01:47–01:54、01:59–02:08、02:17–02:31
 - madmom↔workbench：局部错位后又合上（reconvergence）：错位 ±2 拍（半小节）, ±2 拍（半小节）；有一处 +1.95 拍的跳变（这才是错位） @01:01，平时 -0.01 拍/分钟｜异常区段 01:01–01:27、01:31–01:36、01:38–01:43、01:45–01:49、01:54–02:01、02:05–02:10、02:15–02:28
 - mapperatorinator↔BeatThis：局部错位后又合上（reconvergence）：错位 ±2 拍（半小节）, ±2 拍（半小节）；有一处 +1.98 拍的跳变（这才是错位） @00:29，平时 +0.17 拍/分钟｜异常区段 00:32–02:10、02:31–02:35、02:38–02:47
@@ -176,6 +186,7 @@
 - 人那条：human:cal_01 7 票、human:cal_02 7 票、human:cal_03 3 票、human:cal_06 11 票、human:cal_07 7 票
 
 ### knowme — 2-beat counting error
+- **先听**：01:33–03:22：mapperatorinator↔BeatThis 停差 ±2 拍（半小节）（38 票）；00:02–00:22：mapperatorinator↔BeatThis 停差 ±2 拍（半小节）（8 票）
 - madmom↔BeatThis：有一头是错位的（±2 拍（半小节） 那端没回来）；有一处 +2.01 拍的跳变（这才是错位） @01:33，平时 +0.42 拍/分钟｜异常区段 00:02–00:19
 - mapperatorinator↔BeatThis：有一头是错位的（±2 拍（半小节） 那端没回来）；有一处 +2.02 拍的跳变（这才是错位） @00:25，平时 +0.46 拍/分钟｜异常区段 00:02–00:22、01:33–03:22
 - workbench↔BeatThis：有一头是错位的（±2 拍（半小节） 那端没回来）；有一处 +2.01 拍的跳变（这才是错位） @00:25，平时 +0.42 拍/分钟｜异常区段 00:02–00:22、01:33–03:22
@@ -201,6 +212,7 @@
 - A 层：Beat This 的拍序列不能被一条直线描述（残差 537 ms）——这是拍层的事，和小节相位是两回事
 
 ### onewish — 1-beat phase error
+- **先听**：00:00–00:12：madmom↔workbench 停差 局部 +1 拍（8 票）；03:18–03:25：BeatThis↔mapperatorinator 停差 ±2 拍（半小节）（3 票）
 - BeatThis↔mapperatorinator：有一头是错位的（±2 拍（半小节） 那端没回来）；有一处 +2.00 拍的跳变（这才是错位） @03:18，平时 -0.52 拍/分钟｜异常区段 03:18–03:25
 - BeatThis↔workbench：有一头是错位的（局部 +1 拍 那端没回来）；有一处 +0.99 拍的跳变（这才是错位） @00:14，平时 -0.06 拍/分钟｜异常区段 00:00–00:11
 - madmom↔workbench：有一头是错位的（局部 +1 拍 那端没回来）；有一处 +0.97 拍的跳变（这才是错位） @00:14，平时 -0.09 拍/分钟｜异常区段 00:00–00:12
@@ -208,6 +220,7 @@
 - A 层：Beat This 的拍序列不能被一条直线描述（残差 1190 ms）——这是拍层的事，和小节相位是两回事
 
 ### round2 — 2-beat counting error
+- **先听**：01:32–02:07：mapperatorinator↔madmom 停差 ±2 拍（半小节）（14 票）；01:03–01:28：mapperatorinator↔madmom 停差 ±2 拍（半小节）（12 票）；02:16–02:27：mapperatorinator↔madmom 停差 ±2 拍（半小节）（6 票）
 - mapperatorinator↔madmom：局部错位后又合上（reconvergence）：错位 ±2 拍（半小节）；有一处 +1.92 拍的跳变（这才是错位） @01:00，平时 -1.34 拍/分钟｜异常区段 01:03–01:28、01:32–02:07、02:16–02:27
 - 人那条：human:cal_01 2 票、human:cal_03 3 票
 
@@ -220,12 +233,14 @@
 - 单点跳变（没持续成一段，先记着）：madmom↔BeatThis @01:22、mapperatorinator↔BeatThis @01:20
 
 ### sakuranoko — 2-beat counting error
+- **先听**：02:34–02:38：mapperatorinator↔BeatThis 停差 ±2 拍（半小节）（3 票）
 - madmom↔BeatThis：局部错位后又合上（reconvergence）：错位 ±2 拍（半小节）；有一处 +2.00 拍的跳变（这才是错位） @02:31，平时 -0.03 拍/分钟｜异常区段 02:35–02:38
 - mapperatorinator↔BeatThis：局部错位后又合上（reconvergence）：错位 ±2 拍（半小节）；有一处 +1.99 拍的跳变（这才是错位） @02:31，平时 -0.03 拍/分钟｜异常区段 02:34–02:38
 - workbench↔BeatThis：局部错位后又合上（reconvergence）：错位 ±2 拍（半小节）；有一处 +2.01 拍的跳变（这才是错位） @02:31，平时 -1.36 拍/分钟｜异常区段 02:34–02:38
 - 人那条：human:cal_02 4 票、human:cal_03 5 票
 
 ### seiza — 2-beat counting error
+- **先听**：03:30–04:11：mapperatorinator↔workbench 停差 ±2 拍（半小节）（22 票）
 - madmom↔workbench：有一头是错位的（±2 拍（半小节） 那端没回来）；有一处 +1.96 拍的跳变（这才是错位） @03:28，平时 -0.43 拍/分钟｜异常区段 03:28–03:38、03:42–04:11
 - mapperatorinator↔madmom：其余全段一致，只在这一处跳了 +1.95 拍 @03:30（一处≠一段：可能就是漏了一拍），平时 +0.85 拍/分钟
 - mapperatorinator↔workbench：有一头是错位的（±2 拍（半小节） 那端没回来）；有一处 +1.96 拍的跳变（这才是错位） @03:30，平时 -0.41 拍/分钟｜异常区段 03:30–04:11
@@ -247,6 +262,7 @@
 - A 层：Beat This 的拍序列不能被一条直线描述（残差 1411 ms）——这是拍层的事，和小节相位是两回事
 
 ### velvet — 2-beat counting error
+- **先听**：03:32–04:08：mapperatorinator↔BeatThis 停差 ±2 拍（半小节）（12 票）；01:29–01:55：mapperatorinator↔BeatThis 停差 ±2 拍（半小节）（9 票）；02:00–02:26：workbench↔BeatThis 停差 ±2 拍（半小节）（9 票）
 - madmom↔BeatThis：局部错位后又合上（reconvergence）：错位 ±2 拍（半小节）, ±2 拍（半小节）；有一处 +2.06 拍的跳变（这才是错位） @03:01，平时 +1.25 拍/分钟｜异常区段 02:06–02:22、02:32–02:39、02:42–02:48
 - mapperatorinator↔BeatThis：有一头是错位的（±2 拍（半小节） 那端没回来）；有一处 +2.01 拍的跳变（这才是错位） @00:43，平时 -0.30 拍/分钟｜异常区段 00:30–00:40、01:03–01:22、01:29–01:55、03:32–04:08
 - workbench↔BeatThis：有一头是错位的（±2 拍（半小节） 那端没回来）；有一处 +1.99 拍的跳变（这才是错位） @02:29，平时 -0.13 拍/分钟｜异常区段 00:03–00:26、02:00–02:26、02:32–02:58
@@ -261,6 +277,7 @@
 - workbench 那条校准的 source-health：Beat This 与鼓起音格子没对上（lock 0.012），这是它自己的规则，不是歌曲健康
 
 ### yukiguni — 2-beat counting error
+- **先听**：03:07–03:21：BeatThis↔madmom 停差 ±2 拍（半小节）（5 票）；00:13–00:26：BeatThis↔workbench 停差 ±2 拍（半小节）（4 票）；02:43–02:54：BeatThis↔madmom 停差 ±2 拍（半小节）（4 票）
 - BeatThis↔madmom：局部错位后又合上（reconvergence）：错位 ±2 拍（半小节）；有一处 +2.10 拍的跳变（这才是错位） @01:19，平时 -1.16 拍/分钟｜异常区段 02:43–02:54、03:07–03:21
 - BeatThis↔mapperatorinator：其余全段一致，只在这一处跳了 +2.00 拍 @00:26（一处≠一段：可能就是漏了一拍），平时 -0.04 拍/分钟
 - BeatThis↔workbench：有一头是错位的（±2 拍（半小节） 那端没回来）；有一处 +2.09 拍的跳变（这才是错位） @04:30，平时 -1.08 拍/分钟｜异常区段 00:13–00:26、02:43–02:54、04:30–04:40
