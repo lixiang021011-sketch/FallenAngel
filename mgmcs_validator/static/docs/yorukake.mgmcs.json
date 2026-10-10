@@ -1,0 +1,8414 @@
+{
+  "schemaVersion": "0.1",
+  "generatedBy": "from_listening_ai.py + machine_beats.py",
+  "song": {
+    "songId": "20261009 045427 Spitz-スピッツ-夜を駆ける-策夜疾驰 2",
+    "title": "Spitz (スピッツ) — 夜を駆ける (策夜疾驰)",
+    "audioFileName": "Spitz - 夜を駆ける (策夜疾驰).ogg"
+  },
+  "calibrations": [
+    {
+      "calibrationId": "cal_01",
+      "audioTime": 4.76,
+      "bpm": 126.048,
+      "beatsPerBar": 4,
+      "beatUnit": 4,
+      "source": "human",
+      "clockOffsetSeconds": -119.597,
+      "note": "由 3 下按压重算（拍速来自捕获钟）；小节头 1 下；没有打满两个「小节头」，拍号按 4/4 写出，要当待确认看；BPM 换成机器的，起点按 1 个小节头的中位偏移吸到机器网格（+2 ms，抖动 0 ms）；与另外 1 遍的小节线完全重合，合成一条",
+      "rawTaps": [
+        {
+          "tapIndex": 0,
+          "button": "DOWNBEAT",
+          "songTime": 4.286,
+          "captureTime": 124.148,
+          "clientTime": 1791514473774,
+          "sessionId": 7
+        },
+        {
+          "tapIndex": 1,
+          "button": "BEAT",
+          "songTime": 4.286,
+          "captureTime": 124.571,
+          "clientTime": 1791514474199,
+          "sessionId": 7
+        },
+        {
+          "tapIndex": 2,
+          "button": "BEAT",
+          "songTime": 5.308,
+          "captureTime": 125.068,
+          "clientTime": 1791514474695,
+          "sessionId": 7
+        }
+      ],
+      "tappedBpm": 130.435,
+      "tappedAudioTime": 4.551,
+      "snapOffsetSeconds": 0.002,
+      "snapSpreadSeconds": 0.0,
+      "snapTaps": 1,
+      "mergedFrom": [
+        {
+          "calibrationId": "cal_02",
+          "tappedAudioTime": 21.717,
+          "snappedAudioTime": 21.896,
+          "snapOffsetSeconds": 0.024,
+          "snapSpreadSeconds": 0.425,
+          "tappedBpm": 125.523,
+          "rawTaps": [
+            {
+              "tapIndex": 0,
+              "button": "DOWNBEAT",
+              "songTime": 10.414,
+              "captureTime": 129.9,
+              "clientTime": 1791514479530,
+              "sessionId": 7
+            },
+            {
+              "tapIndex": 1,
+              "button": "BEAT",
+              "songTime": 10.414,
+              "captureTime": 130.361,
+              "clientTime": 1791514479989,
+              "sessionId": 7
+            },
+            {
+              "tapIndex": 2,
+              "button": "BEAT",
+              "songTime": 10.414,
+              "captureTime": 130.907,
+              "clientTime": 1791514480535,
+              "sessionId": 7
+            },
+            {
+              "tapIndex": 3,
+              "button": "BEAT",
+              "songTime": 11.448,
+              "captureTime": 131.33,
+              "clientTime": 1791514480958,
+              "sessionId": 7
+            },
+            {
+              "tapIndex": 4,
+              "button": "DOWNBEAT",
+              "songTime": 11.448,
+              "captureTime": 131.752,
+              "clientTime": 1791514481381,
+              "sessionId": 7
+            },
+            {
+              "tapIndex": 5,
+              "button": "BEAT",
+              "songTime": 12.46,
+              "captureTime": 132.261,
+              "clientTime": 1791514481888,
+              "sessionId": 7
+            },
+            {
+              "tapIndex": 6,
+              "button": "BEAT",
+              "songTime": 12.46,
+              "captureTime": 132.725,
+              "clientTime": 1791514482352,
+              "sessionId": 7
+            },
+            {
+              "tapIndex": 7,
+              "button": "BEAT",
+              "songTime": 13.48,
+              "captureTime": 133.176,
+              "clientTime": 1791514482802,
+              "sessionId": 7
+            },
+            {
+              "tapIndex": 8,
+              "button": "DOWNBEAT",
+              "songTime": 13.48,
+              "captureTime": 133.646,
+              "clientTime": 1791514483273,
+              "sessionId": 7
+            },
+            {
+              "tapIndex": 9,
+              "button": "BEAT",
+              "songTime": 14.504,
+              "captureTime": 134.137,
+              "clientTime": 1791514483765,
+              "sessionId": 7
+            },
+            {
+              "tapIndex": 10,
+              "button": "BEAT",
+              "songTime": 14.504,
+              "captureTime": 134.645,
+              "clientTime": 1791514484272,
+              "sessionId": 7
+            },
+            {
+              "tapIndex": 11,
+              "button": "BEAT",
+              "songTime": 15.521,
+              "captureTime": 135.134,
+              "clientTime": 1791514484760,
+              "sessionId": 7
+            },
+            {
+              "tapIndex": 12,
+              "button": "DOWNBEAT",
+              "songTime": 15.521,
+              "captureTime": 135.608,
+              "clientTime": 1791514485234,
+              "sessionId": 7
+            },
+            {
+              "tapIndex": 13,
+              "button": "BEAT",
+              "songTime": 16.545,
+              "captureTime": 136.122,
+              "clientTime": 1791514485749,
+              "sessionId": 7
+            },
+            {
+              "tapIndex": 14,
+              "button": "BEAT",
+              "songTime": 16.545,
+              "captureTime": 136.631,
+              "clientTime": 1791514486259,
+              "sessionId": 7
+            },
+            {
+              "tapIndex": 15,
+              "button": "BEAT",
+              "songTime": 17.566,
+              "captureTime": 137.101,
+              "clientTime": 1791514486729,
+              "sessionId": 7
+            },
+            {
+              "tapIndex": 16,
+              "button": "DOWNBEAT",
+              "songTime": 17.566,
+              "captureTime": 137.554,
+              "clientTime": 1791514487179,
+              "sessionId": 7
+            },
+            {
+              "tapIndex": 17,
+              "button": "BEAT",
+              "songTime": 17.566,
+              "captureTime": 138.034,
+              "clientTime": 1791514487660,
+              "sessionId": 7
+            },
+            {
+              "tapIndex": 18,
+              "button": "BEAT",
+              "songTime": 18.591,
+              "captureTime": 138.549,
+              "clientTime": 1791514488178,
+              "sessionId": 7
+            },
+            {
+              "tapIndex": 19,
+              "button": "BEAT",
+              "songTime": 18.591,
+              "captureTime": 139.029,
+              "clientTime": 1791514488657,
+              "sessionId": 7
+            },
+            {
+              "tapIndex": 20,
+              "button": "DOWNBEAT",
+              "songTime": 19.615,
+              "captureTime": 139.446,
+              "clientTime": 1791514489073,
+              "sessionId": 7
+            },
+            {
+              "tapIndex": 21,
+              "button": "BEAT",
+              "songTime": 19.615,
+              "captureTime": 139.931,
+              "clientTime": 1791514489560,
+              "sessionId": 7
+            },
+            {
+              "tapIndex": 22,
+              "button": "BEAT",
+              "songTime": 20.632,
+              "captureTime": 140.376,
+              "clientTime": 1791514490003,
+              "sessionId": 7
+            },
+            {
+              "tapIndex": 23,
+              "button": "BEAT",
+              "songTime": 20.632,
+              "captureTime": 140.856,
+              "clientTime": 1791514490484,
+              "sessionId": 7
+            },
+            {
+              "tapIndex": 24,
+              "button": "DOWNBEAT",
+              "songTime": 21.658,
+              "captureTime": 141.314,
+              "clientTime": 1791514490940,
+              "sessionId": 7
+            },
+            {
+              "tapIndex": 25,
+              "button": "BEAT",
+              "songTime": 21.658,
+              "captureTime": 141.779,
+              "clientTime": 1791514491406,
+              "sessionId": 7
+            },
+            {
+              "tapIndex": 26,
+              "button": "BEAT",
+              "songTime": 22.682,
+              "captureTime": 142.279,
+              "clientTime": 1791514491908,
+              "sessionId": 7
+            },
+            {
+              "tapIndex": 27,
+              "button": "BEAT",
+              "songTime": 22.682,
+              "captureTime": 142.757,
+              "clientTime": 1791514492385,
+              "sessionId": 7
+            }
+          ]
+        }
+      ],
+      "passesAgreeing": 2,
+      "health": "ok",
+      "suspectReasons": []
+    },
+    {
+      "calibrationId": "machine",
+      "audioTime": 0.0,
+      "bpm": 126.048,
+      "beatsPerBar": 4,
+      "beatUnit": 4,
+      "source": "machine",
+      "note": "librosa beat_track（拍号是假设，机器不知道小节有几拍）",
+      "beats": [
+        0.0,
+        0.395,
+        0.766,
+        1.149,
+        1.625,
+        2.113,
+        2.601,
+        3.065,
+        3.541,
+        4.029,
+        4.505,
+        4.992,
+        5.457,
+        5.956,
+        6.444,
+        6.896,
+        7.384,
+        7.872,
+        8.359,
+        8.835,
+        9.311,
+        9.787,
+        10.275,
+        10.751,
+        11.227,
+        11.714,
+        12.19,
+        12.666,
+        13.142,
+        13.63,
+        14.106,
+        14.594,
+        15.07,
+        15.557,
+        16.033,
+        16.486,
+        16.985,
+        17.473,
+        17.937,
+        18.425,
+        18.913,
+        19.389,
+        19.865,
+        20.341,
+        20.793,
+        21.304,
+        21.769,
+        22.268,
+        22.756,
+        23.232,
+        23.719,
+        24.172,
+        24.671,
+        25.147,
+        25.635,
+        26.099,
+        26.575,
+        27.028,
+        27.539,
+        28.026,
+        28.514,
+        28.99,
+        29.466,
+        29.954,
+        30.65,
+        31.15,
+        31.637,
+        32.102,
+        32.566,
+        33.065,
+        33.553,
+        34.017,
+        34.458,
+        34.981,
+        35.468,
+        35.933,
+        36.42,
+        36.897,
+        37.384,
+        37.849,
+        38.336,
+        38.812,
+        39.3,
+        39.787,
+        40.263,
+        40.728,
+        41.204,
+        41.691,
+        42.167,
+        42.655,
+        43.131,
+        43.619,
+        44.095,
+        44.582,
+        45.058,
+        45.534,
+        46.022,
+        46.486,
+        46.974,
+        47.45,
+        47.938,
+        48.402,
+        48.89,
+        49.366,
+        49.842,
+        50.318,
+        50.794,
+        51.293,
+        51.757,
+        52.245,
+        52.721,
+        53.197,
+        53.673,
+        54.161,
+        54.648,
+        55.124,
+        55.6,
+        56.065,
+        56.552,
+        57.04,
+        57.516,
+        57.992,
+        58.456,
+        58.944,
+        59.42,
+        59.919,
+        60.407,
+        60.883,
+        61.359,
+        61.835,
+        62.322,
+        62.81,
+        63.274,
+        63.75,
+        64.25,
+        64.726,
+        65.202,
+        65.678,
+        66.154,
+        66.641,
+        67.117,
+        67.605,
+        68.081,
+        68.557,
+        69.045,
+        69.532,
+        70.008,
+        70.484,
+        70.96,
+        71.436,
+        71.912,
+        72.388,
+        72.876,
+        73.352,
+        73.828,
+        74.315,
+        74.791,
+        75.267,
+        75.755,
+        76.243,
+        76.719,
+        77.206,
+        77.682,
+        78.158,
+        78.634,
+        79.11,
+        79.586,
+        80.062,
+        80.55,
+        81.026,
+        81.514,
+        81.99,
+        82.466,
+        82.953,
+        83.429,
+        83.905,
+        84.405,
+        84.869,
+        85.357,
+        85.833,
+        86.309,
+        86.785,
+        87.261,
+        87.748,
+        88.224,
+        88.7,
+        89.188,
+        89.664,
+        90.151,
+        90.639,
+        91.115,
+        91.568,
+        92.067,
+        92.532,
+        93.019,
+        93.507,
+        93.994,
+        94.47,
+        94.935,
+        95.422,
+        95.898,
+        96.374,
+        96.839,
+        97.338,
+        97.814,
+        98.29,
+        98.778,
+        99.265,
+        99.741,
+        100.217,
+        100.693,
+        101.181,
+        101.657,
+        102.145,
+        102.621,
+        103.108,
+        103.573,
+        104.049,
+        104.536,
+        105.024,
+        105.5,
+        105.976,
+        106.44,
+        106.94,
+        107.416,
+        107.903,
+        108.379,
+        108.867,
+        109.331,
+        109.819,
+        110.306,
+        110.794,
+        111.258,
+        111.746,
+        112.21,
+        112.698,
+        113.174,
+        113.65,
+        114.126,
+        114.614,
+        115.09,
+        115.566,
+        116.042,
+        116.529,
+        117.005,
+        117.493,
+        117.969,
+        118.457,
+        118.933,
+        119.409,
+        119.885,
+        120.372,
+        120.848,
+        121.324,
+        121.8,
+        122.276,
+        122.764,
+        123.217,
+        123.728,
+        124.204,
+        124.691,
+        125.179,
+        125.655,
+        126.142,
+        126.607,
+        127.083,
+        127.57,
+        128.07,
+        128.534,
+        129.01,
+        129.486,
+        129.974,
+        130.45,
+        130.926,
+        131.402,
+        131.901,
+        132.365,
+        132.853,
+        133.341,
+        133.817,
+        134.281,
+        134.676,
+        135.152,
+        135.744,
+        136.22,
+        136.707,
+        137.172,
+        137.636,
+        138.136,
+        138.6,
+        139.088,
+        139.575,
+        140.063,
+        140.527,
+        141.015,
+        141.491,
+        141.92,
+        142.454,
+        142.942,
+        143.418,
+        143.894,
+        144.37,
+        144.858,
+        145.322,
+        145.798,
+        146.286,
+        146.773,
+        147.249,
+        147.725,
+        148.213,
+        148.701,
+        149.177,
+        149.641,
+        150.129,
+        150.605,
+        151.104,
+        151.568,
+        152.056,
+        152.532,
+        153.008,
+        153.484,
+        153.948,
+        154.448,
+        154.924,
+        155.423,
+        155.887,
+        156.363,
+        156.851,
+        157.327,
+        157.814,
+        158.29,
+        158.766,
+        159.242,
+        159.73,
+        160.206,
+        160.682,
+        161.17,
+        161.646,
+        162.122,
+        162.586,
+        163.085,
+        163.55,
+        164.037,
+        164.525,
+        165.001,
+        165.489,
+        165.965,
+        166.441,
+        166.928,
+        167.404,
+        167.88,
+        168.356,
+        168.821,
+        169.308,
+        169.796,
+        170.272,
+        170.76,
+        171.236,
+        171.712,
+        172.211,
+        172.675,
+        173.163,
+        173.639,
+        174.126,
+        174.591,
+        175.078,
+        175.554,
+        176.042,
+        176.518,
+        176.994,
+        177.47,
+        177.958,
+        178.422,
+        178.898,
+        179.386,
+        179.873,
+        180.349,
+        180.825,
+        181.313,
+        181.789,
+        182.265,
+        182.753,
+        183.217,
+        183.705,
+        184.181,
+        184.657,
+        185.144,
+        185.62,
+        186.108,
+        186.584,
+        187.072,
+        187.548,
+        188.035,
+        188.511,
+        188.976,
+        189.463,
+        189.951,
+        190.427,
+        190.903,
+        191.39,
+        191.878,
+        192.342,
+        192.83,
+        193.306,
+        193.794,
+        194.27,
+        194.746,
+        195.233,
+        195.709,
+        196.185,
+        196.661,
+        197.149,
+        197.625,
+        198.113,
+        198.589,
+        199.076,
+        199.552,
+        200.017,
+        200.516,
+        201.004,
+        201.491,
+        201.967,
+        202.443,
+        202.919,
+        203.407,
+        203.883,
+        204.37,
+        204.846,
+        205.322,
+        205.798,
+        206.286,
+        206.762,
+        207.25,
+        207.726,
+        208.213,
+        208.678,
+        209.165,
+        209.641,
+        210.129,
+        210.605,
+        211.081,
+        211.557,
+        212.045,
+        212.521,
+        213.008,
+        213.484,
+        213.96,
+        214.436,
+        214.924,
+        215.295,
+        215.655,
+        216.12,
+        216.584,
+        217.072,
+        217.571,
+        218.035,
+        218.523,
+        218.999,
+        219.498,
+        219.986,
+        220.45,
+        220.915,
+        221.414,
+        221.89,
+        222.366,
+        222.842,
+        223.33,
+        223.806,
+        224.293,
+        224.758,
+        225.234,
+        225.733,
+        226.209,
+        226.685,
+        227.161,
+        227.648,
+        228.124,
+        228.6,
+        229.088,
+        229.564,
+        230.04,
+        230.516,
+        230.98,
+        231.468,
+        232.072,
+        232.536,
+        233.035,
+        233.616,
+        234.104,
+        234.58,
+        235.056,
+        235.532,
+        236.019,
+        236.495,
+        236.96,
+        237.447,
+        237.935,
+        238.422,
+        238.899,
+        239.375,
+        239.851,
+        240.338,
+        240.814,
+        241.29,
+        241.766,
+        242.254,
+        242.73,
+        243.217,
+        243.693,
+        244.169,
+        244.645,
+        245.133,
+        245.597,
+        246.085,
+        246.549,
+        247.049,
+        247.513,
+        248.001,
+        248.5,
+        248.976,
+        249.464,
+        249.951,
+        250.416,
+        250.892,
+        251.368,
+        251.855,
+        252.32,
+        252.807,
+        253.283,
+        253.771,
+        254.247,
+        254.735,
+        255.211,
+        255.687,
+        256.139,
+        256.639,
+        257.126,
+        257.602,
+        258.078,
+        258.566,
+        259.042,
+        259.529,
+        260.005,
+        260.481,
+        260.957,
+        261.433,
+        261.909,
+        262.397,
+        262.873,
+        263.361,
+        263.86,
+        264.336,
+        264.812,
+        265.288,
+        265.752,
+        266.24,
+        266.716,
+        267.215,
+        267.691,
+        268.167,
+        268.632,
+        269.119,
+        269.595,
+        270.083,
+        270.559,
+        271.047,
+        271.523,
+        271.999,
+        272.475,
+        272.962,
+        273.438,
+        273.926,
+        274.402,
+        274.889,
+        275.354,
+        275.841,
+        276.317,
+        276.805,
+        277.269,
+        277.757,
+        278.245,
+        278.721,
+        279.197,
+        279.673,
+        280.149,
+        280.636,
+        281.112,
+        281.588,
+        282.076,
+        282.552,
+        283.028,
+        283.516,
+        283.992,
+        284.479,
+        284.944,
+        285.431,
+        285.907,
+        286.395,
+        286.871,
+        287.347,
+        287.835,
+        288.322,
+        288.798,
+        289.274,
+        289.75,
+        290.238,
+        290.714,
+        291.201,
+        291.677,
+        292.153,
+        292.629,
+        293.117,
+        293.593,
+        294.058,
+        294.557,
+        295.044,
+        295.532,
+        296.008,
+        296.484,
+        296.96,
+        297.436,
+        297.924,
+        298.388,
+        298.876,
+        299.352,
+        299.828,
+        300.304,
+        300.803,
+        301.279,
+        301.755,
+        302.231
+      ],
+      "health": "ok",
+      "suspectReasons": []
+    },
+    {
+      "calibrationId": "madmom",
+      "audioTime": 0.38,
+      "bpm": 125.0,
+      "beatsPerBar": 4,
+      "beatUnit": 4,
+      "source": "machine",
+      "note": "madmom 的 downbeat 模型（158 个小节）自己听出来的小节线，全曲 4/4。 拍速与 librosa 那条略有出入时，整曲比较会慢慢滑，分段看。",
+      "downbeats": [
+        0.38,
+        2.33,
+        4.25,
+        6.17,
+        8.09,
+        10.01,
+        11.93,
+        13.85,
+        15.77,
+        17.68,
+        19.6,
+        21.52,
+        23.44,
+        25.36,
+        27.28,
+        29.2,
+        31.13,
+        33.04,
+        34.96,
+        36.87,
+        38.8,
+        40.71,
+        42.63,
+        44.56,
+        46.48,
+        48.38,
+        50.3,
+        52.22,
+        54.14,
+        56.04,
+        57.97,
+        59.89,
+        61.81,
+        63.73,
+        65.65,
+        67.58,
+        69.51,
+        71.41,
+        73.33,
+        75.24,
+        77.18,
+        79.09,
+        81.0,
+        82.93,
+        84.85,
+        86.77,
+        88.68,
+        90.62,
+        92.51,
+        94.45,
+        96.36,
+        98.27,
+        100.19,
+        102.12,
+        104.04,
+        105.95,
+        107.88,
+        109.8,
+        111.72,
+        113.63,
+        115.54,
+        117.47,
+        119.38,
+        121.3,
+        123.23,
+        125.15,
+        127.06,
+        128.98,
+        130.91,
+        132.83,
+        134.75,
+        136.68,
+        138.59,
+        140.51,
+        142.44,
+        144.35,
+        146.27,
+        148.19,
+        150.11,
+        152.03,
+        153.93,
+        155.87,
+        157.78,
+        159.7,
+        161.62,
+        163.53,
+        165.46,
+        167.38,
+        169.28,
+        171.22,
+        173.13,
+        175.05,
+        176.97,
+        178.87,
+        180.81,
+        182.72,
+        184.64,
+        186.57,
+        188.48,
+        190.41,
+        192.32,
+        194.24,
+        196.16,
+        198.09,
+        200.0,
+        201.94,
+        203.86,
+        205.78,
+        207.7,
+        209.61,
+        211.54,
+        213.45,
+        215.37,
+        217.29,
+        219.21,
+        221.13,
+        223.05,
+        224.97,
+        226.89,
+        228.81,
+        230.73,
+        232.63,
+        234.56,
+        236.48,
+        238.4,
+        240.32,
+        242.23,
+        244.15,
+        246.06,
+        247.97,
+        249.92,
+        251.83,
+        253.74,
+        255.67,
+        257.58,
+        259.5,
+        261.41,
+        263.34,
+        265.27,
+        267.18,
+        269.09,
+        271.02,
+        272.94,
+        274.86,
+        276.78,
+        278.7,
+        280.61,
+        282.53,
+        284.45,
+        286.37,
+        288.3,
+        290.21,
+        292.13,
+        294.04,
+        295.99,
+        297.9,
+        299.81,
+        301.73
+      ],
+      "audioFileName": "Spitz - 夜を駆ける (策夜疾驰).ogg",
+      "health": "ok",
+      "suspectReasons": []
+    }
+  ],
+  "events": [
+    {
+      "eventId": "evt_b03",
+      "audioTime": 0.0,
+      "type": "seek",
+      "source": "mobile",
+      "payload": {
+        "to": 0.0,
+        "note": "从 readable.log 读出来的",
+        "timeNote": ""
+      }
+    },
+    {
+      "eventId": "evt_001",
+      "audioTime": 6.331,
+      "type": "style_reading",
+      "source": "mobile",
+      "payload": {
+        "style": "民谣",
+        "confidence": 0.242,
+        "phrase": "大概偏民谣，和刚才比很稳定",
+        "accepted": null
+      }
+    },
+    {
+      "eventId": "evt_002",
+      "audioTime": 47.199,
+      "type": "style_reading",
+      "source": "mobile",
+      "payload": {
+        "style": "摇滚",
+        "confidence": 0.381,
+        "phrase": "有点像摇滚，和刚才比很稳定",
+        "accepted": null
+      }
+    },
+    {
+      "eventId": "evt_b04",
+      "audioTime": 108.8,
+      "type": "song_change",
+      "source": "mobile",
+      "payload": {
+        "to": "",
+        "note": "从 readable.log 读出来的",
+        "timeNote": "时间取自这句之前最后已知的歌曲位置"
+      }
+    },
+    {
+      "eventId": "machine_beat_0000",
+      "audioTime": 0.0,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 0
+      }
+    },
+    {
+      "eventId": "machine_beat_0001",
+      "audioTime": 0.395,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 1
+      }
+    },
+    {
+      "eventId": "machine_beat_0002",
+      "audioTime": 0.766,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 2
+      }
+    },
+    {
+      "eventId": "machine_beat_0003",
+      "audioTime": 1.149,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 3
+      }
+    },
+    {
+      "eventId": "machine_beat_0004",
+      "audioTime": 1.625,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 4
+      }
+    },
+    {
+      "eventId": "machine_beat_0005",
+      "audioTime": 2.113,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 5
+      }
+    },
+    {
+      "eventId": "machine_beat_0006",
+      "audioTime": 2.601,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 6
+      }
+    },
+    {
+      "eventId": "machine_beat_0007",
+      "audioTime": 3.065,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 7
+      }
+    },
+    {
+      "eventId": "machine_beat_0008",
+      "audioTime": 3.541,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 8
+      }
+    },
+    {
+      "eventId": "machine_beat_0009",
+      "audioTime": 4.029,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 9
+      }
+    },
+    {
+      "eventId": "machine_beat_0010",
+      "audioTime": 4.505,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 10
+      }
+    },
+    {
+      "eventId": "machine_beat_0011",
+      "audioTime": 4.992,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 11
+      }
+    },
+    {
+      "eventId": "machine_beat_0012",
+      "audioTime": 5.457,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 12
+      }
+    },
+    {
+      "eventId": "machine_beat_0013",
+      "audioTime": 5.956,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 13
+      }
+    },
+    {
+      "eventId": "machine_beat_0014",
+      "audioTime": 6.444,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 14
+      }
+    },
+    {
+      "eventId": "machine_beat_0015",
+      "audioTime": 6.896,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 15
+      }
+    },
+    {
+      "eventId": "machine_beat_0016",
+      "audioTime": 7.384,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 16
+      }
+    },
+    {
+      "eventId": "machine_beat_0017",
+      "audioTime": 7.872,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 17
+      }
+    },
+    {
+      "eventId": "machine_beat_0018",
+      "audioTime": 8.359,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 18
+      }
+    },
+    {
+      "eventId": "machine_beat_0019",
+      "audioTime": 8.835,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 19
+      }
+    },
+    {
+      "eventId": "machine_beat_0020",
+      "audioTime": 9.311,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 20
+      }
+    },
+    {
+      "eventId": "machine_beat_0021",
+      "audioTime": 9.787,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 21
+      }
+    },
+    {
+      "eventId": "machine_beat_0022",
+      "audioTime": 10.275,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 22
+      }
+    },
+    {
+      "eventId": "machine_beat_0023",
+      "audioTime": 10.751,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 23
+      }
+    },
+    {
+      "eventId": "machine_beat_0024",
+      "audioTime": 11.227,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 24
+      }
+    },
+    {
+      "eventId": "machine_beat_0025",
+      "audioTime": 11.714,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 25
+      }
+    },
+    {
+      "eventId": "machine_beat_0026",
+      "audioTime": 12.19,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 26
+      }
+    },
+    {
+      "eventId": "machine_beat_0027",
+      "audioTime": 12.666,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 27
+      }
+    },
+    {
+      "eventId": "machine_beat_0028",
+      "audioTime": 13.142,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 28
+      }
+    },
+    {
+      "eventId": "machine_beat_0029",
+      "audioTime": 13.63,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 29
+      }
+    },
+    {
+      "eventId": "machine_beat_0030",
+      "audioTime": 14.106,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 30
+      }
+    },
+    {
+      "eventId": "machine_beat_0031",
+      "audioTime": 14.594,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 31
+      }
+    },
+    {
+      "eventId": "machine_beat_0032",
+      "audioTime": 15.07,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 32
+      }
+    },
+    {
+      "eventId": "machine_beat_0033",
+      "audioTime": 15.557,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 33
+      }
+    },
+    {
+      "eventId": "machine_beat_0034",
+      "audioTime": 16.033,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 34
+      }
+    },
+    {
+      "eventId": "machine_beat_0035",
+      "audioTime": 16.486,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 35
+      }
+    },
+    {
+      "eventId": "machine_beat_0036",
+      "audioTime": 16.985,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 36
+      }
+    },
+    {
+      "eventId": "machine_beat_0037",
+      "audioTime": 17.473,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 37
+      }
+    },
+    {
+      "eventId": "machine_beat_0038",
+      "audioTime": 17.937,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 38
+      }
+    },
+    {
+      "eventId": "machine_beat_0039",
+      "audioTime": 18.425,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 39
+      }
+    },
+    {
+      "eventId": "machine_beat_0040",
+      "audioTime": 18.913,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 40
+      }
+    },
+    {
+      "eventId": "machine_beat_0041",
+      "audioTime": 19.389,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 41
+      }
+    },
+    {
+      "eventId": "machine_beat_0042",
+      "audioTime": 19.865,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 42
+      }
+    },
+    {
+      "eventId": "machine_beat_0043",
+      "audioTime": 20.341,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 43
+      }
+    },
+    {
+      "eventId": "machine_beat_0044",
+      "audioTime": 20.793,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 44
+      }
+    },
+    {
+      "eventId": "machine_beat_0045",
+      "audioTime": 21.304,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 45
+      }
+    },
+    {
+      "eventId": "machine_beat_0046",
+      "audioTime": 21.769,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 46
+      }
+    },
+    {
+      "eventId": "machine_beat_0047",
+      "audioTime": 22.268,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 47
+      }
+    },
+    {
+      "eventId": "machine_beat_0048",
+      "audioTime": 22.756,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 48
+      }
+    },
+    {
+      "eventId": "machine_beat_0049",
+      "audioTime": 23.232,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 49
+      }
+    },
+    {
+      "eventId": "machine_beat_0050",
+      "audioTime": 23.719,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 50
+      }
+    },
+    {
+      "eventId": "machine_beat_0051",
+      "audioTime": 24.172,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 51
+      }
+    },
+    {
+      "eventId": "machine_beat_0052",
+      "audioTime": 24.671,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 52
+      }
+    },
+    {
+      "eventId": "machine_beat_0053",
+      "audioTime": 25.147,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 53
+      }
+    },
+    {
+      "eventId": "machine_beat_0054",
+      "audioTime": 25.635,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 54
+      }
+    },
+    {
+      "eventId": "machine_beat_0055",
+      "audioTime": 26.099,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 55
+      }
+    },
+    {
+      "eventId": "machine_beat_0056",
+      "audioTime": 26.575,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 56
+      }
+    },
+    {
+      "eventId": "machine_beat_0057",
+      "audioTime": 27.028,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 57
+      }
+    },
+    {
+      "eventId": "machine_beat_0058",
+      "audioTime": 27.539,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 58
+      }
+    },
+    {
+      "eventId": "machine_beat_0059",
+      "audioTime": 28.026,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 59
+      }
+    },
+    {
+      "eventId": "machine_beat_0060",
+      "audioTime": 28.514,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 60
+      }
+    },
+    {
+      "eventId": "machine_beat_0061",
+      "audioTime": 28.99,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 61
+      }
+    },
+    {
+      "eventId": "machine_beat_0062",
+      "audioTime": 29.466,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 62
+      }
+    },
+    {
+      "eventId": "machine_beat_0063",
+      "audioTime": 29.954,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 63
+      }
+    },
+    {
+      "eventId": "machine_beat_0064",
+      "audioTime": 30.65,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 64
+      }
+    },
+    {
+      "eventId": "machine_beat_0065",
+      "audioTime": 31.15,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 65
+      }
+    },
+    {
+      "eventId": "machine_beat_0066",
+      "audioTime": 31.637,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 66
+      }
+    },
+    {
+      "eventId": "machine_beat_0067",
+      "audioTime": 32.102,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 67
+      }
+    },
+    {
+      "eventId": "machine_beat_0068",
+      "audioTime": 32.566,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 68
+      }
+    },
+    {
+      "eventId": "machine_beat_0069",
+      "audioTime": 33.065,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 69
+      }
+    },
+    {
+      "eventId": "machine_beat_0070",
+      "audioTime": 33.553,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 70
+      }
+    },
+    {
+      "eventId": "machine_beat_0071",
+      "audioTime": 34.017,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 71
+      }
+    },
+    {
+      "eventId": "machine_beat_0072",
+      "audioTime": 34.458,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 72
+      }
+    },
+    {
+      "eventId": "machine_beat_0073",
+      "audioTime": 34.981,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 73
+      }
+    },
+    {
+      "eventId": "machine_beat_0074",
+      "audioTime": 35.468,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 74
+      }
+    },
+    {
+      "eventId": "machine_beat_0075",
+      "audioTime": 35.933,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 75
+      }
+    },
+    {
+      "eventId": "machine_beat_0076",
+      "audioTime": 36.42,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 76
+      }
+    },
+    {
+      "eventId": "machine_beat_0077",
+      "audioTime": 36.897,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 77
+      }
+    },
+    {
+      "eventId": "machine_beat_0078",
+      "audioTime": 37.384,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 78
+      }
+    },
+    {
+      "eventId": "machine_beat_0079",
+      "audioTime": 37.849,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 79
+      }
+    },
+    {
+      "eventId": "machine_beat_0080",
+      "audioTime": 38.336,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 80
+      }
+    },
+    {
+      "eventId": "machine_beat_0081",
+      "audioTime": 38.812,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 81
+      }
+    },
+    {
+      "eventId": "machine_beat_0082",
+      "audioTime": 39.3,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 82
+      }
+    },
+    {
+      "eventId": "machine_beat_0083",
+      "audioTime": 39.787,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 83
+      }
+    },
+    {
+      "eventId": "machine_beat_0084",
+      "audioTime": 40.263,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 84
+      }
+    },
+    {
+      "eventId": "machine_beat_0085",
+      "audioTime": 40.728,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 85
+      }
+    },
+    {
+      "eventId": "machine_beat_0086",
+      "audioTime": 41.204,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 86
+      }
+    },
+    {
+      "eventId": "machine_beat_0087",
+      "audioTime": 41.691,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 87
+      }
+    },
+    {
+      "eventId": "machine_beat_0088",
+      "audioTime": 42.167,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 88
+      }
+    },
+    {
+      "eventId": "machine_beat_0089",
+      "audioTime": 42.655,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 89
+      }
+    },
+    {
+      "eventId": "machine_beat_0090",
+      "audioTime": 43.131,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 90
+      }
+    },
+    {
+      "eventId": "machine_beat_0091",
+      "audioTime": 43.619,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 91
+      }
+    },
+    {
+      "eventId": "machine_beat_0092",
+      "audioTime": 44.095,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 92
+      }
+    },
+    {
+      "eventId": "machine_beat_0093",
+      "audioTime": 44.582,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 93
+      }
+    },
+    {
+      "eventId": "machine_beat_0094",
+      "audioTime": 45.058,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 94
+      }
+    },
+    {
+      "eventId": "machine_beat_0095",
+      "audioTime": 45.534,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 95
+      }
+    },
+    {
+      "eventId": "machine_beat_0096",
+      "audioTime": 46.022,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 96
+      }
+    },
+    {
+      "eventId": "machine_beat_0097",
+      "audioTime": 46.486,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 97
+      }
+    },
+    {
+      "eventId": "machine_beat_0098",
+      "audioTime": 46.974,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 98
+      }
+    },
+    {
+      "eventId": "machine_beat_0099",
+      "audioTime": 47.45,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 99
+      }
+    },
+    {
+      "eventId": "machine_beat_0100",
+      "audioTime": 47.938,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 100
+      }
+    },
+    {
+      "eventId": "machine_beat_0101",
+      "audioTime": 48.402,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 101
+      }
+    },
+    {
+      "eventId": "machine_beat_0102",
+      "audioTime": 48.89,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 102
+      }
+    },
+    {
+      "eventId": "machine_beat_0103",
+      "audioTime": 49.366,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 103
+      }
+    },
+    {
+      "eventId": "machine_beat_0104",
+      "audioTime": 49.842,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 104
+      }
+    },
+    {
+      "eventId": "machine_beat_0105",
+      "audioTime": 50.318,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 105
+      }
+    },
+    {
+      "eventId": "machine_beat_0106",
+      "audioTime": 50.794,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 106
+      }
+    },
+    {
+      "eventId": "machine_beat_0107",
+      "audioTime": 51.293,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 107
+      }
+    },
+    {
+      "eventId": "machine_beat_0108",
+      "audioTime": 51.757,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 108
+      }
+    },
+    {
+      "eventId": "machine_beat_0109",
+      "audioTime": 52.245,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 109
+      }
+    },
+    {
+      "eventId": "machine_beat_0110",
+      "audioTime": 52.721,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 110
+      }
+    },
+    {
+      "eventId": "machine_beat_0111",
+      "audioTime": 53.197,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 111
+      }
+    },
+    {
+      "eventId": "machine_beat_0112",
+      "audioTime": 53.673,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 112
+      }
+    },
+    {
+      "eventId": "machine_beat_0113",
+      "audioTime": 54.161,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 113
+      }
+    },
+    {
+      "eventId": "machine_beat_0114",
+      "audioTime": 54.648,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 114
+      }
+    },
+    {
+      "eventId": "machine_beat_0115",
+      "audioTime": 55.124,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 115
+      }
+    },
+    {
+      "eventId": "machine_beat_0116",
+      "audioTime": 55.6,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 116
+      }
+    },
+    {
+      "eventId": "machine_beat_0117",
+      "audioTime": 56.065,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 117
+      }
+    },
+    {
+      "eventId": "machine_beat_0118",
+      "audioTime": 56.552,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 118
+      }
+    },
+    {
+      "eventId": "machine_beat_0119",
+      "audioTime": 57.04,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 119
+      }
+    },
+    {
+      "eventId": "machine_beat_0120",
+      "audioTime": 57.516,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 120
+      }
+    },
+    {
+      "eventId": "machine_beat_0121",
+      "audioTime": 57.992,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 121
+      }
+    },
+    {
+      "eventId": "machine_beat_0122",
+      "audioTime": 58.456,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 122
+      }
+    },
+    {
+      "eventId": "machine_beat_0123",
+      "audioTime": 58.944,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 123
+      }
+    },
+    {
+      "eventId": "machine_beat_0124",
+      "audioTime": 59.42,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 124
+      }
+    },
+    {
+      "eventId": "machine_beat_0125",
+      "audioTime": 59.919,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 125
+      }
+    },
+    {
+      "eventId": "machine_beat_0126",
+      "audioTime": 60.407,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 126
+      }
+    },
+    {
+      "eventId": "machine_beat_0127",
+      "audioTime": 60.883,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 127
+      }
+    },
+    {
+      "eventId": "machine_beat_0128",
+      "audioTime": 61.359,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 128
+      }
+    },
+    {
+      "eventId": "machine_beat_0129",
+      "audioTime": 61.835,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 129
+      }
+    },
+    {
+      "eventId": "machine_beat_0130",
+      "audioTime": 62.322,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 130
+      }
+    },
+    {
+      "eventId": "machine_beat_0131",
+      "audioTime": 62.81,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 131
+      }
+    },
+    {
+      "eventId": "machine_beat_0132",
+      "audioTime": 63.274,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 132
+      }
+    },
+    {
+      "eventId": "machine_beat_0133",
+      "audioTime": 63.75,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 133
+      }
+    },
+    {
+      "eventId": "machine_beat_0134",
+      "audioTime": 64.25,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 134
+      }
+    },
+    {
+      "eventId": "machine_beat_0135",
+      "audioTime": 64.726,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 135
+      }
+    },
+    {
+      "eventId": "machine_beat_0136",
+      "audioTime": 65.202,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 136
+      }
+    },
+    {
+      "eventId": "machine_beat_0137",
+      "audioTime": 65.678,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 137
+      }
+    },
+    {
+      "eventId": "machine_beat_0138",
+      "audioTime": 66.154,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 138
+      }
+    },
+    {
+      "eventId": "machine_beat_0139",
+      "audioTime": 66.641,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 139
+      }
+    },
+    {
+      "eventId": "machine_beat_0140",
+      "audioTime": 67.117,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 140
+      }
+    },
+    {
+      "eventId": "machine_beat_0141",
+      "audioTime": 67.605,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 141
+      }
+    },
+    {
+      "eventId": "machine_beat_0142",
+      "audioTime": 68.081,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 142
+      }
+    },
+    {
+      "eventId": "machine_beat_0143",
+      "audioTime": 68.557,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 143
+      }
+    },
+    {
+      "eventId": "machine_beat_0144",
+      "audioTime": 69.045,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 144
+      }
+    },
+    {
+      "eventId": "machine_beat_0145",
+      "audioTime": 69.532,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 145
+      }
+    },
+    {
+      "eventId": "machine_beat_0146",
+      "audioTime": 70.008,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 146
+      }
+    },
+    {
+      "eventId": "machine_beat_0147",
+      "audioTime": 70.484,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 147
+      }
+    },
+    {
+      "eventId": "machine_beat_0148",
+      "audioTime": 70.96,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 148
+      }
+    },
+    {
+      "eventId": "machine_beat_0149",
+      "audioTime": 71.436,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 149
+      }
+    },
+    {
+      "eventId": "machine_beat_0150",
+      "audioTime": 71.912,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 150
+      }
+    },
+    {
+      "eventId": "machine_beat_0151",
+      "audioTime": 72.388,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 151
+      }
+    },
+    {
+      "eventId": "machine_beat_0152",
+      "audioTime": 72.876,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 152
+      }
+    },
+    {
+      "eventId": "machine_beat_0153",
+      "audioTime": 73.352,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 153
+      }
+    },
+    {
+      "eventId": "machine_beat_0154",
+      "audioTime": 73.828,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 154
+      }
+    },
+    {
+      "eventId": "machine_beat_0155",
+      "audioTime": 74.315,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 155
+      }
+    },
+    {
+      "eventId": "machine_beat_0156",
+      "audioTime": 74.791,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 156
+      }
+    },
+    {
+      "eventId": "machine_beat_0157",
+      "audioTime": 75.267,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 157
+      }
+    },
+    {
+      "eventId": "machine_beat_0158",
+      "audioTime": 75.755,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 158
+      }
+    },
+    {
+      "eventId": "machine_beat_0159",
+      "audioTime": 76.243,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 159
+      }
+    },
+    {
+      "eventId": "machine_beat_0160",
+      "audioTime": 76.719,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 160
+      }
+    },
+    {
+      "eventId": "machine_beat_0161",
+      "audioTime": 77.206,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 161
+      }
+    },
+    {
+      "eventId": "machine_beat_0162",
+      "audioTime": 77.682,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 162
+      }
+    },
+    {
+      "eventId": "machine_beat_0163",
+      "audioTime": 78.158,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 163
+      }
+    },
+    {
+      "eventId": "machine_beat_0164",
+      "audioTime": 78.634,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 164
+      }
+    },
+    {
+      "eventId": "machine_beat_0165",
+      "audioTime": 79.11,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 165
+      }
+    },
+    {
+      "eventId": "machine_beat_0166",
+      "audioTime": 79.586,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 166
+      }
+    },
+    {
+      "eventId": "machine_beat_0167",
+      "audioTime": 80.062,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 167
+      }
+    },
+    {
+      "eventId": "machine_beat_0168",
+      "audioTime": 80.55,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 168
+      }
+    },
+    {
+      "eventId": "machine_beat_0169",
+      "audioTime": 81.026,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 169
+      }
+    },
+    {
+      "eventId": "machine_beat_0170",
+      "audioTime": 81.514,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 170
+      }
+    },
+    {
+      "eventId": "machine_beat_0171",
+      "audioTime": 81.99,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 171
+      }
+    },
+    {
+      "eventId": "machine_beat_0172",
+      "audioTime": 82.466,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 172
+      }
+    },
+    {
+      "eventId": "machine_beat_0173",
+      "audioTime": 82.953,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 173
+      }
+    },
+    {
+      "eventId": "machine_beat_0174",
+      "audioTime": 83.429,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 174
+      }
+    },
+    {
+      "eventId": "machine_beat_0175",
+      "audioTime": 83.905,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 175
+      }
+    },
+    {
+      "eventId": "machine_beat_0176",
+      "audioTime": 84.405,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 176
+      }
+    },
+    {
+      "eventId": "machine_beat_0177",
+      "audioTime": 84.869,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 177
+      }
+    },
+    {
+      "eventId": "machine_beat_0178",
+      "audioTime": 85.357,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 178
+      }
+    },
+    {
+      "eventId": "machine_beat_0179",
+      "audioTime": 85.833,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 179
+      }
+    },
+    {
+      "eventId": "machine_beat_0180",
+      "audioTime": 86.309,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 180
+      }
+    },
+    {
+      "eventId": "machine_beat_0181",
+      "audioTime": 86.785,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 181
+      }
+    },
+    {
+      "eventId": "machine_beat_0182",
+      "audioTime": 87.261,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 182
+      }
+    },
+    {
+      "eventId": "machine_beat_0183",
+      "audioTime": 87.748,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 183
+      }
+    },
+    {
+      "eventId": "machine_beat_0184",
+      "audioTime": 88.224,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 184
+      }
+    },
+    {
+      "eventId": "machine_beat_0185",
+      "audioTime": 88.7,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 185
+      }
+    },
+    {
+      "eventId": "machine_beat_0186",
+      "audioTime": 89.188,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 186
+      }
+    },
+    {
+      "eventId": "machine_beat_0187",
+      "audioTime": 89.664,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 187
+      }
+    },
+    {
+      "eventId": "machine_beat_0188",
+      "audioTime": 90.151,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 188
+      }
+    },
+    {
+      "eventId": "machine_beat_0189",
+      "audioTime": 90.639,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 189
+      }
+    },
+    {
+      "eventId": "machine_beat_0190",
+      "audioTime": 91.115,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 190
+      }
+    },
+    {
+      "eventId": "machine_beat_0191",
+      "audioTime": 91.568,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 191
+      }
+    },
+    {
+      "eventId": "machine_beat_0192",
+      "audioTime": 92.067,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 192
+      }
+    },
+    {
+      "eventId": "machine_beat_0193",
+      "audioTime": 92.532,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 193
+      }
+    },
+    {
+      "eventId": "machine_beat_0194",
+      "audioTime": 93.019,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 194
+      }
+    },
+    {
+      "eventId": "machine_beat_0195",
+      "audioTime": 93.507,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 195
+      }
+    },
+    {
+      "eventId": "machine_beat_0196",
+      "audioTime": 93.994,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 196
+      }
+    },
+    {
+      "eventId": "machine_beat_0197",
+      "audioTime": 94.47,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 197
+      }
+    },
+    {
+      "eventId": "machine_beat_0198",
+      "audioTime": 94.935,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 198
+      }
+    },
+    {
+      "eventId": "machine_beat_0199",
+      "audioTime": 95.422,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 199
+      }
+    },
+    {
+      "eventId": "machine_beat_0200",
+      "audioTime": 95.898,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 200
+      }
+    },
+    {
+      "eventId": "machine_beat_0201",
+      "audioTime": 96.374,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 201
+      }
+    },
+    {
+      "eventId": "machine_beat_0202",
+      "audioTime": 96.839,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 202
+      }
+    },
+    {
+      "eventId": "machine_beat_0203",
+      "audioTime": 97.338,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 203
+      }
+    },
+    {
+      "eventId": "machine_beat_0204",
+      "audioTime": 97.814,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 204
+      }
+    },
+    {
+      "eventId": "machine_beat_0205",
+      "audioTime": 98.29,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 205
+      }
+    },
+    {
+      "eventId": "machine_beat_0206",
+      "audioTime": 98.778,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 206
+      }
+    },
+    {
+      "eventId": "machine_beat_0207",
+      "audioTime": 99.265,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 207
+      }
+    },
+    {
+      "eventId": "machine_beat_0208",
+      "audioTime": 99.741,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 208
+      }
+    },
+    {
+      "eventId": "machine_beat_0209",
+      "audioTime": 100.217,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 209
+      }
+    },
+    {
+      "eventId": "machine_beat_0210",
+      "audioTime": 100.693,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 210
+      }
+    },
+    {
+      "eventId": "machine_beat_0211",
+      "audioTime": 101.181,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 211
+      }
+    },
+    {
+      "eventId": "machine_beat_0212",
+      "audioTime": 101.657,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 212
+      }
+    },
+    {
+      "eventId": "machine_beat_0213",
+      "audioTime": 102.145,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 213
+      }
+    },
+    {
+      "eventId": "machine_beat_0214",
+      "audioTime": 102.621,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 214
+      }
+    },
+    {
+      "eventId": "machine_beat_0215",
+      "audioTime": 103.108,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 215
+      }
+    },
+    {
+      "eventId": "machine_beat_0216",
+      "audioTime": 103.573,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 216
+      }
+    },
+    {
+      "eventId": "machine_beat_0217",
+      "audioTime": 104.049,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 217
+      }
+    },
+    {
+      "eventId": "machine_beat_0218",
+      "audioTime": 104.536,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 218
+      }
+    },
+    {
+      "eventId": "machine_beat_0219",
+      "audioTime": 105.024,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 219
+      }
+    },
+    {
+      "eventId": "machine_beat_0220",
+      "audioTime": 105.5,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 220
+      }
+    },
+    {
+      "eventId": "machine_beat_0221",
+      "audioTime": 105.976,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 221
+      }
+    },
+    {
+      "eventId": "machine_beat_0222",
+      "audioTime": 106.44,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 222
+      }
+    },
+    {
+      "eventId": "machine_beat_0223",
+      "audioTime": 106.94,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 223
+      }
+    },
+    {
+      "eventId": "machine_beat_0224",
+      "audioTime": 107.416,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 224
+      }
+    },
+    {
+      "eventId": "machine_beat_0225",
+      "audioTime": 107.903,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 225
+      }
+    },
+    {
+      "eventId": "machine_beat_0226",
+      "audioTime": 108.379,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 226
+      }
+    },
+    {
+      "eventId": "machine_beat_0227",
+      "audioTime": 108.867,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 227
+      }
+    },
+    {
+      "eventId": "machine_beat_0228",
+      "audioTime": 109.331,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 228
+      }
+    },
+    {
+      "eventId": "machine_beat_0229",
+      "audioTime": 109.819,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 229
+      }
+    },
+    {
+      "eventId": "machine_beat_0230",
+      "audioTime": 110.306,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 230
+      }
+    },
+    {
+      "eventId": "machine_beat_0231",
+      "audioTime": 110.794,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 231
+      }
+    },
+    {
+      "eventId": "machine_beat_0232",
+      "audioTime": 111.258,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 232
+      }
+    },
+    {
+      "eventId": "machine_beat_0233",
+      "audioTime": 111.746,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 233
+      }
+    },
+    {
+      "eventId": "machine_beat_0234",
+      "audioTime": 112.21,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 234
+      }
+    },
+    {
+      "eventId": "machine_beat_0235",
+      "audioTime": 112.698,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 235
+      }
+    },
+    {
+      "eventId": "machine_beat_0236",
+      "audioTime": 113.174,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 236
+      }
+    },
+    {
+      "eventId": "machine_beat_0237",
+      "audioTime": 113.65,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 237
+      }
+    },
+    {
+      "eventId": "machine_beat_0238",
+      "audioTime": 114.126,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 238
+      }
+    },
+    {
+      "eventId": "machine_beat_0239",
+      "audioTime": 114.614,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 239
+      }
+    },
+    {
+      "eventId": "machine_beat_0240",
+      "audioTime": 115.09,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 240
+      }
+    },
+    {
+      "eventId": "machine_beat_0241",
+      "audioTime": 115.566,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 241
+      }
+    },
+    {
+      "eventId": "machine_beat_0242",
+      "audioTime": 116.042,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 242
+      }
+    },
+    {
+      "eventId": "machine_beat_0243",
+      "audioTime": 116.529,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 243
+      }
+    },
+    {
+      "eventId": "machine_beat_0244",
+      "audioTime": 117.005,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 244
+      }
+    },
+    {
+      "eventId": "machine_beat_0245",
+      "audioTime": 117.493,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 245
+      }
+    },
+    {
+      "eventId": "machine_beat_0246",
+      "audioTime": 117.969,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 246
+      }
+    },
+    {
+      "eventId": "machine_beat_0247",
+      "audioTime": 118.457,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 247
+      }
+    },
+    {
+      "eventId": "machine_beat_0248",
+      "audioTime": 118.933,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 248
+      }
+    },
+    {
+      "eventId": "machine_beat_0249",
+      "audioTime": 119.409,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 249
+      }
+    },
+    {
+      "eventId": "machine_beat_0250",
+      "audioTime": 119.885,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 250
+      }
+    },
+    {
+      "eventId": "machine_beat_0251",
+      "audioTime": 120.372,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 251
+      }
+    },
+    {
+      "eventId": "machine_beat_0252",
+      "audioTime": 120.848,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 252
+      }
+    },
+    {
+      "eventId": "machine_beat_0253",
+      "audioTime": 121.324,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 253
+      }
+    },
+    {
+      "eventId": "machine_beat_0254",
+      "audioTime": 121.8,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 254
+      }
+    },
+    {
+      "eventId": "machine_beat_0255",
+      "audioTime": 122.276,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 255
+      }
+    },
+    {
+      "eventId": "machine_beat_0256",
+      "audioTime": 122.764,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 256
+      }
+    },
+    {
+      "eventId": "machine_beat_0257",
+      "audioTime": 123.217,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 257
+      }
+    },
+    {
+      "eventId": "machine_beat_0258",
+      "audioTime": 123.728,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 258
+      }
+    },
+    {
+      "eventId": "machine_beat_0259",
+      "audioTime": 124.204,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 259
+      }
+    },
+    {
+      "eventId": "machine_beat_0260",
+      "audioTime": 124.691,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 260
+      }
+    },
+    {
+      "eventId": "machine_beat_0261",
+      "audioTime": 125.179,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 261
+      }
+    },
+    {
+      "eventId": "machine_beat_0262",
+      "audioTime": 125.655,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 262
+      }
+    },
+    {
+      "eventId": "machine_beat_0263",
+      "audioTime": 126.142,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 263
+      }
+    },
+    {
+      "eventId": "machine_beat_0264",
+      "audioTime": 126.607,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 264
+      }
+    },
+    {
+      "eventId": "machine_beat_0265",
+      "audioTime": 127.083,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 265
+      }
+    },
+    {
+      "eventId": "machine_beat_0266",
+      "audioTime": 127.57,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 266
+      }
+    },
+    {
+      "eventId": "machine_beat_0267",
+      "audioTime": 128.07,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 267
+      }
+    },
+    {
+      "eventId": "machine_beat_0268",
+      "audioTime": 128.534,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 268
+      }
+    },
+    {
+      "eventId": "machine_beat_0269",
+      "audioTime": 129.01,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 269
+      }
+    },
+    {
+      "eventId": "machine_beat_0270",
+      "audioTime": 129.486,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 270
+      }
+    },
+    {
+      "eventId": "machine_beat_0271",
+      "audioTime": 129.974,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 271
+      }
+    },
+    {
+      "eventId": "machine_beat_0272",
+      "audioTime": 130.45,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 272
+      }
+    },
+    {
+      "eventId": "machine_beat_0273",
+      "audioTime": 130.926,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 273
+      }
+    },
+    {
+      "eventId": "machine_beat_0274",
+      "audioTime": 131.402,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 274
+      }
+    },
+    {
+      "eventId": "machine_beat_0275",
+      "audioTime": 131.901,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 275
+      }
+    },
+    {
+      "eventId": "machine_beat_0276",
+      "audioTime": 132.365,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 276
+      }
+    },
+    {
+      "eventId": "machine_beat_0277",
+      "audioTime": 132.853,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 277
+      }
+    },
+    {
+      "eventId": "machine_beat_0278",
+      "audioTime": 133.341,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 278
+      }
+    },
+    {
+      "eventId": "machine_beat_0279",
+      "audioTime": 133.817,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 279
+      }
+    },
+    {
+      "eventId": "machine_beat_0280",
+      "audioTime": 134.281,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 280
+      }
+    },
+    {
+      "eventId": "machine_beat_0281",
+      "audioTime": 134.676,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 281
+      }
+    },
+    {
+      "eventId": "machine_beat_0282",
+      "audioTime": 135.152,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 282
+      }
+    },
+    {
+      "eventId": "machine_beat_0283",
+      "audioTime": 135.744,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 283
+      }
+    },
+    {
+      "eventId": "machine_beat_0284",
+      "audioTime": 136.22,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 284
+      }
+    },
+    {
+      "eventId": "machine_beat_0285",
+      "audioTime": 136.707,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 285
+      }
+    },
+    {
+      "eventId": "machine_beat_0286",
+      "audioTime": 137.172,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 286
+      }
+    },
+    {
+      "eventId": "machine_beat_0287",
+      "audioTime": 137.636,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 287
+      }
+    },
+    {
+      "eventId": "machine_beat_0288",
+      "audioTime": 138.136,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 288
+      }
+    },
+    {
+      "eventId": "machine_beat_0289",
+      "audioTime": 138.6,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 289
+      }
+    },
+    {
+      "eventId": "machine_beat_0290",
+      "audioTime": 139.088,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 290
+      }
+    },
+    {
+      "eventId": "machine_beat_0291",
+      "audioTime": 139.575,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 291
+      }
+    },
+    {
+      "eventId": "machine_beat_0292",
+      "audioTime": 140.063,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 292
+      }
+    },
+    {
+      "eventId": "machine_beat_0293",
+      "audioTime": 140.527,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 293
+      }
+    },
+    {
+      "eventId": "machine_beat_0294",
+      "audioTime": 141.015,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 294
+      }
+    },
+    {
+      "eventId": "machine_beat_0295",
+      "audioTime": 141.491,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 295
+      }
+    },
+    {
+      "eventId": "machine_beat_0296",
+      "audioTime": 141.92,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 296
+      }
+    },
+    {
+      "eventId": "machine_beat_0297",
+      "audioTime": 142.454,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 297
+      }
+    },
+    {
+      "eventId": "machine_beat_0298",
+      "audioTime": 142.942,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 298
+      }
+    },
+    {
+      "eventId": "machine_beat_0299",
+      "audioTime": 143.418,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 299
+      }
+    },
+    {
+      "eventId": "machine_beat_0300",
+      "audioTime": 143.894,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 300
+      }
+    },
+    {
+      "eventId": "machine_beat_0301",
+      "audioTime": 144.37,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 301
+      }
+    },
+    {
+      "eventId": "machine_beat_0302",
+      "audioTime": 144.858,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 302
+      }
+    },
+    {
+      "eventId": "machine_beat_0303",
+      "audioTime": 145.322,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 303
+      }
+    },
+    {
+      "eventId": "machine_beat_0304",
+      "audioTime": 145.798,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 304
+      }
+    },
+    {
+      "eventId": "machine_beat_0305",
+      "audioTime": 146.286,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 305
+      }
+    },
+    {
+      "eventId": "machine_beat_0306",
+      "audioTime": 146.773,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 306
+      }
+    },
+    {
+      "eventId": "machine_beat_0307",
+      "audioTime": 147.249,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 307
+      }
+    },
+    {
+      "eventId": "machine_beat_0308",
+      "audioTime": 147.725,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 308
+      }
+    },
+    {
+      "eventId": "machine_beat_0309",
+      "audioTime": 148.213,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 309
+      }
+    },
+    {
+      "eventId": "machine_beat_0310",
+      "audioTime": 148.701,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 310
+      }
+    },
+    {
+      "eventId": "machine_beat_0311",
+      "audioTime": 149.177,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 311
+      }
+    },
+    {
+      "eventId": "machine_beat_0312",
+      "audioTime": 149.641,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 312
+      }
+    },
+    {
+      "eventId": "machine_beat_0313",
+      "audioTime": 150.129,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 313
+      }
+    },
+    {
+      "eventId": "machine_beat_0314",
+      "audioTime": 150.605,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 314
+      }
+    },
+    {
+      "eventId": "machine_beat_0315",
+      "audioTime": 151.104,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 315
+      }
+    },
+    {
+      "eventId": "machine_beat_0316",
+      "audioTime": 151.568,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 316
+      }
+    },
+    {
+      "eventId": "machine_beat_0317",
+      "audioTime": 152.056,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 317
+      }
+    },
+    {
+      "eventId": "machine_beat_0318",
+      "audioTime": 152.532,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 318
+      }
+    },
+    {
+      "eventId": "machine_beat_0319",
+      "audioTime": 153.008,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 319
+      }
+    },
+    {
+      "eventId": "machine_beat_0320",
+      "audioTime": 153.484,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 320
+      }
+    },
+    {
+      "eventId": "machine_beat_0321",
+      "audioTime": 153.948,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 321
+      }
+    },
+    {
+      "eventId": "machine_beat_0322",
+      "audioTime": 154.448,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 322
+      }
+    },
+    {
+      "eventId": "machine_beat_0323",
+      "audioTime": 154.924,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 323
+      }
+    },
+    {
+      "eventId": "machine_beat_0324",
+      "audioTime": 155.423,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 324
+      }
+    },
+    {
+      "eventId": "machine_beat_0325",
+      "audioTime": 155.887,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 325
+      }
+    },
+    {
+      "eventId": "machine_beat_0326",
+      "audioTime": 156.363,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 326
+      }
+    },
+    {
+      "eventId": "machine_beat_0327",
+      "audioTime": 156.851,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 327
+      }
+    },
+    {
+      "eventId": "machine_beat_0328",
+      "audioTime": 157.327,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 328
+      }
+    },
+    {
+      "eventId": "machine_beat_0329",
+      "audioTime": 157.814,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 329
+      }
+    },
+    {
+      "eventId": "machine_beat_0330",
+      "audioTime": 158.29,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 330
+      }
+    },
+    {
+      "eventId": "machine_beat_0331",
+      "audioTime": 158.766,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 331
+      }
+    },
+    {
+      "eventId": "machine_beat_0332",
+      "audioTime": 159.242,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 332
+      }
+    },
+    {
+      "eventId": "machine_beat_0333",
+      "audioTime": 159.73,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 333
+      }
+    },
+    {
+      "eventId": "machine_beat_0334",
+      "audioTime": 160.206,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 334
+      }
+    },
+    {
+      "eventId": "machine_beat_0335",
+      "audioTime": 160.682,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 335
+      }
+    },
+    {
+      "eventId": "machine_beat_0336",
+      "audioTime": 161.17,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 336
+      }
+    },
+    {
+      "eventId": "machine_beat_0337",
+      "audioTime": 161.646,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 337
+      }
+    },
+    {
+      "eventId": "machine_beat_0338",
+      "audioTime": 162.122,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 338
+      }
+    },
+    {
+      "eventId": "machine_beat_0339",
+      "audioTime": 162.586,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 339
+      }
+    },
+    {
+      "eventId": "machine_beat_0340",
+      "audioTime": 163.085,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 340
+      }
+    },
+    {
+      "eventId": "machine_beat_0341",
+      "audioTime": 163.55,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 341
+      }
+    },
+    {
+      "eventId": "machine_beat_0342",
+      "audioTime": 164.037,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 342
+      }
+    },
+    {
+      "eventId": "machine_beat_0343",
+      "audioTime": 164.525,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 343
+      }
+    },
+    {
+      "eventId": "machine_beat_0344",
+      "audioTime": 165.001,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 344
+      }
+    },
+    {
+      "eventId": "machine_beat_0345",
+      "audioTime": 165.489,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 345
+      }
+    },
+    {
+      "eventId": "machine_beat_0346",
+      "audioTime": 165.965,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 346
+      }
+    },
+    {
+      "eventId": "machine_beat_0347",
+      "audioTime": 166.441,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 347
+      }
+    },
+    {
+      "eventId": "machine_beat_0348",
+      "audioTime": 166.928,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 348
+      }
+    },
+    {
+      "eventId": "machine_beat_0349",
+      "audioTime": 167.404,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 349
+      }
+    },
+    {
+      "eventId": "machine_beat_0350",
+      "audioTime": 167.88,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 350
+      }
+    },
+    {
+      "eventId": "machine_beat_0351",
+      "audioTime": 168.356,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 351
+      }
+    },
+    {
+      "eventId": "machine_beat_0352",
+      "audioTime": 168.821,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 352
+      }
+    },
+    {
+      "eventId": "machine_beat_0353",
+      "audioTime": 169.308,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 353
+      }
+    },
+    {
+      "eventId": "machine_beat_0354",
+      "audioTime": 169.796,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 354
+      }
+    },
+    {
+      "eventId": "machine_beat_0355",
+      "audioTime": 170.272,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 355
+      }
+    },
+    {
+      "eventId": "machine_beat_0356",
+      "audioTime": 170.76,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 356
+      }
+    },
+    {
+      "eventId": "machine_beat_0357",
+      "audioTime": 171.236,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 357
+      }
+    },
+    {
+      "eventId": "machine_beat_0358",
+      "audioTime": 171.712,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 358
+      }
+    },
+    {
+      "eventId": "machine_beat_0359",
+      "audioTime": 172.211,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 359
+      }
+    },
+    {
+      "eventId": "machine_beat_0360",
+      "audioTime": 172.675,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 360
+      }
+    },
+    {
+      "eventId": "machine_beat_0361",
+      "audioTime": 173.163,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 361
+      }
+    },
+    {
+      "eventId": "machine_beat_0362",
+      "audioTime": 173.639,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 362
+      }
+    },
+    {
+      "eventId": "machine_beat_0363",
+      "audioTime": 174.126,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 363
+      }
+    },
+    {
+      "eventId": "machine_beat_0364",
+      "audioTime": 174.591,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 364
+      }
+    },
+    {
+      "eventId": "machine_beat_0365",
+      "audioTime": 175.078,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 365
+      }
+    },
+    {
+      "eventId": "machine_beat_0366",
+      "audioTime": 175.554,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 366
+      }
+    },
+    {
+      "eventId": "machine_beat_0367",
+      "audioTime": 176.042,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 367
+      }
+    },
+    {
+      "eventId": "machine_beat_0368",
+      "audioTime": 176.518,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 368
+      }
+    },
+    {
+      "eventId": "machine_beat_0369",
+      "audioTime": 176.994,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 369
+      }
+    },
+    {
+      "eventId": "machine_beat_0370",
+      "audioTime": 177.47,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 370
+      }
+    },
+    {
+      "eventId": "machine_beat_0371",
+      "audioTime": 177.958,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 371
+      }
+    },
+    {
+      "eventId": "machine_beat_0372",
+      "audioTime": 178.422,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 372
+      }
+    },
+    {
+      "eventId": "machine_beat_0373",
+      "audioTime": 178.898,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 373
+      }
+    },
+    {
+      "eventId": "machine_beat_0374",
+      "audioTime": 179.386,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 374
+      }
+    },
+    {
+      "eventId": "machine_beat_0375",
+      "audioTime": 179.873,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 375
+      }
+    },
+    {
+      "eventId": "machine_beat_0376",
+      "audioTime": 180.349,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 376
+      }
+    },
+    {
+      "eventId": "machine_beat_0377",
+      "audioTime": 180.825,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 377
+      }
+    },
+    {
+      "eventId": "machine_beat_0378",
+      "audioTime": 181.313,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 378
+      }
+    },
+    {
+      "eventId": "machine_beat_0379",
+      "audioTime": 181.789,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 379
+      }
+    },
+    {
+      "eventId": "machine_beat_0380",
+      "audioTime": 182.265,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 380
+      }
+    },
+    {
+      "eventId": "machine_beat_0381",
+      "audioTime": 182.753,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 381
+      }
+    },
+    {
+      "eventId": "machine_beat_0382",
+      "audioTime": 183.217,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 382
+      }
+    },
+    {
+      "eventId": "machine_beat_0383",
+      "audioTime": 183.705,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 383
+      }
+    },
+    {
+      "eventId": "machine_beat_0384",
+      "audioTime": 184.181,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 384
+      }
+    },
+    {
+      "eventId": "machine_beat_0385",
+      "audioTime": 184.657,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 385
+      }
+    },
+    {
+      "eventId": "machine_beat_0386",
+      "audioTime": 185.144,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 386
+      }
+    },
+    {
+      "eventId": "machine_beat_0387",
+      "audioTime": 185.62,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 387
+      }
+    },
+    {
+      "eventId": "machine_beat_0388",
+      "audioTime": 186.108,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 388
+      }
+    },
+    {
+      "eventId": "machine_beat_0389",
+      "audioTime": 186.584,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 389
+      }
+    },
+    {
+      "eventId": "machine_beat_0390",
+      "audioTime": 187.072,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 390
+      }
+    },
+    {
+      "eventId": "machine_beat_0391",
+      "audioTime": 187.548,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 391
+      }
+    },
+    {
+      "eventId": "machine_beat_0392",
+      "audioTime": 188.035,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 392
+      }
+    },
+    {
+      "eventId": "machine_beat_0393",
+      "audioTime": 188.511,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 393
+      }
+    },
+    {
+      "eventId": "machine_beat_0394",
+      "audioTime": 188.976,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 394
+      }
+    },
+    {
+      "eventId": "machine_beat_0395",
+      "audioTime": 189.463,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 395
+      }
+    },
+    {
+      "eventId": "machine_beat_0396",
+      "audioTime": 189.951,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 396
+      }
+    },
+    {
+      "eventId": "machine_beat_0397",
+      "audioTime": 190.427,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 397
+      }
+    },
+    {
+      "eventId": "machine_beat_0398",
+      "audioTime": 190.903,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 398
+      }
+    },
+    {
+      "eventId": "machine_beat_0399",
+      "audioTime": 191.39,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 399
+      }
+    },
+    {
+      "eventId": "machine_beat_0400",
+      "audioTime": 191.878,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 400
+      }
+    },
+    {
+      "eventId": "machine_beat_0401",
+      "audioTime": 192.342,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 401
+      }
+    },
+    {
+      "eventId": "machine_beat_0402",
+      "audioTime": 192.83,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 402
+      }
+    },
+    {
+      "eventId": "machine_beat_0403",
+      "audioTime": 193.306,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 403
+      }
+    },
+    {
+      "eventId": "machine_beat_0404",
+      "audioTime": 193.794,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 404
+      }
+    },
+    {
+      "eventId": "machine_beat_0405",
+      "audioTime": 194.27,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 405
+      }
+    },
+    {
+      "eventId": "machine_beat_0406",
+      "audioTime": 194.746,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 406
+      }
+    },
+    {
+      "eventId": "machine_beat_0407",
+      "audioTime": 195.233,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 407
+      }
+    },
+    {
+      "eventId": "machine_beat_0408",
+      "audioTime": 195.709,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 408
+      }
+    },
+    {
+      "eventId": "machine_beat_0409",
+      "audioTime": 196.185,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 409
+      }
+    },
+    {
+      "eventId": "machine_beat_0410",
+      "audioTime": 196.661,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 410
+      }
+    },
+    {
+      "eventId": "machine_beat_0411",
+      "audioTime": 197.149,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 411
+      }
+    },
+    {
+      "eventId": "machine_beat_0412",
+      "audioTime": 197.625,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 412
+      }
+    },
+    {
+      "eventId": "machine_beat_0413",
+      "audioTime": 198.113,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 413
+      }
+    },
+    {
+      "eventId": "machine_beat_0414",
+      "audioTime": 198.589,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 414
+      }
+    },
+    {
+      "eventId": "machine_beat_0415",
+      "audioTime": 199.076,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 415
+      }
+    },
+    {
+      "eventId": "machine_beat_0416",
+      "audioTime": 199.552,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 416
+      }
+    },
+    {
+      "eventId": "machine_beat_0417",
+      "audioTime": 200.017,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 417
+      }
+    },
+    {
+      "eventId": "machine_beat_0418",
+      "audioTime": 200.516,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 418
+      }
+    },
+    {
+      "eventId": "machine_beat_0419",
+      "audioTime": 201.004,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 419
+      }
+    },
+    {
+      "eventId": "machine_beat_0420",
+      "audioTime": 201.491,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 420
+      }
+    },
+    {
+      "eventId": "machine_beat_0421",
+      "audioTime": 201.967,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 421
+      }
+    },
+    {
+      "eventId": "machine_beat_0422",
+      "audioTime": 202.443,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 422
+      }
+    },
+    {
+      "eventId": "machine_beat_0423",
+      "audioTime": 202.919,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 423
+      }
+    },
+    {
+      "eventId": "machine_beat_0424",
+      "audioTime": 203.407,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 424
+      }
+    },
+    {
+      "eventId": "machine_beat_0425",
+      "audioTime": 203.883,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 425
+      }
+    },
+    {
+      "eventId": "machine_beat_0426",
+      "audioTime": 204.37,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 426
+      }
+    },
+    {
+      "eventId": "machine_beat_0427",
+      "audioTime": 204.846,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 427
+      }
+    },
+    {
+      "eventId": "machine_beat_0428",
+      "audioTime": 205.322,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 428
+      }
+    },
+    {
+      "eventId": "machine_beat_0429",
+      "audioTime": 205.798,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 429
+      }
+    },
+    {
+      "eventId": "machine_beat_0430",
+      "audioTime": 206.286,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 430
+      }
+    },
+    {
+      "eventId": "machine_beat_0431",
+      "audioTime": 206.762,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 431
+      }
+    },
+    {
+      "eventId": "machine_beat_0432",
+      "audioTime": 207.25,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 432
+      }
+    },
+    {
+      "eventId": "machine_beat_0433",
+      "audioTime": 207.726,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 433
+      }
+    },
+    {
+      "eventId": "machine_beat_0434",
+      "audioTime": 208.213,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 434
+      }
+    },
+    {
+      "eventId": "machine_beat_0435",
+      "audioTime": 208.678,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 435
+      }
+    },
+    {
+      "eventId": "machine_beat_0436",
+      "audioTime": 209.165,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 436
+      }
+    },
+    {
+      "eventId": "machine_beat_0437",
+      "audioTime": 209.641,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 437
+      }
+    },
+    {
+      "eventId": "machine_beat_0438",
+      "audioTime": 210.129,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 438
+      }
+    },
+    {
+      "eventId": "machine_beat_0439",
+      "audioTime": 210.605,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 439
+      }
+    },
+    {
+      "eventId": "machine_beat_0440",
+      "audioTime": 211.081,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 440
+      }
+    },
+    {
+      "eventId": "machine_beat_0441",
+      "audioTime": 211.557,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 441
+      }
+    },
+    {
+      "eventId": "machine_beat_0442",
+      "audioTime": 212.045,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 442
+      }
+    },
+    {
+      "eventId": "machine_beat_0443",
+      "audioTime": 212.521,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 443
+      }
+    },
+    {
+      "eventId": "machine_beat_0444",
+      "audioTime": 213.008,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 444
+      }
+    },
+    {
+      "eventId": "machine_beat_0445",
+      "audioTime": 213.484,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 445
+      }
+    },
+    {
+      "eventId": "machine_beat_0446",
+      "audioTime": 213.96,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 446
+      }
+    },
+    {
+      "eventId": "machine_beat_0447",
+      "audioTime": 214.436,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 447
+      }
+    },
+    {
+      "eventId": "machine_beat_0448",
+      "audioTime": 214.924,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 448
+      }
+    },
+    {
+      "eventId": "machine_beat_0449",
+      "audioTime": 215.295,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 449
+      }
+    },
+    {
+      "eventId": "machine_beat_0450",
+      "audioTime": 215.655,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 450
+      }
+    },
+    {
+      "eventId": "machine_beat_0451",
+      "audioTime": 216.12,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 451
+      }
+    },
+    {
+      "eventId": "machine_beat_0452",
+      "audioTime": 216.584,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 452
+      }
+    },
+    {
+      "eventId": "machine_beat_0453",
+      "audioTime": 217.072,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 453
+      }
+    },
+    {
+      "eventId": "machine_beat_0454",
+      "audioTime": 217.571,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 454
+      }
+    },
+    {
+      "eventId": "machine_beat_0455",
+      "audioTime": 218.035,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 455
+      }
+    },
+    {
+      "eventId": "machine_beat_0456",
+      "audioTime": 218.523,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 456
+      }
+    },
+    {
+      "eventId": "machine_beat_0457",
+      "audioTime": 218.999,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 457
+      }
+    },
+    {
+      "eventId": "machine_beat_0458",
+      "audioTime": 219.498,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 458
+      }
+    },
+    {
+      "eventId": "machine_beat_0459",
+      "audioTime": 219.986,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 459
+      }
+    },
+    {
+      "eventId": "machine_beat_0460",
+      "audioTime": 220.45,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 460
+      }
+    },
+    {
+      "eventId": "machine_beat_0461",
+      "audioTime": 220.915,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 461
+      }
+    },
+    {
+      "eventId": "machine_beat_0462",
+      "audioTime": 221.414,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 462
+      }
+    },
+    {
+      "eventId": "machine_beat_0463",
+      "audioTime": 221.89,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 463
+      }
+    },
+    {
+      "eventId": "machine_beat_0464",
+      "audioTime": 222.366,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 464
+      }
+    },
+    {
+      "eventId": "machine_beat_0465",
+      "audioTime": 222.842,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 465
+      }
+    },
+    {
+      "eventId": "machine_beat_0466",
+      "audioTime": 223.33,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 466
+      }
+    },
+    {
+      "eventId": "machine_beat_0467",
+      "audioTime": 223.806,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 467
+      }
+    },
+    {
+      "eventId": "machine_beat_0468",
+      "audioTime": 224.293,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 468
+      }
+    },
+    {
+      "eventId": "machine_beat_0469",
+      "audioTime": 224.758,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 469
+      }
+    },
+    {
+      "eventId": "machine_beat_0470",
+      "audioTime": 225.234,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 470
+      }
+    },
+    {
+      "eventId": "machine_beat_0471",
+      "audioTime": 225.733,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 471
+      }
+    },
+    {
+      "eventId": "machine_beat_0472",
+      "audioTime": 226.209,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 472
+      }
+    },
+    {
+      "eventId": "machine_beat_0473",
+      "audioTime": 226.685,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 473
+      }
+    },
+    {
+      "eventId": "machine_beat_0474",
+      "audioTime": 227.161,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 474
+      }
+    },
+    {
+      "eventId": "machine_beat_0475",
+      "audioTime": 227.648,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 475
+      }
+    },
+    {
+      "eventId": "machine_beat_0476",
+      "audioTime": 228.124,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 476
+      }
+    },
+    {
+      "eventId": "machine_beat_0477",
+      "audioTime": 228.6,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 477
+      }
+    },
+    {
+      "eventId": "machine_beat_0478",
+      "audioTime": 229.088,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 478
+      }
+    },
+    {
+      "eventId": "machine_beat_0479",
+      "audioTime": 229.564,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 479
+      }
+    },
+    {
+      "eventId": "machine_beat_0480",
+      "audioTime": 230.04,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 480
+      }
+    },
+    {
+      "eventId": "machine_beat_0481",
+      "audioTime": 230.516,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 481
+      }
+    },
+    {
+      "eventId": "machine_beat_0482",
+      "audioTime": 230.98,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 482
+      }
+    },
+    {
+      "eventId": "machine_beat_0483",
+      "audioTime": 231.468,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 483
+      }
+    },
+    {
+      "eventId": "machine_beat_0484",
+      "audioTime": 232.072,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 484
+      }
+    },
+    {
+      "eventId": "machine_beat_0485",
+      "audioTime": 232.536,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 485
+      }
+    },
+    {
+      "eventId": "machine_beat_0486",
+      "audioTime": 233.035,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 486
+      }
+    },
+    {
+      "eventId": "machine_beat_0487",
+      "audioTime": 233.616,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 487
+      }
+    },
+    {
+      "eventId": "machine_beat_0488",
+      "audioTime": 234.104,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 488
+      }
+    },
+    {
+      "eventId": "machine_beat_0489",
+      "audioTime": 234.58,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 489
+      }
+    },
+    {
+      "eventId": "machine_beat_0490",
+      "audioTime": 235.056,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 490
+      }
+    },
+    {
+      "eventId": "machine_beat_0491",
+      "audioTime": 235.532,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 491
+      }
+    },
+    {
+      "eventId": "machine_beat_0492",
+      "audioTime": 236.019,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 492
+      }
+    },
+    {
+      "eventId": "machine_beat_0493",
+      "audioTime": 236.495,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 493
+      }
+    },
+    {
+      "eventId": "machine_beat_0494",
+      "audioTime": 236.96,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 494
+      }
+    },
+    {
+      "eventId": "machine_beat_0495",
+      "audioTime": 237.447,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 495
+      }
+    },
+    {
+      "eventId": "machine_beat_0496",
+      "audioTime": 237.935,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 496
+      }
+    },
+    {
+      "eventId": "machine_beat_0497",
+      "audioTime": 238.422,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 497
+      }
+    },
+    {
+      "eventId": "machine_beat_0498",
+      "audioTime": 238.899,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 498
+      }
+    },
+    {
+      "eventId": "machine_beat_0499",
+      "audioTime": 239.375,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 499
+      }
+    },
+    {
+      "eventId": "machine_beat_0500",
+      "audioTime": 239.851,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 500
+      }
+    },
+    {
+      "eventId": "machine_beat_0501",
+      "audioTime": 240.338,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 501
+      }
+    },
+    {
+      "eventId": "machine_beat_0502",
+      "audioTime": 240.814,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 502
+      }
+    },
+    {
+      "eventId": "machine_beat_0503",
+      "audioTime": 241.29,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 503
+      }
+    },
+    {
+      "eventId": "machine_beat_0504",
+      "audioTime": 241.766,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 504
+      }
+    },
+    {
+      "eventId": "machine_beat_0505",
+      "audioTime": 242.254,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 505
+      }
+    },
+    {
+      "eventId": "machine_beat_0506",
+      "audioTime": 242.73,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 506
+      }
+    },
+    {
+      "eventId": "machine_beat_0507",
+      "audioTime": 243.217,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 507
+      }
+    },
+    {
+      "eventId": "machine_beat_0508",
+      "audioTime": 243.693,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 508
+      }
+    },
+    {
+      "eventId": "machine_beat_0509",
+      "audioTime": 244.169,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 509
+      }
+    },
+    {
+      "eventId": "machine_beat_0510",
+      "audioTime": 244.645,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 510
+      }
+    },
+    {
+      "eventId": "machine_beat_0511",
+      "audioTime": 245.133,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 511
+      }
+    },
+    {
+      "eventId": "machine_beat_0512",
+      "audioTime": 245.597,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 512
+      }
+    },
+    {
+      "eventId": "machine_beat_0513",
+      "audioTime": 246.085,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 513
+      }
+    },
+    {
+      "eventId": "machine_beat_0514",
+      "audioTime": 246.549,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 514
+      }
+    },
+    {
+      "eventId": "machine_beat_0515",
+      "audioTime": 247.049,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 515
+      }
+    },
+    {
+      "eventId": "machine_beat_0516",
+      "audioTime": 247.513,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 516
+      }
+    },
+    {
+      "eventId": "machine_beat_0517",
+      "audioTime": 248.001,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 517
+      }
+    },
+    {
+      "eventId": "machine_beat_0518",
+      "audioTime": 248.5,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 518
+      }
+    },
+    {
+      "eventId": "machine_beat_0519",
+      "audioTime": 248.976,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 519
+      }
+    },
+    {
+      "eventId": "machine_beat_0520",
+      "audioTime": 249.464,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 520
+      }
+    },
+    {
+      "eventId": "machine_beat_0521",
+      "audioTime": 249.951,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 521
+      }
+    },
+    {
+      "eventId": "machine_beat_0522",
+      "audioTime": 250.416,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 522
+      }
+    },
+    {
+      "eventId": "machine_beat_0523",
+      "audioTime": 250.892,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 523
+      }
+    },
+    {
+      "eventId": "machine_beat_0524",
+      "audioTime": 251.368,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 524
+      }
+    },
+    {
+      "eventId": "machine_beat_0525",
+      "audioTime": 251.855,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 525
+      }
+    },
+    {
+      "eventId": "machine_beat_0526",
+      "audioTime": 252.32,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 526
+      }
+    },
+    {
+      "eventId": "machine_beat_0527",
+      "audioTime": 252.807,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 527
+      }
+    },
+    {
+      "eventId": "machine_beat_0528",
+      "audioTime": 253.283,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 528
+      }
+    },
+    {
+      "eventId": "machine_beat_0529",
+      "audioTime": 253.771,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 529
+      }
+    },
+    {
+      "eventId": "machine_beat_0530",
+      "audioTime": 254.247,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 530
+      }
+    },
+    {
+      "eventId": "machine_beat_0531",
+      "audioTime": 254.735,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 531
+      }
+    },
+    {
+      "eventId": "machine_beat_0532",
+      "audioTime": 255.211,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 532
+      }
+    },
+    {
+      "eventId": "machine_beat_0533",
+      "audioTime": 255.687,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 533
+      }
+    },
+    {
+      "eventId": "machine_beat_0534",
+      "audioTime": 256.139,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 534
+      }
+    },
+    {
+      "eventId": "machine_beat_0535",
+      "audioTime": 256.639,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 535
+      }
+    },
+    {
+      "eventId": "machine_beat_0536",
+      "audioTime": 257.126,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 536
+      }
+    },
+    {
+      "eventId": "machine_beat_0537",
+      "audioTime": 257.602,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 537
+      }
+    },
+    {
+      "eventId": "machine_beat_0538",
+      "audioTime": 258.078,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 538
+      }
+    },
+    {
+      "eventId": "machine_beat_0539",
+      "audioTime": 258.566,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 539
+      }
+    },
+    {
+      "eventId": "machine_beat_0540",
+      "audioTime": 259.042,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 540
+      }
+    },
+    {
+      "eventId": "machine_beat_0541",
+      "audioTime": 259.529,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 541
+      }
+    },
+    {
+      "eventId": "machine_beat_0542",
+      "audioTime": 260.005,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 542
+      }
+    },
+    {
+      "eventId": "machine_beat_0543",
+      "audioTime": 260.481,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 543
+      }
+    },
+    {
+      "eventId": "machine_beat_0544",
+      "audioTime": 260.957,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 544
+      }
+    },
+    {
+      "eventId": "machine_beat_0545",
+      "audioTime": 261.433,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 545
+      }
+    },
+    {
+      "eventId": "machine_beat_0546",
+      "audioTime": 261.909,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 546
+      }
+    },
+    {
+      "eventId": "machine_beat_0547",
+      "audioTime": 262.397,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 547
+      }
+    },
+    {
+      "eventId": "machine_beat_0548",
+      "audioTime": 262.873,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 548
+      }
+    },
+    {
+      "eventId": "machine_beat_0549",
+      "audioTime": 263.361,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 549
+      }
+    },
+    {
+      "eventId": "machine_beat_0550",
+      "audioTime": 263.86,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 550
+      }
+    },
+    {
+      "eventId": "machine_beat_0551",
+      "audioTime": 264.336,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 551
+      }
+    },
+    {
+      "eventId": "machine_beat_0552",
+      "audioTime": 264.812,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 552
+      }
+    },
+    {
+      "eventId": "machine_beat_0553",
+      "audioTime": 265.288,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 553
+      }
+    },
+    {
+      "eventId": "machine_beat_0554",
+      "audioTime": 265.752,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 554
+      }
+    },
+    {
+      "eventId": "machine_beat_0555",
+      "audioTime": 266.24,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 555
+      }
+    },
+    {
+      "eventId": "machine_beat_0556",
+      "audioTime": 266.716,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 556
+      }
+    },
+    {
+      "eventId": "machine_beat_0557",
+      "audioTime": 267.215,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 557
+      }
+    },
+    {
+      "eventId": "machine_beat_0558",
+      "audioTime": 267.691,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 558
+      }
+    },
+    {
+      "eventId": "machine_beat_0559",
+      "audioTime": 268.167,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 559
+      }
+    },
+    {
+      "eventId": "machine_beat_0560",
+      "audioTime": 268.632,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 560
+      }
+    },
+    {
+      "eventId": "machine_beat_0561",
+      "audioTime": 269.119,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 561
+      }
+    },
+    {
+      "eventId": "machine_beat_0562",
+      "audioTime": 269.595,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 562
+      }
+    },
+    {
+      "eventId": "machine_beat_0563",
+      "audioTime": 270.083,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 563
+      }
+    },
+    {
+      "eventId": "machine_beat_0564",
+      "audioTime": 270.559,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 564
+      }
+    },
+    {
+      "eventId": "machine_beat_0565",
+      "audioTime": 271.047,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 565
+      }
+    },
+    {
+      "eventId": "machine_beat_0566",
+      "audioTime": 271.523,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 566
+      }
+    },
+    {
+      "eventId": "machine_beat_0567",
+      "audioTime": 271.999,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 567
+      }
+    },
+    {
+      "eventId": "machine_beat_0568",
+      "audioTime": 272.475,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 568
+      }
+    },
+    {
+      "eventId": "machine_beat_0569",
+      "audioTime": 272.962,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 569
+      }
+    },
+    {
+      "eventId": "machine_beat_0570",
+      "audioTime": 273.438,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 570
+      }
+    },
+    {
+      "eventId": "machine_beat_0571",
+      "audioTime": 273.926,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 571
+      }
+    },
+    {
+      "eventId": "machine_beat_0572",
+      "audioTime": 274.402,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 572
+      }
+    },
+    {
+      "eventId": "machine_beat_0573",
+      "audioTime": 274.889,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 573
+      }
+    },
+    {
+      "eventId": "machine_beat_0574",
+      "audioTime": 275.354,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 574
+      }
+    },
+    {
+      "eventId": "machine_beat_0575",
+      "audioTime": 275.841,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 575
+      }
+    },
+    {
+      "eventId": "machine_beat_0576",
+      "audioTime": 276.317,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 576
+      }
+    },
+    {
+      "eventId": "machine_beat_0577",
+      "audioTime": 276.805,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 577
+      }
+    },
+    {
+      "eventId": "machine_beat_0578",
+      "audioTime": 277.269,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 578
+      }
+    },
+    {
+      "eventId": "machine_beat_0579",
+      "audioTime": 277.757,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 579
+      }
+    },
+    {
+      "eventId": "machine_beat_0580",
+      "audioTime": 278.245,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 580
+      }
+    },
+    {
+      "eventId": "machine_beat_0581",
+      "audioTime": 278.721,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 581
+      }
+    },
+    {
+      "eventId": "machine_beat_0582",
+      "audioTime": 279.197,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 582
+      }
+    },
+    {
+      "eventId": "machine_beat_0583",
+      "audioTime": 279.673,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 583
+      }
+    },
+    {
+      "eventId": "machine_beat_0584",
+      "audioTime": 280.149,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 584
+      }
+    },
+    {
+      "eventId": "machine_beat_0585",
+      "audioTime": 280.636,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 585
+      }
+    },
+    {
+      "eventId": "machine_beat_0586",
+      "audioTime": 281.112,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 586
+      }
+    },
+    {
+      "eventId": "machine_beat_0587",
+      "audioTime": 281.588,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 587
+      }
+    },
+    {
+      "eventId": "machine_beat_0588",
+      "audioTime": 282.076,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 588
+      }
+    },
+    {
+      "eventId": "machine_beat_0589",
+      "audioTime": 282.552,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 589
+      }
+    },
+    {
+      "eventId": "machine_beat_0590",
+      "audioTime": 283.028,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 590
+      }
+    },
+    {
+      "eventId": "machine_beat_0591",
+      "audioTime": 283.516,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 591
+      }
+    },
+    {
+      "eventId": "machine_beat_0592",
+      "audioTime": 283.992,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 592
+      }
+    },
+    {
+      "eventId": "machine_beat_0593",
+      "audioTime": 284.479,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 593
+      }
+    },
+    {
+      "eventId": "machine_beat_0594",
+      "audioTime": 284.944,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 594
+      }
+    },
+    {
+      "eventId": "machine_beat_0595",
+      "audioTime": 285.431,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 595
+      }
+    },
+    {
+      "eventId": "machine_beat_0596",
+      "audioTime": 285.907,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 596
+      }
+    },
+    {
+      "eventId": "machine_beat_0597",
+      "audioTime": 286.395,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 597
+      }
+    },
+    {
+      "eventId": "machine_beat_0598",
+      "audioTime": 286.871,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 598
+      }
+    },
+    {
+      "eventId": "machine_beat_0599",
+      "audioTime": 287.347,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 599
+      }
+    },
+    {
+      "eventId": "machine_beat_0600",
+      "audioTime": 287.835,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 600
+      }
+    },
+    {
+      "eventId": "machine_beat_0601",
+      "audioTime": 288.322,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 601
+      }
+    },
+    {
+      "eventId": "machine_beat_0602",
+      "audioTime": 288.798,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 602
+      }
+    },
+    {
+      "eventId": "machine_beat_0603",
+      "audioTime": 289.274,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 603
+      }
+    },
+    {
+      "eventId": "machine_beat_0604",
+      "audioTime": 289.75,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 604
+      }
+    },
+    {
+      "eventId": "machine_beat_0605",
+      "audioTime": 290.238,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 605
+      }
+    },
+    {
+      "eventId": "machine_beat_0606",
+      "audioTime": 290.714,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 606
+      }
+    },
+    {
+      "eventId": "machine_beat_0607",
+      "audioTime": 291.201,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 607
+      }
+    },
+    {
+      "eventId": "machine_beat_0608",
+      "audioTime": 291.677,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 608
+      }
+    },
+    {
+      "eventId": "machine_beat_0609",
+      "audioTime": 292.153,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 609
+      }
+    },
+    {
+      "eventId": "machine_beat_0610",
+      "audioTime": 292.629,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 610
+      }
+    },
+    {
+      "eventId": "machine_beat_0611",
+      "audioTime": 293.117,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 611
+      }
+    },
+    {
+      "eventId": "machine_beat_0612",
+      "audioTime": 293.593,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 612
+      }
+    },
+    {
+      "eventId": "machine_beat_0613",
+      "audioTime": 294.058,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 613
+      }
+    },
+    {
+      "eventId": "machine_beat_0614",
+      "audioTime": 294.557,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 614
+      }
+    },
+    {
+      "eventId": "machine_beat_0615",
+      "audioTime": 295.044,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 615
+      }
+    },
+    {
+      "eventId": "machine_beat_0616",
+      "audioTime": 295.532,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 616
+      }
+    },
+    {
+      "eventId": "machine_beat_0617",
+      "audioTime": 296.008,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 617
+      }
+    },
+    {
+      "eventId": "machine_beat_0618",
+      "audioTime": 296.484,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 618
+      }
+    },
+    {
+      "eventId": "machine_beat_0619",
+      "audioTime": 296.96,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 619
+      }
+    },
+    {
+      "eventId": "machine_beat_0620",
+      "audioTime": 297.436,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 620
+      }
+    },
+    {
+      "eventId": "machine_beat_0621",
+      "audioTime": 297.924,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 621
+      }
+    },
+    {
+      "eventId": "machine_beat_0622",
+      "audioTime": 298.388,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 622
+      }
+    },
+    {
+      "eventId": "machine_beat_0623",
+      "audioTime": 298.876,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 623
+      }
+    },
+    {
+      "eventId": "machine_beat_0624",
+      "audioTime": 299.352,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 624
+      }
+    },
+    {
+      "eventId": "machine_beat_0625",
+      "audioTime": 299.828,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 625
+      }
+    },
+    {
+      "eventId": "machine_beat_0626",
+      "audioTime": 300.304,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 626
+      }
+    },
+    {
+      "eventId": "machine_beat_0627",
+      "audioTime": 300.803,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 627
+      }
+    },
+    {
+      "eventId": "machine_beat_0628",
+      "audioTime": 301.279,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 628
+      }
+    },
+    {
+      "eventId": "machine_beat_0629",
+      "audioTime": 301.755,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 629
+      }
+    },
+    {
+      "eventId": "machine_beat_0630",
+      "audioTime": 302.231,
+      "type": "machine_beat",
+      "source": "machine",
+      "payload": {
+        "beatIndex": 630
+      }
+    },
+    {
+      "eventId": "madmom_db_000",
+      "audioTime": 0.38,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_001",
+      "audioTime": 2.33,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_002",
+      "audioTime": 4.25,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_003",
+      "audioTime": 6.17,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_004",
+      "audioTime": 8.09,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_005",
+      "audioTime": 10.01,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_006",
+      "audioTime": 11.93,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_007",
+      "audioTime": 13.85,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_008",
+      "audioTime": 15.77,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_009",
+      "audioTime": 17.68,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_010",
+      "audioTime": 19.6,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_011",
+      "audioTime": 21.52,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_012",
+      "audioTime": 23.44,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_013",
+      "audioTime": 25.36,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_014",
+      "audioTime": 27.28,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_015",
+      "audioTime": 29.2,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_016",
+      "audioTime": 31.13,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_017",
+      "audioTime": 33.04,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_018",
+      "audioTime": 34.96,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_019",
+      "audioTime": 36.87,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_020",
+      "audioTime": 38.8,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_021",
+      "audioTime": 40.71,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_022",
+      "audioTime": 42.63,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_023",
+      "audioTime": 44.56,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_024",
+      "audioTime": 46.48,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_025",
+      "audioTime": 48.38,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_026",
+      "audioTime": 50.3,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_027",
+      "audioTime": 52.22,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_028",
+      "audioTime": 54.14,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_029",
+      "audioTime": 56.04,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_030",
+      "audioTime": 57.97,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_031",
+      "audioTime": 59.89,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_032",
+      "audioTime": 61.81,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_033",
+      "audioTime": 63.73,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_034",
+      "audioTime": 65.65,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_035",
+      "audioTime": 67.58,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_036",
+      "audioTime": 69.51,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_037",
+      "audioTime": 71.41,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_038",
+      "audioTime": 73.33,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_039",
+      "audioTime": 75.24,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_040",
+      "audioTime": 77.18,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_041",
+      "audioTime": 79.09,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_042",
+      "audioTime": 81.0,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_043",
+      "audioTime": 82.93,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_044",
+      "audioTime": 84.85,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_045",
+      "audioTime": 86.77,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_046",
+      "audioTime": 88.68,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_047",
+      "audioTime": 90.62,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_048",
+      "audioTime": 92.51,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_049",
+      "audioTime": 94.45,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_050",
+      "audioTime": 96.36,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_051",
+      "audioTime": 98.27,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_052",
+      "audioTime": 100.19,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_053",
+      "audioTime": 102.12,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_054",
+      "audioTime": 104.04,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_055",
+      "audioTime": 105.95,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_056",
+      "audioTime": 107.88,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_057",
+      "audioTime": 109.8,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_058",
+      "audioTime": 111.72,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_059",
+      "audioTime": 113.63,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_060",
+      "audioTime": 115.54,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_061",
+      "audioTime": 117.47,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_062",
+      "audioTime": 119.38,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_063",
+      "audioTime": 121.3,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_064",
+      "audioTime": 123.23,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_065",
+      "audioTime": 125.15,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_066",
+      "audioTime": 127.06,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_067",
+      "audioTime": 128.98,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_068",
+      "audioTime": 130.91,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_069",
+      "audioTime": 132.83,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_070",
+      "audioTime": 134.75,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_071",
+      "audioTime": 136.68,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_072",
+      "audioTime": 138.59,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_073",
+      "audioTime": 140.51,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_074",
+      "audioTime": 142.44,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_075",
+      "audioTime": 144.35,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_076",
+      "audioTime": 146.27,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_077",
+      "audioTime": 148.19,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_078",
+      "audioTime": 150.11,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_079",
+      "audioTime": 152.03,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_080",
+      "audioTime": 153.93,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_081",
+      "audioTime": 155.87,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_082",
+      "audioTime": 157.78,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_083",
+      "audioTime": 159.7,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_084",
+      "audioTime": 161.62,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_085",
+      "audioTime": 163.53,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_086",
+      "audioTime": 165.46,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_087",
+      "audioTime": 167.38,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_088",
+      "audioTime": 169.28,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_089",
+      "audioTime": 171.22,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_090",
+      "audioTime": 173.13,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_091",
+      "audioTime": 175.05,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_092",
+      "audioTime": 176.97,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_093",
+      "audioTime": 178.87,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_094",
+      "audioTime": 180.81,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_095",
+      "audioTime": 182.72,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_096",
+      "audioTime": 184.64,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_097",
+      "audioTime": 186.57,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_098",
+      "audioTime": 188.48,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_099",
+      "audioTime": 190.41,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_100",
+      "audioTime": 192.32,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_101",
+      "audioTime": 194.24,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_102",
+      "audioTime": 196.16,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_103",
+      "audioTime": 198.09,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_104",
+      "audioTime": 200.0,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_105",
+      "audioTime": 201.94,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_106",
+      "audioTime": 203.86,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_107",
+      "audioTime": 205.78,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_108",
+      "audioTime": 207.7,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_109",
+      "audioTime": 209.61,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_110",
+      "audioTime": 211.54,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_111",
+      "audioTime": 213.45,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_112",
+      "audioTime": 215.37,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_113",
+      "audioTime": 217.29,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_114",
+      "audioTime": 219.21,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_115",
+      "audioTime": 221.13,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_116",
+      "audioTime": 223.05,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_117",
+      "audioTime": 224.97,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_118",
+      "audioTime": 226.89,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_119",
+      "audioTime": 228.81,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_120",
+      "audioTime": 230.73,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_121",
+      "audioTime": 232.63,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_122",
+      "audioTime": 234.56,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_123",
+      "audioTime": 236.48,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_124",
+      "audioTime": 238.4,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_125",
+      "audioTime": 240.32,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_126",
+      "audioTime": 242.23,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_127",
+      "audioTime": 244.15,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_128",
+      "audioTime": 246.06,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_129",
+      "audioTime": 247.97,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_130",
+      "audioTime": 249.92,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_131",
+      "audioTime": 251.83,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_132",
+      "audioTime": 253.74,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_133",
+      "audioTime": 255.67,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_134",
+      "audioTime": 257.58,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_135",
+      "audioTime": 259.5,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_136",
+      "audioTime": 261.41,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_137",
+      "audioTime": 263.34,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_138",
+      "audioTime": 265.27,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_139",
+      "audioTime": 267.18,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_140",
+      "audioTime": 269.09,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_141",
+      "audioTime": 271.02,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_142",
+      "audioTime": 272.94,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_143",
+      "audioTime": 274.86,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_144",
+      "audioTime": 276.78,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_145",
+      "audioTime": 278.7,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_146",
+      "audioTime": 280.61,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_147",
+      "audioTime": 282.53,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_148",
+      "audioTime": 284.45,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_149",
+      "audioTime": 286.37,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_150",
+      "audioTime": 288.3,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_151",
+      "audioTime": 290.21,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_152",
+      "audioTime": 292.13,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_153",
+      "audioTime": 294.04,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_154",
+      "audioTime": 295.99,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_155",
+      "audioTime": 297.9,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_156",
+      "audioTime": 299.81,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    },
+    {
+      "eventId": "madmom_db_157",
+      "audioTime": 301.73,
+      "type": "machine_downbeat",
+      "source": "machine",
+      "payload": {
+        "beat": "downbeat",
+        "model": "madmom"
+      }
+    }
+  ]
+}
