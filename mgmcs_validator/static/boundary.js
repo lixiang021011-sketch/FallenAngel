@@ -145,6 +145,8 @@
       eventTime,
       boundaryTime: near.boundaryTime,
       beatSeconds: near.beatSeconds,
+      // 一条关系只依赖一条网格：资格就取它的来源档（"这条结论能不能用"）。
+      analysisEligibility: gridHealth(grid),
     };
   }
 
@@ -194,12 +196,13 @@
       for (let j = i + 1; j < grids.length; j += 1) {
         const a = grids[i];
         const b = grids[j];
+        const verdict = eligibilityReport([a, b]);
         // 复用现成的相位比较，但**不当闸门**：它判的是"两条起点相位能不能比"（要求速度和拍号
         // 几乎一致，1% 的速度差就会说"速度不同"）。局部边界错位跟这个不是一回事——正因为它
         // 们速度略有差，才会在某一处擦过一拍。所以这里把它的结论当**上下文**带在候选上，
         // 让面板能同时说"全局相位不可比：速度不同"和"但这一处局部连续差一拍"。
         const phase = core().phaseOffset(a, b);
-        collectRuns(out, a, b, o, phase, scanBars(document, a, o));
+        collectRuns(out, a, b, o, phase, scanBars(document, a, o), verdict);
       }
     }
     return out;
@@ -227,7 +230,7 @@
   }
 
   /** 逐根量偏移，把连续的同值跑成候选。 */
-  function collectRuns(out, a, b, o, phase, scanBars) {
+  function collectRuns(out, a, b, o, phase, scanBars, verdict) {
     let runStart = null;
     let runOffset = null;
     let runLength = 0;
@@ -251,6 +254,8 @@
           // 的全局相位关系（相位差面板已经在说这件事）。分开写，读的人才知道该去哪看。
           coversWhole: runStart === 0 && runLength >= scanBars,
           phase: { comparable: !!phase.comparable, reason: phase.reason || '' },
+          sourceHealth: verdict.sourceHealth,
+          analysisEligibility: verdict.analysisEligibility,
         });
       }
       runStart = null;
@@ -296,6 +301,66 @@
   // 播放器标记）。所以**不能**默认把机器拍点排除——那样盘上什么都不剩。默认全都算，
   // 但把机器产生的标出来（`machine: true`），界面据此换一种画法；`onlyHuman` 开关留给
   // "只看人那 7 个"的场合。机器拍点对自己那条网格恒等于 0 拍，这是已知的重影，不是发现。
+
+  // ---------------------------------------------------------------- 准入（analysisEligibility）
+  //
+  // 研究者 2026-10-10 定的规矩：**不判断哪条网格对，先把每条结论的资格暴露出来**。
+  // 一条派生结论算出来了，不代表能拿去下判断——如果它的来源里有一条本来就不可信，
+  // 这条结论只能进"存疑"档，不能用来给另一条网格定罪。
+  //
+  // 只有三档：eligible / caution / ineligible。它不是第三套健康算法，
+  // 只回答"这条派生结论能不能进入后续分析"；往后 workbench 不必理解 suspectReasons，
+  // 只读这一个字段。
+  //
+  // 来源网格的健康取自文档里的 grid.health（人工线由 pre-clean 写 ok/suspect；
+  // 机器网格现在没有这个字段，按 ok 处理）。认不出来的一律算 eligible——
+  // 没有证据说它不可信，就不给它扣帽子。
+
+  const ELIGIBILITY = ['eligible', 'caution', 'ineligible'];
+
+  /** 一条网格自己的健康，折算成准入里的来源档。 */
+  function gridHealth(grid) {
+    const declared = String((grid && (grid.health || (grid.raw && grid.raw.health))) || '').toLowerCase();
+    if (declared === 'suspect' || declared === 'ineligible' || declared === 'unusable') return 'ineligible';
+    if (declared === 'caution' || declared === 'uncertain' || declared === 'unknown') return 'caution';
+    return 'eligible';
+  }
+
+  /**
+   * 一条派生结论的准入档。
+
+   * 只三条规则：**所有**来源都不可信 → 这条结论 ineligible；只要有一条不可信或存疑
+   * → caution；全都可信 → eligible。不判断谁对，只看来源够不够格。
+   * （"所有"而不是"任意"是研究者给的例子定的：beat_this usable + madmom suspect
+   *  → caution，这条结论还能看，只是不能拿它给 beat_this 定罪。）
+   */
+  function eligibilityOf(grids) {
+    const levels = (grids || []).map(gridHealth);
+    if (!levels.length) return 'eligible';
+    const ineligible = levels.filter((level) => level === 'ineligible').length;
+    if (ineligible === levels.length) return 'ineligible';
+    if (levels.some((level) => level !== 'eligible')) return 'caution';
+    return 'eligible';
+  }
+
+  /**
+   * 给界面/下游用的一小段：来源各自什么健康、能不能用。
+
+   * `validRange` 没有就写 `unknown`——**不编**。网格的有效区间现在文档里还没有，
+   * 等 workbench 那边把每曲的可用区间导进来再填。
+   */
+  function eligibilityReport(grids) {
+    return {
+      sourceHealth: (grids || []).map((grid) => ({
+        gridId: grid.gridId,
+        health: grid.health || 'ok',
+        level: gridHealth(grid),
+        reasons: (grid.suspectReasons || []).slice(),
+        valid: grid.validRange || 'unknown',
+      })),
+      analysisEligibility: eligibilityOf(grids),
+    };
+  }
 
   /** 这个事件算不算进这次对比。 */
   function wanted(event, raw) {
@@ -383,6 +448,8 @@
     const index = associationIndex(document, raw);
     const rows = [];
     const scan = scanBars(document, a, o);
+    // 这一整列分数都依赖同两条网格：资格一次算好，逐行带上，UI 不必自己推。
+    const verdict = eligibilityReport([a, b]);
     for (let bar = 0; bar < scan; bar += 1) {
       const time = core().barStart(a, bar);
       if (!isFinite(time)) break;
@@ -400,6 +467,8 @@
         bCount: setB.size,
         sharedCount: shared,
         overlap: union > 0 ? shared / union : NaN,
+        sourceHealth: verdict.sourceHealth,
+        analysisEligibility: verdict.analysisEligibility,
       });
     }
     return rows;
@@ -460,6 +529,10 @@
     pairDiff,
     overlapScores,
     hotRuns,
+    gridHealth,
+    eligibilityOf,
+    eligibilityReport,
+    ELIGIBILITY,
   };
 
   const target = globalThis.MGMCS || (globalThis.MGMCS = {});

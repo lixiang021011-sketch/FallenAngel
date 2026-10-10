@@ -224,6 +224,49 @@ test('不规则网格（小节线列表）用真实的小节长度折算拍', ()
 
 // ---------------------------------------------------------- Grid Pair Diff（2026-10-10）
 
+// ---------------------------------------------------------- 准入 analysisEligibility
+
+test('准入三档：一边 suspect 是 caution，两边都 suspect 才 ineligible', () => {
+  const ok = grid('ok1', 0.0, { health: 'ok' });
+  const suspect = grid('sus1', 0.0, { health: 'suspect', suspectReasons: ['outOfRange: 起点 6574.9s 不在音频内'] });
+
+  assert.equal(B.eligibilityOf([ok]), 'eligible');
+  assert.equal(B.eligibilityOf([ok, grid('ok2', 0.0)]), 'eligible');
+  assert.equal(B.eligibilityOf([ok, suspect]), 'caution', '一条可信、一条不可信 → 这条结论只能存疑');
+  assert.equal(B.eligibilityOf([suspect, grid('sus2', 0.0, { health: 'suspect' })]), 'ineligible');
+});
+
+test('准入报告带来源与理由，且不编有效区间', () => {
+  const report = B.eligibilityReport([
+    grid('ok1', 0.0, { health: 'ok' }),
+    grid('sus1', 0.0, { health: 'suspect', suspectReasons: ['起点越界'] }),
+  ]);
+  assert.equal(report.analysisEligibility, 'caution');
+  assert.deepEqual(report.sourceHealth.map((row) => row.gridId), ['ok1', 'sus1']);
+  assert.equal(report.sourceHealth[0].valid, 'unknown', '没有区间就写 unknown，不编');
+  assert.deepEqual(report.sourceHealth[1].reasons, ['起点越界']);
+  assert.equal(report.sourceHealth[1].level, 'ineligible');
+});
+
+test('每条派生结论都自带准入：单网格的关系、两网格的重叠分与相位候选', () => {
+  const ok = grid('ok1', 0.0, { health: 'ok' });
+  const suspect = grid('sus1', 0.0, { health: 'suspect' });
+  const document = doc([ok, suspect], [point('e1', 0.01)]);
+
+  for (const relation of B.boundaryAssociations(document)) {
+    const expected = relation.gridId === 'sus1' ? 'ineligible' : 'eligible';
+    assert.equal(relation.analysisEligibility, expected, relation.gridId);
+  }
+
+  const scores = B.overlapScores(document, 'ok1', 'sus1');
+  assert.equal(scores[0].analysisEligibility, 'caution', '一条 suspect → 这列分数只能存疑');
+  assert.equal(scores[0].sourceHealth.length, 2);
+
+  const candidates = B.phaseOffsetCandidates(doc([ok, grid('sus2', 0.5, { health: 'suspect' })], []));
+  assert.ok(candidates.length > 0);
+  assert.equal(candidates[0].analysisEligibility, 'caution');
+});
+
 test('Pair Diff：差一拍的网格上，贴 A 的事件就是 A-only', () => {
   const a = grid('A', 0.0);
   const b = grid('B', 0.5);                    // 正好差一拍

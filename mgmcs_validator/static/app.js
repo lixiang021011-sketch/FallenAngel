@@ -653,6 +653,39 @@
   // 默认把机器拍点也算进来（这批文档里事件几乎只有它们），只把它们画淡一点；
   // 「只看人产生的事件」开关留给"纯人"的场合。
 
+  /**
+   * 一条派生结论的"资格"块。
+
+   * 「Comparison quality: CAUTION」这一行**就是 analysisEligibility 的显示名**，
+   * 不是第二套判断——底下没有任何本地的健康算法，只有从 boundary.js 拿来的那一个字段。
+   * 扫读要求（研究者 2026-10-10）：
+   *   eligible   → 不展开也能一眼扫过
+   *   caution    → 一眼看出是哪条 source 拖的（下面 ✕ 那一行）
+   *   ineligible → 一眼看出为什么全都不行
+   * 所以每条 source 先给一行摘要（标记 + gridId + health + valid），
+   * 多出来的理由收进 details，要原话再展开。
+   */
+  function eligibilityBlock(verdict) {
+    const label = { eligible: 'ELIGIBLE', caution: 'CAUTION', ineligible: 'INELIGIBLE' };
+    const sources = (verdict.sourceHealth || []).map((source) => {
+      const mark = source.level === 'eligible' ? '✓' : '✕';
+      const reasons = source.reasons || [];
+      const head = reasons.length ? reasons[0] : '';
+      return '<div class="coord-row"><span class="key">' + mark + ' ' + escapeHtml(source.gridId)
+        + '</span><span class="val">health: ' + escapeHtml(String(source.health))
+        + '　valid: ' + escapeHtml(String(source.valid)) + '</span></div>'
+        + (head ? '<div class="fineprint">　' + escapeHtml(head) + '</div>' : '')
+        + (reasons.length > 1
+          ? '<details><summary class="fineprint">还有 ' + (reasons.length - 1) + ' 条理由</summary>'
+            + '<div class="fineprint">' + reasons.slice(1).map(escapeHtml).join('<br>') + '</div></details>'
+          : '');
+    }).join('');
+    return '<div class="record"><strong>Comparison quality: '
+      + (label[verdict.analysisEligibility] || 'ELIGIBLE') + '</strong>'
+      + '<div class="fineprint">（这一行就是 analysisEligibility 的显示名；下面列来源，没有第二套判断）</div>'
+      + sources + '</div>';
+  }
+
   function diffPair() {
     return { a: el('diff-a') ? el('diff-a').value : '', b: el('diff-b') ? el('diff-b').value : '' };
   }
@@ -717,6 +750,7 @@
     box.innerHTML = '<p class="fineprint">事件：共同 <strong>' + counts.shared + '</strong> · 只 A '
       + counts.a_only + ' · 只 B ' + counts.b_only + '（参与高亮 ' + marked + ' 个；'
       + (options.onlyHuman ? '只看人产生的事件' : '机器拍点也在内，画得淡一点') + '）</p>'
+      + eligibilityBlock(B.eligibilityReport([gridById(pair.a), gridById(pair.b)].filter(Boolean)))
       + '<div class="heat-strip">' + strip + '</div>'
       + '<p class="fineprint">整首热力带：一格一小节，越红越说明两条网格不像在解释同一批事件'
       + '（<span class="muted">空白格 = 这一节没有事件，不是"一致"</span>）。热区 ' + runs.length + ' 段'
@@ -783,7 +817,8 @@
               + ' 秒）</span>'
             : '')
           + halfLine
-          + '</div>');
+          + '</div>'
+          + eligibilityBlock(B.eligibilityReport([a, b])));
       }
     }
     // 局部相位偏移候选：只提示、不修正。带位置，而且要求连续若干根 boundary 支持——
