@@ -35,6 +35,7 @@ from pathlib import Path
 CACHE = Path(r"F:\vibe transcription\music_explorer\cache")
 RUNS = Path(r"F:\vibe transcription\runs")
 DOCS = Path(__file__).resolve().parents[2] / "static" / "docs"
+OBSERVATIONS = Path(__file__).resolve().parents[2] / "static" / "observations"
 SIXTEENTH_TIERS = (0.10, 0.25, 0.50)
 
 
@@ -322,6 +323,9 @@ def source_readings(song: str) -> list[dict]:
                                 % (reading["beatsPerBar"], reading["marks"] - 1),
                     "note": "人按小节头那几次；间隔用手机自己的钟（%d 下）" % reading["marks"]})
 
+    reading = mapperatorinator_reading(song)
+    if reading:
+        out.append(reading)
     for cal in cals:
         if cal.get("calibrationId") != "workbench":
             continue
@@ -351,6 +355,37 @@ def source_readings(song: str) -> list[dict]:
                     "meterMix": "%d 拍（铺出来时假设的）" % int(cal["beatsPerBar"]),
                     "note": "起点 + 恒速铺出来（这条读法本身就是恒速假设）"})
     return out
+
+
+def mapperatorinator_reading(song: str) -> dict | None:
+    """第五条来源：Mapperatorinator 自己报的 measure observation（不是从红线折算的）。
+
+    它的 health 只反映**它自己输出得像不像话**（局部缺失、输出越界这种），
+    "和 Beat This 不一致"不会被算进去——分歧只是证据（§13）。
+    """
+    path = OBSERVATIONS / ("%s.mapperatorinator.json" % song)
+    if not path.exists():
+        return None
+    doc = json.loads(path.read_text(encoding="utf-8"))
+    observations = doc.get("observations") or {}
+    measures = sorted(float(time) for time in observations.get("measures") or [])
+    steps = [float(step) for step in (doc.get("derived") or {}).get("localBeatSeconds") or []]
+    beat_seconds = statistics.median(steps) if steps else 0.0
+    if len(measures) < 2 or beat_seconds <= 0:
+        return None
+    health = doc.get("health") or {}
+    status = health.get("status", "usable")
+    note = "模型自己报的 measure observation；%s" % doc.get("observationsFrom", "来源未写")
+    if health.get("reasons"):
+        note += "；health %s：%s" % (status, "；".join(health["reasons"]))
+    if health.get("notes"):
+        note += "；小事：%s" % "；".join(health["notes"])
+    return {"name": "mapperatorinator", "kind": "explicit", "measures": measures,
+            "beatSeconds": beat_seconds, "beatsPerBar": 4.0,
+            "health": "ok" if status == "usable" else "suspect",
+            "meterMix": meter_mix((doc.get("derived") or {}).get("pulsePositions") or [],
+                                  measures, beat_seconds),
+            "note": note}
 
 
 def doc_events(song: str) -> list[float]:
@@ -414,7 +449,20 @@ def phase_runs(votes: list[dict], bar_seconds: float, source_measures: int,
     return [run for run in runs if run["count"] >= floor]
 
 
-def pair_shape(runs: list[dict]) -> str:
+def slip_phrase(k: int, bar_beats: float) -> str:
+    """半小节的错位没有方向可言：早半小节和晚半小节是同一个相位关系。
+
+    最近邻在这种正好落在两小节正中间的地方会随便选一边，写 "+2 拍" 会让人以为
+    方向是量出来的。所以半小节一律写成 ±。
+    """
+    if k == 0:
+        return "aligned"
+    if abs(abs(k) * 2 - bar_beats) < 0.01:
+        return "半小节错位（±%g 拍）" % abs(k)
+    return "局部 %+d 拍" % k
+
+
+def pair_shape(runs: list[dict], bar_beats: float = 4.0) -> str:
     """一句话的形状：一致 / 局部错位后合上 / 一路错过 / 都在跳。只描述，不解释原因。"""
     heads = [run["k"] for run in runs]
     if not runs:
@@ -427,9 +475,9 @@ def pair_shape(runs: list[dict]) -> str:
     slipped = [k for k in heads if k != 0]
     if first == 0 and last == 0:
         return "局部错位后又合上（reconvergence）：错位 %s" % ", ".join(
-            "%+d 拍" % k for k in dict.fromkeys(slipped))
+            slip_phrase(k, bar_beats) for k in dict.fromkeys(slipped))
     if first != 0 or last != 0:
-        return "有一头是错位的（%+d 拍那端没回来）" % (first if first != 0 else last)
+        return "有一头是错位的（%s 那端没回来）" % slip_phrase(first if first != 0 else last, bar_beats)
     return "相位在几段之间来回换"
 
 
@@ -486,12 +534,12 @@ def pair_verdict(row: dict) -> str:
     slide = trend.get("beatsPerMinute")
     if jump is not None and jump >= 0.4:
         return "%s；有一处 %+.2f 拍的跳变（这才是错位），平时 %+.2f 拍/分钟" % (
-            pair_shape(row["runs"]), jump, slide or 0.0)
+            pair_shape(row["runs"], row["beatsPerBarB"]), jump, slide or 0.0)
     if slide is not None and abs(slide) >= 0.05:
         return "两条小节长度略有出入：相位连续滑 %+.2f 拍/分钟，最大跳变只有 %.2f 拍（没有突变）" % (
             slide, jump or 0.0)
     return "%s；不滑（%+.2f 拍/分钟，最大跳变 %.2f 拍）" % (
-        pair_shape(row["runs"]), slide or 0.0, jump or 0.0)
+        pair_shape(row["runs"], row["beatsPerBarB"]), slide or 0.0, jump or 0.0)
 
 
 def grain_matched(fine: dict, coarse: dict, residual_cap: float = 0.25) -> tuple[list[float], dict, str]:
@@ -690,8 +738,9 @@ def measures_lines(phase: dict) -> list[str]:
             continue
         parts = []
         for run in row["runs"]:
-            label = ("aligned" if run["k"] == 0 else "局部 %+d 拍（%+.2f 小节）"
-                     % (run["k"], run["k"] * row["beatSecondsB"] / row["barB"]))
+            label = slip_phrase(run["k"], row["beatsPerBarB"])
+            if run["k"] != 0:
+                label += "（%+.2f 小节）" % (run["k"] * row["beatSecondsB"] / row["barB"])
             span = "%s–%s" % (clock(run["start"]), clock(run["end"]))
             parts.append("%s %s（%d 票）" % (label, span, run["count"]))
         if not parts:

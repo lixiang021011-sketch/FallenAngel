@@ -77,6 +77,48 @@ python tools/docs/deviation_report.py --library            # 扫全库，只列�
   否则最近邻在两侧来回跳会被算成一次 4 拍的假跳变
 - `aligned → 错位 → aligned` 报成 reconvergence（规格 §14）；没回来的那头照实说
 
+## 第五条来源：Mapperatorinator（`import_mapperatorinator_timing.py`）
+
+它在这个体系里**只是局部 timing / measure 观察者**：不替换任何现有网格，不当真值，不投票。
+
+```powershell
+# 先让 Mapperatorinator 把模型自己那串 observation 导出来（见下）
+D:\fa_tools\mapperatorinator\venv\Scripts\python.exe inference.py ^
+  audio_path="D:\fa_tools\mapperatorinator\in\<歌>_full.wav" ^
+  output_path="D:\fa_tools\mapperatorinator\out\<歌>_timing_events" ^
+  gamemode=3 output_type=[TIMING] dump_timing_events=true
+
+# 接进 MGMCS：归档 + 派生
+python tools/docs/import_mapperatorinator_timing.py --song <歌> --refresh
+python tools/docs/import_mapperatorinator_timing.py --rebuild        # 只从归档重算派生层
+python tools/docs/import_mapperatorinator_timing.py --rebuild --derived-root <临时目录>   # 比字节用
+```
+
+```
+归档层（不可重算）  static/observations/source/<歌>.timing_events.json          模型原样输出
+                    static/observations/source/<歌>.mapperatorinator.source.json 重建所需的全部输入
+                   = 上面那份 + 红线的 bpm/meter + 音频时长
+派生层（可重算）    static/observations/<歌>.mapperatorinator.json
+```
+
+**为什么走 `timing_events.json` 而不是直接读 .osu**：`.osu` 只能装红线，模型报的每一个
+MEASURE 在导出时就被折叠掉了，读回来的人只能**假设**"从红线起每 meter 拍是一个小节"。
+这个假设正好是观察者不该做的（不等长小节、局部缺失、重新对齐都会丢）。为此给本机的
+Mapperatorinator 打了一个 `dump_timing_events=true`（补丁存在
+`tools/docs/patches/mapperatorinator-dump-timing-events.patch`，只增加一个输出文件，
+不改任何生成结果）。没有这份文件时才退回读红线，并在 `observationsFrom` 里写明那是折算的。
+
+几条守住的边界：
+
+- 模型的 TIMING_POINT token 只带时刻，`bpm` / `meter` 是导出成 .osu 时按拍数推出来的 →
+  写清来源是**红线**，取不到就留空，不补猜测
+- 小节头那里模型发的是 MEASURE 不是 BEAT，所以"拍的位置" = BEAT ∪ MEASURE，
+  放在 `derived.pulsePositions` 里（派生读法，不改原始 observation）
+- `health` 只评**它自己输出得像不像话**（局部缺失、输出越界、拍间距异常比例过高）；
+  小事（比如两处红线只隔 300ms）走 `notes`，不当 verdict；
+  **"和 Beat This 不一致"不算 suspect**——分歧只是证据
+- `gaps` / `validRanges` 原样保留，绝不插值；`--rebuild` 与 `--refresh` 必须字节一致
+
 ## 四条读法，不投票（研究者 2026-10-10 定的方向）
 
 同一首歌上我们要并排看的是**四组 observation**，不是一个"正确的网格"：

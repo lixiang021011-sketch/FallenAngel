@@ -1,0 +1,78 @@
+diff --git a/config.py b/config.py
+index 5456fa2..f628c28 100644
+--- a/config.py
++++ b/config.py
+@@ -49,6 +49,7 @@ class InferenceConfig:
+     add_to_beatmap: bool = False  # Add generated content to the reference beatmap
+     overwrite_reference_beatmap: bool = False  # Overwrite the reference beatmap instead of creating a new one
+     export_osz: bool = False  # Export beatmap as .osz file
++    dump_timing_events: bool = False  # Also write the model's own BEAT/MEASURE/TIMING_POINT observations as timing_events.json
+     start_time: Optional[int] = None  # Start time of audio to generate beatmap for
+     end_time: Optional[int] = None  # End time of audio to generate beatmap for
+     lookback: float = 0.5  # Fraction of audio sequence to fill with tokens from previous inference window
+diff --git a/inference.py b/inference.py
+index e1a64eb..25a3495 100644
+--- a/inference.py
++++ b/inference.py
+@@ -3,6 +3,7 @@ import multiprocessing
+ import sys
+ 
+ import utils.excepthook  # noqa
++import json
+ import os.path
+ import uuid
+ from functools import reduce
+@@ -23,7 +24,8 @@ from utils import routed_pickle
+ from config import InferenceConfig
+ from diffusion_pipeline import DiffisionPipeline
+ from osuT5.osuT5.config import TrainConfig
+-from osuT5.osuT5.dataset.data_utils import events_of_type, TIMING_TYPES, merge_events
++from osuT5.osuT5.dataset.data_utils import events_of_type, TIMING_TYPES, merge_events, BEAT_TYPES
++from osuT5.osuT5.event import EventType
+ from osuT5.osuT5.inference import Preprocessor, Processor, Postprocessor, BeatmapConfig, GenerationConfig, \
+     generation_config_from_beatmap, beatmap_config_from_beatmap, background_line
+ from osuT5.osuT5.inference.server import InferenceClient
+@@ -554,6 +556,9 @@ def generate(
+             verbose=verbose,
+         )
+ 
++    if getattr(args, "dump_timing_events", False):
++        dump_timing_events(events, args.train.data.types_first, Path(output_path))
++
+     result = postprocessor.generate(
+         events=events,
+         beatmap_config=beatmap_config,
+@@ -587,6 +592,33 @@ def generate(
+     return result, result_path
+ 
+ 
++def dump_timing_events(events: list, types_first: bool, output_path: Path) -> Path:
++    """Write the model's own BEAT / MEASURE / TIMING_POINT observations next to the .osu.
++
++    The .osu format can only carry red lines, so every measure that is not a red line is
++    lost in the export: whoever reads the file back has to *assume* "every `meter` beats,
++    counting from a red line, is a measure". That assumption is exactly what a timing
++    observer must not make (irregular measures, gaps, local re-alignment).
++
++    This dump keeps the observations as the model produced them. Enabled by
++    `dump_timing_events=true`; it changes nothing about the generated beatmap.
++    """
++    step = 1 if types_first else -1
++    rows = []
++    for index, event in enumerate(events):
++        if event.type not in BEAT_TYPES:
++            continue
++        other = index + step
++        if not 0 <= other < len(events) or events[other].type != EventType.TIME_SHIFT:
++            continue
++        rows.append({"type": event.type.value, "time": events[other].value / 1000.0})
++    rows.sort(key=lambda row: (row["time"], row["type"]))
++    output_path.mkdir(parents=True, exist_ok=True)
++    path = output_path / "timing_events.json"
++    path.write_text(json.dumps(rows, indent=1), encoding="utf-8")
++    return path
++
++
+ def load_model_with_server(ckpt_path: str | Path | None, t5_args: TrainConfig, device, max_batch_size: int = 8,
+                            use_server: bool = False, precision: str = "fp32", attn_implementation: str = "sdpa",
+                            eval_mode: bool = True, lora_path=None, gamemode: int | None = None,
