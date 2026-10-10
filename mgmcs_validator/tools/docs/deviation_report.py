@@ -13,8 +13,9 @@
 
 **B. Measure Phase** —— 这些 16 分格里，哪一格该叫"小节 1 拍"
     不碰"最近 16 分格距离"那套。只把每条来源的 measure-relative phase
-    （0/1/2/3 拍）在窗口里对出来，逐窗报告相位关系（aligned / local +N beat）。
-    依然不投票判真值。
+    （0/1/2/3 拍）两两对出来，逐段报告相位关系（aligned / 局部 +N 拍 / 没回来）。
+    依然不投票判真值。三件事必须分开：**连续滑**（两条小节线长度略有出入）、
+    **跳一格**（≈整数拍，这才是相位错位）、以及最近邻在两侧来回跳造成的假跳变。
 
 **网格参数怎么来（两条路，不能混）**：
     affine 来源   → 整首最小二乘拟合（斜率=BPM）+ 残差
@@ -33,6 +34,7 @@ from pathlib import Path
 
 CACHE = Path(r"F:\vibe transcription\music_explorer\cache")
 RUNS = Path(r"F:\vibe transcription\runs")
+DOCS = Path(__file__).resolve().parents[2] / "static" / "docs"
 SIXTEENTH_TIERS = (0.10, 0.25, 0.50)
 
 
@@ -227,16 +229,322 @@ def mapper_osu(song: str) -> Path | None:
     return found[-1] if found else None
 
 
-def measure_phase(song: str, window_seconds: float = 24.0) -> list[dict]:
-    """B 层：逐窗对比各来源的 measure-relative phase，只报关系不判真值。"""
-    sources = {}
-    bt = RUNS / song / "beat_this.json"
-    if bt.exists():
-        sources["BeatThis"] = json.loads(bt.read_text(encoding="utf-8")).get("downbeats") or []
-    rows = []
-    if len(sources) < 2:
-        return rows                                   # 只有一条来源，关系无从谈起
-    return rows
+def median_step(times: list[float]) -> float:
+    """相邻间隔的中位数。两条序列都用它，别用（末-首）/（n-1）：后者会被一个坏点拖走。"""
+    steps = [b - a for a, b in zip(times, times[1:]) if b > a]
+    return statistics.median(steps) if steps else 0.0
+
+
+def meter_mix(beats: list[float], measures: list[float], beat_seconds: float) -> str:
+    """这条来源自己数出来的"每小节几拍"分布。
+
+    必须有：一段"相位错了两拍"可能只是它在那一小段把拍号数成了 2 拍，
+    不写出来的话，读报告的人会把两种完全不同的东西看成同一件事。
+    """
+    if len(measures) < 2 or beat_seconds <= 0 or not beats:
+        return "—"
+    counts = {}
+    for a, b in zip(measures, measures[1:]):
+        inside = sum(1 for beat in beats if a - beat_seconds / 2 <= beat < b - beat_seconds / 2)
+        counts[inside] = counts.get(inside, 0) + 1
+    ordered = sorted(counts.items(), key=lambda item: -item[1])
+    return " ".join("%d 拍×%d" % (bar, n) for bar, n in ordered[:3])
+
+
+def human_readings(cal: dict) -> dict | None:
+    """人那条读法的小节头。
+
+    只用「小节头」那几次按压：手机同时记两个钟，`songTime`（播放器位置）会一步一跳，
+    `captureTime`（手机自己的钟）是准的。所以**时间轴用 songTime 定锚，间隔用 captureTime 量**
+    —— 这正是转换器当初定下的规矩，这里不另立一套。
+    """
+    taps = sorted(cal.get("rawTaps") or [], key=lambda tap: tap.get("tapIndex", 0))
+    marks = [tap for tap in taps if str(tap.get("button", "")).upper() == "DOWNBEAT"]
+    if len(marks) < 2:
+        return None
+    first = marks[0]
+    anchor, clock = float(first["songTime"]), float(first.get("captureTime", first["songTime"]))
+    measures = [anchor + (float(tap.get("captureTime", clock)) - clock) for tap in marks]
+    taps_per_bar = statistics.median(
+        [b.get("tapIndex", 0) - a.get("tapIndex", 0) for a, b in zip(marks, marks[1:])]) or 4
+    beat_seconds = median_step([float(tap.get("captureTime", 0)) for tap in taps])
+    if beat_seconds <= 0:
+        return None
+    return {"measures": measures, "beatSeconds": beat_seconds,
+            "beatsPerBar": float(taps_per_bar), "marks": len(marks)}
+
+
+def doc_calibrations(song: str) -> list[dict]:
+    path = DOCS / ("%s.mgmcs.json" % song)
+    if not path.exists():
+        return []
+    return json.loads(path.read_text(encoding="utf-8")).get("calibrations") or []
+
+
+def source_readings(song: str) -> list[dict]:
+    """每条来源各自的小节头，**不做任何跨来源外推或对齐**。
+
+    `measures` 是这条来源自己说的小节起点；`kind` 区分它是模型/人直接报的，
+    还是按自己的恒速读法铺出来的。以后 Mapperatorinator 作为第五条来源从这里接进来。
+    """
+    out = []
+    cals = doc_calibrations(song)
+
+    beats_path = RUNS / song / "beat_this.json"
+    if beats_path.exists():
+        data = json.loads(beats_path.read_text(encoding="utf-8"))
+        beat_seconds = median_step(sorted(float(b) for b in data["beats"]))
+        measures = sorted(float(b) for b in data.get("downbeats") or [])
+        if len(measures) >= 2 and beat_seconds > 0:
+            out.append({"name": "BeatThis", "kind": "explicit", "measures": measures,
+                        "beatSeconds": beat_seconds, "beatsPerBar": 4.0, "health": "ok",
+                        "meterMix": meter_mix([float(b) for b in data["beats"]], measures, beat_seconds),
+                        "note": "Beat This! 自己报的小节线；它的每小节拍数会变，所以小节长度按它自己的间隔取中位"})
+
+    for cal in cals:
+        measures = sorted(float(t) for t in (cal.get("downbeats") or []))
+        if cal.get("calibrationId") == "madmom" and len(measures) >= 2:
+            out.append({"name": "madmom", "kind": "explicit", "measures": measures,
+                        "beatSeconds": 60.0 / float(cal["bpm"]), "beatsPerBar": 4.0,
+                        "health": cal.get("health", "ok"),
+                        "note": "madmom 的 downbeat 模型自己听出来的小节线"})
+
+    for cal in cals:
+        if cal.get("source") != "human":
+            continue
+        reading = human_readings(cal)
+        if not reading:
+            continue
+        out.append({"name": "human:%s" % cal.get("calibrationId"), "kind": "explicit",
+                    "measures": sorted(reading["measures"]), "beatSeconds": reading["beatSeconds"],
+                    "beatsPerBar": reading["beatsPerBar"], "health": cal.get("health", "ok"),
+                    "meterMix": "%d 拍×%d（按两个小节头之间数了几下）"
+                                % (reading["beatsPerBar"], reading["marks"] - 1),
+                    "note": "人按小节头那几次；间隔用手机自己的钟（%d 下）" % reading["marks"]})
+
+    for cal in cals:
+        if cal.get("calibrationId") != "workbench":
+            continue
+        bar_lines = sorted(float(line["time"]) for line in (cal.get("barLines") or []))
+        if len(bar_lines) >= 2:
+            out.append({"name": "workbench", "kind": "explicit", "measures": bar_lines,
+                        "beatSeconds": 60.0 / float(cal["bpm"]), "beatsPerBar": 4.0,
+                        "health": cal.get("health", "ok"), "meterMix": "不等长（上游写下来的接缝）",
+                        "note": "上游写下来的小节线列表（含不等长小节）"})
+            continue
+        if not cal.get("audioTime") or not cal.get("bpm"):
+            continue
+        bar_seconds = float(cal["beatsPerBar"]) * 60.0 / float(cal["bpm"])
+        events = doc_events(song)
+        if not events:
+            continue
+        start = float(cal["audioTime"]) - bar_seconds
+        while start > 0:
+            start -= bar_seconds
+        measures, step = [], 0
+        while start + step * bar_seconds <= max(events) + bar_seconds:
+            measures.append(start + step * bar_seconds)
+            step += 1
+        out.append({"name": "workbench", "kind": "derived", "measures": measures,
+                    "beatSeconds": 60.0 / float(cal["bpm"]), "beatsPerBar": float(cal["beatsPerBar"]),
+                    "health": cal.get("health", "ok"),
+                    "meterMix": "%d 拍（铺出来时假设的）" % int(cal["beatsPerBar"]),
+                    "note": "起点 + 恒速铺出来（这条读法本身就是恒速假设）"})
+    return out
+
+
+def doc_events(song: str) -> list[float]:
+    path = DOCS / ("%s.mgmcs.json" % song)
+    if not path.exists():
+        return []
+    out = []
+    for event in json.loads(path.read_text(encoding="utf-8")).get("events") or []:
+        for key in ("audioTime", "startTime", "endTime"):
+            if isinstance(event.get(key), (int, float)):
+                out.append(float(event[key]))
+    return sorted(out)
+
+
+def pair_phase_votes(measures_a: list[float], measures_b: list[float],
+                     beat_seconds: float, beats_per_bar: float,
+                     residual_cap: float = 0.25) -> list[dict]:
+    """A 的每个小节头，对到最近的 B 小节头，看差了几拍。
+
+    只留两种情况：残差 ≤ 0.25 拍（这就是"差整数拍"的相位关系），
+    或差得超过半个小节（那就不是相位关系，是"附近没有对应的小节"）。**不投票，不做多数**。
+    """
+    votes = []
+    if not measures_a or not measures_b or beat_seconds <= 0:
+        return votes
+    index = 0
+    for time in measures_a:
+        while index + 1 < len(measures_b) and abs(measures_b[index + 1] - time) <= abs(measures_b[index] - time):
+            index += 1
+        nearest = measures_b[index]
+        delta_beats = (time - nearest) / beat_seconds
+        vote = {"time": time, "nearest": nearest, "deltaBeats": delta_beats,
+                "k": None, "residual": None}
+        if abs(delta_beats) <= beats_per_bar / 2.0 + residual_cap:
+            k = round(delta_beats)
+            residual = delta_beats - k
+            if abs(residual) <= residual_cap:
+                vote["k"], vote["residual"] = int(k), residual
+        votes.append(vote)
+    return votes
+
+
+def phase_runs(votes: list[dict], bar_seconds: float, source_measures: int,
+               gap_bars: float = 3.0, min_votes: int = 3) -> list[dict]:
+    """把同一相位关系的连续几票合成一段。中间隔太久就断开，免得把两处并入一段。"""
+    runs, current = [], None
+    for vote in votes:
+        if vote["k"] is None:
+            continue                      # 对不上的一票只是空档，不是"关系结束"
+        starts_new = (current is None or current["k"] != vote["k"]
+                      or vote["time"] - current["end"] > gap_bars * bar_seconds)
+        if starts_new:
+            current = {"k": vote["k"], "start": vote["time"], "end": vote["time"],
+                       "count": 1, "residuals": [vote["residual"]]}
+            runs.append(current)
+        else:
+            current["end"] = vote["time"]
+            current["count"] += 1
+            current["residuals"].append(vote["residual"])
+    floor = min_votes if source_measures >= 8 else 2
+    return [run for run in runs if run["count"] >= floor]
+
+
+def pair_shape(runs: list[dict]) -> str:
+    """一句话的形状：一致 / 局部错位后合上 / 一路错过 / 都在跳。只描述，不解释原因。"""
+    heads = [run["k"] for run in runs]
+    if not runs:
+        return "没有稳定的相位关系"
+    if all(k == 0 for k in heads):
+        return "全段一致"
+    if 0 not in heads:
+        return "整段都对不上相位"
+    first, last = heads[0], heads[-1]
+    slipped = [k for k in heads if k != 0]
+    if first == 0 and last == 0:
+        return "局部错位后又合上（reconvergence）：错位 %s" % ", ".join(
+            "%+d 拍" % k for k in dict.fromkeys(slipped))
+    if first != 0 or last != 0:
+        return "有一头是错位的（%+d 拍那端没回来）" % (first if first != 0 else last)
+    return "相位在几段之间来回换"
+
+
+def unwrap_phase(phases: list[float], bar_beats: float) -> list[float]:
+    """把相位放到"小节"这个圆上再展开。
+
+    不加这一步，A 的小节正好落在 B 两个小节正中间时，最近的那条会在两侧来回跳，
+    于是"正 2 拍"和"负 2 拍"会被算成一次 4 拍的跳变——那是量法自己造出来的假跳变。
+    同一件事在小节圆上只有半小节那么远。
+    """
+    out = []
+    previous_turn = None
+    for phase in phases:
+        turn = (phase / bar_beats + 0.5) % 1.0 - 0.5
+        if previous_turn is None:
+            out.append(turn)
+        else:
+            turn += round(previous_turn - turn)
+            out.append(turn)
+        previous_turn = out[-1]
+    return [turn * bar_beats for turn in out]
+
+
+def pair_phase_trend(votes: list[dict], bar_beats: float) -> dict:
+    """相位是"连续滑"还是"跳了一格"——这两件事必须分开。
+
+    连续滑通常只是两条小节线长度略有出入，跑几分钟才攒出可观偏差；
+    跳一格（≈整数拍）才是真的相位错位。只量，不解释原因。
+    """
+    matched = [vote for vote in votes if vote["k"] is not None]
+    out = {"beatsPerMinute": None, "maxJump": None, "count": len(matched)}
+    if len(matched) < 3:
+        return out
+    times = [vote["time"] for vote in matched]
+    phases = unwrap_phase([vote["deltaBeats"] for vote in matched], bar_beats)
+    mean_t = sum(times) / len(times)
+    mean_p = sum(phases) / len(phases)
+    denom = sum((t - mean_t) ** 2 for t in times)
+    slope = sum((t - mean_t) * (p - mean_p) for t, p in zip(times, phases)) / denom if denom else 0.0
+    out["beatsPerMinute"] = slope * 60.0
+    out["maxJump"] = max((abs((p2 - p1) - slope * (t2 - t1))
+                          for t1, t2, p1, p2 in zip(times, times[1:], phases, phases[1:])),
+                         default=0.0)
+    return out
+
+
+def pair_verdict(row: dict) -> str:
+    """一句话说清这对来源的相位到底怎么了。"""
+    trend = row.get("trend") or {}
+    votes = len(row["votes"])
+    if votes < 4 or row["matched"] < 3:
+        return "证据太少（%d 票，对上 %d）" % (votes, row["matched"])
+    jump = trend.get("maxJump")
+    slide = trend.get("beatsPerMinute")
+    if jump is not None and jump >= 0.4:
+        return "%s；有一处 %+.2f 拍的跳变（这才是错位），平时 %+.2f 拍/分钟" % (
+            pair_shape(row["runs"]), jump, slide or 0.0)
+    if slide is not None and abs(slide) >= 0.05:
+        return "两条小节长度略有出入：相位连续滑 %+.2f 拍/分钟，最大跳变只有 %.2f 拍（没有突变）" % (
+            slide, jump or 0.0)
+    return "%s；不滑（%+.2f 拍/分钟，最大跳变 %.2f 拍）" % (
+        pair_shape(row["runs"]), slide or 0.0, jump or 0.0)
+
+
+def pair_measure_phase(reading_a: dict, reading_b: dict) -> dict:
+    """一对来源之间的相位关系。
+
+    票数少的那条当 A：拿它自己说的那几个小节头去问"你在 B 里是第几拍"，
+    这样稀疏来源（人只按了几下）不会被稠密来源的票数淹掉。
+    小节长度差太多就直接说不可比，绝不硬凑成相位。
+    """
+    if len(reading_a["measures"]) > len(reading_b["measures"]):
+        reading_a, reading_b = reading_b, reading_a
+    bar_a = median_step(reading_a["measures"]) or reading_a["beatsPerBar"] * reading_a["beatSeconds"]
+    bar_b = median_step(reading_b["measures"]) or reading_b["beatsPerBar"] * reading_b["beatSeconds"]
+    row = {"a": reading_a["name"], "b": reading_b["name"], "barA": bar_a, "barB": bar_b,
+           "beatSecondsB": reading_b["beatSeconds"], "beatsPerBarB": reading_b["beatsPerBar"],
+           "votes": [], "runs": [], "matched": 0, "aligned": 0, "unmatched": 0,
+           "barGapPct": None, "residualRange": None,
+           "reason": None, "eligibility": "eligible"}
+    if bar_a <= 0 or bar_b <= 0:
+        row["reason"] = "小节长度取不出来"
+        return row
+    row["barGapPct"] = abs(bar_a - bar_b) / bar_b * 100
+    if row["barGapPct"] > 15:
+        row["reason"] = "小节长度差 %.0f%%（%.3fs vs %.3fs），相位不可比" % (
+            row["barGapPct"], bar_a, bar_b)
+        return row
+    votes = pair_phase_votes(reading_a["measures"], reading_b["measures"],
+                             reading_b["beatSeconds"], reading_b["beatsPerBar"])
+    row["votes"] = votes
+    row["trend"] = pair_phase_trend(votes, reading_b["beatsPerBar"])
+    row["runs"] = phase_runs(votes, bar_a, len(reading_a["measures"]))
+    matched = [vote for vote in votes if vote["k"] is not None]
+    row["unmatched"] = len(votes) - len(matched)
+    row["matched"] = len(matched)
+    row["aligned"] = sum(1 for vote in matched if vote["k"] == 0)
+    if matched:
+        row["residualRange"] = (min(vote["residual"] for vote in matched),
+                                max(vote["residual"] for vote in matched))
+    if reading_a["health"] != "ok" or reading_b["health"] != "ok":
+        row["eligibility"] = "caution"
+    return row
+
+
+def measure_phase(song: str) -> dict:
+    """B 层：各来源的小节头两两对相位，只报关系，不判真值、不投票。"""
+    readings = source_readings(song)
+    usable = [reading for reading in readings if len(reading["measures"]) >= 2]
+    pairs = []
+    for i, reading_a in enumerate(usable):
+        for reading_b in usable[i + 1:]:
+            pairs.append(pair_measure_phase(reading_a, reading_b))
+    pairs.sort(key=lambda row: ("human" in row["a"] or "human" in row["b"], row["a"], row["b"]))
+    return {"readings": readings, "pairs": pairs}
 
 
 def report_for(song: str) -> str:
@@ -291,19 +599,91 @@ def report_for(song: str) -> str:
                      % (agg["heldOut"][0] * 100, agg["heldOut"][1] * 100, agg["heldOut"][2] * 100,
                         agg.get("offsetSpread", 0.0), agg.get("maxStep", 0.0), agg.get("drift", "-")))
     lines.append("")
-    lines.append("MEASURE PHASE     （B 层：不碰 16 分距离，只比各来源的小节相位）")
-    rows = measure_phase(song)
-    if not rows:
-        lines.append("  还没有足够来源可比：Mapperatorinator 对这首歌尚未跑出输出；")
-        lines.append("  现有可比来源只有 BeatThis / madmom / human —— 这一层等三者齐了再填。")
+    lines.append("MEASURE PHASE     （B 层：不碰 16 分距离，只比各来源的小节头对到哪一拍；不投票）")
+    lines.extend(measures_lines(measure_phase(song)))
     return "\n".join(lines)
+
+
+def clock(seconds: float) -> str:
+    return "%02d:%02d" % (int(seconds) // 60, int(seconds) % 60)
+
+
+def measures_lines(phase: dict) -> list[str]:
+    readings = phase["readings"]
+    if not readings:
+        return ["  这首歌没有任何一条来源给出小节头，无从比相位。"]
+    lines = ["  来源                  小节头  每小节   拍长    它自己数的每小节拍数        健康"]
+    for reading in readings:
+        if len(reading["measures"]) < 2:
+            lines.append("    %-18s   %4d   —        —       —                          %s（不足两个，不参与比较）"
+                         % (reading["name"], len(reading["measures"]), reading["health"]))
+            continue
+        lines.append("    %-18s   %4d   %.3fs  %.3fs  %-25s %s%s"
+                     % (reading["name"], len(reading["measures"]),
+                        median_step(reading["measures"]) or 0.0, reading["beatSeconds"],
+                        reading.get("meterMix", "—"),
+                        reading["health"], "" if reading["kind"] == "explicit" else "（铺出来的）"))
+    if len(readings) < 2:
+        lines.append("  只有一条来源，关系无从谈起——这一层至少要有两条小节线。")
+        return lines
+    lines.append("")
+    for row in phase["pairs"]:
+        head = "  %s ↔ %s" % (row["a"], row["b"])
+        if row["reason"]:
+            lines.append("%-38s %s" % (head, row["reason"]))
+            continue
+        if not row["votes"]:
+            lines.append("%-38s 没有可对的票" % head)
+            continue
+        parts = []
+        for run in row["runs"]:
+            label = ("aligned" if run["k"] == 0 else "局部 %+d 拍（%+.2f 小节）"
+                     % (run["k"], run["k"] * row["beatSecondsB"] / row["barB"]))
+            span = "%s–%s" % (clock(run["start"]), clock(run["end"]))
+            parts.append("%s %s（%d 票）" % (label, span, run["count"]))
+        if not parts:
+            parts.append("没有连续三票以上的关系（都在跳）")
+        extra = ""
+        if row["matched"]:
+            extra = "；相位对得上 %d/%d 票（aligned %d），残余 %+.2f…%+.2f 拍" % (
+                row["matched"], len(row["votes"]), row["aligned"],
+                row["residualRange"][0], row["residualRange"][1])
+        if row["unmatched"]:
+            extra += "；%s 有 %d 处附近找不到 %s 的小节头（可能小节长度在变、或在漂）" % (
+                row["a"], row["unmatched"], row["b"])
+        if row["barGapPct"] is not None and row["barGapPct"] > 2:
+            extra += "；两条小节长度差 %.1f%%" % row["barGapPct"]
+        if len(row["votes"]) < 4:
+            extra += "；证据少（只有 %d 票）" % len(row["votes"])
+        if row["eligibility"] != "eligible":
+            extra += " → comparison_quality: %s" % row["eligibility"].upper()
+        lines.append("%-34s %s" % (head, pair_verdict(row)))
+        lines.append("      %s%s" % ("；".join(parts), extra))
+    return lines
 
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--song", action="append", default=[])
+    parser.add_argument("--library", action="store_true",
+                        help="扫一遍 static/docs 里所有歌，只报相位关系不是'全段一致'的那些对")
     args = parser.parse_args(argv)
+    if args.library:
+        names = sorted({path.name[: -len(".mgmcs.json")] for path in DOCS.glob("*.mgmcs.json")})
+        names = [name for name in names if not name.endswith(".raw")]
+        for name in names:
+            phase = measure_phase(name)
+            notes = []
+            for row in phase["pairs"]:
+                if row["reason"]:
+                    continue
+                note = pair_verdict(row)
+                if note.startswith("全段一致") or note.startswith("证据太少"):
+                    continue
+                notes.append("%s ↔ %s %s" % (row["a"], row["b"], note))
+            print("%-12s %s" % (name, "；".join(notes) if notes else "（小节相位没有分歧）"))
+        return 0
     for song in args.song or ["taishou", "flyway"]:
         print(report_for(song))
     return 0
