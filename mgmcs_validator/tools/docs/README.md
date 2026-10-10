@@ -44,6 +44,36 @@ python tools/docs/build_song_index.py
 当前语料命中 0 条——完全重合的那些早被 `machine_beats.py` 自己折过了，
 剩下的人工线彼此真的不一样。规则留着，新歌会有。
 
+## 四条读法，不投票（研究者 2026-10-10 定的方向）
+
+同一首歌上我们要并排看的是**四组 observation**，不是一个"正确的网格"：
+
+```
+human_unquantized   人打的那一遍，未吸附（.raw 变体里就是它）
+workbench           隔壁那条：鼓起音定 16 分格 + Beat This! 定相位与强拍（import_workbench_grid.py）
+librosa             machine_beats.py 的拍格（现在文档里的 calibrationId 还是 'machine'）
+madmom              downbeats_madmom.py 的小节线
+```
+
+每组各自带 **health**（它自己可不可信）、**有效范围**（valid，暂时多是 unknown）、
+以及它参与的每条派生结论的 **analysisEligibility**。**不是四票多数表决。**
+
+### 两条边界（都要守住）
+
+- `beat_this_lock < 0.9 → suspect` 只属于 **workbench 这条校准**的 source-health 规则：
+  它不是歌曲 health，也不等于"Beat This! 本身不可信"。0.82 / 0.88 这种若与人 / librosa /
+  madmom 在局部一致，照样有研究价值。
+- **`needsEars` 只影响人工审校提示**，不让整条校准变 suspect。它表达的是
+  "本读法按当前规则提出了一个局部 bar-structure 假设，等人耳确认"，
+  而不是"这段时间轴是错的"。`odd_bars → barLines` 是一条**读法**，不是 timing truth。
+
+### Grid Pair Diff 的价值定位
+
+**不是选赢家，而是找"哪些区段不同读法会让下游音乐结论发生变化"。**
+如果四条网在时间上有偏差，但在 boundary-associated events、bar-level density、
+entry/exit 这类结论上一致，那这一段就该**自动降噪**、不值得人盯。
+做到这一点，MGMCS 才从"网格比较器"变成"研究风险定位器"。
+
 ## 脚本里的路径
 
 它们都写死了本机路径（`F:\workbench曲库\_batch\manifest.json`、`_listen_root`、
