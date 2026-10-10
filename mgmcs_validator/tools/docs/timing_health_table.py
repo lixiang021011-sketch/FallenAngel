@@ -233,6 +233,10 @@ def classify(song: str) -> dict:
 def diagnose_song(song: str, row: dict) -> dict:
     """把现有量出来的东西喂给分诊规则（triage.py），拿回"要不要人来听"。"""
     sources = dr.measure_phase(song)
+    # workbench 这条读法有两种形态：一种是"写下来的小节线列表"（能表示不等长小节），
+    # 一种是"起点 + 恒速铺出来"。这个区别是分诊要用的：只有前者能表示真实的半小节。
+    cals = dr.doc_calibrations(song)
+    workbench = next((cal for cal in cals if cal.get("calibrationId") == "workbench"), {})
     facts = {
         "song": song,
         # 只把能比的那些对喂进去：不可比的对连 runs / trend 都没有，
@@ -248,6 +252,7 @@ def diagnose_song(song: str, row: dict) -> dict:
         "singles": row["singles"],
         "driftRange": [],
         "verdict": human_verdicts().get(song),
+        "workbenchDeclaresBars": bool(workbench.get("barLines")),
     }
     spot = drift_spot(song)
     if spot and row["class"] == "local drift":

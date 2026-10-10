@@ -271,6 +271,23 @@ def diagnose(facts: dict) -> dict:
                                   "不进人工。" % (blamed, reason),
                     "evidence": evidence}
         odd = structural_attribution(half)
+        # 「音乐里真的有半小节」这一形状（2026-10-11 人工三次确认：kaitou / kiechau / seiza）：
+        # 唯独那份**写下来的小节线**（workbench 的 barLines）与所有周期性读法不同，
+        # 而周期性读法彼此完全一致，差的又正好是半小节。
+        # 三条周期性读法都无法表示"这一小节短一截"，所以它们一致不代表它们对。
+        if odd == "workbench" and facts.get("workbenchDeclaresBars") and \
+                all(abs(abs(run["k"]) * 2 - (pair.get("beatsPerBarB") or 4.0)) < HALF_BAR_TOLERANCE
+                    for pair, run in half):
+            others = sorted({name for pair, _run in half for name in (pair["a"], pair["b"])
+                             if name != "workbench"})
+            return {**out, "diagnosis": "half_bar_in_music",
+                    "affectedRange": ranges(half), "suspectSource": "、".join(others),
+                    "attribution": "human-calibrated",
+                    "resolution": "这一带音乐里真的有半小节：唯一能表示它的读法（workbench 写下来的"
+                                  "小节线）与三条周期性读法差半小节，而那三条彼此完全一致。"
+                                  "人工已三次确认（kaitou / kiechau / seiza），所以这里判那三条在该段错，"
+                                  "不进人工。",
+                    "evidence": evidence}
         if odd:
             # 结构归因不再是"自动降级"：2026-10-11 的人工定案给出反例——
             # kaitou 上"只有 workbench 一条不同"，而 workbench 才是准的。

@@ -5235,7 +5235,7 @@
     }
    ],
    "triage": {
-    "diagnosis": "structure_only_attribution",
+    "diagnosis": "human_confirmed_source",
     "affectedRange": [
      {
       "start": 208.94,
@@ -5243,10 +5243,10 @@
       "seconds": 42.9
      }
     ],
-    "suspectSource": "workbench",
-    "resolution": "分歧的形状是「只有 workbench 一条不同、其余互相一致」，但它自己没报出异常小节长度。这类形状有过反例（kaitou：与众不同的那条才是准的），所以只报形状、不自动降级。",
-    "needsHumanReview": true,
-    "attribution": "structure",
+    "suspectSource": "BeatThis、madmom、mapperatorinator",
+    "resolution": "人工听过（整曲（重点 03:28 附近））并确认 workbench 的小节线是对的：与它分歧的读法按错处理（madmom↔workbench、madmom↔workbench、mapperatorinator↔workbench、workbench↔BeatThis、workbench↔BeatThis、workbench↔BeatThis）。这一首不再需要人工。",
+    "needsHumanReview": false,
+    "attribution": "human",
     "evidence": {
      "sources": [
       {
@@ -8040,8 +8040,8 @@
    "listenEnd": 230.94,
    "spanSeconds": 42.9,
    "longSpan": false,
-   "review": true,
-   "diagnosis": "structure_only_attribution",
+   "review": false,
+   "diagnosis": "human_confirmed_source",
    "support": 22,
    "pairCount": 3,
    "pairs": [
@@ -10113,8 +10113,8 @@
    "longSpan": false,
    "support": 1,
    "pairCount": 1,
-   "review": true,
-   "diagnosis": "structure_only_attribution",
+   "review": false,
+   "diagnosis": "human_confirmed_source",
    "pairs": [],
    "others": [
     "mapperatorinator↔madmom：这里跳了 1.95 拍"
@@ -10208,7 +10208,8 @@
   ],
   "humanConfirmed": [
    "kaitou",
-   "kiechau"
+   "kiechau",
+   "seiza"
   ],
   "logged": [
    "eine",
@@ -10221,8 +10222,6 @@
    "sacra",
    "spica"
   ],
-  "humanReview": [
-   "seiza"
-  ]
+  "humanReview": []
  }
 }

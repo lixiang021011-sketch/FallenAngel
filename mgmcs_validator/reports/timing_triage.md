@@ -2,7 +2,7 @@
 
 只基于已经量出来的东西（来源 health、小节数、offset 段、持续多少个 matched measure、是否 reconverge），不新增测量、也不判哪条网格是真值。
 
-## 结论：31 首里只有 1 首需要人听
+## 结论：31 首里只有 0 首需要人听
 
 | 处理结果 | 首数 | 歌 |
 |---|---|---|
@@ -10,8 +10,8 @@
 | 自动解释并局部降级某条来源 | 8 | flyway、flywayleo、henceforth、knowme、round2、sakuranoko、velvet、yukiguni |
 | 只标 timing drift，仍可继续分析 | 4 | chichunhua、lulu、yorukake、yue |
 | 登记为局部（单点 / 合回来），不升级 | 9 | eine、haiiro、happyend、iloveyou、kaluo、landaohua、onewish、sacra、spica |
-| 人工已听过并定案（按人的判定收口） | 2 | kaitou、kiechau |
-| **需要人工听** | 1 | seiza |
+| 人工已听过并定案（按人的判定收口） | 3 | kaitou、kiechau、seiza |
+| **需要人工听** | 0 | — |
 
 ## 一首歌一行
 
@@ -38,7 +38,7 @@
 | round2 | source_measure_count_error | 01:03–02:27 | mapperatorinator | bar-length | 否 | madmom ok、mapperatorinator suspect ｜ mapperatorinator↔madmom k=+2(support 12)、mapperatorinator↔madmom k=+2(support 14)、mapperatorinator↔madmom k=+2(support 6) ｜ 小节异常：madmom 异常小节 2、mapperatorinator 异常小节 29 ｜ reconverge：3 处 |
 | sacra | single_flip | 01:16–01:28、01:14–01:26 | — | — | 否 | BeatThis ok、madmom ok、mapperatorinator ok、workbench suspect ｜ — ｜ 小节异常：BeatThis 异常小节 12、workbench 异常小节 0 ｜ reconverge：无 |
 | sakuranoko | source_measure_count_error | 02:34–02:38 | BeatThis | bar-length | 否 | BeatThis ok、madmom ok、mapperatorinator ok、workbench ok ｜ madmom↔BeatThis k=+2(support 3)、mapperatorinator↔BeatThis k=+2(support 3)、workbench↔BeatThis k=+2(support 3) ｜ 小节异常：BeatThis 异常小节 9 ｜ reconverge：3 处 |
-| seiza | structure_only_attribution | 03:28–04:11 | workbench | structure | **是** | BeatThis ok、madmom ok、mapperatorinator ok、workbench ok ｜ madmom↔workbench k=+2(support 6)、madmom↔workbench k=+2(support 16)、mapperatorinator↔workbench k=+2(support 22)、workbench↔BeatThis k=-2(support 6) ｜ 小节异常：BeatThis 异常小节 4 ｜ reconverge：无 |
+| seiza | human_confirmed_source | 03:28–04:11 | BeatThis、madmom、mapperatorinator | human | 否 | BeatThis ok、madmom ok、mapperatorinator ok、workbench ok ｜ madmom↔workbench k=+2(support 6)、madmom↔workbench k=+2(support 16)、mapperatorinator↔workbench k=+2(support 22)、workbench↔BeatThis k=-2(support 6) ｜ 小节异常：BeatThis 异常小节 4 ｜ reconverge：无 |
 | soragoto | clean | — | — | — | 否 | BeatThis ok、madmom ok、mapperatorinator ok、workbench ok ｜ — ｜ 小节异常：无 ｜ reconverge：无 |
 | spica | single_flip | 02:33–02:45 | — | — | 否 | BeatThis ok、madmom ok、mapperatorinator ok、workbench ok ｜ — ｜ 小节异常：无 ｜ reconverge：无 |
 | taishou | clean | — | — | — | 否 | BeatThis ok、madmom ok、mapperatorinator ok、workbench ok ｜ — ｜ 小节异常：无 ｜ reconverge：无 |
@@ -50,11 +50,6 @@
 | yukiguni | source_measure_count_error | 00:13–00:26、03:07–03:21、02:43–02:54、04:30–04:40 | BeatThis | bar-length | 否 | BeatThis ok、madmom ok、mapperatorinator ok、workbench ok ｜ BeatThis↔madmom k=-2(support 4)、BeatThis↔madmom k=-2(support 5)、BeatThis↔workbench k=+2(support 4)、BeatThis↔workbench k=-2(support 4) ｜ 小节异常：BeatThis 异常小节 38 ｜ reconverge：4 处 |
 
 ## 需要人听的那几首（六字段全量）
-
-### seiza — structure_only_attribution
-- affectedRange：03:28–04:11（43s）
-- suspectSource：workbench
-- resolution：分歧的形状是「只有 workbench 一条不同、其余互相一致」，但它自己没报出异常小节长度。这类形状有过反例（kaitou：与众不同的那条才是准的），所以只报形状、不自动降级。
 
 ## 自动解释了谁（局部降级，不进人工）
 

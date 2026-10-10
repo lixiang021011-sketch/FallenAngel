@@ -182,6 +182,38 @@ class TestBoundaries(unittest.TestCase):
         self.assertEqual(result["suspectSource"], "workbench")
         self.assertTrue(result["needsHumanReview"])
 
+    def test_the_half_bar_shape_is_credited_to_the_written_bar_lines(self):
+        """三条周期性读法一致、唯独写下来的那份小节线差半小节 → 音乐里真的有半小节。
+
+        人工三次确认过（kaitou / kiechau / seiza），所以这一形状不再送人。
+        """
+        result = triage.diagnose({**facts(
+            [pair("madmom", "workbench", [run(2, 200, 240, 22)]),
+             pair("mapperatorinator", "workbench", [run(2, 200, 240, 22)]),
+             pair("workbench", "BeatThis", [run(-2, 200, 240, 15)])],
+            [reading("BeatThis", steady(0, 1.95, 60)), reading("madmom", steady(0, 1.95, 60)),
+             reading("mapperatorinator", steady(0, 1.95, 60)),
+             reading("workbench", steady(0, 1.95, 60))]),
+            "workbenchDeclaresBars": True})
+        self.assertEqual(result["diagnosis"], "half_bar_in_music")
+        self.assertFalse(result["needsHumanReview"])
+        self.assertEqual(set((result["suspectSource"] or "").split("、")),
+                         {"madmom", "mapperatorinator", "BeatThis"})
+
+    def test_the_same_shape_without_written_bar_lines_still_goes_to_a_human(self):
+        """同样形状但 workbench 只是恒速铺出来的：它没有"能表示不等长小节"这个身份，
+        不能照搬结论，仍然只报形状。"""
+        result = triage.diagnose({**facts(
+            [pair("madmom", "workbench", [run(2, 200, 240, 22)]),
+             pair("mapperatorinator", "workbench", [run(2, 200, 240, 22)]),
+             pair("workbench", "BeatThis", [run(-2, 200, 240, 15)])],
+            [reading("BeatThis", steady(0, 1.95, 60)), reading("madmom", steady(0, 1.95, 60)),
+             reading("mapperatorinator", steady(0, 1.95, 60)),
+             reading("workbench", steady(0, 1.95, 60))]),
+            "workbenchDeclaresBars": False})
+        self.assertEqual(result["diagnosis"], "structure_only_attribution")
+        self.assertTrue(result["needsHumanReview"])
+
     def test_human_readings_are_never_blamed(self):
         """人按的小节头只有几个，按"小节太少"会被误判成来源自身有问题。"""
         result = triage.diagnose(facts(
