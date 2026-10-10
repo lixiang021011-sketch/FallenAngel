@@ -1,4 +1,4 @@
-# 「删掉 generated 后重建」验收：先备份，再从 authored 重算，最后逐份比哈希。
+﻿# 「删掉 generated 后重建」验收：先备份，再从 authored 重算，最后逐份比哈希。
 #
 # 用法（在 mgmcs_validator 目录下）：
 #   powershell -ExecutionPolicy Bypass -File tools\docs\rebuild_and_verify.ps1
