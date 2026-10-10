@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MGMCS · timing 体检</title>
+<!-- The page reads static/timing_health.json, which tools/docs/timing_health_table.py writes.
+     The ?v= is not decoration (see index.html): bump it whenever timing.js changes. -->
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 18px 22px 60px; background: #0d1117; color: #e6edf3;
+         font: 14px/1.55 "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; }
+  h1 { font-size: 19px; margin: 0 0 4px; }
+  h2 { font-size: 14px; margin: 26px 0 8px; color: #98a2b3; font-weight: 600; }
+  a { color: #6ea8fe; text-decoration: none; } a:hover { text-decoration: underline; }
+  .muted { color: #8b949e; }
+  .bad { color: #ff8b8b; }
+  header.top { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  header.top .spacer { flex: 1; }
+  .note { color: #8b949e; margin: 6px 0 0; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 4px; }
+  .chip { border: 1px solid #30363d; border-radius: 999px; padding: 3px 10px; font-size: 12px;
+          color: #c9d1d9; background: #161b22; }
+  .chip.ok { border-color: #2ea04366; color: #79d18a; }
+  .chip.review { border-color: #d2992266; color: #e3b341; }
+  label.filter { display: inline-flex; gap: 6px; align-items: center; color: #c9d1d9; margin: 10px 0; }
+  .song { border: 1px solid #21262d; border-radius: 10px; margin-bottom: 8px; background: #11161d; }
+  .song.review { border-left: 3px solid #d29922; }
+  .song.ok { border-left: 3px solid #2ea043; }
+  .song.open { background: #131a22; }
+  button.row { display: grid; gap: 4px 16px; width: 100%; text-align: left; cursor: pointer;
+               background: none; border: 0; color: inherit; padding: 10px 14px;
+               grid-template-columns: 200px 70px 1fr 150px 260px; align-items: baseline; }
+  button.row:hover { background: #161b22; }
+  button.row .name { font-weight: 600; }
+  button.row .status { font-size: 12px; color: #8b949e; letter-spacing: .06em; }
+  .song.review button.row .status { color: #e3b341; }
+  .song.ok button.row .status { color: #79d18a; }
+  button.row .class { color: #e6edf3; }
+  button.row .where { color: #c9d1d9; font-variant-numeric: tabular-nums; }
+  button.row .a, button.row .where { font-size: 12.5px; color: #98a2b3; }
+  .suspicion { padding: 0 14px 6px; color: #e3b341; font-size: 13px; }
+  .flags { padding: 0 14px 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .flag { font-size: 11.5px; color: #98a2b3; border: 1px solid #30363d; border-radius: 6px;
+          padding: 1px 6px; }
+  .detail { border-top: 1px solid #21262d; padding: 10px 14px 14px; }
+  .segment { border: 1px solid #21262d; border-radius: 8px; padding: 8px 10px; margin-bottom: 8px;
+             background: #0f141b; }
+  .segment .head { font-variant-numeric: tabular-nums; }
+  .segment ul.others { margin: 6px 0 6px 18px; padding: 0; color: #98a2b3; font-size: 13px; }
+  .segment .back { color: #79d18a; font-size: 13px; }
+  .segment .jump { display: inline-block; margin-top: 6px; font-size: 13px; }
+  details.raw { margin-top: 6px; }
+  details.raw summary { cursor: pointer; color: #98a2b3; }
+  table.readings { border-collapse: collapse; margin: 10px 0 6px; font-size: 13px; }
+  table.readings th, table.readings td { border-bottom: 1px solid #21262d; padding: 4px 12px 4px 0;
+                                         text-align: left; }
+  table.readings th { color: #98a2b3; font-weight: 600; }
+  table.readings td.ok { color: #79d18a; } table.readings td.suspect { color: #e3b341; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div>
+    <h1>MGMCS · timing 体检</h1>
+    <p class="note" id="intro">
+      系统先找异常，你只听异常；要逐拍核对再进验证器。分类只写观测量，不判谁对。
+    </p>
+  </div>
+  <span class="spacer"></span>
+  <a href="songs.html">曲库歌单</a>
+  <a href="index.html">验证器</a>
+</header>
+
+<div class="chips" id="counts"><span class="muted">读 timing_health.json…</span></div>
+<label class="filter"><input type="checkbox" id="only-review" checked>只看 REVIEW</label>
+
+<h2>① 歌曲级摘要 → ② 异常区段（点开）→ ③ 原始读法（再展开）</h2>
+<div id="songs"></div>
+
+<script src="timing.js?v=1"></script>
+</body>
+</html>

@@ -277,8 +277,8 @@ v0.1 的边界：规格的输入格式（`originTime` + 常数 BPM）表达不�
 ## 自测
 
 ```bash
-node --test                                      # 44 个：坐标、投影、相位差、事件、文件配对
-python -m unittest discover -s tests -p "test_*.py"   # 86 个：转换器 + 坐标映射 + 网格诊断（A/B 两层）+ Mapperatorinator 接入 + 体检表分类
+node --test                                      # 103 个：坐标、投影、相位差、事件、文件配对、timing 体检页面
+python -m unittest discover -s tests -p "test_*.py"   # 87 个：转换器 + 坐标映射 + 网格诊断（A/B 两层）+ Mapperatorinator 接入 + 体检表分类
 ```
 
 `node --test` 覆盖规格里写下来的每一个数：§5 的两个投影、§7、§11 的半小节相位差、

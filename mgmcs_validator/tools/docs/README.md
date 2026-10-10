@@ -168,6 +168,27 @@ unresolved             机器读法之间没有一对能对上
 3. **人那条不进分类**。手机按的小节头多数只有 2–10 票，拿它判"这首歌是什么错"没有依据；
    它照样出现在详情里（"人：n 票"）。
 
+## 页面：`static/timing.html`（第 4 步）
+
+```powershell
+python tools/docs/timing_health_table.py --write   # 同时写 reports/timing_health.md 和 static/timing_health.json
+```
+
+然后打开 `http://localhost:8123/timing.html`。三层，只做这三层：
+
+1. **歌曲级摘要**：`status`（REVIEW / OK）+ 分类 + 第一个异常区段的起点 + A 层那两行
+2. **异常区段**（点开一首才出现）：一个地方一条，里面写明是哪几对来源在这里分歧、差几拍、
+   `support = N matched measures`、旁边几条来源在这个窗口里是什么关系（`aligned` / 停差）、
+   有没有合回来；每条都有一个「在时间轴上打开 mm:ss」
+3. **原始读法**（再展开）：各来源自己的 health 与小节数；真正逐拍核对点进验证器
+
+页面**不自己算任何 timing**，只读 `static/timing_health.json`——一个页面要是自己算一遍，
+就成了第二个真值来源。
+
+「在时间轴上打开」用的是验证器的 `index.html?doc=…&music=…&at=<秒>`。`at=` 是本轮新加的：
+它等到文档与音频的 metadata **都到齐**才跳一次（时钟循环每帧都拿 `audio.currentTime`
+覆盖播放头，早于音频就位去跳会被悄悄抹掉）。
+
 ## 四条读法，不投票（研究者 2026-10-10 定的方向）
 
 同一首歌上我们要并排看的是**四组 observation**，不是一个"正确的网格"：

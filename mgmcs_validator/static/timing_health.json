@@ -1,0 +1,3710 @@
+{
+ "generatedBy": "timing_health_table.py",
+ "note": "观测事实 + 来源 health + 异常区段；原因解释在 notes 里，永远带『待人工确认』。support 是连续多少个 matched measure 支持这个 offset，不是投票。",
+ "musicBase": "http://127.0.0.1:8125",
+ "validator": "index.html",
+ "counts": {
+  "continuous slide": 1,
+  "clean": 13,
+  "persistent ±1-beat disagreement": 3,
+  "persistent ±2-beat disagreement": 11,
+  "local drift": 3
+ },
+ "songs": [
+  {
+   "song": "velvet",
+   "title": "back number (バックナンバー) — ベルベットの詩 (天鹅绒之诗)",
+   "class": "persistent ±2-beat disagreement",
+   "status": "REVIEW",
+   "flags": [
+    "phase slip（半小节）",
+    "reconvergence"
+   ],
+   "suspects": [
+    "BeatThis"
+   ],
+   "notes": [
+    "疑似 BeatThis 2-beat counting：它自己报的小节里有 31 个只数了 2 拍 —— 待人工确认"
+   ],
+   "phase": "有一对分歧",
+   "human": "human:cal_01 6 个 matched measures、human:cal_02 12 个 matched measures",
+   "layerA": {
+    "drift": "几乎没有",
+    "residual": 7.974150090987564,
+    "lock": 0.9957724190643581,
+    "hit": "89% / 95%",
+    "residualInBeats": 0.009837129977527106
+   },
+   "readings": [
+    {
+     "name": "BeatThis",
+     "health": "ok",
+     "meterMix": "4 拍×60 2 拍×31 6 拍×1",
+     "measures": 93
+    },
+    {
+     "name": "madmom",
+     "health": "ok",
+     "meterMix": "—",
+     "measures": 77
+    },
+    {
+     "name": "human:cal_01",
+     "health": "ok",
+     "meterMix": "4 拍×5（按两个小节头之间数了几下）",
+     "measures": 6
+    },
+    {
+     "name": "human:cal_02",
+     "health": "ok",
+     "meterMix": "4 拍×11（按两个小节头之间数了几下）",
+     "measures": 12
+    },
+    {
+     "name": "mapperatorinator",
+     "health": "ok",
+     "meterMix": "4 拍×153",
+     "measures": 154
+    },
+    {
+     "name": "workbench",
+     "health": "ok",
+     "meterMix": "不等长（上游写下来的接缝）",
+     "measures": 80
+    }
+   ],
+   "segments": [
+    {
+     "song": "velvet",
+     "start": 212.492,
+     "end": 248.179,
+     "pairs": [
+      {
+       "pair": "mapperatorinator↔BeatThis",
+       "a": "mapperatorinator",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 12,
+       "residualRange": [
+        -0.08780487804874992,
+        -0.03902439024388116
+       ]
+      }
+     ],
+     "pairCount": 1,
+     "support": 12,
+     "others": [
+      "madmom↔BeatThis：aligned",
+      "madmom↔workbench：aligned",
+      "mapperatorinator↔madmom：aligned",
+      "mapperatorinator↔workbench：aligned",
+      "workbench↔BeatThis：aligned"
+     ],
+     "reconverges": false,
+     "reconvergeAt": null,
+     "headline": "mapperatorinator↔BeatThis ±2 拍（半小节）"
+    },
+    {
+     "song": "velvet",
+     "start": 89.265,
+     "end": 115.216,
+     "pairs": [
+      {
+       "pair": "mapperatorinator↔BeatThis",
+       "a": "mapperatorinator",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 9,
+       "residualRange": [
+        -0.09146341463413332,
+        -0.04146341463413661
+       ]
+      }
+     ],
+     "pairCount": 1,
+     "support": 9,
+     "others": [
+      "madmom↔BeatThis：aligned",
+      "madmom↔workbench：aligned",
+      "mapperatorinator↔madmom：aligned",
+      "mapperatorinator↔workbench：aligned",
+      "workbench↔BeatThis：aligned"
+     ],
+     "reconverges": true,
+     "reconvergeAt": 118.461,
+     "headline": "mapperatorinator↔BeatThis ±2 拍（半小节）"
+    },
+    {
+     "song": "velvet",
+     "start": 120.096559,
+     "end": 146.037597,
+     "pairs": [
+      {
+       "pair": "workbench↔BeatThis",
+       "a": "workbench",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 9,
+       "residualRange": [
+        -0.05491829268287973,
+        -0.022173170731685232
+       ]
+      },
+      {
+       "pair": "madmom↔BeatThis",
+       "a": "madmom",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 6,
+       "residualRange": [
+        -0.06097560975607719,
+        -0.024390243902417064
+       ]
+      }
+     ],
+     "pairCount": 2,
+     "support": 9,
+     "others": [
+      "madmom↔workbench：aligned",
+      "mapperatorinator↔BeatThis：aligned",
+      "mapperatorinator↔madmom：aligned",
+      "mapperatorinator↔workbench：aligned"
+     ],
+     "reconverges": true,
+     "reconvergeAt": 181.706524,
+     "headline": "workbench↔BeatThis ±2 拍（半小节）"
+    },
+    {
+     "song": "velvet",
+     "start": 152.522856,
+     "end": 178.463895,
+     "pairs": [
+      {
+       "pair": "workbench↔BeatThis",
+       "a": "workbench",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 9,
+       "residualRange": [
+        -0.05365243902435024,
+        -0.02605487804878437
+       ]
+      },
+      {
+       "pair": "madmom↔BeatThis",
+       "a": "madmom",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 3,
+       "residualRange": [
+        -0.06097560975607719,
+        -0.036585365853625484
+       ]
+      },
+      {
+       "pair": "madmom↔BeatThis",
+       "a": "madmom",
+       "b": "BeatThis",
+       "k": -2,
+       "label": "±2 拍（半小节）",
+       "support": 3,
+       "residualRange": [
+        0.024390243902417064,
+        0.04878048780483413
+       ]
+      }
+     ],
+     "pairCount": 2,
+     "support": 9,
+     "others": [
+      "madmom↔workbench：aligned",
+      "mapperatorinator↔BeatThis：aligned",
+      "mapperatorinator↔madmom：aligned",
+      "mapperatorinator↔workbench：aligned"
+     ],
+     "reconverges": true,
+     "reconvergeAt": 181.706524,
+     "headline": "workbench↔BeatThis ±2 拍（半小节）"
+    },
+    {
+     "song": "velvet",
+     "start": 3.361887,
+     "end": 26.060295,
+     "pairs": [
+      {
+       "pair": "workbench↔BeatThis",
+       "a": "workbench",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 8,
+       "residualRange": [
+        -0.07086951219510618,
+        -0.03685853658534932
+       ]
+      }
+     ],
+     "pairCount": 1,
+     "support": 8,
+     "others": [
+      "madmom↔BeatThis：这一段没有它的小节头",
+      "madmom↔workbench：aligned",
+      "mapperatorinator↔BeatThis：aligned",
+      "mapperatorinator↔madmom：aligned",
+      "mapperatorinator↔workbench：aligned"
+     ],
+     "reconverges": true,
+     "reconvergeAt": 29.302925,
+     "headline": "workbench↔BeatThis ±2 拍（半小节）"
+    },
+    {
+     "song": "velvet",
+     "start": 63.324,
+     "end": 82.795,
+     "pairs": [
+      {
+       "pair": "mapperatorinator↔BeatThis",
+       "a": "mapperatorinator",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 7,
+       "residualRange": [
+        -0.08048780487803509,
+        -0.042682926829247236
+       ]
+      }
+     ],
+     "pairCount": 1,
+     "support": 7,
+     "others": [
+      "madmom↔BeatThis：aligned",
+      "madmom↔workbench：aligned",
+      "mapperatorinator↔madmom：aligned",
+      "mapperatorinator↔workbench：aligned",
+      "workbench↔BeatThis：aligned"
+     ],
+     "reconverges": true,
+     "reconvergeAt": 118.461,
+     "headline": "mapperatorinator↔BeatThis ±2 拍（半小节）"
+    },
+    {
+     "song": "velvet",
+     "start": 30.923,
+     "end": 40.638,
+     "pairs": [
+      {
+       "pair": "mapperatorinator↔BeatThis",
+       "a": "mapperatorinator",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 4,
+       "residualRange": [
+        -0.0512195121951069,
+        -0.03292682926827695
+       ]
+      }
+     ],
+     "pairCount": 1,
+     "support": 4,
+     "others": [
+      "madmom↔BeatThis：aligned",
+      "madmom↔workbench：aligned",
+      "mapperatorinator↔madmom：aligned",
+      "mapperatorinator↔workbench：aligned",
+      "workbench↔BeatThis：aligned"
+     ],
+     "reconverges": true,
+     "reconvergeAt": 43.873,
+     "headline": "mapperatorinator↔BeatThis ±2 拍（半小节）"
+    }
+   ]
+  },
+  {
+   "song": "chichunhua",
+   "title": "ACIDMAN - 赤橙 (Remastered 2019)",
+   "class": "continuous slide",
+   "status": "REVIEW",
+   "flags": [
+    "continuous drift"
+   ],
+   "suspects": [],
+   "notes": [
+    "BeatThis↔madmom：5 段错位、k 走遍 -2-1+1+2、趋势 -1.24 拍/分钟、残余悬在中间 —— 这是相位滑过整数拍（两条小节长度不同），不是停错在某一格",
+    "BeatThis↔mapperatorinator：5 段错位、k 走遍 -2-1+1+2、趋势 -1.24 拍/分钟、残余悬在中间 —— 这是相位滑过整数拍（两条小节长度不同），不是停错在某一格",
+    "madmom↔workbench：6 段错位、k 走遍 -2-1+1+2、趋势 +1.24 拍/分钟、残余悬在中间 —— 这是相位滑过整数拍（两条小节长度不同），不是停错在某一格",
+    "mapperatorinator↔workbench：6 段错位、k 走遍 -2-1+1+2、趋势 +1.24 拍/分钟、残余悬在中间 —— 这是相位滑过整数拍（两条小节长度不同），不是停错在某一格",
+    "A 层：Beat This 的拍序列不能被一条直线描述（残差 389 ms）——这是拍层的事，和小节相位是两回事"
+   ],
+   "phase": "有一对分歧",
+   "human": "没有小节头按压",
+   "layerA": {
+    "drift": "局部明显",
+    "residual": 388.66051355853415,
+    "lock": 0.9781517011793394,
+    "hit": "21% / 52%",
+    "residualInBeats": 0.8935536492466848
+   },
+   "readings": [
+    {
+     "name": "BeatThis",
+     "health": "ok",
+     "meterMix": "4 拍×139 5 拍×2 6 拍×1",
+     "measures": 143
+    },
+    {
+     "name": "madmom",
+     "health": "ok",
+     "meterMix": "—",
+     "measures": 172
+    },
+    {
+     "name": "mapperatorinator",
+     "health": "ok",
+     "meterMix": "4 拍×157 7 拍×4 13 拍×1",
+     "measures": 163
+    },
+    {
+     "name": "workbench",
+     "health": "ok",
+     "meterMix": "4 拍（铺出来时假设的）",
+     "measures": 175
+    }
+   ],
+   "segments": [
+    {
+     "song": "chichunhua",
+     "start": 78.1,
+     "end": 109.34,
+     "pairs": [
+      {
+       "pair": "madmom↔workbench",
+       "a": "madmom",
+       "b": "workbench",
+       "k": 1,
+       "label": "局部 +1 拍",
+       "support": 15,
+       "residualRange": [
+        -0.2349782333333491,
+        0.23602176666665442
+       ]
+      },
+      {
+       "pair": "BeatThis↔madmom",
+       "a": "BeatThis",
+       "b": "madmom",
+       "k": -1,
+       "label": "局部 -1 拍",
+       "support": 14,
+       "residualRange": [
+        -0.1818213333333245,
+        0.24999800000000383
+       ]
+      },
+      {
+       "pair": "mapperatorinator↔workbench",
+       "a": "mapperatorinator",
+       "b": "workbench",
+       "k": 1,
+       "label": "局部 +1 拍",
+       "support": 13,
+       "residualRange": [
+        -0.2132282333333616,
+        0.2117050999999781
+       ]
+      },
+      {
+       "pair": "BeatThis↔mapperatorinator",
+       "a": "BeatThis",
+       "b": "mapperatorinator",
+       "k": -1,
+       "label": "局部 -1 拍",
+       "support": 15,
+       "residualRange": [
+        -0.24090909090910562,
+        0.2454545454545276
+       ]
+      }
+     ],
+     "pairCount": 4,
+     "support": 15,
+     "others": [
+      "BeatThis↔workbench：aligned",
+      "mapperatorinator↔madmom：aligned"
+     ],
+     "reconverges": true,
+     "reconvergeAt": 223.07,
+     "headline": "madmom↔workbench 局部 +1 拍"
+    },
+    {
+     "song": "chichunhua",
+     "start": 171.82,
+     "end": 200.42,
+     "pairs": [
+      {
+       "pair": "madmom↔workbench",
+       "a": "madmom",
+       "b": "workbench",
+       "k": -1,
+       "label": "局部 -1 拍",
+       "support": 15,
+       "residualRange": [
+        -0.24097823333337187,
+        0.24452176666664516
+       ]
+      },
+      {
+       "pair": "mapperatorinator↔workbench",
+       "a": "mapperatorinator",
+       "b": "workbench",
+       "k": -1,
+       "label": "局部 -1 拍",
+       "support": 14,
+       "residualRange": [
+        -0.2466282333333527,
+        0.21523843333327386
+       ]
+      },
+      {
+       "pair": "BeatThis↔madmom",
+       "a": "BeatThis",
+       "b": "madmom",
+       "k": 1,
+       "label": "局部 +1 拍",
+       "support": 14,
+       "residualRange": [
+        -0.20454333333334618,
+        0.20454866666666938
+       ]
+      },
+      {
+       "pair": "BeatThis↔mapperatorinator",
+       "a": "BeatThis",
+       "b": "mapperatorinator",
+       "k": 1,
+       "label": "局部 +1 拍",
+       "support": 11,
+       "residualRange": [
+        -0.15681818181822527,
+        0.21363636363634497
+       ]
+      }
+     ],
+     "pairCount": 4,
+     "support": 15,
+     "others": [
+      "BeatThis↔workbench：aligned",
+      "mapperatorinator↔madmom：aligned"
+     ],
+     "reconverges": true,
+     "reconvergeAt": 223.07,
+     "headline": "madmom↔workbench 局部 -1 拍"
+    },
+    {
+     "song": "chichunhua",
+     "start": 274.32,
+     "end": 297.286,
+     "pairs": [
+      {
+       "pair": "madmom↔workbench",
+       "a": "madmom",
+       "b": "workbench",
+       "k": 1,
+       "label": "局部 +1 拍",
+       "support": 12,
+       "residualRange": [
+        -0.19931156666675443,
+        0.1658550999999855
+       ]
+      },
+      {
+       "pair": "mapperatorinator↔workbench",
+       "a": "mapperatorinator",
+       "b": "workbench",
+       "k": 1,
+       "label": "局部 +1 拍",
+       "support": 10,
+       "residualRange": [
+        -0.24189490000002256,
+        0.23972176666655964
+       ]
+      }
+     ],
+     "pairCount": 2,
+     "support": 12,
+     "others": [
+      "BeatThis↔madmom：这一段没有它的小节头",
+      "BeatThis↔mapperatorinator：这一段没有它的小节头",
+      "BeatThis↔workbench：这一段没有它的小节头",
+      "mapperatorinator↔madmom：aligned"
+     ],
+     "reconverges": false,
+     "reconvergeAt": null,
+     "headline": "madmom↔workbench 局部 +1 拍"
+    },
+    {
+     "song": "chichunhua",
+     "start": 124.08,
+     "end": 156.62,
+     "pairs": [
+      {
+       "pair": "madmom↔workbench",
+       "a": "madmom",
+       "b": "workbench",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 8,
+       "residualRange": [
+        -0.2473115666666843,
+        -0.025311566666728513
+       ]
+      },
+      {
+       "pair": "BeatThis↔madmom",
+       "a": "BeatThis",
+       "b": "madmom",
+       "k": -2,
+       "label": "±2 拍（半小节）",
+       "support": 9,
+       "residualRange": [
+        -5.333333322976586e-06,
+        0.24999533333334223
+       ]
+      },
+      {
+       "pair": "mapperatorinator↔workbench",
+       "a": "mapperatorinator",
+       "b": "workbench",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 6,
+       "residualRange": [
+        -0.213744900000034,
+        -0.033644900000027844
+       ]
+      },
+      {
+       "pair": "BeatThis↔mapperatorinator",
+       "a": "BeatThis",
+       "b": "mapperatorinator",
+       "k": -2,
+       "label": "±2 拍（半小节）",
+       "support": 7,
+       "residualRange": [
+        -0.011363636363680207,
+        0.2295454545454627
+       ]
+      },
+      {
+       "pair": "madmom↔workbench",
+       "a": "madmom",
+       "b": "workbench",
+       "k": -2,
+       "label": "±2 拍（半小节）",
+       "support": 7,
+       "residualRange": [
+        0.012021766666614697,
+        0.2236884333332716
+       ]
+      },
+      {
+       "pair": "mapperatorinator↔workbench",
+       "a": "mapperatorinator",
+       "b": "workbench",
+       "k": -2,
+       "label": "±2 拍（半小节）",
+       "support": 8,
+       "residualRange": [
+        0.0010050999999322574,
+        0.2481217666666098
+       ]
+      },
+      {
+       "pair": "BeatThis↔madmom",
+       "a": "BeatThis",
+       "b": "madmom",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 8,
+       "residualRange": [
+        -0.24999533333337443,
+        -0.04544933333336676
+       ]
+      },
+      {
+       "pair": "BeatThis↔mapperatorinator",
+       "a": "BeatThis",
+       "b": "mapperatorinator",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 8,
+       "residualRange": [
+        -0.23863636363635066,
+        -0.00454545454542199
+       ]
+      }
+     ],
+     "pairCount": 4,
+     "support": 9,
+     "others": [
+      "BeatThis↔workbench：aligned",
+      "mapperatorinator↔madmom：aligned"
+     ],
+     "reconverges": true,
+     "reconvergeAt": 223.07,
+     "headline": "madmom↔workbench ±2 拍（半小节）"
+    },
+    {
+     "song": "chichunhua",
+     "start": 0.31,
+     "end": 9.46,
+     "pairs": [
+      {
+       "pair": "madmom↔workbench",
+       "a": "madmom",
+       "b": "workbench",
+       "k": -1,
+       "label": "局部 -1 拍",
+       "support": 5,
+       "residualRange": [
+        0.1403551000000003,
+        0.24202176666666797
+       ]
+      },
+      {
+       "pair": "BeatThis↔madmom",
+       "a": "BeatThis",
+       "b": "madmom",
+       "k": 1,
+       "label": "局部 +1 拍",
+       "support": 6,
+       "residualRange": [
+        -0.22727066666666285,
+        -0.13636133333333345
+       ]
+      },
+      {
+       "pair": "mapperatorinator↔workbench",
+       "a": "mapperatorinator",
+       "b": "workbench",
+       "k": -1,
+       "label": "局部 -1 拍",
+       "support": 4,
+       "residualRange": [
+        0.12060509999999913,
+        0.2264384333333317
+       ]
+      },
+      {
+       "pair": "BeatThis↔mapperatorinator",
+       "a": "BeatThis",
+       "b": "mapperatorinator",
+       "k": 1,
+       "label": "局部 +1 拍",
+       "support": 4,
+       "residualRange": [
+        -0.19318181818181723,
+        -0.07954545454545403
+       ]
+      }
+     ],
+     "pairCount": 4,
+     "support": 6,
+     "others": [
+      "BeatThis↔workbench：aligned",
+      "mapperatorinator↔madmom：aligned"
+     ],
+     "reconverges": true,
+     "reconvergeAt": 32.12,
+     "headline": "madmom↔workbench 局部 -1 拍"
+    }
+   ]
+  },
+  {
+   "song": "kiechau",
+   "title": "Cö shu Nie (コシュニエ) — 消えちゃう前に",
+   "class": "persistent ±2-beat disagreement",
+   "status": "REVIEW",
+   "flags": [
+    "phase slip（半小节）",
+    "reconvergence"
+   ],
+   "suspects": [],
+   "notes": [],
+   "phase": "有一对分歧",
+   "human": "human:cal_01 7 个 matched measures、human:cal_02 7 个 matched measures、human:cal_03 3 个 matched measures、human:cal_06 11 个 matched measures、human:cal_07 7 个 matched measures",
+   "layerA": {
+    "drift": "局部明显",
+    "residual": 157.53216815124915,
+    "lock": 0.9819136843979661,
+    "hit": "66% / 94%",
+    "residualInBeats": 0.2773992744679141
+   },
+   "readings": [
+    {
+     "name": "BeatThis",
+     "health": "ok",
+     "meterMix": "4 拍×84 2 拍×13 1 拍×2",
+     "measures": 103
+    },
+    {
+     "name": "madmom",
+     "health": "ok",
+     "meterMix": "—",
+     "measures": 94
+    },
+    {
+     "name": "human:cal_01",
+     "health": "ok",
+     "meterMix": "4 拍×6（按两个小节头之间数了几下）",
+     "measures": 7
+    },
+    {
+     "name": "human:cal_02",
+     "health": "ok",
+     "meterMix": "4 拍×6（按两个小节头之间数了几下）",
+     "measures": 7
+    },
+    {
+     "name": "human:cal_03",
+     "health": "ok",
+     "meterMix": "4 拍×2（按两个小节头之间数了几下）",
+     "measures": 3
+    },
+    {
+     "name": "human:cal_06",
+     "health": "suspect",
+     "meterMix": "3 拍×10（按两个小节头之间数了几下）",
+     "measures": 11
+    },
+    {
+     "name": "human:cal_07",
+     "health": "suspect",
+     "meterMix": "4 拍×6（按两个小节头之间数了几下）",
+     "measures": 7
+    },
+    {
+     "name": "mapperatorinator",
+     "health": "ok",
+     "meterMix": "4 拍×173 7 拍×2 10 拍×1",
+     "measures": 179
+    },
+    {
+     "name": "workbench",
+     "health": "ok",
+     "meterMix": "不等长（上游写下来的接缝）",
+     "measures": 96
+    }
+   ],
+   "segments": [
+    {
+     "song": "kiechau",
+     "start": 32.23,
+     "end": 130.56,
+     "pairs": [
+      {
+       "pair": "mapperatorinator↔BeatThis",
+       "a": "mapperatorinator",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 43,
+       "residualRange": [
+        -0.12931034482752124,
+        -0.03275862068960422
+       ]
+      },
+      {
+       "pair": "madmom↔BeatThis",
+       "a": "madmom",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 25,
+       "residualRange": [
+        -0.08620689655167268,
+        -0.017241379310305227
+       ]
+      },
+      {
+       "pair": "madmom↔workbench",
+       "a": "madmom",
+       "b": "workbench",
+       "k": -2,
+       "label": "±2 拍（半小节）",
+       "support": 25,
+       "residualRange": [
+        0.0028379205333266544,
+        0.09793304306666228
+       ]
+      },
+      {
+       "pair": "mapperatorinator↔madmom",
+       "a": "mapperatorinator",
+       "b": "madmom",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 28,
+       "residualRange": [
+        -0.085967783333319,
+        -2.9999999990870663e-06
+       ]
+      },
+      {
+       "pair": "madmom↔workbench",
+       "a": "madmom",
+       "b": "workbench",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 3,
+       "residualRange": [
+        -0.01798649760002169,
+        -0.008138872466681324
+       ]
+      }
+     ],
+     "pairCount": 4,
+     "support": 43,
+     "others": [
+      "mapperatorinator↔workbench：aligned",
+      "workbench↔BeatThis：aligned"
+     ],
+     "reconverges": true,
+     "reconvergeAt": 132.779,
+     "headline": "mapperatorinator↔BeatThis ±2 拍（半小节）"
+    },
+    {
+     "song": "kiechau",
+     "start": 169.376,
+     "end": 215.087,
+     "pairs": [
+      {
+       "pair": "mapperatorinator↔workbench",
+       "a": "mapperatorinator",
+       "b": "workbench",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 20,
+       "residualRange": [
+        -0.03872828773331327,
+        -0.002151894400009402
+       ]
+      },
+      {
+       "pair": "mapperatorinator↔madmom",
+       "a": "mapperatorinator",
+       "b": "madmom",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 20,
+       "residualRange": [
+        -0.06316080000002633,
+        0.02104959999997691
+       ]
+      }
+     ],
+     "pairCount": 2,
+     "support": 20,
+     "others": [
+      "madmom↔BeatThis：aligned",
+      "madmom↔workbench：aligned",
+      "mapperatorinator↔BeatThis：aligned",
+      "workbench↔BeatThis：aligned"
+     ],
+     "reconverges": false,
+     "reconvergeAt": null,
+     "headline": "mapperatorinator↔workbench ±2 拍（半小节）"
+    },
+    {
+     "song": "kiechau",
+     "start": 1.399867,
+     "end": 28.83,
+     "pairs": [
+      {
+       "pair": "workbench↔BeatThis",
+       "a": "workbench",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 13,
+       "residualRange": [
+        -0.09397586206891373,
+        -0.031437931034427935
+       ]
+      },
+      {
+       "pair": "madmom↔BeatThis",
+       "a": "madmom",
+       "b": "BeatThis",
+       "k": -2,
+       "label": "±2 拍（半小节）",
+       "support": 3,
+       "residualRange": [
+        0.017241379310290128,
+        0.05172413793098052
+       ]
+      },
+      {
+       "pair": "madmom↔BeatThis",
+       "a": "madmom",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 8,
+       "residualRange": [
+        -0.06896551724132771,
+        -0.03448275862063466
+       ]
+      }
+     ],
+     "pairCount": 2,
+     "support": 13,
+     "others": [
+      "madmom↔workbench：aligned",
+      "mapperatorinator↔BeatThis：aligned",
+      "mapperatorinator↔madmom：aligned",
+      "mapperatorinator↔workbench：aligned"
+     ],
+     "reconverges": true,
+     "reconvergeAt": 31.11,
+     "headline": "workbench↔BeatThis ±2 拍（半小节）"
+    },
+    {
+     "song": "kiechau",
+     "start": 132.779,
+     "end": 155.715,
+     "pairs": [
+      {
+       "pair": "mapperatorinator↔workbench",
+       "a": "mapperatorinator",
+       "b": "workbench",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 3,
+       "residualRange": [
+        -0.07775827453335649,
+        -0.0005470832666489844
+       ]
+      },
+      {
+       "pair": "madmom↔workbench",
+       "a": "madmom",
+       "b": "workbench",
+       "k": -2,
+       "label": "±2 拍（半小节）",
+       "support": 7,
+       "residualRange": [
+        0.016952208199996877,
+        0.059606583066658336
+       ]
+      },
+      {
+       "pair": "madmom↔BeatThis",
+       "a": "madmom",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 7,
+       "residualRange": [
+        -0.06896551724131839,
+        -0.034482758620659304
+       ]
+      },
+      {
+       "pair": "mapperatorinator↔BeatThis",
+       "a": "mapperatorinator",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 3,
+       "residualRange": [
+        -0.1172413793102709,
+        -0.07758620689648321
+       ]
+      }
+     ],
+     "pairCount": 4,
+     "support": 7,
+     "others": [
+      "mapperatorinator↔madmom：aligned",
+      "workbench↔BeatThis：aligned"
+     ],
+     "reconverges": true,
+     "reconvergeAt": 156.85,
+     "headline": "mapperatorinator↔workbench ±2 拍（半小节）"
+    },
+    {
+     "song": "kiechau",
+     "start": 158.033,
+     "end": 167.178,
+     "pairs": [
+      {
+       "pair": "mapperatorinator↔BeatThis",
+       "a": "mapperatorinator",
+       "b": "BeatThis",
+       "k": -2,
+       "label": "±2 拍（半小节）",
+       "support": 5,
+       "residualRange": [
+        0.07413793103444677,
+        0.1293103448275701
+       ]
+      }
+     ],
+     "pairCount": 1,
+     "support": 5,
+     "others": [
+      "madmom↔BeatThis：aligned",
+      "madmom↔workbench：aligned",
+      "mapperatorinator↔madmom：aligned",
+      "mapperatorinator↔workbench：aligned",
+      "workbench↔BeatThis：aligned"
+     ],
+     "reconverges": true,
+     "reconvergeAt": 170.523,
+     "headline": "mapperatorinator↔BeatThis ±2 拍（半小节）"
+    }
+   ]
+  },
+  {
+   "song": "yukiguni",
+   "title": "ヨルシカ (Yorushika) — 雪国",
+   "class": "persistent ±2-beat disagreement",
+   "status": "REVIEW",
+   "flags": [
+    "single flip（只一处，未持续）",
+    "phase slip（半小节）",
+    "reconvergence"
+   ],
+   "suspects": [
+    "BeatThis"
+   ],
+   "notes": [
+    "A 层：Beat This 的拍序列不能被一条直线描述（残差 2408 ms）——这是拍层的事，和小节相位是两回事",
+    "疑似 BeatThis 2-beat counting：它自己报的小节里有 76 个只数了 2 拍 —— 待人工确认"
+   ],
+   "phase": "有一对分歧",
+   "human": "human:cal_01 10 个 matched measures",
+   "layerA": {
+    "drift": "轻微",
+    "residual": 2408.4617394485263,
+    "lock": 0.9593401976595356,
+    "hit": "66% / 93%",
+    "residualInBeats": 2.595225710270455
+   },
+   "readings": [
+    {
+     "name": "BeatThis",
+     "health": "ok",
+     "meterMix": "2 拍×76 4 拍×28 1 拍×22",
+     "measures": 133
+    },
+    {
+     "name": "madmom",
+     "health": "ok",
+     "meterMix": "—",
+     "measures": 84
+    },
+    {
+     "name": "human:cal_01",
+     "health": "ok",
+     "meterMix": "4 拍×9（按两个小节头之间数了几下）",
+     "measures": 10
+    },
+    {
+     "name": "mapperatorinator",
+     "health": "ok",
+     "meterMix": "4 拍×162 9 拍×1",
+     "measures": 164
+    },
+    {
+     "name": "workbench",
+     "health": "ok",
+     "meterMix": "4 拍（铺出来时假设的）",
+     "measures": 86
+    }
+   ],
+   "segments": [
+    {
+     "song": "yukiguni",
+     "start": 187.9,
+     "end": 201.62,
+     "pairs": [
+      {
+       "pair": "BeatThis↔madmom",
+       "a": "BeatThis",
+       "b": "madmom",
+       "k": -2,
+       "label": "±2 拍（半小节）",
+       "support": 5,
+       "residualRange": [
+        1.2666666668215143e-05,
+        0.06977966666663771
+       ]
+      }
+     ],
+     "pairCount": 1,
+     "support": 5,
+     "others": [
+      "BeatThis↔mapperatorinator：aligned",
+      "BeatThis↔workbench：这一段没有它的小节头",
+      "madmom↔workbench：aligned",
+      "mapperatorinator↔madmom：aligned",
+      "mapperatorinator↔workbench：aligned"
+     ],
+     "reconverges": true,
+     "reconvergeAt": 223.88,
+     "headline": "BeatThis↔madmom ±2 拍（半小节）"
+    },
+    {
+     "song": "yukiguni",
+     "start": 13.04,
+     "end": 26.76,
+     "pairs": [
+      {
+       "pair": "BeatThis↔workbench",
+       "a": "BeatThis",
+       "b": "workbench",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 4,
+       "residualRange": [
+        -0.023544499999999857,
+        -0.006877833333335248
+       ]
+      }
+     ],
+     "pairCount": 1,
+     "support": 4,
+     "others": [
+      "BeatThis↔madmom：这一段没有它的小节头",
+      "BeatThis↔mapperatorinator：aligned",
+      "madmom↔workbench：aligned",
+      "mapperatorinator↔madmom：aligned",
+      "mapperatorinator↔workbench：aligned"
+     ],
+     "reconverges": true,
+     "reconvergeAt": 31.92,
+     "headline": "BeatThis↔workbench ±2 拍（半小节）"
+    },
+    {
+     "song": "yukiguni",
+     "start": 163.96,
+     "end": 174.22,
+     "pairs": [
+      {
+       "pair": "BeatThis↔madmom",
+       "a": "BeatThis",
+       "b": "madmom",
+       "k": -2,
+       "label": "±2 拍（半小节）",
+       "support": 4,
+       "residualRange": [
+        0.011640499999990839,
+        0.05815183333334817
+       ]
+      },
+      {
+       "pair": "BeatThis↔workbench",
+       "a": "BeatThis",
+       "b": "workbench",
+       "k": -2,
+       "label": "±2 拍（半小节）",
+       "support": 4,
+       "residualRange": [
+        0.006455499999982184,
+        0.049788833333328286
+       ]
+      }
+     ],
+     "pairCount": 2,
+     "support": 4,
+     "others": [
+      "BeatThis↔mapperatorinator：aligned",
+      "madmom↔workbench：aligned",
+      "mapperatorinator↔madmom：aligned",
+      "mapperatorinator↔workbench：aligned"
+     ],
+     "reconverges": true,
+     "reconvergeAt": 223.88,
+     "headline": "BeatThis↔madmom ±2 拍（半小节）"
+    },
+    {
+     "song": "yukiguni",
+     "start": 270.16,
+     "end": 280.48,
+     "pairs": [
+      {
+       "pair": "BeatThis↔workbench",
+       "a": "BeatThis",
+       "b": "workbench",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 4,
+       "residualRange": [
+        -0.07021116666665717,
+        -0.0102111666665885
+       ]
+      }
+     ],
+     "pairCount": 1,
+     "support": 4,
+     "others": [
+      "BeatThis↔madmom：这一段没有它的小节头",
+      "BeatThis↔mapperatorinator：aligned",
+      "madmom↔workbench：aligned",
+      "mapperatorinator↔madmom：aligned",
+      "mapperatorinator↔workbench：aligned"
+     ],
+     "reconverges": false,
+     "reconvergeAt": null,
+     "headline": "BeatThis↔workbench ±2 拍（半小节）"
+    }
+   ]
+  },
+  {
+   "song": "eine",
+   "title": "米津玄師 (よねづ けんし) — アイネクライネ (小小的我)",
+   "class": "persistent ±1-beat disagreement",
+   "status": "REVIEW",
+   "flags": [
+    "phase slip（半小节）",
+    "reconvergence",
+    "phase slip（整拍）"
+   ],
+   "suspects": [
+    "madmom"
+   ],
+   "notes": [
+    "A 层：Beat This 的拍序列不能被一条直线描述（残差 1018 ms）——这是拍层的事，和小节相位是两回事"
+   ],
+   "phase": "有一对分歧",
+   "human": "human:cal_01 6 个 matched measures",
+   "layerA": {
+    "drift": "轻微",
+    "residual": 1017.7026393656234,
+    "lock": 0.9391821576851376,
+    "hit": "85% / 98%",
+    "residualInBeats": 1.5303309367923983
+   },
+   "readings": [
+    {
+     "name": "BeatThis",
+     "health": "ok",
+     "meterMix": "4 拍×78 2 拍×36 3 拍×4",
+     "measures": 128
+    },
+    {
+     "name": "madmom",
+     "health": "ok",
+     "meterMix": "—",
+     "measures": 126
+    },
+    {
+     "name": "human:cal_01",
+     "health": "ok",
+     "meterMix": "4 拍×5（按两个小节头之间数了几下）",
+     "measures": 6
+    },
+    {
+     "name": "mapperatorinator",
+     "health": "ok",
+     "meterMix": "4 拍×89 6 拍×2 5 拍×2",
+     "measures": 96
+    },
+    {
+     "name": "workbench",
+     "health": "ok",
+     "meterMix": "不等长（上游写下来的接缝）",
+     "measures": 106
+    }
+   ],
+   "segments": [
+    {
+     "song": "eine",
+     "start": 73.109702,
+     "end": 211.722,
+     "pairs": [
+      {
+       "pair": "workbench↔BeatThis",
+       "a": "workbench",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 15,
+       "residualRange": [
+        -0.025752941176485855,
+        0.007027941176448227
+       ]
+      },
+      {
+       "pair": "madmom↔BeatThis",
+       "a": "madmom",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 5,
+       "residualRange": [
+        -2.0872192862952943e-14,
+        0.02941176470585516
+       ]
+      },
+      {
+       "pair": "mapperatorinator↔madmom",
+       "a": "mapperatorinator",
+       "b": "madmom",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 17,
+       "residualRange": [
+        -0.24118233333333627,
+        0.026463833333354447
+       ]
+      },
+      {
+       "pair": "mapperatorinator↔workbench",
+       "a": "mapperatorinator",
+       "b": "workbench",
+       "k": -2,
+       "label": "±2 拍（半小节）",
+       "support": 3,
+       "residualRange": [
+        0.00903898183332652,
+        0.018380096566669835
+       ]
+      },
+      {
+       "pair": "workbench↔madmom",
+       "a": "workbench",
+       "b": "madmom",
+       "k": -1,
+       "label": "局部 -1 拍",
+       "support": 11,
+       "residualRange": [
+        -0.04908767949999371,
+        -0.007092231250005243
+       ]
+      },
+      {
+       "pair": "workbench↔BeatThis",
+       "a": "workbench",
+       "b": "BeatThis",
+       "k": -1,
+       "label": "局部 -1 拍",
+       "support": 16,
+       "residualRange": [
+        -0.06789411764705,
+        -0.03453088235290469
+       ]
+      },
+      {
+       "pair": "mapperatorinator↔workbench",
+       "a": "mapperatorinator",
+       "b": "workbench",
+       "k": 1,
+       "label": "局部 +1 拍",
+       "support": 39,
+       "residualRange": [
+        -0.025378945433344624,
+        0.014557872633337965
+       ]
+      },
+      {
+       "pair": "workbench↔BeatThis",
+       "a": "workbench",
+       "b": "BeatThis",
+       "k": 1,
+       "label": "局部 +1 拍",
+       "support": 14,
+       "residualRange": [
+        -0.043308823529407015,
+        -0.011775000000030067
+       ]
+      },
+      {
+       "pair": "mapperatorinator↔BeatThis",
+       "a": "mapperatorinator",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 10,
+       "residualRange": [
+        -0.029411764705897125,
+        0.0029411764705602472
+       ]
+      },
+      {
+       "pair": "workbench↔madmom",
+       "a": "workbench",
+       "b": "madmom",
+       "k": 1,
+       "label": "局部 +1 拍",
+       "support": 9,
+       "residualRange": [
+        -0.03906937958333079,
+        0.019899541499999396
+       ]
+      },
+      {
+       "pair": "mapperatorinator↔BeatThis",
+       "a": "mapperatorinator",
+       "b": "BeatThis",
+       "k": -1,
+       "label": "局部 -1 拍",
+       "support": 10,
+       "residualRange": [
+        -0.07058823529407787,
+        -0.030882352941156377
+       ]
+      },
+      {
+       "pair": "mapperatorinator↔madmom",
+       "a": "mapperatorinator",
+       "b": "madmom",
+       "k": -1,
+       "label": "局部 -1 拍",
+       "support": 10,
+       "residualRange": [
+        -0.05587883333331756,
+        -0.019114249999975907
+       ]
+      },
+      {
+       "pair": "workbench↔madmom",
+       "a": "workbench",
+       "b": "madmom",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 9,
+       "residualRange": [
+        -0.016025730916661374,
+        0.015362399750003863
+       ]
+      }
+     ],
+     "pairCount": 6,
+     "support": 39,
+     "others": [],
+     "reconverges": true,
+     "reconvergeAt": 216.545,
+     "headline": "workbench↔BeatThis ±2 拍（半小节）"
+    },
+    {
+     "song": "eine",
+     "start": 216.545,
+     "end": 224.830352,
+     "pairs": [
+      {
+       "pair": "mapperatorinator↔BeatThis",
+       "a": "mapperatorinator",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 3,
+       "residualRange": [
+        -0.024999999999993694,
+        0.007352941176422156
+       ]
+      },
+      {
+       "pair": "workbench↔BeatThis",
+       "a": "workbench",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 3,
+       "residualRange": [
+        -0.014188235294115392,
+        0.0215882352940735
+       ]
+      }
+     ],
+     "pairCount": 2,
+     "support": 3,
+     "others": [
+      "madmom↔BeatThis：这一段没有它的小节头",
+      "mapperatorinator↔madmom：这一段没有它的小节头",
+      "mapperatorinator↔workbench：aligned",
+      "workbench↔madmom：这一段没有它的小节头"
+     ],
+     "reconverges": true,
+     "reconvergeAt": 238.623138,
+     "headline": "mapperatorinator↔BeatThis ±2 拍（半小节）"
+    },
+    {
+     "song": "eine",
+     "start": 242.756,
+     "end": 248.279,
+     "pairs": [
+      {
+       "pair": "mapperatorinator↔BeatThis",
+       "a": "mapperatorinator",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 3,
+       "residualRange": [
+        -0.03529411764705981,
+        -0.008823529411764897
+       ]
+      }
+     ],
+     "pairCount": 1,
+     "support": 3,
+     "others": [
+      "madmom↔BeatThis：这一段没有它的小节头",
+      "mapperatorinator↔madmom：这一段没有它的小节头",
+      "mapperatorinator↔workbench：这一段没有它的小节头",
+      "workbench↔BeatThis：aligned",
+      "workbench↔madmom：这一段没有它的小节头"
+     ],
+     "reconverges": true,
+     "reconvergeAt": 252.411,
+     "headline": "mapperatorinator↔BeatThis ±2 拍（半小节）"
+    }
+   ]
+  },
+  {
+   "song": "round2",
+   "title": "Cö shu Nie (コシュニエ) — 消えちゃう前に",
+   "class": "persistent ±2-beat disagreement",
+   "status": "REVIEW",
+   "flags": [
+    "phase slip（半小节）",
+    "reconvergence"
+   ],
+   "suspects": [
+    "madmom",
+    "mapperatorinator"
+   ],
+   "notes": [],
+   "phase": "有一对分歧",
+   "human": "human:cal_01 2 个 matched measures、human:cal_03 3 个 matched measures",
+   "layerA": {
+    "drift": "无网格",
+    "residual": null,
+    "lock": null,
+    "hit": "—"
+   },
+   "readings": [
+    {
+     "name": "madmom",
+     "health": "ok",
+     "meterMix": "—",
+     "measures": 94
+    },
+    {
+     "name": "human:cal_01",
+     "health": "ok",
+     "meterMix": "4 拍×1（按两个小节头之间数了几下）",
+     "measures": 2
+    },
+    {
+     "name": "human:cal_03",
+     "health": "ok",
+     "meterMix": "4 拍×2（按两个小节头之间数了几下）",
+     "measures": 3
+    },
+    {
+     "name": "mapperatorinator",
+     "health": "suspect",
+     "meterMix": "4 拍×140 16 拍×1 7 拍×1",
+     "measures": 146
+    }
+   ],
+   "segments": [
+    {
+     "song": "round2",
+     "start": 92.81,
+     "end": 127.109,
+     "pairs": [
+      {
+       "pair": "mapperatorinator↔madmom",
+       "a": "mapperatorinator",
+       "b": "madmom",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 14,
+       "residualRange": [
+        -0.07719586666666034,
+        -2.9999999990870663e-06
+       ]
+      }
+     ],
+     "pairCount": 1,
+     "support": 14,
+     "others": [],
+     "reconverges": true,
+     "reconvergeAt": 161.388,
+     "headline": "mapperatorinator↔madmom ±2 拍（半小节）"
+    },
+    {
+     "song": "round2",
+     "start": 63.114,
+     "end": 88.238,
+     "pairs": [
+      {
+       "pair": "mapperatorinator↔madmom",
+       "a": "mapperatorinator",
+       "b": "madmom",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 12,
+       "residualRange": [
+        -0.07368710000000189,
+        -2.9999999990870663e-06
+       ]
+      }
+     ],
+     "pairCount": 1,
+     "support": 12,
+     "others": [],
+     "reconverges": true,
+     "reconvergeAt": 161.388,
+     "headline": "mapperatorinator↔madmom ±2 拍（半小节）"
+    },
+    {
+     "song": "round2",
+     "start": 136.254,
+     "end": 147.677,
+     "pairs": [
+      {
+       "pair": "mapperatorinator↔madmom",
+       "a": "mapperatorinator",
+       "b": "madmom",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 6,
+       "residualRange": [
+        -0.06140641666668456,
+        -0.010529300000024389
+       ]
+      }
+     ],
+     "pairCount": 1,
+     "support": 6,
+     "others": [],
+     "reconverges": true,
+     "reconvergeAt": 161.388,
+     "headline": "mapperatorinator↔madmom ±2 拍（半小节）"
+    }
+   ]
+  },
+  {
+   "song": "henceforth",
+   "title": "Leo/need — Henceforth",
+   "class": "persistent ±2-beat disagreement",
+   "status": "REVIEW",
+   "flags": [
+    "phase slip（半小节）"
+   ],
+   "suspects": [
+    "BeatThis"
+   ],
+   "notes": [
+    "疑似 BeatThis 2-beat counting：它自己报的小节里有 1 个只数了 2 拍 —— 待人工确认"
+   ],
+   "phase": "有一对分歧",
+   "human": "没有小节头按压",
+   "layerA": {
+    "drift": "轻微",
+    "residual": 89.22898726008555,
+    "lock": 0.9832710294566949,
+    "hit": "98% / 100%",
+    "residualInBeats": 0.2353000454988113
+   },
+   "readings": [
+    {
+     "name": "BeatThis",
+     "health": "ok",
+     "meterMix": "4 拍×148 5 拍×3 2 拍×1",
+     "measures": 154
+    },
+    {
+     "name": "madmom",
+     "health": "ok",
+     "meterMix": "—",
+     "measures": 153
+    },
+    {
+     "name": "mapperatorinator",
+     "health": "ok",
+     "meterMix": "4 拍×143",
+     "measures": 144
+    },
+    {
+     "name": "workbench",
+     "health": "ok",
+     "meterMix": "不等长（上游写下来的接缝）",
+     "measures": 153
+    }
+   ],
+   "segments": [
+    {
+     "song": "henceforth",
+     "start": 208.657,
+     "end": 220.84,
+     "pairs": [
+      {
+       "pair": "mapperatorinator↔BeatThis",
+       "a": "mapperatorinator",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 8,
+       "residualRange": [
+        -0.1657894736841814,
+        -0.08684210526312475
+       ]
+      },
+      {
+       "pair": "workbench↔BeatThis",
+       "a": "workbench",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 9,
+       "residualRange": [
+        -0.10832631578949892,
+        -0.023976315789447922
+       ]
+      },
+      {
+       "pair": "madmom↔BeatThis",
+       "a": "madmom",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 9,
+       "residualRange": [
+        -0.10526315789471719,
+        0.0
+       ]
+      }
+     ],
+     "pairCount": 3,
+     "support": 9,
+     "others": [
+      "madmom↔workbench：aligned",
+      "mapperatorinator↔madmom：aligned",
+      "mapperatorinator↔workbench：aligned"
+     ],
+     "reconverges": false,
+     "reconvergeAt": null,
+     "headline": "mapperatorinator↔BeatThis ±2 拍（半小节）"
+    },
+    {
+     "song": "henceforth",
+     "start": 223.868902,
+     "end": 231.47,
+     "pairs": [
+      {
+       "pair": "workbench↔BeatThis",
+       "a": "workbench",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 6,
+       "residualRange": [
+        -0.09229473684206768,
+        -0.04227631578946767
+       ]
+      },
+      {
+       "pair": "madmom↔BeatThis",
+       "a": "madmom",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 6,
+       "residualRange": [
+        -0.07894736842105665,
+        -0.026315789473660534
+       ]
+      }
+     ],
+     "pairCount": 2,
+     "support": 6,
+     "others": [
+      "madmom↔workbench：aligned",
+      "mapperatorinator↔BeatThis：这一段没有它的小节头",
+      "mapperatorinator↔madmom：这一段没有它的小节头",
+      "mapperatorinator↔workbench：这一段没有它的小节头"
+     ],
+     "reconverges": false,
+     "reconvergeAt": null,
+     "headline": "workbench↔BeatThis ±2 拍（半小节）"
+    }
+   ]
+  },
+  {
+   "song": "knowme",
+   "title": "八木海莉 — know me...",
+   "class": "persistent ±2-beat disagreement",
+   "status": "REVIEW",
+   "flags": [
+    "phase slip（半小节）"
+   ],
+   "suspects": [
+    "BeatThis"
+   ],
+   "notes": [
+    "疑似 BeatThis 2-beat counting：它自己报的小节里有 3 个只数了 2 拍 —— 待人工确认"
+   ],
+   "phase": "有一对分歧",
+   "human": "没有小节头按压",
+   "layerA": {
+    "drift": "几乎没有",
+    "residual": 5.328382455331848,
+    "lock": 0.9917123151529537,
+    "hit": "92% / 99%",
+    "residualInBeats": 0.0072376417896976245
+   },
+   "readings": [
+    {
+     "name": "BeatThis",
+     "health": "ok",
+     "meterMix": "4 拍×68 2 拍×3",
+     "measures": 72
+    },
+    {
+     "name": "madmom",
+     "health": "ok",
+     "meterMix": "—",
+     "measures": 103
+    },
+    {
+     "name": "mapperatorinator",
+     "health": "ok",
+     "meterMix": "4 拍×139",
+     "measures": 140
+    },
+    {
+     "name": "workbench",
+     "health": "ok",
+     "meterMix": "4 拍（铺出来时假设的）",
+     "measures": 142
+    }
+   ],
+   "segments": [
+    {
+     "song": "knowme",
+     "start": 93.498,
+     "end": 202.46871740266496,
+     "pairs": [
+      {
+       "pair": "mapperatorinator↔BeatThis",
+       "a": "mapperatorinator",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 38,
+       "residualRange": [
+        -0.07702702702701125,
+        -0.03783783783782679
+       ]
+      },
+      {
+       "pair": "workbench↔BeatThis",
+       "a": "workbench",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 38,
+       "residualRange": [
+        -0.05501165363539662,
+        -0.020228226002729777
+       ]
+      }
+     ],
+     "pairCount": 2,
+     "support": 38,
+     "others": [
+      "madmom↔BeatThis：aligned",
+      "madmom↔mapperatorinator：aligned",
+      "madmom↔workbench：aligned",
+      "mapperatorinator↔workbench：aligned"
+     ],
+     "reconverges": false,
+     "reconvergeAt": null,
+     "headline": "mapperatorinator↔BeatThis ±2 拍（半小节）"
+    },
+    {
+     "song": "knowme",
+     "start": 2.215,
+     "end": 22.84122359883193,
+     "pairs": [
+      {
+       "pair": "mapperatorinator↔BeatThis",
+       "a": "mapperatorinator",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 8,
+       "residualRange": [
+        -0.06081081081079742,
+        -0.03378378378377045
+       ]
+      },
+      {
+       "pair": "workbench↔BeatThis",
+       "a": "workbench",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 8,
+       "residualRange": [
+        -0.04448032527139412,
+        -0.015902018123236106
+       ]
+      },
+      {
+       "pair": "madmom↔BeatThis",
+       "a": "madmom",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 7,
+       "residualRange": [
+        -0.040540540540527914,
+        -0.01351351351349983
+       ]
+      }
+     ],
+     "pairCount": 3,
+     "support": 8,
+     "others": [
+      "madmom↔mapperatorinator：aligned",
+      "madmom↔workbench：aligned",
+      "mapperatorinator↔workbench：aligned"
+     ],
+     "reconverges": true,
+     "reconvergeAt": 25.77,
+     "headline": "mapperatorinator↔BeatThis ±2 拍（半小节）"
+    }
+   ]
+  },
+  {
+   "song": "onewish",
+   "title": "鸣潮先约电台/Cö shu Nie (コシュニエ) — One More Wish (日文版)",
+   "class": "persistent ±1-beat disagreement",
+   "status": "REVIEW",
+   "flags": [
+    "phase slip（半小节）",
+    "phase slip（整拍）"
+   ],
+   "suspects": [],
+   "notes": [
+    "A 层：Beat This 的拍序列不能被一条直线描述（残差 1190 ms）——这是拍层的事，和小节相位是两回事"
+   ],
+   "phase": "有一对分歧",
+   "human": "没有小节头按压",
+   "layerA": {
+    "drift": "轻微",
+    "residual": 1189.7667270632014,
+    "lock": 0.9706046486824497,
+    "hit": "94% / 99%",
+    "residualInBeats": 2.816706765782292
+   },
+   "readings": [
+    {
+     "name": "BeatThis",
+     "health": "ok",
+     "meterMix": "4 拍×103 5 拍×12 0 拍×4",
+     "measures": 125
+    },
+    {
+     "name": "madmom",
+     "health": "ok",
+     "meterMix": "—",
+     "measures": 130
+    },
+    {
+     "name": "mapperatorinator",
+     "health": "ok",
+     "meterMix": "4 拍×62 7 拍×1",
+     "measures": 64
+    },
+    {
+     "name": "workbench",
+     "health": "ok",
+     "meterMix": "不等长（上游写下来的接缝）",
+     "measures": 130
+    }
+   ],
+   "segments": [
+    {
+     "song": "onewish",
+     "start": 0.88,
+     "end": 12.74,
+     "pairs": [
+      {
+       "pair": "madmom↔workbench",
+       "a": "madmom",
+       "b": "workbench",
+       "k": 1,
+       "label": "局部 +1 拍",
+       "support": 8,
+       "residualRange": [
+        -0.12921727160000007,
+        -0.011103077866666311
+       ]
+      },
+      {
+       "pair": "BeatThis↔workbench",
+       "a": "BeatThis",
+       "b": "workbench",
+       "k": 1,
+       "label": "局部 +1 拍",
+       "support": 5,
+       "residualRange": [
+        -0.03587330893333418,
+        0.011903936866667797
+       ]
+      }
+     ],
+     "pairCount": 2,
+     "support": 8,
+     "others": [
+      "BeatThis↔madmom：aligned",
+      "BeatThis↔mapperatorinator：这一段没有它的小节头",
+      "madmom↔mapperatorinator：aligned"
+     ],
+     "reconverges": true,
+     "reconvergeAt": 14.02,
+     "headline": "madmom↔workbench 局部 +1 拍"
+    },
+    {
+     "song": "onewish",
+     "start": 198.26,
+     "end": 205.04,
+     "pairs": [
+      {
+       "pair": "BeatThis↔mapperatorinator",
+       "a": "BeatThis",
+       "b": "mapperatorinator",
+       "k": -2,
+       "label": "±2 拍（半小节）",
+       "support": 3,
+       "residualRange": [
+        0.059031877213688855,
+        0.09917355371899217
+       ]
+      }
+     ],
+     "pairCount": 1,
+     "support": 3,
+     "others": [
+      "BeatThis↔madmom：aligned",
+      "BeatThis↔workbench：aligned",
+      "madmom↔mapperatorinator：aligned",
+      "madmom↔workbench：aligned"
+     ],
+     "reconverges": false,
+     "reconvergeAt": null,
+     "headline": "BeatThis↔mapperatorinator ±2 拍（半小节）"
+    }
+   ]
+  },
+  {
+   "song": "flyway",
+   "title": "halyosy (森晴义) — Flyway",
+   "class": "persistent ±2-beat disagreement",
+   "status": "REVIEW",
+   "flags": [
+    "phase slip（半小节）",
+    "reconvergence"
+   ],
+   "suspects": [
+    "BeatThis"
+   ],
+   "notes": [
+    "workbench 那条校准的 source-health：Beat This 与鼓起音格子没对上（lock 0.002），这是它自己的规则，不是歌曲健康",
+    "疑似 BeatThis 2-beat counting：它自己报的小节里有 20 个只数了 2 拍 —— 待人工确认"
+   ],
+   "phase": "有一对分歧",
+   "human": "没有小节头按压",
+   "layerA": {
+    "drift": "局部明显",
+    "residual": 142.8985559762026,
+    "lock": 0.002463438630391667,
+    "hit": "92% / 99%",
+    "residualInBeats": 0.22721866774018784
+   },
+   "readings": [
+    {
+     "name": "BeatThis",
+     "health": "ok",
+     "meterMix": "4 拍×63 2 拍×20 3 拍×2",
+     "measures": 88
+    },
+    {
+     "name": "madmom",
+     "health": "ok",
+     "meterMix": "—",
+     "measures": 75
+    },
+    {
+     "name": "mapperatorinator",
+     "health": "ok",
+     "meterMix": "4 拍×149",
+     "measures": 150
+    },
+    {
+     "name": "workbench",
+     "health": "suspect",
+     "meterMix": "4 拍（铺出来时假设的）",
+     "measures": 115
+    }
+   ],
+   "segments": [
+    {
+     "song": "flyway",
+     "start": 135.477,
+     "end": 155.71,
+     "pairs": [
+      {
+       "pair": "mapperatorinator↔BeatThis",
+       "a": "mapperatorinator",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 9,
+       "residualRange": [
+        -0.09374999999996114,
+        -0.06718749999996687
+       ]
+      },
+      {
+       "pair": "madmom↔BeatThis",
+       "a": "madmom",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 8,
+       "residualRange": [
+        -0.06249999999994449,
+        -0.015624999999986011
+       ]
+      }
+     ],
+     "pairCount": 2,
+     "support": 9,
+     "others": [
+      "mapperatorinator↔madmom：aligned"
+     ],
+     "reconverges": true,
+     "reconvergeAt": 158.223,
+     "headline": "mapperatorinator↔BeatThis ±2 拍（半小节）"
+    }
+   ]
+  },
+  {
+   "song": "flywayleo",
+   "title": "Leo/need — Flyway",
+   "class": "persistent ±2-beat disagreement",
+   "status": "REVIEW",
+   "flags": [
+    "phase slip（半小节）",
+    "reconvergence"
+   ],
+   "suspects": [
+    "BeatThis"
+   ],
+   "notes": [
+    "workbench 那条校准的 source-health：Beat This 与鼓起音格子没对上（lock 0.003），这是它自己的规则，不是歌曲健康",
+    "疑似 BeatThis 2-beat counting：它自己报的小节里有 7 个只数了 2 拍 —— 待人工确认"
+   ],
+   "phase": "有一对分歧",
+   "human": "human:cal_01 2 个 matched measures、human:cal_02 7 个 matched measures",
+   "layerA": {
+    "drift": "局部明显",
+    "residual": 5.996914783835905,
+    "lock": 0.0027380998747621754,
+    "hit": "94% / 99%",
+    "residualInBeats": 0.009494717541604832
+   },
+   "readings": [
+    {
+     "name": "BeatThis",
+     "health": "ok",
+     "meterMix": "4 拍×70 2 拍×7 1 拍×2",
+     "measures": 80
+    },
+    {
+     "name": "madmom",
+     "health": "ok",
+     "meterMix": "—",
+     "measures": 75
+    },
+    {
+     "name": "human:cal_01",
+     "health": "ok",
+     "meterMix": "4 拍×1（按两个小节头之间数了几下）",
+     "measures": 2
+    },
+    {
+     "name": "human:cal_02",
+     "health": "ok",
+     "meterMix": "4 拍×6（按两个小节头之间数了几下）",
+     "measures": 7
+    },
+    {
+     "name": "mapperatorinator",
+     "health": "ok",
+     "meterMix": "4 拍×148",
+     "measures": 149
+    },
+    {
+     "name": "workbench",
+     "health": "suspect",
+     "meterMix": "4 拍（铺出来时假设的）",
+     "measures": 116
+    }
+   ],
+   "segments": [
+    {
+     "song": "flywayleo",
+     "start": 138.292,
+     "end": 153.47,
+     "pairs": [
+      {
+       "pair": "mapperatorinator↔BeatThis",
+       "a": "mapperatorinator",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 7,
+       "residualRange": [
+        -0.09374999999996114,
+        -0.06718749999996687
+       ]
+      },
+      {
+       "pair": "madmom↔BeatThis",
+       "a": "madmom",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 7,
+       "residualRange": [
+        -0.06249999999994449,
+        -0.031249999999972244
+       ]
+      }
+     ],
+     "pairCount": 2,
+     "support": 7,
+     "others": [
+      "mapperatorinator↔madmom：aligned"
+     ],
+     "reconverges": true,
+     "reconvergeAt": 155.975,
+     "headline": "mapperatorinator↔BeatThis ±2 拍（半小节）"
+    }
+   ]
+  },
+  {
+   "song": "iloveyou",
+   "title": "back number (バックナンバー) — アイラブユー (I Love You)",
+   "class": "persistent ±2-beat disagreement",
+   "status": "REVIEW",
+   "flags": [
+    "phase slip（半小节）",
+    "reconvergence"
+   ],
+   "suspects": [],
+   "notes": [
+    "workbench 那条校准的 source-health：Beat This 与鼓起音格子没对上（lock 0.004），这是它自己的规则，不是歌曲健康"
+   ],
+   "phase": "有一对分歧",
+   "human": "human:cal_01 7 个 matched measures、human:cal_02 6 个 matched measures、human:cal_03 4 个 matched measures",
+   "layerA": {
+    "drift": "轻微",
+    "residual": 9.395271438876307,
+    "lock": 0.004093485704893201,
+    "hit": "72% / 98%",
+    "residualInBeats": 0.012213892458042963
+   },
+   "readings": [
+    {
+     "name": "BeatThis",
+     "health": "ok",
+     "meterMix": "4 拍×71 2 拍×5",
+     "measures": 77
+    },
+    {
+     "name": "madmom",
+     "health": "ok",
+     "meterMix": "—",
+     "measures": 74
+    },
+    {
+     "name": "human:cal_01",
+     "health": "ok",
+     "meterMix": "4 拍×6（按两个小节头之间数了几下）",
+     "measures": 7
+    },
+    {
+     "name": "human:cal_02",
+     "health": "ok",
+     "meterMix": "4 拍×5（按两个小节头之间数了几下）",
+     "measures": 6
+    },
+    {
+     "name": "human:cal_03",
+     "health": "ok",
+     "meterMix": "4 拍×3（按两个小节头之间数了几下）",
+     "measures": 4
+    },
+    {
+     "name": "mapperatorinator",
+     "health": "ok",
+     "meterMix": "4 拍×67 7 拍×1 5 拍×1",
+     "measures": 71
+    },
+    {
+     "name": "workbench",
+     "health": "suspect",
+     "meterMix": "4 拍（铺出来时假设的）",
+     "measures": 112
+    }
+   ],
+   "segments": [
+    {
+     "song": "iloveyou",
+     "start": 1.89,
+     "end": 166.481,
+     "pairs": [
+      {
+       "pair": "madmom↔BeatThis",
+       "a": "madmom",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 22,
+       "residualRange": [
+        -0.026315789473734474,
+        0.026315789473640994
+       ]
+      },
+      {
+       "pair": "mapperatorinator↔madmom",
+       "a": "mapperatorinator",
+       "b": "madmom",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 51,
+       "residualRange": [
+        -0.04805389999999998,
+        0.010387600000002273
+       ]
+      },
+      {
+       "pair": "mapperatorinator↔BeatThis",
+       "a": "mapperatorinator",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 27,
+       "residualRange": [
+        -0.0460526315789791,
+        0.01052631578942087
+       ]
+      }
+     ],
+     "pairCount": 3,
+     "support": 51,
+     "others": [],
+     "reconverges": true,
+     "reconvergeAt": 171.093,
+     "headline": "madmom↔BeatThis ±2 拍（半小节）"
+    }
+   ]
+  },
+  {
+   "song": "kaitou",
+   "title": "back number (バックナンバー) — 怪盗",
+   "class": "persistent ±1-beat disagreement",
+   "status": "REVIEW",
+   "flags": [
+    "single flip（只一处，未持续）",
+    "phase slip（半小节）",
+    "phase slip（整拍）",
+    "fixed offset",
+    "unstable"
+   ],
+   "suspects": [
+    "BeatThis",
+    "workbench"
+   ],
+   "notes": [],
+   "phase": "有一对分歧",
+   "human": "human:cal_01 5 个 matched measures",
+   "layerA": {
+    "drift": "几乎没有",
+    "residual": 7.272576856303559,
+    "lock": 0.9926649490631607,
+    "hit": "93% / 99%",
+    "residualInBeats": 0.013817776204503187
+   },
+   "readings": [
+    {
+     "name": "BeatThis",
+     "health": "ok",
+     "meterMix": "4 拍×71 2 拍×40 1 拍×1",
+     "measures": 113
+    },
+    {
+     "name": "madmom",
+     "health": "ok",
+     "meterMix": "—",
+     "measures": 91
+    },
+    {
+     "name": "human:cal_01",
+     "health": "ok",
+     "meterMix": "4 拍×4（按两个小节头之间数了几下）",
+     "measures": 5
+    },
+    {
+     "name": "mapperatorinator",
+     "health": "ok",
+     "meterMix": "4 拍×90",
+     "measures": 91
+    },
+    {
+     "name": "workbench",
+     "health": "ok",
+     "meterMix": "不等长（上游写下来的接缝）",
+     "measures": 92
+    }
+   ],
+   "segments": [
+    {
+     "song": "kaitou",
+     "start": 2.465,
+     "end": 192.49,
+     "pairs": [
+      {
+       "pair": "mapperatorinator↔BeatThis",
+       "a": "mapperatorinator",
+       "b": "BeatThis",
+       "k": 1,
+       "label": "局部 +1 拍",
+       "support": 67,
+       "residualRange": [
+        -0.09807692307695215,
+        0.0
+       ]
+      },
+      {
+       "pair": "mapperatorinator↔workbench",
+       "a": "mapperatorinator",
+       "b": "workbench",
+       "k": 1,
+       "label": "局部 +1 拍",
+       "support": 91,
+       "residualRange": [
+        -0.09074815206667308,
+        -0.05198313216666972
+       ]
+      },
+      {
+       "pair": "madmom↔mapperatorinator",
+       "a": "madmom",
+       "b": "mapperatorinator",
+       "k": -1,
+       "label": "局部 -1 拍",
+       "support": 63,
+       "residualRange": [
+        -0.22159090909090917,
+        0.09090909090909016
+       ]
+      },
+      {
+       "pair": "madmom↔mapperatorinator",
+       "a": "madmom",
+       "b": "mapperatorinator",
+       "k": 1,
+       "label": "局部 +1 拍",
+       "support": 26,
+       "residualRange": [
+        -0.026515151515132618,
+        0.07386363636359627
+       ]
+      },
+      {
+       "pair": "madmom↔workbench",
+       "a": "madmom",
+       "b": "workbench",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 26,
+       "residualRange": [
+        -0.08985141196666935,
+        -0.004924801933373857
+       ]
+      },
+      {
+       "pair": "workbench↔BeatThis",
+       "a": "workbench",
+       "b": "BeatThis",
+       "k": -2,
+       "label": "±2 拍（半小节）",
+       "support": 18,
+       "residualRange": [
+        -0.01357307692302312,
+        0.0327730769231378
+       ]
+      },
+      {
+       "pair": "mapperatorinator↔BeatThis",
+       "a": "mapperatorinator",
+       "b": "BeatThis",
+       "k": -1,
+       "label": "局部 -1 拍",
+       "support": 18,
+       "residualRange": [
+        -0.08461538461534968,
+        -0.01730769230766538
+       ]
+      }
+     ],
+     "pairCount": 5,
+     "support": 91,
+     "others": [
+      "madmom↔BeatThis：aligned"
+     ],
+     "reconverges": false,
+     "reconvergeAt": null,
+     "headline": "mapperatorinator↔BeatThis 局部 +1 拍"
+    }
+   ]
+  },
+  {
+   "song": "sakuranoko",
+   "title": "カンザキイオリ (神崎伊织) — 桜の子",
+   "class": "persistent ±2-beat disagreement",
+   "status": "REVIEW",
+   "flags": [
+    "phase slip（半小节）",
+    "reconvergence"
+   ],
+   "suspects": [
+    "BeatThis"
+   ],
+   "notes": [
+    "疑似 BeatThis 2-beat counting：它自己报的小节里有 8 个只数了 2 拍 —— 待人工确认"
+   ],
+   "phase": "有一对分歧",
+   "human": "human:cal_02 4 个 matched measures、human:cal_03 5 个 matched measures",
+   "layerA": {
+    "drift": "几乎没有",
+    "residual": 5.574898256593741,
+    "lock": 0.9931060397728076,
+    "hit": "95% / 99%",
+    "residualInBeats": 0.01263629114393319
+   },
+   "readings": [
+    {
+     "name": "BeatThis",
+     "health": "ok",
+     "meterMix": "4 拍×128 2 拍×8 3 拍×1",
+     "measures": 138
+    },
+    {
+     "name": "madmom",
+     "health": "ok",
+     "meterMix": "—",
+     "measures": 133
+    },
+    {
+     "name": "human:cal_02",
+     "health": "ok",
+     "meterMix": "8 拍×3（按两个小节头之间数了几下）",
+     "measures": 4
+    },
+    {
+     "name": "human:cal_03",
+     "health": "ok",
+     "meterMix": "4 拍×4（按两个小节头之间数了几下）",
+     "measures": 5
+    },
+    {
+     "name": "mapperatorinator",
+     "health": "ok",
+     "meterMix": "4 拍×131",
+     "measures": 132
+    },
+    {
+     "name": "workbench",
+     "health": "ok",
+     "meterMix": "不等长（上游写下来的接缝）",
+     "measures": 135
+    }
+   ],
+   "segments": [
+    {
+     "song": "sakuranoko",
+     "start": 154.978,
+     "end": 158.53,
+     "pairs": [
+      {
+       "pair": "mapperatorinator↔BeatThis",
+       "a": "mapperatorinator",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 3,
+       "residualRange": [
+        -0.07954545454544726,
+        -0.049999999999980727
+       ]
+      },
+      {
+       "pair": "workbench↔BeatThis",
+       "a": "workbench",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 3,
+       "residualRange": [
+        -0.041947727272755087,
+        -0.00712954545456701
+       ]
+      },
+      {
+       "pair": "madmom↔BeatThis",
+       "a": "madmom",
+       "b": "BeatThis",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 3,
+       "residualRange": [
+        -0.04545454545456895,
+        0.0
+       ]
+      }
+     ],
+     "pairCount": 3,
+     "support": 3,
+     "others": [
+      "madmom↔workbench：aligned",
+      "mapperatorinator↔madmom：aligned",
+      "mapperatorinator↔workbench：aligned"
+     ],
+     "reconverges": true,
+     "reconvergeAt": 160.27,
+     "headline": "mapperatorinator↔BeatThis ±2 拍（半小节）"
+    }
+   ]
+  },
+  {
+   "song": "seiza",
+   "title": "結束バンド (纽带乐队) — 星座になれたら (若能化作星座)",
+   "class": "persistent ±2-beat disagreement",
+   "status": "REVIEW",
+   "flags": [
+    "single flip（只一处，未持续）",
+    "phase slip（半小节）"
+   ],
+   "suspects": [
+    "workbench"
+   ],
+   "notes": [
+    "A 层：Beat This 的拍序列不能被一条直线描述（残差 322 ms）——这是拍层的事，和小节相位是两回事"
+   ],
+   "phase": "有一对分歧",
+   "human": "human:cal_01 5 个 matched measures、human:cal_03 4 个 matched measures",
+   "layerA": {
+    "drift": "几乎没有",
+    "residual": 321.96072641369256,
+    "lock": 0.9833218150266887,
+    "hit": "89% / 99%",
+    "residualInBeats": 0.6633932645797024
+   },
+   "readings": [
+    {
+     "name": "BeatThis",
+     "health": "ok",
+     "meterMix": "4 拍×128 1 拍×2 3 拍×1",
+     "measures": 132
+    },
+    {
+     "name": "madmom",
+     "health": "ok",
+     "meterMix": "—",
+     "measures": 129
+    },
+    {
+     "name": "human:cal_01",
+     "health": "ok",
+     "meterMix": "4 拍×4（按两个小节头之间数了几下）",
+     "measures": 5
+    },
+    {
+     "name": "human:cal_03",
+     "health": "ok",
+     "meterMix": "4 拍×3（按两个小节头之间数了几下）",
+     "measures": 4
+    },
+    {
+     "name": "mapperatorinator",
+     "health": "ok",
+     "meterMix": "4 拍×126 5 拍×1",
+     "measures": 128
+    },
+    {
+     "name": "workbench",
+     "health": "ok",
+     "meterMix": "不等长（上游写下来的接缝）",
+     "measures": 130
+    }
+   ],
+   "segments": [
+    {
+     "song": "seiza",
+     "start": 208.94,
+     "end": 251.87,
+     "pairs": [
+      {
+       "pair": "madmom↔workbench",
+       "a": "madmom",
+       "b": "workbench",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 22,
+       "residualRange": [
+        -0.06016574253330931,
+        -0.00375680976666537
+       ]
+      },
+      {
+       "pair": "mapperatorinator↔workbench",
+       "a": "mapperatorinator",
+       "b": "workbench",
+       "k": 2,
+       "label": "±2 拍（半小节）",
+       "support": 22,
+       "residualRange": [
+        -0.08117995083333174,
+        -0.04219983466661481
+       ]
+      },
+      {
+       "pair": "workbench↔BeatThis",
+       "a": "workbench",
+       "b": "BeatThis",
+       "k": -2,
+       "label": "±2 拍（半小节）",
+       "support": 15,
+       "residualRange": [
+        -0.04170833333330837,
+        0.01818541666670126
+       ]
+      }
+     ],
+     "pairCount": 3,
+     "support": 22,
+     "others": [
+      "madmom↔BeatThis：aligned",
+      "mapperatorinator↔BeatThis：aligned",
+      "mapperatorinator↔madmom：aligned"
+     ],
+     "reconverges": false,
+     "reconvergeAt": null,
+     "headline": "madmom↔workbench ±2 拍（半小节）"
+    }
+   ]
+  },
+  {
+   "song": "lulu",
+   "title": "Mrs. GREEN APPLE — lulu.",
+   "class": "local drift",
+   "status": "REVIEW",
+   "flags": [
+    "single flip（只一处，未持续）"
+   ],
+   "suspects": [],
+   "notes": [
+    "A 层：Beat This 的拍序列不能被一条直线描述（残差 5891 ms）——这是拍层的事，和小节相位是两回事"
+   ],
+   "phase": "只有单点跳变",
+   "human": "human:cal_01 4 个 matched measures、human:cal_04 4 个 matched measures",
+   "layerA": {
+    "drift": "局部明显",
+    "residual": 5891.437426248956,
+    "lock": 0.9636353684453038,
+    "hit": "56% / 89%",
+    "residualInBeats": 12.914569201209996
+   },
+   "readings": [
+    {
+     "name": "BeatThis",
+     "health": "ok",
+     "meterMix": "4 拍×147 5 拍×2 3 拍×2",
+     "measures": 154
+    },
+    {
+     "name": "madmom",
+     "health": "ok",
+     "meterMix": "—",
+     "measures": 131
+    },
+    {
+     "name": "human:cal_01",
+     "health": "ok",
+     "meterMix": "4 拍×3（按两个小节头之间数了几下）",
+     "measures": 4
+    },
+    {
+     "name": "human:cal_04",
+     "health": "ok",
+     "meterMix": "4 拍×3（按两个小节头之间数了几下）",
+     "measures": 4
+    },
+    {
+     "name": "mapperatorinator",
+     "health": "ok",
+     "meterMix": "4 拍×194",
+     "measures": 195
+    },
+    {
+     "name": "workbench",
+     "health": "ok",
+     "meterMix": "4 拍（铺出来时假设的）",
+     "measures": 198
+    }
+   ],
+   "segments": []
+  },
+  {
+   "song": "yorukake",
+   "title": "Spitz (スピッツ) — 夜を駆ける (策夜疾驰)",
+   "class": "local drift",
+   "status": "REVIEW",
+   "flags": [],
+   "suspects": [],
+   "notes": [],
+   "phase": "全部一致",
+   "human": "没有小节头按压",
+   "layerA": {
+    "drift": "局部明显",
+    "residual": 7.52044111604544,
+    "lock": 0.9892531633313983,
+    "hit": "81% / 100%",
+    "residualInBeats": 0.015673763634563794
+   },
+   "readings": [
+    {
+     "name": "BeatThis",
+     "health": "ok",
+     "meterMix": "4 拍×157",
+     "measures": 158
+    },
+    {
+     "name": "madmom",
+     "health": "ok",
+     "meterMix": "—",
+     "measures": 158
+    },
+    {
+     "name": "mapperatorinator",
+     "health": "ok",
+     "meterMix": "4 拍×154",
+     "measures": 155
+    },
+    {
+     "name": "workbench",
+     "health": "ok",
+     "meterMix": "4 拍（铺出来时假设的）",
+     "measures": 160
+    }
+   ],
+   "segments": []
+  },
+  {
+   "song": "yue",
+   "title": "说说Crystal — 月",
+   "class": "local drift",
+   "status": "REVIEW",
+   "flags": [],
+   "suspects": [],
+   "notes": [
+    "A 层：Beat This 的拍序列不能被一条直线描述（残差 1743 ms）——这是拍层的事，和小节相位是两回事",
+    "workbench 那条校准的 source-health：Beat This 与鼓起音格子没对上（lock 0.012），这是它自己的规则，不是歌曲健康"
+   ],
+   "phase": "全部一致",
+   "human": "human:cal_01 7 个 matched measures、human:cal_02 7 个 matched measures",
+   "layerA": {
+    "drift": "局部明显",
+    "residual": 1742.6803157700447,
+    "lock": 0.011785269614581902,
+    "hit": "45% / 88%",
+    "residualInBeats": 4.104402953562025
+   },
+   "readings": [
+    {
+     "name": "BeatThis",
+     "health": "ok",
+     "meterMix": "6 拍×74 3 拍×22 5 拍×7",
+     "measures": 113
+    },
+    {
+     "name": "madmom",
+     "health": "ok",
+     "meterMix": "—",
+     "measures": 102
+    },
+    {
+     "name": "human:cal_01",
+     "health": "ok",
+     "meterMix": "6 拍×6（按两个小节头之间数了几下）",
+     "measures": 7
+    },
+    {
+     "name": "human:cal_02",
+     "health": "ok",
+     "meterMix": "6 拍×6（按两个小节头之间数了几下）",
+     "measures": 7
+    },
+    {
+     "name": "mapperatorinator",
+     "health": "ok",
+     "meterMix": "6 拍×100",
+     "measures": 101
+    },
+    {
+     "name": "workbench",
+     "health": "suspect",
+     "meterMix": "4 拍（铺出来时假设的）",
+     "measures": 193
+    }
+   ],
+   "segments": []
+  },
+  {
+   "song": "dubai",
+   "title": "H△G (ハグ) — 独白",
+   "class": "clean",
+   "status": "OK",
+   "flags": [],
+   "suspects": [],
+   "notes": [
+    "A 层：Beat This 的拍序列不能被一条直线描述（残差 2157 ms）——这是拍层的事，和小节相位是两回事"
+   ],
+   "phase": "全部一致",
+   "human": "没有小节头按压",
+   "layerA": {
+    "drift": "几乎没有",
+    "residual": 2156.8666687722953,
+    "lock": 0.9491815449724845,
+    "hit": "98% / 99%",
+    "residualInBeats": 5.5743449019779625
+   },
+   "readings": [
+    {
+     "name": "BeatThis",
+     "health": "ok",
+     "meterMix": "4 拍×120 2 拍×23 3 拍×9",
+     "measures": 159
+    },
+    {
+     "name": "madmom",
+     "health": "ok",
+     "meterMix": "—",
+     "measures": 156
+    },
+    {
+     "name": "mapperatorinator",
+     "health": "ok",
+     "meterMix": "4 拍×154",
+     "measures": 155
+    },
+    {
+     "name": "workbench",
+     "health": "ok",
+     "meterMix": "4 拍（铺出来时假设的）",
+     "measures": 161
+    }
+   ],
+   "segments": []
+  },
+  {
+   "song": "haiiro",
+   "title": "東雲絵名 — 限りなく灰色へ",
+   "class": "clean",
+   "status": "OK",
+   "flags": [
+    "single flip（只一处，未持续）"
+   ],
+   "suspects": [],
+   "notes": [
+    "workbench 那条校准的 source-health：Beat This 与鼓起音格子没对上（lock 0.007），这是它自己的规则，不是歌曲健康",
+    "单点跳变（没持续成一段，先记着）：BeatThis↔madmom @04:28、BeatThis↔mapperatorinator @04:28"
+   ],
+   "phase": "只有单点跳变",
+   "human": "没有小节头按压",
+   "layerA": {
+    "drift": "轻微",
+    "residual": 25.179012871603845,
+    "lock": 0.007376540538172251,
+    "hit": "68% / 98%",
+    "residualInBeats": 0.04533777071123971
+   },
+   "readings": [
+    {
+     "name": "BeatThis",
+     "health": "ok",
+     "meterMix": "4 拍×119 5 拍×1 2 拍×1",
+     "measures": 122
+    },
+    {
+     "name": "madmom",
+     "health": "ok",
+     "meterMix": "—",
+     "measures": 123
+    },
+    {
+     "name": "mapperatorinator",
+     "health": "ok",
+     "meterMix": "4 拍×122",
+     "measures": 123
+    },
+    {
+     "name": "workbench",
+     "health": "suspect",
+     "meterMix": "4 拍（铺出来时假设的）",
+     "measures": 186
+    }
+   ],
+   "segments": []
+  },
+  {
+   "song": "happyend",
+   "title": "back number (バックナンバー) — ハッピーエンド (幸福结局)",
+   "class": "clean",
+   "status": "OK",
+   "flags": [
+    "single flip（只一处，未持续）"
+   ],
+   "suspects": [],
+   "notes": [
+    "A 层：Beat This 的拍序列不能被一条直线描述（残差 1340 ms）——这是拍层的事，和小节相位是两回事",
+    "单点跳变（没持续成一段，先记着）：BeatThis↔madmom @04:57、mapperatorinator↔BeatThis @05:07、workbench↔BeatThis @05:07"
+   ],
+   "phase": "只有单点跳变",
+   "human": "human:cal_01 5 个 matched measures",
+   "layerA": {
+    "drift": "轻微",
+    "residual": 1340.387483192771,
+    "lock": 0.9687509692536024,
+    "hit": "81% / 100%",
+    "residualInBeats": 1.7597889667177944
+   },
+   "readings": [
+    {
+     "name": "BeatThis",
+     "health": "ok",
+     "meterMix": "4 拍×88 5 拍×6 2 拍×2",
+     "measures": 101
+    },
+    {
+     "name": "madmom",
+     "health": "ok",
+     "meterMix": "—",
+     "measures": 105
+    },
+    {
+     "name": "human:cal_01",
+     "health": "ok",
+     "meterMix": "4 拍×4（按两个小节头之间数了几下）",
+     "measures": 5
+    },
+    {
+     "name": "mapperatorinator",
+     "health": "ok",
+     "meterMix": "4 拍×98",
+     "measures": 99
+    },
+    {
+     "name": "workbench",
+     "health": "ok",
+     "meterMix": "4 拍（铺出来时假设的）",
+     "measures": 201
+    }
+   ],
+   "segments": []
+  },
+  {
+   "song": "hitchcock",
+   "title": "ヨルシカ (Yorushika) — ヒッチコック (希区柯克)",
+   "class": "clean",
+   "status": "OK",
+   "flags": [],
+   "suspects": [],
+   "notes": [
+    "A 层：Beat This 的拍序列不能被一条直线描述（残差 3251 ms）——这是拍层的事，和小节相位是两回事",
+    "workbench 那条校准的 source-health：Beat This 与鼓起音格子没对上（lock 0.013），这是它自己的规则，不是歌曲健康"
+   ],
+   "phase": "全部一致",
+   "human": "human:cal_01 2 个 matched measures、human:cal_02 10 个 matched measures",
+   "layerA": {
+    "drift": "几乎没有",
+    "residual": 3251.1408698164887,
+    "lock": 0.012625430530660455,
+    "hit": "92% / 99%",
+    "residualInBeats": 7.803755581182182
+   },
+   "readings": [
+    {
+     "name": "BeatThis",
+     "health": "ok",
+     "meterMix": "4 拍×97 2 拍×38 3 拍×12",
+     "measures": 150
+    },
+    {
+     "name": "madmom",
+     "health": "ok",
+     "meterMix": "—",
+     "measures": 157
+    },
+    {
+     "name": "human:cal_01",
+     "health": "ok",
+     "meterMix": "4 拍×1（按两个小节头之间数了几下）",
+     "measures": 2
+    },
+    {
+     "name": "human:cal_02",
+     "health": "ok",
+     "meterMix": "2 拍×9（按两个小节头之间数了几下）",
+     "measures": 10
+    },
+    {
+     "name": "mapperatorinator",
+     "health": "ok",
+     "meterMix": "4 拍×154",
+     "measures": 155
+    },
+    {
+     "name": "workbench",
+     "health": "suspect",
+     "meterMix": "4 拍（铺出来时假设的）",
+     "measures": 120
+    }
+   ],
+   "segments": []
+  },
+  {
+   "song": "kaluo",
+   "title": "ChiliChill乐团 — 啊！美丽卡洛",
+   "class": "clean",
+   "status": "OK",
+   "flags": [
+    "single flip（只一处，未持续）"
+   ],
+   "suspects": [],
+   "notes": [
+    "单点跳变（没持续成一段，先记着）：madmom↔BeatThis @03:46、workbench↔BeatThis @03:46"
+   ],
+   "phase": "只有单点跳变",
+   "human": "human:cal_01 6 个 matched measures、human:cal_02 5 个 matched measures",
+   "layerA": {
+    "drift": "几乎没有",
+    "residual": 5.788051822859686,
+    "lock": 0.9933157885679194,
+    "hit": "94% / 100%",
+    "residualInBeats": 0.010418218673100266
+   },
+   "readings": [
+    {
+     "name": "BeatThis",
+     "health": "ok",
+     "meterMix": "4 拍×87 2 拍×28 3 拍×1",
+     "measures": 117
+    },
+    {
+     "name": "madmom",
+     "health": "ok",
+     "meterMix": "—",
+     "measures": 103
+    },
+    {
+     "name": "human:cal_01",
+     "health": "ok",
+     "meterMix": "4 拍×5（按两个小节头之间数了几下）",
+     "measures": 6
+    },
+    {
+     "name": "human:cal_02",
+     "health": "ok",
+     "meterMix": "4 拍×4（按两个小节头之间数了几下）",
+     "measures": 5
+    },
+    {
+     "name": "mapperatorinator",
+     "health": "ok",
+     "meterMix": "4 拍×100",
+     "measures": 101
+    },
+    {
+     "name": "workbench",
+     "health": "ok",
+     "meterMix": "4 拍（铺出来时假设的）",
+     "measures": 105
+    }
+   ],
+   "segments": []
+  },
+  {
+   "song": "landaohua",
+   "title": "酔シグレ/Lucia — 藍悼花 (feat. Lucia)",
+   "class": "clean",
+   "status": "OK",
+   "flags": [
+    "single flip（只一处，未持续）"
+   ],
+   "suspects": [],
+   "notes": [
+    "A 层：Beat This 的拍序列不能被一条直线描述（残差 7263 ms）——这是拍层的事，和小节相位是两回事",
+    "单点跳变（没持续成一段，先记着）：BeatThis↔madmom @02:30、BeatThis↔mapperatorinator @01:32、BeatThis↔workbench @01:32、workbench↔madmom @04:54"
+   ],
+   "phase": "只有单点跳变",
+   "human": "human:cal_02 6 个 matched measures、human:cal_03 8 个 matched measures、human:cal_04 7 个 matched measures",
+   "layerA": {
+    "drift": "几乎没有",
+    "residual": 7263.313528469012,
+    "lock": 0.9837254806497758,
+    "hit": "94% / 100%",
+    "residualInBeats": 10.711593099934538
+   },
+   "readings": [
+    {
+     "name": "BeatThis",
+     "health": "ok",
+     "meterMix": "4 拍×76 2 拍×26 3 拍×16",
+     "measures": 130
+    },
+    {
+     "name": "madmom",
+     "health": "ok",
+     "meterMix": "—",
+     "measures": 109
+    },
+    {
+     "name": "human:cal_02",
+     "health": "ok",
+     "meterMix": "8 拍×5（按两个小节头之间数了几下）",
+     "measures": 6
+    },
+    {
+     "name": "human:cal_03",
+     "health": "ok",
+     "meterMix": "4 拍×7（按两个小节头之间数了几下）",
+     "measures": 8
+    },
+    {
+     "name": "human:cal_04",
+     "health": "ok",
+     "meterMix": "4 拍×6（按两个小节头之间数了几下）",
+     "measures": 7
+    },
+    {
+     "name": "mapperatorinator",
+     "health": "ok",
+     "meterMix": "4 拍×180 7 拍×1",
+     "measures": 182
+    },
+    {
+     "name": "workbench",
+     "health": "ok",
+     "meterMix": "4 拍（铺出来时假设的）",
+     "measures": 192
+    }
+   ],
+   "segments": []
+  },
+  {
+   "song": "natsuyuki",
+   "title": "Cö shu Nie (コシュニエ) — 夏の深雪",
+   "class": "clean",
+   "status": "OK",
+   "flags": [],
+   "suspects": [],
+   "notes": [
+    "A 层：Beat This 的拍序列不能被一条直线描述（残差 537 ms）——这是拍层的事，和小节相位是两回事"
+   ],
+   "phase": "全部一致",
+   "human": "没有小节头按压",
+   "layerA": {
+    "drift": "轻微",
+    "residual": 536.8505331349525,
+    "lock": 0.9666504026446477,
+    "hit": "83% / 93%",
+    "residualInBeats": 1.5840988921634225
+   },
+   "readings": [
+    {
+     "name": "BeatThis",
+     "health": "ok",
+     "meterMix": "4 拍×149 2 拍×15 3 拍×5",
+     "measures": 172
+    },
+    {
+     "name": "madmom",
+     "health": "ok",
+     "meterMix": "—",
+     "measures": 172
+    },
+    {
+     "name": "mapperatorinator",
+     "health": "ok",
+     "meterMix": "4 拍×170",
+     "measures": 171
+    },
+    {
+     "name": "workbench",
+     "health": "ok",
+     "meterMix": "4 拍（铺出来时假设的）",
+     "measures": 174
+    }
+   ],
+   "segments": []
+  },
+  {
+   "song": "sacra",
+   "title": "ReoNa (レオナ) — SACRA",
+   "class": "clean",
+   "status": "OK",
+   "flags": [
+    "single flip（只一处，未持续）"
+   ],
+   "suspects": [],
+   "notes": [
+    "A 层：Beat This 的拍序列不能被一条直线描述（残差 237 ms）——这是拍层的事，和小节相位是两回事",
+    "workbench 那条校准的 source-health：Beat This 与鼓起音格子没对上（lock 0.008），这是它自己的规则，不是歌曲健康",
+    "单点跳变（没持续成一段，先记着）：madmom↔BeatThis @01:22、mapperatorinator↔BeatThis @01:20"
+   ],
+   "phase": "只有单点跳变",
+   "human": "没有小节头按压",
+   "layerA": {
+    "drift": "几乎没有",
+    "residual": 236.56149422623685,
+    "lock": 0.008335180080048387,
+    "hit": "98% / 100%",
+    "residualInBeats": 0.6583013746460046
+   },
+   "readings": [
+    {
+     "name": "BeatThis",
+     "health": "ok",
+     "meterMix": "6 拍×75 4 拍×6 0 拍×3",
+     "measures": 92
+    },
+    {
+     "name": "madmom",
+     "health": "ok",
+     "meterMix": "—",
+     "measures": 86
+    },
+    {
+     "name": "mapperatorinator",
+     "health": "ok",
+     "meterMix": "6 拍×83",
+     "measures": 84
+    },
+    {
+     "name": "workbench",
+     "health": "suspect",
+     "meterMix": "4 拍（铺出来时假设的）",
+     "measures": 66
+    }
+   ],
+   "segments": []
+  },
+  {
+   "song": "soragoto",
+   "title": "明透 — ソラゴト",
+   "class": "clean",
+   "status": "OK",
+   "flags": [],
+   "suspects": [],
+   "notes": [
+    "A 层：Beat This 的拍序列不能被一条直线描述（残差 413 ms）——这是拍层的事，和小节相位是两回事"
+   ],
+   "phase": "全部一致",
+   "human": "没有小节头按压",
+   "layerA": {
+    "drift": "几乎没有",
+    "residual": 413.0348194404476,
+    "lock": 0.994424928726157,
+    "hit": "87% / 87%",
+    "residualInBeats": 0.47702881931544994
+   },
+   "readings": [
+    {
+     "name": "BeatThis",
+     "health": "ok",
+     "meterMix": "4 拍×56 1 拍×1 0 拍×1",
+     "measures": 60
+    },
+    {
+     "name": "madmom",
+     "health": "ok",
+     "meterMix": "—",
+     "measures": 58
+    },
+    {
+     "name": "mapperatorinator",
+     "health": "ok",
+     "meterMix": "4 拍×56",
+     "measures": 57
+    },
+    {
+     "name": "workbench",
+     "health": "ok",
+     "meterMix": "4 拍（铺出来时假设的）",
+     "measures": 60
+    }
+   ],
+   "segments": []
+  },
+  {
+   "song": "spica",
+   "title": "ロクデナシ — スピカ (室女座)",
+   "class": "clean",
+   "status": "OK",
+   "flags": [
+    "single flip（只一处，未持续）"
+   ],
+   "suspects": [],
+   "notes": [
+    "单点跳变（没持续成一段，先记着）：BeatThis↔workbench @02:39"
+   ],
+   "phase": "只有单点跳变",
+   "human": "human:cal_01 6 个 matched measures、human:cal_02 5 个 matched measures",
+   "layerA": {
+    "drift": "几乎没有",
+    "residual": 5.3512039089227414,
+    "lock": 0.9947209931679278,
+    "hit": "99% / 100%",
+    "residualInBeats": 0.012307596813402003
+   },
+   "readings": [
+    {
+     "name": "BeatThis",
+     "health": "ok",
+     "meterMix": "4 拍×91 3 拍×1",
+     "measures": 93
+    },
+    {
+     "name": "madmom",
+     "health": "ok",
+     "meterMix": "—",
+     "measures": 92
+    },
+    {
+     "name": "human:cal_01",
+     "health": "ok",
+     "meterMix": "2 拍×5（按两个小节头之间数了几下）",
+     "measures": 6
+    },
+    {
+     "name": "human:cal_02",
+     "health": "ok",
+     "meterMix": "2 拍×4（按两个小节头之间数了几下）",
+     "measures": 5
+    },
+    {
+     "name": "mapperatorinator",
+     "health": "ok",
+     "meterMix": "4 拍×90",
+     "measures": 91
+    },
+    {
+     "name": "workbench",
+     "health": "ok",
+     "meterMix": "4 拍（铺出来时假设的）",
+     "measures": 94
+    }
+   ],
+   "segments": []
+  },
+  {
+   "song": "taishou",
+   "title": "YOASOBI (ヨアソビ) — 大正浪漫",
+   "class": "clean",
+   "status": "OK",
+   "flags": [],
+   "suspects": [],
+   "notes": [],
+   "phase": "全部一致",
+   "human": "human:cal_01 2 个 matched measures、human:cal_02 4 个 matched measures",
+   "layerA": {
+    "drift": "几乎没有",
+    "residual": 6.1659554986306375,
+    "lock": 0.9838035217812295,
+    "hit": "99% / 100%",
+    "residualInBeats": 0.01335971045406111
+   },
+   "readings": [
+    {
+     "name": "BeatThis",
+     "health": "ok",
+     "meterMix": "4 拍×89",
+     "measures": 90
+    },
+    {
+     "name": "madmom",
+     "health": "ok",
+     "meterMix": "—",
+     "measures": 90
+    },
+    {
+     "name": "human:cal_01",
+     "health": "ok",
+     "meterMix": "4 拍×1（按两个小节头之间数了几下）",
+     "measures": 2
+    },
+    {
+     "name": "human:cal_02",
+     "health": "ok",
+     "meterMix": "4 拍×3（按两个小节头之间数了几下）",
+     "measures": 4
+    },
+    {
+     "name": "mapperatorinator",
+     "health": "ok",
+     "meterMix": "4 拍×88",
+     "measures": 89
+    },
+    {
+     "name": "workbench",
+     "health": "ok",
+     "meterMix": "4 拍（铺出来时假设的）",
+     "measures": 92
+    }
+   ],
+   "segments": []
+  },
+  {
+   "song": "tao",
+   "title": "ChiliChill乐团 — 逃",
+   "class": "clean",
+   "status": "OK",
+   "flags": [],
+   "suspects": [],
+   "notes": [],
+   "phase": "全部一致",
+   "human": "human:cal_01 6 个 matched measures、human:cal_02 10 个 matched measures、human:cal_04 4 个 matched measures",
+   "layerA": {
+    "drift": "几乎没有",
+    "residual": 5.438654339339877,
+    "lock": 0.9963468794300755,
+    "hit": "98% / 100%",
+    "residualInBeats": 0.00960816711627372
+   },
+   "readings": [
+    {
+     "name": "BeatThis",
+     "health": "ok",
+     "meterMix": "4 拍×96",
+     "measures": 97
+    },
+    {
+     "name": "madmom",
+     "health": "ok",
+     "meterMix": "—",
+     "measures": 97
+    },
+    {
+     "name": "human:cal_01",
+     "health": "ok",
+     "meterMix": "4 拍×5（按两个小节头之间数了几下）",
+     "measures": 6
+    },
+    {
+     "name": "human:cal_02",
+     "health": "ok",
+     "meterMix": "4 拍×9（按两个小节头之间数了几下）",
+     "measures": 10
+    },
+    {
+     "name": "human:cal_04",
+     "health": "ok",
+     "meterMix": "4 拍×3（按两个小节头之间数了几下）",
+     "measures": 4
+    },
+    {
+     "name": "mapperatorinator",
+     "health": "ok",
+     "meterMix": "4 拍×94",
+     "measures": 95
+    },
+    {
+     "name": "workbench",
+     "health": "ok",
+     "meterMix": "4 拍（铺出来时假设的）",
+     "measures": 99
+    }
+   ],
+   "segments": []
+  },
+  {
+   "song": "tengoku",
+   "title": "Mrs. GREEN APPLE — 天国",
+   "class": "clean",
+   "status": "OK",
+   "flags": [],
+   "suspects": [],
+   "notes": [
+    "A 层：Beat This 的拍序列不能被一条直线描述（残差 1411 ms）——这是拍层的事，和小节相位是两回事"
+   ],
+   "phase": "全部一致",
+   "human": "没有小节头按压",
+   "layerA": {
+    "drift": "轻微",
+    "residual": 1411.4132015691894,
+    "lock": 0.9644156419253855,
+    "hit": "73% / 98%",
+    "residualInBeats": 2.749660026281934
+   },
+   "readings": [
+    {
+     "name": "BeatThis",
+     "health": "ok",
+     "meterMix": "4 拍×130 2 拍×14 3 拍×6",
+     "measures": 164
+    },
+    {
+     "name": "madmom",
+     "health": "ok",
+     "meterMix": "—",
+     "measures": 161
+    },
+    {
+     "name": "mapperatorinator",
+     "health": "ok",
+     "meterMix": "4 拍×154",
+     "measures": 155
+    },
+    {
+     "name": "workbench",
+     "health": "ok",
+     "meterMix": "4 拍（铺出来时假设的）",
+     "measures": 163
+    }
+   ],
+   "segments": []
+  }
+ ]
+}

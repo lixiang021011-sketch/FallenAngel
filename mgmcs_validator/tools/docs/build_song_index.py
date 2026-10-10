@@ -86,6 +86,7 @@ def main() -> int:
 <body>
 <h1>MGMCS 验证器 · 曲库歌单（__COUNT__ 首）</h1>
 <p class="note">点歌名直接在验证器里打开（带音频网址，能拖能听）。<br>
+先看 <a href="timing.html">timing 体检</a>——那里写了哪首歌哪里有 timing 风险、该听哪一段。<br>
 前提：验证器在 8123、音频服务在 8125 上跑着——两支队分别起在 mgmcs_validator 目录里：<br>
 <code>python tools\\serve_range.py --directory static --port 8123</code><br>
 <code>python tools\\serve_range.py --directory "F:\\vibe transcription\\_listen_root" --port 8125</code><br>

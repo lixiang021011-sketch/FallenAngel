@@ -7,6 +7,7 @@ flyway 那种半小节错位、chichunhua 那种连续滑、taishou 那种干净
 """
 
 import sys
+import re
 import unittest
 from pathlib import Path
 
@@ -24,10 +25,12 @@ class TestClasses(unittest.TestCase):
 
     def test_flyway_is_a_half_bar_slip_blamed_on_beat_this(self):
         row = table.classify("flyway")
-        self.assertEqual(row["class"], "2-beat counting error")
+        self.assertEqual(row["class"], "persistent ±2-beat disagreement")
         self.assertEqual(row["suspects"], ["BeatThis"])
         self.assertIn("phase slip（半小节）", row["flags"])
         self.assertIn("reconvergence", row["flags"])
+        # 观测事实之外才轮到"像是谁错"，而且必须带"待人工确认"
+        self.assertTrue(any("疑似 BeatThis 2-beat counting" in text for text in row["notes"]))
 
     def test_chichunhua_is_a_slide_not_a_parked_error(self):
         """chichunhua 的相位一直在走：段多、k 走遍正负、残差悬在中间。它不该被读成"停错一格"。"""
@@ -38,7 +41,7 @@ class TestClasses(unittest.TestCase):
 
     def test_eine_has_a_real_one_beat_offset(self):
         row = table.classify("eine")
-        self.assertEqual(row["class"], "1-beat phase error")
+        self.assertEqual(row["class"], "persistent ±1-beat disagreement")
         self.assertIn("phase slip（整拍）", row["flags"])
 
     def test_a_single_flip_does_not_decide_the_class(self):
@@ -61,11 +64,21 @@ class TestReport(unittest.TestCase):
                        if not path.name.endswith(".raw.mgmcs.json"))
         text, rows = table.report(songs)
         self.assertEqual(len(rows), len(songs))
-        allowed = {"clean", "local drift", "2-beat counting error", "1-beat phase error",
-                   "continuous slide", "unresolved"}
+        allowed = {"clean", "local drift", "persistent ±2-beat disagreement",
+                   "persistent ±1-beat disagreement", "continuous slide", "unresolved"}
         for row in rows:
             self.assertIn(row["class"], allowed, row["song"])
             self.assertIn("| %s |" % row["song"], text)
+
+    def test_the_report_never_calls_support_a_vote(self):
+        """不投票。支持量一律写成 matched measures。"""
+        songs = sorted(path.name[: -len(".mgmcs.json")] for path in table.dr.DOCS.glob("*.mgmcs.json")
+                       if not path.name.endswith(".raw.mgmcs.json"))
+        text, _rows = table.report(songs)
+        # "不是投票"这种解释可以出现，但"39 票"这种把支持量说成票的写法不许有
+        self.assertIsNone(re.search(r"\d+\s*票", text))
+        hot = table.hot_spans("kaitou")
+        self.assertTrue(hot and all("support = " in line and "票" not in line for line in hot))
 
     def test_human_readings_never_drive_the_class(self):
         """人那条票少，不进分类——它出现在详情里，但不出现在嫌疑来源里。"""

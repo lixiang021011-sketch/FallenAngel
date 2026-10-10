@@ -3,16 +3,19 @@
 A 层（Subdivision Fit）回答"拍子有没有跟住"，B 层（Measure Phase）回答"哪一拍是小节头"。
 这里做的只是把两层的结论并排、给一个分类、指出该听哪儿。
 
-分类是**机械规则**（写在 classify 里，可查可改），不是判断"谁对"：
+分类是**机械规则**（写在 classify 里，可查可改），只描述"观测到的事实"，不是判断"谁对"：
 
 ```
-1-beat phase error      有一对来源差了整一拍（±1 拍），到现在没合回来或合回来过
-2-beat counting error   差的是半小节（±2 拍），而且嫌疑那条自己在那一带把一小节数成了 2 拍
-continuous slide        两条小节长度略有出入，相位连续滑；没有突变
-unresolved              机器读法之间没有一对能对上（或不可比），谁也没能给出第二个意见
-local drift             B 层干净，但 A 层显示拍子在局部漂
-clean                   两层都干净
+clean                                 机器读法之间无显著分歧（**不等于真值正确**）
+local drift                           B 层干净，但 A 层显示拍子在局部漂
+persistent ±2-beat disagreement       有来源在半小节（±2 拍）上持续分歧；是哪条错要人工确认
+persistent ±1-beat disagreement       有来源在整拍（±1 拍）上持续分歧；同理
+continuous slide                      两条小节长度略有出入，相位连续滑；没有突变
+unresolved                            机器读法之间没有一对能对上（或不可比）
 ```
+
+像 flyway 那种"已经有足够证据说是哪条错"的，写在**详情**里
+（`suspected BeatThis 2-beat counting`），总表只留观测事实。
 
     python tools/docs/timing_health_table.py                    # 打印
     python tools/docs/timing_health_table.py --write            # 写 reports/timing_health.md
@@ -22,6 +25,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -31,11 +35,14 @@ import deviation_report as dr  # noqa: E402
 
 REPO = Path(__file__).resolve().parents[2]
 REPORT_PATH = REPO / "reports" / "timing_health.md"
+JSON_PATH = REPO / "static" / "timing_health.json"
+MUSIC_BASE = "http://127.0.0.1:8125"
+VALIDATOR_PAGE = "index.html"
 HALF = 1e-9
 
 
 def machine_sources(song: str) -> dict:
-    """这首歌上能参与小节相位比较的机器读法（人那条单独看，它的票数多数不够）。"""
+    """这首歌上能参与小节相位比较的机器读法（人那条单独看，它的支持量多数不够）。"""
     phase = dr.measure_phase(song)
     return {"readings": phase["readings"], "pairs": phase["pairs"]}
 
@@ -58,7 +65,7 @@ def classify(song: str) -> dict:
     machine = [reading for reading in sources["readings"]
                if not reading["name"].startswith("human") and len(reading["measures"]) >= 2]
     # 人那条不参与分类：它多数只有 2–10 下小节头，拿它给出"这首歌是什么错"没有依据。
-    # 它照样会出现在下面的详情里（"人：n 票"），只是不当判据。
+    # 它照样会出现在下面的详情里（"人：n 个 matched measure"），只是不当判据。
     pairs = [row for row in sources["pairs"]
              if comparable(row) and "human" not in row["a"] and "human" not in row["b"]]
     flags, note = [], []
@@ -67,7 +74,7 @@ def classify(song: str) -> dict:
     for row in pairs:
         verdict = dr.pair_verdict(row)
         pair_name = "%s↔%s" % (row["a"], row["b"])
-        # 判据是**持续**的错位（规格 §16：跳一次不算）：拿连续几票的段去说事，
+        # 判据是**持续**的错位（规格 §16：跳一次不算）：拿连续支持的一段去说事，
         # 单点的一次跳变只登记，不拿来给这首歌定性。
         offsets = [run for run in row["runs"] if run["k"] != 0]
         if offsets:
@@ -147,15 +154,15 @@ def classify(song: str) -> dict:
                     "（lock %.3f），这是它自己的规则，不是歌曲健康" % layer_a["lock"])
     human = [reading for reading in sources["readings"] if reading["name"].startswith("human")
              and len(reading["measures"]) >= 2]
-    human_note = "、".join("%s %d 票" % (reading["name"], len(reading["measures"]))
-                          for reading in human) or "没有小节头按压"
+    human_note = "、".join("%s %d 个 matched measures" % (reading["name"], len(reading["measures"]))
+                           for reading in human) or "没有小节头按压"
     if not machine or not pairs:
         klass = "unresolved"
         note.append("机器读法之间没有一对能比较")
     elif one_beat:
-        klass = "1-beat phase error"
+        klass = "persistent ±1-beat disagreement"
     elif two_beat:
-        klass = "2-beat counting error"
+        klass = "persistent ±2-beat disagreement"
     elif slides:
         klass = "continuous slide"
     elif weird or fixed:
@@ -166,6 +173,16 @@ def classify(song: str) -> dict:
         klass = "local drift"
     else:
         klass = "clean"
+    # 观测事实之外，才轮到"像是谁错了"。只在这条读法自己报过 2 拍的小节时才说，
+    # 并且永远带"待人工确认"。
+    if klass == "persistent ±2-beat disagreement" and suspects:
+        for name in sorted(suspects):
+            reading = next((reading for reading in machine if reading["name"] == name), None)
+            mix = (reading or {}).get("meterMix") or ""
+            found = re.search(r"2 拍×(\d+)", mix)
+            if found:
+                note.append("疑似 %s 2-beat counting：它自己报的小节里有 %s 个只数了 2 拍"
+                            " —— 待人工确认" % (name, found.group(1)))
     phase_state = ("全部一致" if pairs and not (one_beat or two_beat or slides or fixed or weird)
                    else "有一对分歧" if pairs else "不可比")
     if single and not (one_beat or two_beat or slides or fixed or weird):
@@ -219,10 +236,10 @@ def detail(song: str) -> list[str]:
 
 
 def hot_spans(song: str, keep: int = 3) -> list[str]:
-    """该听的那几段：按"这段有多少票"排，重叠的只留最有分量的一条。
+    """该听的那几段：按"这段有多少 matched measures 支持"排，重叠的只留最有分量的一条。
 
     同一处差异会在好几对来源上各留一段（BeatThis↔madmom、BeatThis↔mapperatorinator……），
-    逐段列出来读不动。这里每段都带上是哪一对、差了几拍、多少票，人工复核一次只该听这几处。
+    逐段列出来读不动。这里每段都带上是哪一对、差了几拍、支持量多少，人工复核一次只该听这几处。
     """
     raw = []
     for row in machine_sources(song)["pairs"]:
@@ -241,9 +258,118 @@ def hot_spans(song: str, keep: int = 3) -> list[str]:
         chosen.append(span)
         if len(chosen) >= keep:
             break
-    return ["%s–%s：%s 停差 %s（%d 票）"
+    return ["%s–%s：%s 停差 %s（support = %d matched measures）"
             % (dr.clock(span["start"]), dr.clock(span["end"]), span["pair"],
                dr.slip_phrase(span["k"], span["bar"]), span["voted"]) for span in chosen]
+
+
+def segments(song: str) -> list[dict]:
+    """异常区段：**一个地方一条**，里面列出是哪几对来源在这里分歧、差几拍、旁边几条怎么说。
+
+    同一处差异会在每一对来源上各留一段（flyway 的 02:15–02:35 就有三段），所以先合并。
+    旁边几条的读法必须一起给出来——只看"Mapper↔BeatThis 差 2 拍"会以为两边打架；
+    补上"Mapper↔madmom aligned"才知道是单独一条在那一带数错了。
+    """
+    phase = machine_sources(song)
+    pairs = [row for row in phase["pairs"]
+             if comparable(row) and "human" not in row["a"] and "human" not in row["b"]]
+    raw = []
+    for row in pairs:
+        for run in row["runs"]:
+            if run["k"] == 0:
+                continue
+            raw.append({"row": row, "run": run})
+    raw.sort(key=lambda item: (item["run"]["start"], item["run"]["end"]))
+    groups = []
+    for item in raw:
+        run = item["run"]
+        if groups and run["start"] <= groups[-1]["end"] + 2.0:      # 相隔两秒以内算同一处
+            groups[-1]["end"] = max(groups[-1]["end"], run["end"])
+            groups[-1]["items"].append(item)
+            continue
+        groups.append({"start": run["start"], "end": run["end"], "items": [item]})
+    out = []
+    for group in groups:
+        inside = group["items"]
+        disagreeing = [item for item in inside
+                       if not (item["run"]["end"] < group["start"] - HALF
+                               or item["run"]["start"] > group["end"] + HALF)]
+        owners = [item["row"] for item in disagreeing]
+        pairs_here = []
+        for item in disagreeing:
+            key = (item["row"]["a"], item["row"]["b"], item["run"]["k"])
+            found = next((entry for entry in pairs_here if entry["key"] == key), None)
+            support = item["run"]["count"]
+            if found:                                  # 同一对在这处断成了两段：合并成一件事
+                found["support"] += support
+                found["residualRange"] = [
+                    min(found["residualRange"][0], min(item["run"]["residuals"])),
+                    max(found["residualRange"][1], max(item["run"]["residuals"]))]
+                continue
+            pairs_here.append({"key": key, "pair": item["row"]["a"] + "↔" + item["row"]["b"],
+                               "a": item["row"]["a"], "b": item["row"]["b"],
+                               "k": item["run"]["k"],
+                               "label": dr.slip_phrase(item["run"]["k"], item["row"]["beatsPerBarB"]),
+                               "support": support,
+                               "residualRange": [min(item["run"]["residuals"]),
+                                                 max(item["run"]["residuals"])]})
+        pairs_here = [{key: value for key, value in entry.items() if key != "key"}
+                      for entry in pairs_here]
+        others = []
+        for row in pairs:
+            if row in owners:
+                continue
+            overlap = [item for item in row["runs"]
+                       if not (item["end"] < group["start"] - HALF or item["start"] > group["end"] + HALF)]
+            label = row["a"] + "↔" + row["b"]
+            if not overlap:
+                others.append("%s：这一段没有它的小节头" % label)
+            elif any(item["k"] != 0 for item in overlap):
+                kinds = sorted({item["k"] for item in overlap if item["k"] != 0})
+                others.append("%s：停差 %s" % (label, "、".join(
+                    dr.slip_phrase(kind, row["beatsPerBarB"]) for kind in kinds)))
+            else:
+                others.append("%s：aligned" % label)
+        backs = [item for row in owners for item in row["runs"]
+                 if item["k"] == 0 and item["start"] > group["end"]]
+        back = min(backs, key=lambda item: item["start"]) if backs else None
+        out.append({"song": song, "start": group["start"], "end": group["end"],
+                    "pairs": pairs_here, "pairCount": len({entry["pair"] for entry in pairs_here}),
+                    "support": max(item["support"] for item in pairs_here),
+                    "others": others,
+                    "reconverges": back is not None,
+                    "reconvergeAt": back["start"] if back else None,
+                    "headline": "%s %s" % (pairs_here[0]["pair"], pairs_here[0]["label"])})
+    out.sort(key=lambda segment: (-segment["support"], segment["start"]))
+    return out
+
+
+def payload(songs: list[str]) -> dict:
+    """页面读的那份 JSON。观测事实、来源 health、异常区段都在，原因解释留在 notes 里。"""
+    rows = [classify(song) for song in songs]
+    counts = {}
+    for row in rows:
+        counts[row["class"]] = counts.get(row["class"], 0) + 1
+    out = []
+    for row in rows:
+        path = dr.DOCS / ("%s.mgmcs.json" % row["song"])
+        title = ""
+        if path.exists():
+            title = (json.loads(path.read_text(encoding="utf-8")).get("song") or {}).get("title") or ""
+        out.append({"song": row["song"], "title": title, "class": row["class"],
+                    "status": "OK" if row["class"] == "clean" else "REVIEW",
+                    "flags": row["flags"], "suspects": row["suspects"], "notes": row["notes"],
+                    "phase": row["phase"], "human": row["human"],
+                    "layerA": row["layerA"],
+                    "readings": [{"name": name, "health": health, "meterMix": mix, "measures": count}
+                                 for name, health, mix, count in row["readings"]],
+                    "segments": segments(row["song"])})
+    out.sort(key=lambda item: (item["status"] == "OK", -len(item["segments"]), item["song"]))
+    return {"generatedBy": "timing_health_table.py",
+            "note": "观测事实 + 来源 health + 异常区段；原因解释在 notes 里，永远带『待人工确认』。"
+                    "support 是连续多少个 matched measure 支持这个 offset，不是投票。",
+            "musicBase": MUSIC_BASE, "validator": VALIDATOR_PAGE,
+            "counts": counts, "songs": out}
 
 
 def report(songs: list[str]) -> tuple[str, list[dict]]:
@@ -257,8 +383,11 @@ def report(songs: list[str]) -> tuple[str, list[dict]]:
              "31 首歌，2026-10-11 那一轮：五条读法（人 / BeatThis / madmom / workbench / Mapperatorinator）齐了之后的第一张表。",
              "", "分类：" + "　".join("**%s** %d" % (name, counts[name]) for name in sorted(counts)), "",
              "只汇总现有两层诊断：**A 层** 拍子跟没跟住（ADTOF 鼓点对 affine 网格，held-out 校正固定偏移后），",
-             "**B 层** 各来源小节头两两的相位关系。分类是机械规则（见 `tools/docs/timing_health_table.py`）。",
-             "人那条（手机按的小节头）不进分类，只列在下面详情里——它多数只有几票，拿它判\"这首歌是什么错\"没有依据。",
+             "**B 层** 各来源小节头两两的相位关系。分类只写**观测事实**，不判\"谁对\"；",
+             "`support` 是连续多少个 matched measure 支持这个 offset（**不是投票**，没有多数表决）。",
+             "像 `clean` 只表示\"机器读法之间无显著分歧\"，**不等于真值正确**。",
+             "人那条（手机按的小节头）不进分类，只列在下面详情里——它多数只有几个 matched measure，"
+             "拿它判\"这首歌是什么错\"没有依据。",
              "", "| 歌 | 分类 | A 层：≤0.10 / ≤0.25 | A 层漂移 | A:BeatThis 直线残差 | B 层相位 | B 层标志 | 嫌疑来源 |",
              "|---|---|---|---|---|---|---|---|"]
     for row in rows:
@@ -308,6 +437,8 @@ def main(argv=None) -> int:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--song", action="append", default=[])
     parser.add_argument("--write", action="store_true")
+    parser.add_argument("--json", action="store_true",
+                        help="给页面用的 static/timing_health.json")
     args = parser.parse_args(argv)
     songs = args.song or sorted(path.name[: -len(".mgmcs.json")] for path in dr.DOCS.glob("*.mgmcs.json")
                                 if not path.name.endswith(".raw.mgmcs.json"))
@@ -326,6 +457,11 @@ def main(argv=None) -> int:
         REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
         REPORT_PATH.write_text(text + "\n", encoding="utf-8", newline="\n")
         print("已写 %s" % REPORT_PATH)
+    if args.json or args.write:
+        JSON_PATH.parent.mkdir(parents=True, exist_ok=True)
+        JSON_PATH.write_text(json.dumps(payload(songs), ensure_ascii=False, indent=1),
+                             encoding="utf-8", newline="\n")
+        print("已写 %s" % JSON_PATH)
     return 0
 
 

@@ -1155,6 +1155,45 @@
   }
 
   /**
+   * Where to open, in seconds (`at=135`) or as a clock (`at=2:15`), or null.
+
+   * The timing health page (timing.html) links here with this, so that "flyway
+   * 02:15-02:35 is where the two readings disagree" is one click instead of
+   * finding the minute by hand. Not a musical coordinate - just the playhead.
+   */
+  function seekParamSeconds() {
+    const raw = queryParam('at').trim();
+    if (!raw) return null;
+    const parts = raw.split(':').map(Number);
+    if (!parts.length || parts.some((part) => !isFinite(part))) return null;
+    const seconds = parts.reduce((total, part) => total * 60 + part, 0);
+    return isFinite(seconds) ? seconds : null;
+  }
+
+  // Applied once, but only when everything it needs is in: the document (it
+  // defines the musical coordinate) and, when the URL asked for audio, the audio's
+  // metadata (before that the duration is unknown and the seek would be refused).
+  //
+  // The order those two arrive in is not fixed - a cached audio file can beat the
+  // document's fetch - and loading a document resets the playhead, so an early
+  // seek would be quietly undone. Hence: wait for both, apply once, then forget.
+  let pendingSeek = seekParamSeconds();
+  // Whether audio is coming from the URL at all has to be known *before* the
+  // document finishes loading: the clock loop overwrites state.time with
+  // audio.currentTime on every frame, so a seek done while the media element is
+  // still empty is silently reverted to 0 the moment the audio does arrive.
+  let audioWanted = !!(queryParam('audio') || queryParam('music'));
+  let audioReady = false;
+
+  function maybeApplyPendingSeek() {
+    if (pendingSeek === null) return;
+    if (!state.doc) return;
+    if (audioWanted && !audioReady) return;
+    const target = pendingSeek;
+    pendingSeek = null;
+    seekOrRefuse(target);
+  }
+  /**
    * The audio to load by URL, if the page was given one.
 
    * Two ways in, because a full song URL is long and carries characters that a
@@ -1194,10 +1233,13 @@
   function loadAudioFromUrl() {
     const src = audioUrlFromParams();
     if (!src) return;
+    audioWanted = true;
     audio.addEventListener('loadedmetadata', () => {
       updateDuration();
       rebuild();
       renderPanel();
+      audioReady = true;
+      maybeApplyPendingSeek();
       saveState('音频：' + decodeURIComponent(src.split('/').pop())
         + '（' + M.formatClock(audio.duration) + '）');
     }, { once: true });
@@ -1226,6 +1268,7 @@
       const response = await fetch('docs/' + encodeURIComponent(file), { cache: 'no-cache' });
       if (!response.ok) throw new Error('HTTP ' + response.status);
       setDocument(await response.json(), file);
+      maybeApplyPendingSeek();     // 音频还没到就先记着，等它的 metadata
       saveState('已载入 docs/' + file
         + (queryParam('audio') || queryParam('music')
           ? '，音频按网址加载' : '（音频还要自己拖进来）'));
