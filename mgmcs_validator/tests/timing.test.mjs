@@ -70,3 +70,11 @@ test('a status maps to the row colour the page uses', () => {
   assert.equal(T.statusClass({ status: 'OK' }), 'ok');
   assert.equal(T.statusClass({ status: 'REVIEW' }), 'review');
 });
+
+test('a source whose own output looks wrong is named on the summary line', () => {
+  const row = { readings: [{ name: 'BeatThis', health: 'ok' },
+                           { name: 'workbench', health: 'suspect' },
+                           { name: 'mapperatorinator', health: 'ok' }] };
+  assert.deepEqual(T.suspectSources(row), ['workbench']);
+  assert.deepEqual(T.suspectSources({ readings: [] }), []);
+});

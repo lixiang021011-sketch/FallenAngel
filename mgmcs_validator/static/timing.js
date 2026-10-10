@@ -89,6 +89,17 @@ globalThis.MGTiming = (function () {
     return found.length ? found[0] : '';
   }
 
+  /**
+   * Sources whose *own* output looks wrong (their health, not their disagreement).
+   * A workbench reading built on a Beat This grid that never locked is worth
+   * seeing on the summary line: it says the disagreement may be the grid's fault
+   * rather than the music's, which is a different thing to go and check.
+   */
+  function suspectSources(row) {
+    return (row.readings || []).filter((reading) => reading.health !== 'ok')
+      .map((reading) => reading.name);
+  }
+
   function statusClass(row) {
     return row.status === 'OK' ? 'ok' : 'review';
   }
@@ -100,6 +111,7 @@ globalThis.MGTiming = (function () {
     validatorUrl: validatorUrl,
     segmentLine: segmentLine,
     suspicion: suspicion,
+    suspectSources: suspectSources,
     statusClass: statusClass,
   };
 })();
@@ -149,6 +161,7 @@ globalThis.MGTiming = (function () {
     return '<table class="readings"><tr><th>来源</th><th>它自己的 health</th>'
       + '<th>小节头</th><th>它自己数的每小节拍数</th></tr>' + rows + '</table>'
       + '<p class="muted">health 只说明这条来源**自己输出得像不像话**，不代表音乐真值。'
+      + '这里只列能给出小节头的读法（librosa 只给拍、不给小节头，所以不在这一层）。'
       + '五条网格并排、逐拍核对请点上面的“在时间轴上打开”。</p>';
   }
 
@@ -158,7 +171,10 @@ globalThis.MGTiming = (function () {
     const first = segments[0];
     const where = first ? T.clockText(first.start) + '–' + T.clockText(first.end) : '—';
     const suspicion = T.suspicion(row);
-    const flags = (row.flags || []).map((flag) => '<span class="flag">' + escapeHtml(flag) + '</span>').join('');
+    const suspect = T.suspectSources(row);
+    const flags = (row.flags || []).map((flag) => '<span class="flag">' + escapeHtml(flag) + '</span>').join('')
+      + suspect.map((name) => '<span class="flag warn">' + escapeHtml(name)
+          + ' health 有问题（它自己那条不算数）</span>').join('');
     const layer = row.layerA || {};
     const body = open[row.song]
       ? '<div class="detail">'
