@@ -75,6 +75,15 @@ import java.util.List;
  * about, and asks. */
  public class ListeningService extends Service {
     public static final String EXTRA_RESULT_DATA = "resultData";
+    /**
+     * Which of the two things this session is for.
+     *
+     * Chosen on the way in rather than discovered by being interrupted: a question
+     * covers the chord box, and the chord box is a distraction while annotating, so
+     * "may I interrupt you" is a question about the session and belongs on the button
+     * that starts it.
+     */
+    public static final String EXTRA_INTERRUPTS = "interrupts";
     
 
 /** Where the button was left, so it comes back there. */
@@ -509,6 +518,12 @@ import java.util.List;
             stopSelf();
             return START_NOT_STICKY;
         }
+        // Written down rather than held, so that the overlay and the settings screen
+        // agree about what this session is, and so it survives the service being
+        // restarted by the system mid-song.
+        getSharedPreferences(PREFS, MODE_PRIVATE).edit()
+                .putBoolean(PREF_INTERRUPTS, intent.getBooleanExtra(EXTRA_INTERRUPTS, false))
+                .apply();
         if (worker == null) {
             stopping = false;
             worker = new Thread(() -> run(resultData), "capture");
@@ -746,6 +761,23 @@ import java.util.List;
                         // And so is the tempo a person gave for the last one.
                         anchoredBpm = 0;
                         lastMeter = 4;
+                        // Unless somebody already worked this song out. A grid from a
+                        // file covers the tempo, the phase and the meter at once, and
+                        // it is used instead of tracking - which is the whole point of
+                        // importing one.
+                        com.fallenangel.listeningai.listening.WorkbenchGrid imported =
+                                workbenchGrid(song);
+                        if (imported != null) {
+                            grid.setMeter(Math.max(1, imported.beatsPerBar));
+                            lastMeter = Math.max(1, imported.beatsPerBar);
+                            grid.lockTempoAndDownbeat(imported.bpm, imported.firstBeat(), true);
+                            anchoredBpm = imported.bpm;
+                            if (song != null) {
+                                song.event(gridSourceLine(imported), imported.firstBeat());
+                                song.say("记", "网格来自 " + imported.reading
+                                        + "（" + imported.beatCount() + " 个拍点）", imported.firstBeat());
+                            }
+                        }
                         trackStartedMillis = android.os.SystemClock.elapsedRealtime();
                         Log.i(TAG, "track: " + Playback.trackTitle);
                         String previous = song == null ? "" : song.label();
@@ -1551,6 +1583,32 @@ import java.util.List;
     
 
 /**
+     * Where this song's grid came from, written into the record.
+     *
+     * The grid is the coordinate system every other line refers to, so which one was
+     * used is not a detail: a bar number means nothing without it, and a later
+     * correction has to be able to say what it corrected.
+     */
+    private org.json.JSONObject gridSourceLine(
+            com.fallenangel.listeningai.listening.WorkbenchGrid grid) {
+        org.json.JSONObject line = new org.json.JSONObject();
+        try {
+            line.put("eventType", "GRID_SOURCE");
+            line.put("state", "AUTO_FLAGGED");
+            line.put("source", "workbench:" + grid.reading);
+            line.put("generatedBy", grid.generatedBy);
+            line.put("bpm", grid.bpm);
+            line.put("beatsPerBar", grid.beatsPerBar);
+            line.put("beats", grid.beatCount());
+            line.put("coveredUntil", grid.beat(grid.beatCount() - 1));
+            line.put("title", grid.title);
+        } catch (org.json.JSONException ignored) {
+            // A JSONObject is a map; only out-of-memory throws here.
+        }
+        return line;
+    }
+
+    /**
      * Whether the app may say anything at all right now.
      *
      * Read at the moment of speaking rather than cached, because it is a setting the
@@ -2760,6 +2818,50 @@ import java.util.List;
             }
         }
         return directory.delete();
+    }
+
+    /**
+     * A beat grid for this song, from a file the listener or the Workbench left behind.
+     *
+     * Read at the start of a song, from a folder of its own - files are dropped in
+     * there, the app does not fetch anything. The player's own duration is not used
+     * to match on: on this phone it is wrong by tens of seconds, which would make a
+     * duration check reject exactly the files that are right.
+     */
+    private com.fallenangel.listeningai.listening.WorkbenchGrid workbenchGrid(
+            com.fallenangel.listeningai.listening.SongLog current) {
+        if (current == null) return null;
+        java.io.File root = new java.io.File(listeningDirectory(), "analysis");
+        java.io.File[] files = root.isDirectory() ? root.listFiles() : null;
+        if (files == null || files.length == 0) {
+            Log.i(TAG, "no analysis folder to read a grid from (" + root + ")");
+            return null;
+        }
+        String label = current.label();
+        double duration = Playback.durationSeconds;
+        for (java.io.File file : files) {
+            if (!file.isFile() || !file.getName().endsWith(".json")) continue;
+            try {
+                String text = new String(java.nio.file.Files.readAllBytes(file.toPath()),
+                        java.nio.charset.StandardCharsets.UTF_8);
+                com.fallenangel.listeningai.listening.WorkbenchGrid grid =
+                        com.fallenangel.listeningai.listening.WorkbenchGrid.from(
+                                new org.json.JSONObject(text));
+                if (grid == null) {
+                    Log.i(TAG, "no usable grid in " + file.getName());
+                    continue;
+                }
+                if (!grid.matches(label, duration)) continue;
+                Log.i(TAG, "grid from " + file.getName() + ": reading " + grid.reading
+                        + ", " + grid.beatCount() + " beats, " + grid.beatsPerBar + "/4"
+                        + (grid.generatedBy.isEmpty() ? "" : ", by " + grid.generatedBy));
+                return grid;
+            } catch (Exception unreadable) {
+                Log.i(TAG, "could not read " + file.getName() + ": " + unreadable);
+            }
+        }
+        Log.i(TAG, "no analysis file matches " + label + "; tracking the beat instead");
+        return null;
     }
 
     /**

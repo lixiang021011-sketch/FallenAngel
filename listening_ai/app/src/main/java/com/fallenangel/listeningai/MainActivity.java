@@ -70,10 +70,19 @@ public class MainActivity extends Activity {
         status.setPadding(0, 0, 0, dp(14));
         root.addView(status);
 
-        Button start = new Button(this);
-        start.setText("Start listening");
-        start.setOnClickListener(v -> begin());
-        root.addView(start);
+        // Two ways in, because the app is two things and they pull against each other:
+        // a question covers the chord box, and the chord box is a distraction while
+        // annotating. Which one this session is for is a decision the listener makes
+        // before pressing, not something to find out by being interrupted.
+        Button listen = new Button(this);
+        listen.setText("聆听（只显示和弦，不提问）");
+        listen.setOnClickListener(v -> begin(false));
+        root.addView(listen);
+
+        Button annotate = new Button(this);
+        annotate.setText("提问（听到变化会停下来问）");
+        annotate.setOnClickListener(v -> begin(true));
+        root.addView(annotate);
 
         // Where the explanations come from, if anywhere. The app works without
         // this - the local rules ask the question - so it is a setting rather
@@ -180,7 +189,11 @@ public class MainActivity extends Activity {
         }
     };
 
-    private void begin() {
+    /** Which of the two sessions the listener is starting; see the entry buttons. */
+    private boolean pendingInterrupts;
+
+    private void begin(boolean interrupts) {
+        pendingInterrupts = interrupts;
         if (!Settings.canDrawOverlays(this)) {
             status.setText("Grant \"display over other apps\" first.");
             startActivityForResult(new Intent(
@@ -222,7 +235,8 @@ public class MainActivity extends Activity {
             return;
         }
         Intent service = new Intent(this, ListeningService.class)
-                .putExtra(ListeningService.EXTRA_RESULT_DATA, data);
+                .putExtra(ListeningService.EXTRA_RESULT_DATA, data)
+                .putExtra(ListeningService.EXTRA_INTERRUPTS, pendingInterrupts);
         try {
             startForegroundService(service);
             ListeningService.status = "starting";
