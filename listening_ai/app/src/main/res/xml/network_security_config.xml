@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Why this app is allowed to speak plain HTTP.
+
+  The explanation endpoint is typed in by hand, and in practice it points at a
+  model on the same desk (llama-server; see tools/qwen/serve.ps1), which speaks
+  http and nothing else. Android refuses cleartext by default, and that refusal
+  arrives as an IOException that reads exactly like a model which did not
+  answer: the app fell back to its own rules, and the reason was only visible in
+  logcat. A local model that is silently never asked is worse than no local
+  model, because everything upstream looks like it is working.
+
+  Narrowing this to one address was considered and rejected: the desktop's
+  address comes from the router and changes between networks, and a rule that
+  stops matching fails in exactly the same silent way. The cost of the wider
+  rule is bounded - the only traffic this app sends is the short audio clip and
+  the facts about it, to an address the listener typed themselves. If this ever
+  has to reach a network that is not theirs, put HTTPS in front of it rather
+  than widening this file.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

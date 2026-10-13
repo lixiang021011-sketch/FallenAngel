@@ -1,0 +1,17 @@
+{
+  "_comment": "提问决策层的阈值。改这个文件不用重新编译代码；缺哪个字段就用代码里的默认值。全部是猜测，会因为听歌而调整。",
+  "highConfidenceThreshold": 0.80,
+  "_highConfidenceThreshold": "理解到这个程度就不问了——问一个已经懂了的问题只是打扰。",
+  "minimumCandidateConfidence": 0.35,
+  "_minimumCandidateConfidence": "单个解释低于这个数就不值得确认。",
+  "uncertaintyMargin": 0.12,
+  "_uncertaintyMargin": "两个解释差距小于这个数就是'分不清'，该让用户选一个。",
+  "noveltyThreshold": 0.20,
+  "_noveltyThreshold": "模型认为'这里变了'的门槛，和主动提问用的是同一个量。",
+  "cooldownMs": 15000,
+  "_cooldownMs": "两次提问之间至少这么久。",
+  "dismissLimit": 2,
+  "_dismissLimit": "连续这么多次问了不答，就停下来。",
+  "maxQueriesPerMinute": 2,
+  "_maxQueriesPerMinute": "一分钟最多问几次。"
+}

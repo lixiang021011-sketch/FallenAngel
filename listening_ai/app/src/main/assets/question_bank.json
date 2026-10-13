@@ -1,0 +1,66 @@
+[
+  {
+    "id": "ATTN_01",
+    "text": "刚才最吸引你注意的是谁？",
+    "targetSignal": "perceived_salience",
+    "answerType": "single_choice",
+    "options": ["人声", "吉他", "贝斯", "鼓", "键盘", "其他", "说不清"],
+    "triggers": ["NOVELTY_HIGH", "INSTRUMENT_CHANGE"]
+  },
+  {
+    "id": "ATTN_02",
+    "text": "刚才有没有某个声部突然变得更显眼？",
+    "targetSignal": "attention_shift",
+    "answerType": "single_choice",
+    "options": ["有", "没有", "说不清"],
+    "triggers": ["NOVELTY_HIGH"]
+  },
+  {
+    "id": "STRUCT_01",
+    "text": "这里听起来像进入了新的一段吗？",
+    "targetSignal": "perceived_section_boundary",
+    "answerType": "single_choice",
+    "options": ["是", "否", "说不清"],
+    "triggers": ["STRUCTURE_CANDIDATE"]
+  },
+  {
+    "id": "STRUCT_02",
+    "text": "刚才音乐的整体感觉有没有明显转折？",
+    "targetSignal": "perceived_structural_change",
+    "answerType": "single_choice",
+    "options": ["有", "没有", "说不清"],
+    "triggers": ["STRUCTURE_CANDIDATE", "NOVELTY_HIGH"]
+  },
+  {
+    "id": "ENERGY_01",
+    "text": "刚才音乐的力量感怎么变了？",
+    "targetSignal": "perceived_energy_change",
+    "answerType": "single_choice",
+    "options": ["更强", "更弱", "差不多", "说不清"],
+    "triggers": ["NOVELTY_HIGH", "STRUCTURE_CANDIDATE"]
+  },
+  {
+    "id": "EXPECT_01",
+    "text": "刚才发生的变化让你觉得意外吗？",
+    "targetSignal": "surprise",
+    "answerType": "single_choice",
+    "options": ["很意外", "有一点", "不意外", "说不清"],
+    "triggers": ["NOVELTY_HIGH"]
+  },
+  {
+    "id": "ROLE_01",
+    "text": "刚才最像“主角”的是谁？",
+    "targetSignal": "perceived_foreground",
+    "answerType": "single_choice",
+    "options": ["人声", "吉他", "贝斯", "鼓", "键盘", "没有明显主角", "说不清"],
+    "triggers": ["INSTRUMENT_CHANGE"]
+  },
+  {
+    "id": "GROOVE_01",
+    "text": "刚才最带动节奏感的是谁？",
+    "targetSignal": "perceived_groove_carrier",
+    "answerType": "single_choice",
+    "options": ["鼓", "贝斯", "吉他", "键盘", "人声", "整体", "说不清"],
+    "triggers": ["INSTRUMENT_CHANGE"]
+  }
+]

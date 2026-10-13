@@ -1,0 +1,46 @@
+{
+  "_comment": "Which audio model to run, and what it expects. Swapping models is editing this file and dropping the .onnx beside it; nothing in the app needs to change. The placeholder (models/placeholder-events.onnx) is still here to point at for a smoke test. This one is musicnn, trained on the Million Song Dataset: 50 tags and a 200-dimensional embedding, which is the number the novelty is measured from.",
+  "path": "models/musicnn_msd.onnx",
+  "inputName": "mel",
+  "layout": "FRAMES_MELS_3D",
+  "outputs": [
+    {"name": "tags_logits", "role": "TAGS"},
+    {"name": "embedding", "role": "EMBEDDING"}
+  ],
+  "classes": [],
+  "threshold": 0.5,
+  "tagNames": [
+    "rock", "pop", "alternative", "indie", "electronic",
+    "female vocalists", "dance", "00s", "alternative rock", "jazz",
+    "beautiful", "metal", "chillout", "male vocalists", "classic rock",
+    "soul", "indie rock", "Mellow", "electronica", "80s",
+    "folk", "90s", "chill", "instrumental", "punk",
+    "oldies", "blues", "hard rock", "ambient", "acoustic",
+    "experimental", "female vocalist", "guitar", "Hip-Hop", "70s",
+    "party", "country", "easy listening", "sexy", "catchy",
+    "funk", "electro", "heavy metal", "Progressive rock", "60s",
+    "rnb", "indie pop", "sad", "House", "happy"
+  ],
+  "_noveltyHistory_comment": "How many previous windows a novelty is measured against. Sixty was tried, on the theory that a longer memory would measure 'unusual for this song' rather than 'different from a moment ago': measured over four tracks, the distribution barely moved (median 0.063 with four windows, 0.063 with sixty; the same maximum), because the nearest neighbour of a window is always a nearby window whatever the memory is. So it stays short - two seconds, which is what actually carries the change.",
+  "noveltyHistory": 4,
+  "strideMillis": 500,
+  "mels": 96,
+  "frames": 187,
+  "features": {
+    "_comment": "musicnn's own frontend, from its configuration and extractor: 16 kHz, 96 mel, fft 512, hop 256, librosa's mel filters, log10(10000x+1), no mean/variance removal. The window and filters are the file next to the model rather than anything derived here.",
+    "sampleRate": 16000,
+    "mels": 96,
+    "fft": 512,
+    "frame": 512,
+    "hop": 256,
+    "minHz": 0,
+    "maxHz": 8000,
+    "floorRatio": 1e-6,
+    "normalise": false,
+    "normaliseLevel": true,
+    "logKind": "LOG10_OFFSET",
+    "logScale": 10000,
+    "logOffset": 1,
+    "frontend": "models/musicnn_msd.frontend.json"
+  }
+}

@@ -1,0 +1,47 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.fallenangel.listeningai'
+    compileSdk 33
+    buildToolsVersion '34.0.0'
+
+    defaultConfig {
+        applicationId "com.fallenangel.listeningai"
+        minSdk 29
+        targetSdk 33
+        versionCode 1
+        versionName "0.1"
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
+
+    lint {
+        abortOnError false
+    }
+}
+
+dependencies {
+    // The local audio model runs on this: it brings its own native libraries,
+    // which is most of the APK's size and exactly what the MVP is for.
+    implementation 'com.microsoft.onnxruntime:onnxruntime-android:1.17.1'
+
+    testImplementation 'junit:junit:4.13.2'
+    // org.json ships with Android but not with a desktop JVM, and the record
+    // format is worth testing without a device.
+    testImplementation 'org.json:json:20240303'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.forkOptions.jvmArgs += ['-Duser.language=en', '-Duser.country=US', '-Dfile.encoding=UTF-8']
+    options.compilerArgs += ['-Xlint:all', '-Xlint:-serial', '-Xlint:-options']
+}

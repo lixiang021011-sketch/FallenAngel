@@ -1,0 +1,20 @@
+# What is built, not what is written.
+#
+# listening_ai was never committed, so nothing was ever keeping the build tree
+# out: 170 untracked files, of which the biggest were a 66 MB debug APK and
+# eight copies of libonnxruntime.so from the intermediates. The sources and the
+# model assets are what a checkout needs; everything below is remade by
+# `build.ps1`.
+
+app/build/
+.gradle/
+
+# Machine-specific: sdk.dir and the JDK path belong to whoever is building, and
+# build.ps1 resolves them itself.
+local.properties
+
+# Compiled by hand for the offline dumps (tools/ListeningDump.java).
+tools/out/
+*.class
+
+__pycache__/
