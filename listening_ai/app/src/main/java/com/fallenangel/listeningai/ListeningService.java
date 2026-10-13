@@ -87,6 +87,20 @@ import java.util.List;
     static final String PREF_ENDPOINT = "cloudEndpoint";
     static final String PREF_KEY = "cloudKey";
     static final String PREF_MODEL = "cloudModel";
+    /**
+     * Whether the app may interrupt at all - questions and remarks both.
+     *
+     * Off on this branch, and that is the point of it: what this branch is for is
+     * hearing the music with the harmony on screen, and a card that appears over it
+     * is the app interrupting the thing it is supposed to accompany. Measured
+     * 2026-10-13, "提问会干扰听歌".
+     *
+     * A preference rather than a constant because the answer is not the same every
+     * day: on a listening evening the harmony is the feature and the questions are
+     * noise, and on an annotating evening it is the other way round. Which of the two
+     * is the default is a decision about this branch, not about the person.
+     */
+    static final String PREF_INTERRUPTS = "interrupts";
     private static final String TAG = "ListeningAI";
     private static final String CHANNEL_ID = "listening_ai";
     private static final int NOTIFICATION_ID = 6201;
@@ -896,7 +910,10 @@ import java.util.List;
                 // Never while they are counting: the tap button is in the same card
                 // the remark would take over, and being talked to while tapping is
                 // being interrupted in the middle of an answer.
-                if (tapping) due = false;
+                // And never when this app is set not to interrupt: a remark covers the
+                // same pill the harmony box lives in, so it interrupts the very thing
+                // this branch exists to show.
+                if (tapping || !interrupts()) due = false;
                 if (due) {
                     if (!boxNow.isEmpty()) {
                         chordChanges.said(now, boxNow);
@@ -1119,6 +1136,15 @@ import java.util.List;
     }
 
     private void askAbout(Asked asked, BeatDetector grid, RecentAudio recent, String sectionLabel, long sectionBoundarySample) {
+        // Nothing is asked while the app is not supposed to interrupt. Handing the
+        // music back is not a formality: a question the app started has already
+        // stopped the music, and a guard that returned without giving it back would
+        // leave the listener with silence and no card - the worst of both.
+        if (!interrupts()) {
+            Log.i(TAG, "not asking: this app is set not to interrupt while listening");
+            giveBackMusic(asked);
+            return;
+        }
         // Counting is the one interaction this app asks a listener to perform, and it
         // takes both hands and their attention. A card appearing over it replaces the
         // thing they are using - measured 2026-10-13, "不要打断我对拍子" - so nothing
@@ -1525,6 +1551,17 @@ import java.util.List;
     
 
 /**
+     * Whether the app may say anything at all right now.
+     *
+     * Read at the moment of speaking rather than cached, because it is a setting the
+     * listener can change between two songs and a value read at start-up would make
+     * the switch look broken until the next restart.
+     */
+    private boolean interrupts() {
+        return getSharedPreferences(PREFS, MODE_PRIVATE).getBoolean(PREF_INTERRUPTS, false);
+    }
+
+    /**
      * Whether the music stopped as part of a jump rather than because they stopped it.
      */
     private boolean justSeeked() {
