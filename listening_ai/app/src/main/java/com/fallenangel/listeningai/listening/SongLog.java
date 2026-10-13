@@ -30,6 +30,18 @@ public final class SongLog {
     private final File readable;
     private final ListeningLog machine;
     /**
+     * The harmony as it was read, second by second, in its own file.
+     *
+     * Raw, and separate from the questions, because it is a different kind of
+     * thing: an event log records decisions, and this records a measurement that
+     * arrives whether or not anybody decided anything. Which also means the "bar 17
+     * beat 3 is Am" version can be derived from this later - once the beat grid is
+     * trusted - instead of the other way round, where the grid would decide what
+     * the harmony is allowed to say.
+     */
+    private final ListeningLog chords;
+    private final File chordsFile;
+    /**
      * The lines as they were written, so this song can be exported at the end.
 
      * In memory rather than read back from the file: the export happens while the
@@ -47,6 +59,8 @@ public final class SongLog {
         this.events = new File(directory, "events.jsonl");
         this.readable = new File(directory, "readable.log");
         this.machine = new ListeningLog(events);
+        this.chordsFile = new File(directory, "chords.jsonl");
+        this.chords = new ListeningLog(chordsFile);
         write(readable, "# " + this.label + " · 开始 "
                 + new SimpleDateFormat("HH:mm:ss", Locale.US).format(new Date(nowMillis)) + "\n",
                 false);
@@ -62,6 +76,21 @@ public final class SongLog {
 
     public File readable() {
         return readable;
+    }
+
+    public File chords() {
+        return chordsFile;
+    }
+
+    /** One reading of the harmony, at the second it was taken. */
+    public void chord(JSONObject line, double seconds) {
+        if (line == null) return;
+        try {
+            line.put("song", label);
+            line.put("songTime", Math.round(seconds * 1000) / 1000.0);
+        } catch (Exception ignored) {
+        }
+        chords.append(line);
     }
 
     /** A line in the human log: who is talking, and what they said. */

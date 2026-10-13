@@ -35,11 +35,18 @@ public class QuestionPickerTest {
         return QuestionBank.fromJson(new JSONArray(text));
     }
 
-    /** The bank as written, parsed: eight questions, four kinds of thing measured. */
+    /** The bank as written, parsed: ten questions, two of them retired. */
     @Test
     public void theShippedBankParsesAndSaysWhatItMeasures() throws Exception {
         QuestionBank bank = bank();
-        assertEquals(8, bank.all().size());
+        // Ten in the file, eight in the rotation: STRUCT_02 and ATTN_02 asked
+        // whether something happened at a moment the app had stopped the music
+        // because it had measured that something had - 6 to 1 "yes". Retired, kept
+        // for their answers.
+        assertEquals(10, bank.all().size());
+        int retired = 0;
+        for (QuestionTemplate template : bank.all()) if (template.retired) retired++;
+        assertEquals(2, retired);
         assertNotNull(bank.byId("ATTN_01"));
         assertEquals(7, bank.byId("ATTN_01").options.size());
         assertEquals("说不清", bank.byId("ATTN_01").options.get(6));
@@ -48,17 +55,19 @@ public class QuestionPickerTest {
             assertFalse(template.id, template.triggers.isEmpty());
             assertTrue(template.id, template.options.size() >= 2);
         }
-        // Eight questions, eight different things measured. This is why the
+        // Every question measures a different thing, retired ones included: the
+        // replacement asks the same phenomenon a different question, and answers
+        // to those are not comparable, so they do not share a signal. This is why the
         // picker no longer refuses to ask about the same thing twice running:
         // with no two questions sharing a targetSignal, and repeats already
         // ruled out by the order, that rule could never fire.
         java.util.Set<String> signals = new java.util.HashSet<>();
         for (QuestionTemplate template : bank.all()) signals.add(template.targetSignal);
         assertEquals(bank.all().size(), signals.size());
-        // STRUCT_02 answers to a novelty signal as well as a structural one, so
+        // STRUCT_03 answers to a novelty signal as well as a structural one, so
         // the novelty set is five, not the four the plain mapping suggests.
         assertEquals(5, bank.forTrigger("NOVELTY_HIGH").size());
-        assertEquals(3, bank.forTrigger("INSTRUMENT_CHANGE").size());
+        assertEquals(4, bank.forTrigger("INSTRUMENT_CHANGE").size());
         assertEquals(3, bank.forTrigger("STRUCTURE_CANDIDATE").size());
     }
 

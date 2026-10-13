@@ -27,38 +27,19 @@ public class QuestionTallyTest {
     }
 
     @Test
-    public void countsAskAnswerIgnoreAndAnnoyanceSeparately() {
+    public void countsAskAnswerIgnoreAndRemarkSeparately() {
         QuestionTally tally = new QuestionTally();
         tally.asked();
         tally.asked();
         tally.asked();
         tally.answered(3.5);
         tally.ignored();
-        tally.annoyed(true);
+        tally.remarked();
 
         assertEquals(3, tally.askedCount());
         assertEquals(1, tally.answeredCount());
         assertEquals(1, tally.ignoredCount());
-        assertEquals(1, tally.annoyedAskingCount());
-        assertEquals(0, tally.annoyedSayingCount());
-    }
-
-    @Test
-    public void beingTalkedAtIsCountedApartFromBeingAsked() {
-        QuestionTally tally = new QuestionTally();
-        tally.asked();
-        tally.remarked();
-        tally.remarked();
-        tally.annoyed(true);
-        tally.annoyed(false);
-        tally.annoyed(false);
-
-        // The question this file exists to answer: which of the two they mind.
-        // One column for both would fold the answer away.
-        assertEquals(1, tally.askedCount());
-        assertEquals(2, tally.remarkedCount());
-        assertEquals(1, tally.annoyedAskingCount());
-        assertEquals(2, tally.annoyedSayingCount());
+        assertEquals(1, tally.remarkedCount());
     }
 
     @Test
@@ -86,10 +67,10 @@ public class QuestionTallyTest {
         QuestionTally tally = new QuestionTally();
         tally.asked();
         tally.remarked();
-        tally.annoyed(true);
+        tally.remarked();
         String row = tally.csvRow("2026-10-13 04:05", "Yorushika, 雲と幽霊");
         assertTrue(row, row.contains("\"Yorushika, 雲と幽霊\""));
-        assertEquals(9, row.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1).length);
+        assertEquals(7, row.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)", -1).length);
     }
 
     @Test
@@ -98,13 +79,10 @@ public class QuestionTallyTest {
         tally.asked();
         tally.answered(2.0);
         tally.remarked();
-        tally.annoyed(false);
         tally.reset();
         assertEquals(0, tally.askedCount());
         assertEquals(0, tally.answeredCount());
         assertEquals(0, tally.remarkedCount());
-        assertEquals(0, tally.annoyedAskingCount());
-        assertEquals(0, tally.annoyedSayingCount());
         assertEquals(-1.0, tally.medianAnswerSeconds(), 1e-9);
     }
 
@@ -112,7 +90,7 @@ public class QuestionTallyTest {
     public void theHeaderNamesTheColumnsInTheSameOrderTheRowFillsThem() {
         String header = QuestionTally.header();
         assertEquals(
-                "when,song,asked,answered,ignored,remarks,annoyedAsking,annoyedSaying,answerMedianSeconds",
+                "when,song,asked,answered,ignored,remarks,answerMedianSeconds",
                 header);
         QuestionTally tally = new QuestionTally();
         assertEquals(header.split(",").length,

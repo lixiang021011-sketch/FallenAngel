@@ -33,7 +33,13 @@ import com.fallenangel.listeningai.clip.ModelSpec;
 import com.fallenangel.listeningai.clip.OnnxEventEngine;
 import com.fallenangel.listeningai.clip.StyleReading;
 import com.fallenangel.listeningai.listening.CollisionNote;
+import com.fallenangel.listeningai.listening.CandidateFilter;
+import com.fallenangel.listeningai.listening.ChordChangeGate;
+import com.fallenangel.listeningai.listening.ChordDisplay;
+import com.fallenangel.listeningai.listening.ChordTimeline;
 import com.fallenangel.listeningai.listening.DrumPattern;
+import com.fallenangel.listeningai.listening.Harmony;
+import com.fallenangel.listeningai.listening.HeldPause;
 import com.fallenangel.listeningai.listening.NoveltyGate;
 import com.fallenangel.listeningai.listening.query.EventCandidate;
 import com.fallenangel.listeningai.listening.query.FeedbackRecord;
@@ -176,6 +182,125 @@ import java.util.List;
     /** How long a remark stays on the card before it takes itself away. */
     private static final long REMARK_VISIBLE_MILLIS = 12_000;
     /**
+     * Below this share of the chroma explained by one triad, the app does not
+     * claim a chord.
+     *
+     * Real music measured 0.33 to 0.50 on a track where every window came out
+     * diatonic; clean triads come out above 0.9. A reading under a third means
+     * the harmony is buried deep enough that saying it would be a guess dressed
+     * as a measurement.
+     */
+    private static final double HARMONY_MIN_CONFIDENCE = 0.30;
+    /**
+     * How much better another key has to fit before this song is said to be in it.
+     *
+     * Neighbouring keys share six of their seven notes, so the best-matching one
+     * moves on noise. A tenth of a correlation is about the distance between a
+     * key and its neighbours, and well short of what a modulation looks like.
+     */
+    private static final double KEY_MARGIN = 0.10;
+    /**
+     * The song's chroma so far, which is what the key is read from.
+     *
+     * A key is a statement about a piece, not about eight seconds: the same four
+     * chords are in C major, G major or A minor depending on what came before
+     * them. Accumulating means the degree gets steadier the longer a song runs,
+     * which is the right way round - the app is more sure of the key in the
+     * second verse than in the first bar.
+     */
+    private final double[] songChroma = new double[12];
+    /** The key this song is in, held until the evidence clearly moves. */
+    private Harmony.Key songKey;
+    /** What the chord box is showing, so it is only touched when it changes. */
+    private String shownChord = "";
+    /** The chord before the one on screen, for the second line of the box. */
+    private String previousChord = "";
+    /** Whether what is in the box came from an earlier listen. */
+    private boolean shownFromCache;
+    /**
+     * What this song's chords were last time, if it has been played before.
+     *
+     * Read once per song from the record of an earlier listen and then used instead
+     * of measuring: the second time through, the app knows what is coming and can
+     * show it on time, which measuring cannot do - see {@link ChordTimeline}.
+     */
+    private ChordTimeline timeline;
+    private boolean lookedForTimeline;
+    /** Whether the earlier listen has been found to stop before the song does. */
+    private boolean timelineRanOut;
+    /** When the last seek happened, so a pause caused by one is not read as attention. */
+    private long lastSeekMillis;
+    private static final long SEEK_QUIET_MILLIS = 2_500;
+    /**
+     * How long the app stops asking a model that has just been unreachable.
+     *
+     * Without this, every question pays the connection timeout again: measured
+     * 2026-10-13, with the server on this desk stopped, each question showed
+     * "正在问模型…" for ten seconds before falling back to the rules, and a seek that
+     * produced two questions produced twenty.
+     */
+    private static final long MODEL_SILENT_MILLIS = 60_000;
+    private long modelSilentUntilMillis;
+    /**
+     * The listener's pause that arrived while a question was up.
+     *
+     * Held until the question is out of the way, and only for as long as an answer
+     * could plausibly still be about that moment: a pause from two minutes ago is
+     * not what they are thinking about now, and asking about it would be the app
+     * talking about itself.
+     */
+    private RecentAudio.Window heldPauseWindow;
+    private long heldPauseAtMillis;
+    private double heldPauseSeconds;
+    private static final long HELD_PAUSE_PATIENCE_MILLIS = 45_000;
+    /** The rule for what to do with a held pause, in one readable place. */
+    private final HeldPause heldPause = new HeldPause(HELD_PAUSE_PATIENCE_MILLIS);
+    /** Speaking about the harmony: on the change, not on a timer. */
+    private final ChordChangeGate chordChanges = new ChordChangeGate(20_000);
+    /**
+     * What the chord box is allowed to show.
+     *
+     * The display keeps its own cadence: a reading every second, three in a row
+     * before it reaches the screen, and a clear lead before it replaces what is
+     * already up. Sharing the remark's twenty-second gap made the box follow the
+     * music at the speed of a sentence, which is not a speed anything is played at.
+     */
+    /**
+     * Two readings in a row, which is two seconds at the rate this loop runs.
+     *
+     * Three was a second too slow and the reason is arithmetic: the loop is one pass
+     * per second, so agreement over three is three seconds before a change is
+     * allowed through at all.
+     */
+    private final ChordDisplay chordBox = new ChordDisplay(3);
+    /**
+     * The window the harmony is read from: two seconds, not the question's eight.
+     *
+     * The eight was borrowed from the pause question, where there has to be enough
+     * music to say what was going on. For a chord it is the wrong tool - a chord
+     * that lasts one bar is a quarter of that window, so the reading is a mixture
+     * and takes seconds to tip after the music has already changed. Measured on 说
+     * 说Crystal — 月: the display was frozen or late by roughly the window plus the
+     * agreement, about ten seconds, which is most of a bar.
+     *
+     * Shorter is noisier, and the noise is real: at two seconds the top two chords
+     * sit within a few thousandths of each other. That is what the two-readings
+     * agreement is for.
+     */
+    private static final double HARMONY_WINDOW_SECONDS = 1.2;
+    /**
+     * How long after a bar line a change may still be attributed to that line.
+     *
+     * Chord changes happen *on* bar lines, and the app learns about them a moment
+     * later - the window has to fill with the new chord before the reading moves.
+     * Waiting for the next bar line then costs a whole bar, which is exactly the
+     * complaint: "反应慢一小节". This grace is the difference between attributing a
+     * change to the line it happened on and attributing it to the next one.
+     */
+    private static final long BEAT_GRACE_MILLIS = 250;
+    private long lastBeatMillis;
+    private long lastBarLineMillis;
+    /**
      * How often the app may say something nobody asked for.
      *
      * The one number the whole "chatting" question comes down to: ten seconds is
@@ -281,6 +406,10 @@ import java.util.List;
 
 /** The questions this build may ask, read from the asset once. */
     private QuestionBank questionBank;
+    /** The words a candidate may use, read once from the asset. */
+    private com.fallenangel.listeningai.listening.CandidateVocabulary vocabulary;
+    /** What has been offered and taken so far, read back from the record. */
+    private com.fallenangel.listeningai.listening.AnswerMemory memory;
     
 
 /** Which of them may be asked right now. One song's worth; replaced per song. */
@@ -413,25 +542,6 @@ import java.util.List;
         }
         card = new QuestionCard(this);
         card.setVisibility(View.GONE);
-        // The complaint about the interruption itself. Written down twice on
-        // purpose: once as an event with the moment attached, because that is the
-        // record, and once in the summary, because a single song cannot say whether
-        // the app asks too often - only the file that spans songs can.
-        card.setOnAnnoyed(() -> {
-            // Whether it was a question or a remark is read off the card rather
-            // than passed in: the card knows what it is showing, and the two are
-            // counted apart because "do they mind being asked" and "do they mind
-            // being talked to" are different questions that share one button.
-            boolean whileAsking = card.question() != null;
-            tally.annoyed(whileAsking);
-            Log.i(TAG, whileAsking ? "the listener said this question was too much"
-                    : "the listener said this remark was too much");
-            com.fallenangel.listeningai.listening.SongLog about = song;
-            if (about != null) {
-                about.event(annoyedLine(whileAsking), atSeconds);
-                about.say("你", whileAsking ? "这次问得有点烦" : "这句说得有点烦", atSeconds);
-            }
-        });
         card.setOnOpen(() -> {
             // The resting button is the listener's own way in: if there is
             // nothing to answer, it shows what the app thinks it is hearing and
@@ -644,6 +754,7 @@ import java.util.List;
                     }
                     if (Playback.seekGeneration != lastSeek) {
                         lastSeek = Playback.seekGeneration;
+                        lastSeekMillis = System.currentTimeMillis();
                         // Neither is a jump within a song: the seconds before it
                         // are not the seconds this moment is being compared with.
                         selfAsk.reset();
@@ -667,6 +778,14 @@ import java.util.List;
                             if (PlaybackControl.pausedByUs() && stage.awaitingAnswer()) {
                                 Log.i(TAG, "the music is being held for our own question");
                             }
+ else if (justSeeked()) {
+                                // A pause that is part of a jump is not attention. Seeking
+                                // backwards stops the player for a moment, and reading that
+                                // as "the listener stopped here" put a question about a
+                                // moment nobody chose in front of them - measured
+                                // 2026-10-13, twice in a row after one seek.
+                                Log.i(TAG, "the music stopped just after a seek; not a moment of theirs");
+                            }
  else {
                                 askAbout(Asked.BY_LISTENER, grid, recent, sectionLabel, sectionBoundarySample);
                             }
@@ -684,7 +803,10 @@ import java.util.List;
                 long now = android.os.SystemClock.elapsedRealtime();
                 boolean heardPlaying = Playback.available ? Playback.playing : !grid.quiet();
                 atSeconds = whereInSong(grid);
-                flashOnBarLine(grid);
+                boolean barLine = flashOnBarLine(grid);
+                if (barLine) lastBarLineMillis = System.currentTimeMillis();
+                boolean beatLine = onBeatLine(grid);
+                if (beatLine) lastBeatMillis = System.currentTimeMillis();
                 keepTheAnchor(grid);
                 // Asking on our own: the model said something changed, and the
                 // asking happens here rather than where that was noticed,
@@ -710,14 +832,100 @@ import java.util.List;
                     }
                 }
                 // Saying something without asking: the other half of the
-                // interaction, and the half nobody has measured. It does not stop
-                // the music and it does not wait for an answer - the only thing it
-                // spends is the listener's attention, which is exactly what the
-                // "too much" button on it is there to price.
-                if (remarks.due(now, heardPlaying, stage.awaitingAnswer() || holdingMusic)
-                        && reading != null && reading.said()) {
-                    remarks.spoke(now);
+                // interaction. It does not stop the music and it does not wait for
+                // an answer, so the only thing it spends is attention.
+                //
+                // The trigger is the harmony moving, not the clock: a remark that
+                // lands mid-chord can only name the chord the listener is already
+                // hearing, while a remark at the change says something that just
+                // happened. With no chord to read - low confidence, or no audio -
+                // the app falls back to speaking now and then about what it hears.
+                boolean busy = stage.awaitingAnswer() || holdingMusic;
+                // A song heard before is read from its own record instead of measured
+                // again: the readings are the same, and having them in advance is what
+                // removes the delay rather than shrinking it.
+                if (!lookedForTimeline && song != null) {
+                    lookedForTimeline = true;
+                    timeline = findTimeline(song);
+                }
+                Harmony.Reading heardNow = null;
+                String harmonyNow;
+                boolean fromCache = false;
+                double atNow = whereInSong(grid);
+                if (timeline != null && timeline.useful() && Playback.available
+                        && timeline.covers(atNow)) {
+                    harmonyNow = timeline.at(atNow);
+                    fromCache = true;
+                } else if (timeline != null && timeline.useful() && Playback.available
+                        && timelineRanOut == false) {
+                    // The earlier listen stops here - it was cut short. Past this
+                    // point the app goes back to measuring, and says so, because a
+                    // cache that quietly ends is indistinguishable from a reader that
+                    // has stopped working.
+                    timelineRanOut = true;
+                    Log.i(TAG, "the earlier listen stops at " + (int) atNow
+                            + "s; measuring from here");
+                    heardNow = harmonyNow(recent);
+                    harmonyNow = heardNow == null ? "" : Harmony.sentence(heardNow, songKey);
+                } else {
+                    heardNow = harmonyNow(recent);
+                    harmonyNow = heardNow == null ? "" : Harmony.sentence(heardNow, songKey);
+                }
+                // Shown whether or not anything is being said: a chord is a state,
+                // and the box is where a state belongs. The remark below is an
+                // event, and it is about the change, not about the chord.
+                // A change may land on the beat itself, or in the moment just after
+                // it - which is when the app finds out about a change that happened
+                // on that beat. Everything else waits for the next beat, which is at
+                // most half a second away.
+                boolean canSwitch = beatLine
+                        || System.currentTimeMillis() - lastBeatMillis < BEAT_GRACE_MILLIS
+                        || grid == null || !grid.locked();
+                String boxNow = chordBox.consider(harmonyNow,
+                        heardNow == null ? 1.0 : heardNow.margin(), canSwitch);
+                showChord(boxNow, fromCache);
+                // Written either way, with where it came from. A listen that reads a
+                // cache used to leave an empty record behind, and since the newest
+                // record is the one the next listen reads, an empty one poisoned the
+                // cache for the listen after it - the app's own file, hiding the good
+                // one behind it.
+                if (heardPlaying) writeChordReading(heardNow, harmonyNow, boxNow, fromCache);
+                boolean due = !boxNow.isEmpty()
+                        ? chordChanges.due(now, heardPlaying, busy, boxNow)
+                        : remarks.due(now, heardPlaying, busy) && reading != null && reading.said();
+                // Never while they are counting: the tap button is in the same card
+                // the remark would take over, and being talked to while tapping is
+                // being interrupted in the middle of an answer.
+                if (tapping) due = false;
+                if (due) {
+                    if (!boxNow.isEmpty()) {
+                        chordChanges.said(now, boxNow);
+                    } else {
+                        remarks.spoke(now);
+                    }
                     saySomething(reading, recent);
+                }
+                // The pause that was held under our own question: asked about now
+                // that the card is clear, with the audio it actually happened in.
+                // Only while it is still recent - a pause from two minutes ago is
+                // not what they are thinking about, and asking about it would be
+                // the app talking about itself.
+                if (heldPauseWindow != null && !stage.awaitingAnswer() && !holdingMusic) {
+                    long nowHeld = System.currentTimeMillis();
+                    HeldPause.Decision decision = heldPause.decide(nowHeld, heldPauseAtMillis,
+                            stage.awaitingAnswer(), holdingMusic);
+                    if (decision == HeldPause.Decision.TOO_OLD) {
+                        Log.i(TAG, String.format(java.util.Locale.US,
+                                "the held pause is %.0fs old; it stays in the record, unasked",
+                                (nowHeld - heldPauseAtMillis) / 1000.0));
+                        heldPauseWindow = null;
+                    } else if (decision == HeldPause.Decision.ASK && !PlaybackControl.pausedByUs()) {
+                        RecentAudio.Window window = heldPauseWindow;
+                        heldPauseWindow = null;
+                        Log.i(TAG, "asking about the pause that was held under our own question");
+                        askAbout(Asked.BY_LISTENER, grid, recent, sectionLabel,
+                                sectionBoundarySample, window);
+                    }
                 }
                 if (heardPlaying != playingNow) {
                     boolean wasPlaying = playingNow;
@@ -836,7 +1044,7 @@ import java.util.List;
                         if (said != null && said.said()) text.append(" · ").append(said.shortPhrase()); card.setPillText(text.toString());
                     }
 );
-                    Log.i(TAG, String.format(java.util.Locale.US, "state song=%s playing=%s source=%s quiet=%s bpm=%.1f held=%.1fs " + "events=%d asked=%d answered=%d said=%d annoyed=%d/%d model=%s" + "(%d, %dms, nov=%.2f %d/%d, %s)" + " grid=%d/%s locked=%s half=%s taps=%d phase=%.0f" + " meter=%d/4 anchored=%.1f drift=%.0f/%d fit=%d/%d" + " low=%d%% high=%d%% drum=%.2f lag=%.2f", songName, heardPlaying, Playback.available ? "player" : "audio", grid.quiet(), grid.bpm(), recent.availableSeconds(), observations, questionsAsked, answersGiven, tally.remarkedCount(), tally.annoyedAskingCount(), tally.annoyedSayingCount(), onnx == null ? "off" : onnxVersion, modelObservations, onnx == null ? 0 : onnx.lastRunMillis(), lastNovelty, selfAsk.run(), selfAsk.required(), said == null ? "-" : said.sentence(), grid.gridSessionId(), grid.lastResetReason(), grid.locked(), grid.halfTempo(), grid.tapTempoCount(), grid.phaseFrames(), lastMeter, anchoredBpm, grid.driftFrames(), grid.corrections(), grid.alignedOnsets(), grid.alignedOnsets() + grid.misfitOnsets(), percent(grid.lowAligned(), grid.lowHits()), percent(grid.highAligned(), grid.highHits()), grid.drumScore(), grid.lagBeats()));
+                    Log.i(TAG, String.format(java.util.Locale.US, "state song=%s playing=%s source=%s quiet=%s bpm=%.1f held=%.1fs " + "events=%d asked=%d answered=%d said=%d model=%s" + "(%d, %dms, nov=%.2f %d/%d, %s)" + " grid=%d/%s locked=%s half=%s taps=%d phase=%.0f" + " meter=%d/4 anchored=%.1f drift=%.0f/%d fit=%d/%d" + " low=%d%% high=%d%% drum=%.2f lag=%.2f", songName, heardPlaying, Playback.available ? "player" : "audio", grid.quiet(), grid.bpm(), recent.availableSeconds(), observations, questionsAsked, answersGiven, tally.remarkedCount(), onnx == null ? "off" : onnxVersion, modelObservations, onnx == null ? 0 : onnx.lastRunMillis(), lastNovelty, selfAsk.run(), selfAsk.required(), said == null ? "-" : said.sentence(), grid.gridSessionId(), grid.lastResetReason(), grid.locked(), grid.halfTempo(), grid.tapTempoCount(), grid.phaseFrames(), lastMeter, anchoredBpm, grid.driftFrames(), grid.corrections(), grid.alignedOnsets(), grid.alignedOnsets() + grid.misfitOnsets(), percent(grid.lowAligned(), grid.lowHits()), percent(grid.highAligned(), grid.highHits()), grid.drumScore(), grid.lagBeats()));
                 }
             }
             inference.close();
@@ -911,6 +1119,27 @@ import java.util.List;
     }
 
     private void askAbout(Asked asked, BeatDetector grid, RecentAudio recent, String sectionLabel, long sectionBoundarySample) {
+        // Counting is the one interaction this app asks a listener to perform, and it
+        // takes both hands and their attention. A card appearing over it replaces the
+        // thing they are using - measured 2026-10-13, "不要打断我对拍子" - so nothing
+        // is asked while they are counting, and it says so rather than going quiet.
+        if (tapping) {
+            Log.i(TAG, "not asking: the listener is counting");
+            giveBackMusic(asked);
+            return;
+        }
+        askAbout(asked, grid, recent, sectionLabel, sectionBoundarySample, null);
+    }
+
+    /**
+     * The same, asking about a window that was captured earlier.
+     *
+     * A pause of the listener's that arrived while a question was already up has
+     * nothing left to listen to by the time that question is finished - the audio
+     * buffer has moved on - so it is asked about with the seconds it actually
+     * happened in, kept in memory for the minute or so that answers take.
+     */
+    private void askAbout(Asked asked, BeatDetector grid, RecentAudio recent, String sectionLabel, long sectionBoundarySample, RecentAudio.Window captured) {
         // A pause the app caused is not something the listener noticed.
         if (asked == Asked.BY_LISTENER && PlaybackControl.pausedByUs()) {
             Log.i(TAG, "not asking: the app stopped the music itself");
@@ -934,13 +1163,13 @@ import java.util.List;
             return;
         }
         if (asked == Asked.BY_LISTENER && stage.awaitingAnswer()) {
-            // Their pause landed on a question that is already up: that agreement is
-            // worth keeping, but a second card on top of the first is not. The music
-            // stays paused because they paused it, not us.
+            // Their pause landed on a question that is already up. Not stacking a
+            // second card on the first is right; dropping the moment is not. This is
+            // the listener's own attention, the most valuable thing this app ever
+            // hears, and until now it went into the human log and nowhere else - no
+            // event, no question, nothing to count afterwards.
             Log.i(TAG, "the listener paused while our own question is on screen: keeping theirs, not stacking");
-            if (song != null) {
-                song.say("听", "在我提问的同时按了暂停", whereInSong(grid));
-            }
+            holdTheirPause(grid, recent);
             return;
         }
         double duration = Playback.durationSeconds;
@@ -950,7 +1179,9 @@ import java.util.List;
             explain("这首歌快结束了。");
             return;
         }
-        RecentAudio.Window window = recent.tail(WINDOW_SECONDS);
+        // A window captured earlier, when the moment being asked about is not the
+        // one happening now: the listener's pause that arrived under a question.
+        RecentAudio.Window window = captured != null ? captured : recent.tail(WINDOW_SECONDS);
         if (window == null) {
             Log.i(TAG, String.format(java.util.Locale.US, "paused with only %.1fs held, nothing to ask about", recent.availableSeconds()));
             giveBackMusic(asked);
@@ -1133,6 +1364,13 @@ import java.util.List;
             showQuestion(asked, note, local, proposed);
             return;
         }
+        if (System.currentTimeMillis() < modelSilentUntilMillis) {
+            // Asked a moment ago and could not be reached. Asking again costs the
+            // connection timeout again, and the answer would be the same.
+            Log.i(TAG, "the model was unreachable a moment ago; asking with the rules");
+            showQuestion(asked, note, local, proposed);
+            return;
+        }
         String model = prefs.getString(PREF_MODEL, ExplanationClient.DEFAULT_MODEL);
         long thinking = stage.show(CardStage.Content.BUSY);
         main.post(() -> {
@@ -1146,12 +1384,22 @@ import java.util.List;
 );
         cloud.execute(() -> {
             List<PauseQuestion.Candidate> candidates = null; String why = null; try {
-                candidates = new ExplanationClient(endpoint, key, model, ExplanationClient::post).explain(clip, 0, clip.length, SAMPLE_RATE, facts(local, sectionLabel));
+                candidates = new ExplanationClient(endpoint, key, model, ExplanationClient::post)
+                        .explain(clip, 0, clip.length, SAMPLE_RATE, facts(local, sectionLabel),
+                                vocabulary().instruction());
             }
  catch (Exception e) {
                 why = e.getClass().getSimpleName() + ": " + e.getMessage();
             }
             if (candidates == null) {
+                // A model that could not be reached is not a model that answered
+                // badly: the first is worth waiting out, the second is worth asking
+                // again. Only the first sets the silence.
+                if (why != null && why.startsWith("IOException")) {
+                    modelSilentUntilMillis = System.currentTimeMillis() + MODEL_SILENT_MILLIS;
+                    Log.i(TAG, "the model could not be reached; not asking it again for "
+                            + (MODEL_SILENT_MILLIS / 1000) + "s");
+                }
                 // Said on the card, not only in the log. An endpoint that is set
                 // and a model that answers nothing look identical from the
                 // listener's side, and the difference is theirs to act on - this
@@ -1171,7 +1419,23 @@ import java.util.List;
                 // question nobody is going to see.
                 Log.i(TAG, "the cloud answered after the window had moved on"); giveBackMusic(asked); return;
             }
-            PauseQuestion fromModel = ListeningAnalyzer.withCandidates(local, candidates); Log.i(TAG, "the model proposed " + (candidates.size() - 1) + " explanations"); // The rules' proposal stays in the record and the model's is added
+            // Cleaned before it reaches a person: labels the vocabulary does not
+            // have are dropped, and three phrasings of one fact become one button.
+            // The record keeps the raw answer - the cleaning is about what the
+            // listener is asked, not about what was heard.
+            List<PauseQuestion.Candidate> offered =
+                    CandidateFilter.clean(candidates, vocabulary(), answerMemory());
+            Log.i(TAG, "the model proposed " + (candidates.size() - 1) + " explanations, "
+                    + (offered.size() - 1) + " of them offered");
+            if (offered.size() < 2) {
+                // Everything it said was outside the vocabulary or a repeat of
+                // something else. One button is not a question.
+                Log.i(TAG, "nothing usable survived the vocabulary and the dedupe; asking with the rules");
+                showQuestion(asked, note, local, proposed);
+                return;
+            }
+            modelSilentUntilMillis = 0;   // it answered, so it is there
+            PauseQuestion fromModel = ListeningAnalyzer.withCandidates(local, offered); // The rules' proposal stays in the record and the model's is added
             // beside it: which of them the person was answering is part of the
             // data, and a record that keeps only the last one cannot say.
             ListeningEvent byModel = ListeningEvent.proposed( proposed.id + "-m", fromModel, proposed.interactionSeconds, proposed.alignmentConfidence, System.currentTimeMillis(), "cloud:" + model); if (about != null) about.event(byModel.toJson(), atSeconds); showQuestion(asked, note, fromModel, byModel);
@@ -1261,6 +1525,62 @@ import java.util.List;
     
 
 /**
+     * Whether the music stopped as part of a jump rather than because they stopped it.
+     */
+    private boolean justSeeked() {
+        return System.currentTimeMillis() - lastSeekMillis < SEEK_QUIET_MILLIS;
+    }
+
+    /**
+     * Keep the moment the listener stopped on, when we were already asking.
+     *
+     * Two things, because they fail differently. The moment is written into the
+     * record at once, so it survives whatever happens next - a pause that was
+     * noticed and then lost is worse than one that was never noticed, because it
+     * looks like nothing happened. And the eight seconds of audio are kept in
+     * memory, because a question about it can still be asked once the question
+     * that is up has been dealt with, and by then the buffer has moved on.
+     */
+    private void holdTheirPause(BeatDetector grid, RecentAudio recent) {
+        RecentAudio.Window window = recent == null ? null : recent.tail(WINDOW_SECONDS);
+        double at = whereInSong(grid);
+        if (song != null) {
+            song.say("听", "在我提问的同时按了暂停（记下了，等这张问完再问这个）", at);
+            song.event(collisionLine(grid, at), at);
+        }
+        if (window == null) {
+            Log.i(TAG, "their pause came with no audio behind it; recorded, not asked about");
+            return;
+        }
+        heldPauseWindow = window;
+        heldPauseAtMillis = System.currentTimeMillis();
+        heldPauseSeconds = at;
+        Log.i(TAG, String.format(java.util.Locale.US,
+                "held their pause at %.2fs (%d seconds of audio kept)", at, window.pcm.length / SAMPLE_RATE));
+    }
+
+    /** What the collided pause looked like, written down where it cannot be lost. */
+    private org.json.JSONObject collisionLine(BeatDetector grid, double at) {
+        org.json.JSONObject line = new org.json.JSONObject();
+        try {
+            line.put("eventType", "PAUSE_DURING_QUESTION");
+            line.put("state", "USER_CONFIRMED");
+            line.put("createdAt", System.currentTimeMillis());
+            // The time is the anchor, not a bar number: this is the raw layer, and
+            // the bar a moment belongs to is derived from the grid afterwards - the
+            // same rule the chord stream follows, and the reason the grid cannot
+            // rewrite history by changing.
+            line.put("bpm", grid == null ? 0 : grid.bpm());
+            line.put("locked", grid != null && grid.locked());
+            line.put("aiVersion", "collision-v1");
+            line.put("note", "the listener stopped while our own question was on screen");
+        } catch (org.json.JSONException ignored) {
+            // A JSONObject is a map; only out-of-memory throws here.
+        }
+        return line;
+    }
+
+    /**
      * Why there is no question this time, in the floating layer.
   *
   * Also hides itself after a few seconds: a note about a moment that has
@@ -1562,18 +1882,25 @@ import java.util.List;
   * knows which position it is on, so asking it cannot drift apart from it. The
   * bar number is what is watched, so a jump in position (a seek, a re-lock)
   * cannot produce a burst of flashes catching up.  */
-    private void flashOnBarLine(BeatDetector beat) {
+    /**
+     * The bar line, if this tick is one.
+     *
+     * Returns whether a new bar started here, which the flash uses. The chord box
+     * quantises to the beat rather than to this - see {@link #onBeatLine}.
+     */
+    private boolean flashOnBarLine(BeatDetector beat) {
         // Not while the listener is tapping: the flash is a metronome, and a
         // metronome that argues with the person counting is worse than none.
-        if (tapping) return;
-        if (beat == null || !beat.locked()) return;
+        if (tapping) return false;
+        if (beat == null || !beat.locked()) return false;
         int perBar = beat.positionsPerBar();
-        if (perBar <= 0) return;
+        if (perBar <= 0) return false;
         int position = beat.positionAt(beat.audioTime());
-        if (position == Integer.MIN_VALUE) return;
+        if (position == Integer.MIN_VALUE) return false;
         long bar = Math.floorDiv(position, perBar);
-        if (bar == lastFlashedBar) return;
+        if (bar == lastFlashedBar) return false;
         lastFlashedBar = bar;
+        boolean newBar = true;
         // Where it actually lands, for the first few bars after an anchor: the
         // complaint "the flash is not on beat one" is either an offset of a
         // fraction of a beat (the listener's hand, which is expected) or a whole
@@ -1587,7 +1914,31 @@ import java.util.List;
             if (card != null) card.flash();
         }
 );
+        return newBar;
     }
+
+    /**
+     * Whether a new beat started here, which is the moment the chord box may change.
+     *
+     * Beats rather than bar lines, and that is a correction: chord changes happen on
+     * the beat, so quantising to the bar meant a change noticed just after a bar line
+     * waited for the *next* one - "反应慢一小节" - while the beat is the unit a chord
+     * actually moves in and the wait is at most half a second.
+     */
+    private boolean onBeatLine(BeatDetector beat) {
+        if (beat == null || !beat.locked()) return false;
+        int perBar = beat.positionsPerBar();
+        int perBeat = Math.max(1, perBar / Math.max(1, beat.beatsPerBar()));
+        int position = beat.positionAt(beat.audioTime());
+        if (position == Integer.MIN_VALUE) return false;
+        long index = Math.floorDiv(position, perBeat);
+        if (index == lastBeatIndex) return false;
+        lastBeatIndex = index;
+        return true;
+    }
+
+    /** The last beat a change was allowed on, so each beat counts once. */
+    private long lastBeatIndex = Long.MIN_VALUE;
     
 
 /** The last bar a flash was made for, so each bar flashes once. */
@@ -1975,6 +2326,22 @@ import java.util.List;
         if (song != null && questions != null) song.say("记", questionTally(), atSeconds);
         appendTheTally(song);
         tally.reset();
+        // The song just ended, so its own directory is finished and the older ones
+        // can be judged against it.
+        pruneOldListens();
+        // A new song is a new key: the chroma of the last one says nothing about
+        // this one, and carrying it over is how every song after the first would
+        // be read in the previous song's key.
+        java.util.Arrays.fill(songChroma, 0);
+        songKey = null;
+        chordChanges.reset();
+        shownChord = "";
+        chordBox.reset();
+        heldPauseWindow = null;
+        // A new song: whatever was known about the last one says nothing here.
+        timeline = null;
+        lookedForTimeline = false;
+        timelineRanOut = false;
         // And the grids it locked, written now that the song is finished: only
         // this song's presses belong in this song's document.
         writeTheExport(song, true);
@@ -2026,6 +2393,92 @@ import java.util.List;
   * is not a build without questions - it is the app as it was before, where
   * the only thing asked about is a pause the listener made themselves.  */
     private QuestionBank questionBank() {
+        if (questionBank == null) {
+            questionBank = loadQuestionBank();
+        }
+        return questionBank;
+    }
+
+    /**
+     * The words a candidate may use, read once.
+     *
+     * A missing or broken file is not an error: the app then allows any label, which
+     * is how it behaved before the vocabulary existed. A vocabulary that will not
+     * parse must not take the questions down with it.
+     */
+    private com.fallenangel.listeningai.listening.CandidateVocabulary vocabulary() {
+        if (vocabulary == null) {
+            com.fallenangel.listeningai.listening.CandidateVocabulary loaded;
+            try (java.io.InputStream in = getAssets().open("candidate_vocabulary.json")) {
+                java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+                byte[] buffer = new byte[4096];
+                int read;
+                while ((read = in.read(buffer)) > 0) out.write(buffer, 0, read);
+                loaded = com.fallenangel.listeningai.listening.CandidateVocabulary.fromJson(
+                        new org.json.JSONObject(out.toString("UTF-8")));
+                Log.i(TAG, "candidate vocabulary: " + loaded);
+            } catch (Exception missing) {
+                Log.w(TAG, "no usable candidate vocabulary; any label the model writes is allowed", missing);
+                loaded = com.fallenangel.listeningai.listening.CandidateVocabulary.OPEN;
+            }
+            vocabulary = loaded;
+        }
+        return vocabulary;
+    }
+
+    /**
+     * The record, read back: every card this listener has been shown, and what they
+     * chose on it.
+     *
+     * Read once, on the thread that asks the model - not at start-up, because most
+     * sessions never ask a question at all, and not on the main thread, because it
+     * is a walk over every song played so far. A record that will not parse is
+     * skipped: the memory of the other songs is still worth having.
+     */
+    private com.fallenangel.listeningai.listening.AnswerMemory answerMemory() {
+        if (memory != null) return memory;
+        com.fallenangel.listeningai.listening.AnswerMemory loaded =
+                new com.fallenangel.listeningai.listening.AnswerMemory();
+        java.io.File root = listeningDirectory();
+        java.io.File[] songs = root == null ? null : root.listFiles();
+        int read = 0;
+        if (songs != null) {
+            for (java.io.File song : songs) {
+                java.io.File events = new java.io.File(song, "events.jsonl");
+                if (!events.isFile()) continue;
+                try {
+                    java.util.List<String> lines = java.nio.file.Files.readAllLines(
+                            events.toPath(), java.nio.charset.StandardCharsets.UTF_8);
+                    for (String line : lines) {
+                        if (line.isEmpty()) continue;
+                        org.json.JSONObject record = new org.json.JSONObject(line);
+                        org.json.JSONArray candidates = record.optJSONArray("candidates");
+                        if (candidates == null) continue;
+                        java.util.List<String> labels = new java.util.ArrayList<>();
+                        for (int i = 0; i < candidates.length(); i++) {
+                            org.json.JSONObject item = candidates.optJSONObject(i);
+                            if (item != null) labels.add(item.optString("label", ""));
+                        }
+                        loaded.learn(labels, record.optString("chosenLabel", ""));
+                    }
+                    read++;
+                } catch (Exception unreadable) {
+                    Log.i(TAG, "could not read back " + events.getParentFile().getName()
+                            + ": " + unreadable);
+                }
+            }
+        }
+        Log.i(TAG, String.format(java.util.Locale.US,
+                "answer memory: %d songs read, %d labels known, %d worn out",
+                read, loaded.size(), loaded.tiredLabels().size()));
+        if (!loaded.tiredLabels().isEmpty()) {
+            Log.i(TAG, "not offering again: " + loaded.tiredLabels());
+        }
+        memory = loaded;
+        return memory;
+    }
+
+    private QuestionBank loadQuestionBank() {
         if (questionBank == null) {
             QuestionBank loaded;
             try (java.io.InputStream in = getAssets().open("question_bank.json")) {
@@ -2147,7 +2600,13 @@ import java.util.List;
         try {
             File root = about.directory().getParentFile();
             if (root == null) return;
-            File file = new File(root, "summary.csv");
+            // Versioned in the name, and not overwritten. The first version of
+            // this file was written with seven columns; the row grew three when
+            // remarks and the two kinds of annoyance were counted, and the header
+            // was only written when the file did not exist yet - so the file that
+            // exists has a header describing different columns than its rows. A
+            // table whose header lies about it is worse than two tables.
+            File file = new File(root, "summary-v2.csv");
             boolean first = !file.exists();
             try (java.io.FileWriter out = new java.io.FileWriter(file, true)) {
                 if (first) {
@@ -2185,11 +2644,15 @@ import java.util.List;
         // never land on top of a question - that is the whole reason the stage
         // exists, and the reason this is not decided after the model answers.
         final long token = stage.show(CardStage.Content.MESSAGE);
+
+        final String heading = "";
+
         android.content.SharedPreferences prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
         String endpoint = prefs.getString(PREF_ENDPOINT, "");
         String key = prefs.getString(PREF_KEY, "");
         if (!ExplanationClient.configured(endpoint, key) || window == null) {
-            showRemark(token, local, "", "本地");
+            showRemark(token, heading.isEmpty() ? local : heading,
+                    heading.isEmpty() ? "" : local, "本地");
             return;
         }
         String model = prefs.getString(PREF_MODEL, ExplanationClient.DEFAULT_MODEL);
@@ -2202,8 +2665,206 @@ import java.util.List;
                 Log.i(TAG, "no remark from the model (" + e.getClass().getSimpleName()
                         + "), saying what the local reading says");
             }
-            showRemark(token, said_it == null || said_it.isEmpty() ? local : said_it,
-                    "", said_it == null || said_it.isEmpty() ? "本地" : "模型");
+            boolean fromModel = said_it != null && !said_it.isEmpty();
+            String note = fromModel ? said_it : local;
+            // Two things, in the order they can be trusted: what was measured,
+            // and what the model made of it.
+            showRemark(token, heading.isEmpty() ? note : heading,
+                    heading.isEmpty() ? "" : note, fromModel ? "模型" : "本地");
+        });
+    }
+
+    /**
+     * Keep the newest few listens of each song, and delete the ones before them.
+     *
+     * Run when a song ends, because that is when this listen's own directory is
+     * complete - and deleting it, or judging it half-written, would be the one
+     * mistake that matters. The rule itself is in {@link SessionKeeper}; what
+     * happens here is the walking and the deleting.
+     *
+     * Every removal is logged by name. This is the only thing in the app that
+     * destroys the record, and a deletion nobody can see in the log is
+     * indistinguishable from data that went missing.
+     */
+    private void pruneOldListens() {
+        java.io.File root = listeningDirectory();
+        java.io.File[] entries = root == null ? null : root.listFiles();
+        if (entries == null) return;
+        java.util.List<String> names = new java.util.ArrayList<>();
+        for (java.io.File entry : entries) if (entry.isDirectory()) names.add(entry.getName());
+        String current = song == null ? "" : song.directory().getName();
+        java.util.List<String> doomed;
+        try {
+            doomed = com.fallenangel.listeningai.listening.SessionKeeper.toDelete(names, current);
+        } catch (Throwable failed) {
+            Log.i(TAG, "could not work out what to prune: " + failed);
+            return;
+        }
+        for (String name : doomed) {
+            java.io.File victim = new java.io.File(root, name);
+            // Belt and braces: only ever inside the listening directory, and only
+            // ever a directory.
+            if (!victim.isDirectory() || !root.equals(victim.getParentFile())) continue;
+            if (deleteEverythingIn(victim)) {
+                Log.i(TAG, "pruned an old listen: " + name);
+            } else {
+                Log.i(TAG, "could not prune " + name);
+            }
+        }
+    }
+
+    /** Removes a directory and what is in it; true when nothing is left. */
+    private boolean deleteEverythingIn(java.io.File directory) {
+        java.io.File[] children = directory.listFiles();
+        if (children != null) {
+            for (java.io.File child : children) {
+                if (child.isDirectory()) deleteEverythingIn(child);
+                else child.delete();
+            }
+        }
+        return directory.delete();
+    }
+
+    /**
+     * Look for an earlier listen of this song, and read its chords back.
+     *
+     * Found by the song's label, which is what the directory names carry. Songs
+     * with no name have nothing to find by, and a listen that was cut short is not
+     * worth using - {@link ChordTimeline#useful()} decides that, because a fragment
+     * used as a cache would show nonsense confidently, which is worse than
+     * measuring.
+     */
+    private ChordTimeline findTimeline(com.fallenangel.listeningai.listening.SongLog current) {
+        if (current == null) return null;
+        String label = current.label();
+        if (label == null || label.isEmpty() || label.startsWith("未知曲目")) return null;
+        java.io.File root = listeningDirectory();
+        java.io.File[] sessions = root == null ? null : root.listFiles();
+        if (sessions == null) return null;
+        String mine = current.directory().getName();
+        java.util.List<java.io.File> candidates = new java.util.ArrayList<>();
+        for (java.io.File session : sessions) {
+            if (!session.isDirectory() || session.getName().equals(mine)) continue;
+            // By song, not by name: a directory that had to be given a " 2" is the
+            // same song, and matching on the raw name missed exactly the newer
+            // listens - which is why the cache never found anything.
+            if (!com.fallenangel.listeningai.listening.SessionKeeper.songOf(session.getName())
+                    .equals(com.fallenangel.listeningai.listening.SongLog.slug(label))) {
+                continue;
+            }
+            candidates.add(session);
+        }
+        // Newest first, and the first one that is worth using wins - not simply the
+        // newest. A listen that was cut short, or one that itself read a cache and
+        // wrote almost nothing, must not hide the good record behind it.
+        candidates.sort((a, b) -> b.getName().compareTo(a.getName()));
+        // Stitched together rather than picked: listening is not one act, and the
+        // records left by starting, skipping and coming back cover the song between
+        // them. Any single one of them was usually too short to use - which is what
+        // "too little to reuse (11 readings)" meant.
+        java.util.List<java.util.List<String>> listens = new java.util.ArrayList<>();
+        for (java.io.File candidate : candidates) {
+            java.io.File chords = new java.io.File(candidate, "chords.jsonl");
+            if (!chords.isFile()) continue;
+            try {
+                listens.add(java.nio.file.Files.readAllLines(
+                        chords.toPath(), java.nio.charset.StandardCharsets.UTF_8));
+            } catch (Exception unreadable) {
+                Log.i(TAG, "could not read " + candidate.getName() + " back: " + unreadable);
+            }
+        }
+        if (listens.isEmpty()) {
+            // Never silent: "no earlier listen to read" and "an earlier listen that
+            // could not be used" look identical from the box, and one of them is a bug.
+            Log.i(TAG, "no earlier listen of " + label + " has chords to reuse ("
+                    + candidates.size() + " matching sessions)");
+            return null;
+        }
+        ChordTimeline stitched = ChordTimeline.merge(listens);
+        if (!stitched.useful()) {
+            Log.i(TAG, "earlier listens cover too little to reuse (" + stitched.size()
+                    + " readings across " + listens.size() + " listens)");
+            return null;
+        }
+        Log.i(TAG, "reusing " + stitched.size() + " chord readings stitched from "
+                + listens.size() + " earlier listens");
+        return stitched;
+    }
+
+    /**
+     * The chord right now, as the card would print it, or "" when it cannot say.
+     *
+     * Measured here rather than asked of a model, because this is the half of a
+     * remark the listener can check against what they hear: given four clean
+     * triads the model got one right, and this gets four of four. The key comes
+     * from everything heard so far in the song and is held on to, because C major,
+     * G major and A minor share six of seven notes and a fresh estimate every
+     * window made songs without modulations look like they had several.
+     */
+    private Harmony.Reading harmonyNow(RecentAudio recent) {
+        RecentAudio.Window window = recent == null ? null : recent.tail(HARMONY_WINDOW_SECONDS);
+        if (window == null) return null;
+        double[] chroma = Harmony.chroma(window.pcm, 0, window.pcm.length, SAMPLE_RATE);
+        for (int i = 0; i < 12; i++) songChroma[i] += chroma[i];
+        songKey = Harmony.keyOf(songChroma, songKey, KEY_MARGIN);
+        Harmony.Reading chord = Harmony.chordOf(chroma, songKey);
+        if (chord == null || chord.confidence < HARMONY_MIN_CONFIDENCE) return null;
+        return chord;
+    }
+
+    /**
+     * One line of raw harmony per second: the measurement, not the decision.
+     *
+     * Everything the display used to decide is in it - both shares, the gap between
+     * them, and what was on screen at the time - because the interesting question
+     * later is not "what chord was it" but "when could the app tell, and what did
+     * it do while it could not". Nothing here is ever rewritten; the per-bar view
+     * is derived from this later, if the beat grid ever earns the right to.
+     */
+    private void writeChordReading(Harmony.Reading heard, String reading, String box, boolean fromCache) {
+        com.fallenangel.listeningai.listening.SongLog about = song;
+        if (about == null) return;
+        org.json.JSONObject line = new org.json.JSONObject();
+        try {
+            line.put("key", songKey == null ? "" : songKey.name());
+            if (heard != null) {
+                line.put("chord", heard.chord);
+                line.put("quality", heard.quality.name());
+                line.put("root", heard.root);
+                line.put("share", Math.round(heard.confidence * 1000) / 1000.0);
+                line.put("runnerUp", Math.round(heard.runnerUp * 1000) / 1000.0);
+                line.put("margin", Math.round(heard.margin() * 1000) / 1000.0);
+                line.put("reading", reading);
+            } else {
+                line.put("chord", "");
+                line.put("unreadable", true);
+            }
+            line.put("shown", box);
+            // Where it came from, so a later reader can tell a measurement from a
+            // replay - and so this file can be reused by the next listen either way.
+            line.put("from", fromCache ? "cache" : "measured");
+        } catch (org.json.JSONException ignored) {
+            // A JSONObject is a map; only out-of-memory throws here.
+        }
+        about.chord(line, atSeconds);
+    }
+
+    /**
+     * Put the current chord in its own box, if it has changed.
+     *
+     * Comparing first so the window is touched only when there is something new to
+     * say: this runs every pass through the loop, and a view being set to the same
+     * text five times a minute is a view being redrawn for nothing.
+     */
+    private void showChord(String reading, boolean fromCache) {
+        String text = reading == null ? "" : reading;
+        if (text.equals(shownChord) && fromCache == shownFromCache) return;
+        // The one that was up becomes the one before it: the pair is what was heard.
+        previousChord = shownChord;
+        shownChord = text;
+        shownFromCache = fromCache;
+        main.post(() -> {
+            if (card != null) card.setChord(text, previousChord, fromCache);
         });
     }
 
@@ -2237,26 +2898,6 @@ import java.util.List;
         }), REMARK_VISIBLE_MILLIS);
     }
 
-    /**
-     * One written-down complaint about being interrupted.
-     *
-     * Its own event type rather than folded into the answer: the answer is about
-     * the music and this is about the app, and a record that stores them as the
-     * same thing cannot learn either one.
-     */
-    private org.json.JSONObject annoyedLine(boolean whileAsking) {
-        org.json.JSONObject line = new org.json.JSONObject();
-        try {
-            line.put("eventType", "QUESTION_ANNOYED");
-            line.put("kind", whileAsking ? "question" : "remark");
-            line.put("state", "USER_CONFIRMED");
-            line.put("createdAt", System.currentTimeMillis());
-            line.put("aiVersion", PauseQuestion.VERSION);
-        } catch (org.json.JSONException ignored) {
-            // A JSONObject is a map; the only way this throws is out of memory.
-        }
-        return line;
-    }
     
 
 /** What the policy needs to know about now, none of it about the music. */

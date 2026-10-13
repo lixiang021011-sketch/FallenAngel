@@ -23,9 +23,24 @@ public final class QuestionTemplate {
     public final List<String> options;
     /** Which signals may bring this question up. */
     public final List<String> triggers;
+    /**
+     * Whether this question has been taken out of the rotation.
+     *
+     * Retired rather than deleted, because its answers are already in the record
+     * and they are only comparable with each other by id. A question that was a
+     * mistake - the first round of "有没有…？" asked about a change the app had
+     * already measured, so the answer was given by the premise - is still worth
+     * keeping as the thing the next wording was measured against.
+     */
+    public final boolean retired;
 
     public QuestionTemplate(String id, String text, String targetSignal, String answerType,
                             List<String> options, List<String> triggers) {
+        this(id, text, targetSignal, answerType, options, triggers, false);
+    }
+
+    public QuestionTemplate(String id, String text, String targetSignal, String answerType,
+                            List<String> options, List<String> triggers, boolean retired) {
         this.id = id == null ? "" : id;
         this.text = text == null ? "" : text;
         this.targetSignal = targetSignal == null ? "" : targetSignal;
@@ -34,6 +49,7 @@ public final class QuestionTemplate {
                 ? Collections.emptyList() : new ArrayList<>(options);
         this.triggers = triggers == null
                 ? Collections.emptyList() : new ArrayList<>(triggers);
+        this.retired = retired;
     }
 
     /** Whether this question may be asked because of that signal. */

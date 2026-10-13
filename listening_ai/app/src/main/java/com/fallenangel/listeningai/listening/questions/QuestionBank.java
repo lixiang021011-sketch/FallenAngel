@@ -30,11 +30,16 @@ public final class QuestionBank {
         return Collections.unmodifiableList(templates);
     }
 
-    /** The questions that answer to a signal, in file order. */
+    /**
+     * The questions that answer to a signal, in file order.
+     *
+     * Retired ones are not among them: they are in the file so their answers stay
+     * comparable by id, not so they get asked again.
+     */
     public List<QuestionTemplate> forTrigger(String trigger) {
         List<QuestionTemplate> out = new ArrayList<>();
         for (QuestionTemplate template : templates) {
-            if (template.answersTo(trigger)) out.add(template);
+            if (!template.retired && template.answersTo(trigger)) out.add(template);
         }
         return out;
     }
@@ -58,7 +63,8 @@ public final class QuestionBank {
                         item.optString("targetSignal"),
                         item.optString("answerType", "single_choice"),
                         strings(item.optJSONArray("options")),
-                        strings(item.optJSONArray("triggers"))));
+                        strings(item.optJSONArray("triggers")),
+                        item.optBoolean("retired", false)));
             }
         }
         return new QuestionBank(parsed);

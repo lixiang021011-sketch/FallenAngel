@@ -13,7 +13,16 @@
     "targetSignal": "attention_shift",
     "answerType": "single_choice",
     "options": ["有", "没有", "说不清"],
-    "triggers": ["NOVELTY_HIGH"]
+    "triggers": ["NOVELTY_HIGH"],
+    "retired": true
+  },
+  {
+    "id": "ATTN_03",
+    "text": "刚才变得更显眼的是谁？",
+    "targetSignal": "attention_shift_whom",
+    "answerType": "single_choice",
+    "options": ["人声", "吉他", "贝斯", "鼓", "键盘", "新进来的乐器", "说不清"],
+    "triggers": ["NOVELTY_HIGH", "INSTRUMENT_CHANGE"]
   },
   {
     "id": "STRUCT_01",
@@ -29,6 +38,15 @@
     "targetSignal": "perceived_structural_change",
     "answerType": "single_choice",
     "options": ["有", "没有", "说不清"],
+    "triggers": ["STRUCTURE_CANDIDATE", "NOVELTY_HIGH"],
+    "retired": true
+  },
+  {
+    "id": "STRUCT_03",
+    "text": "刚才这个转折是哪一种？",
+    "targetSignal": "structural_change_kind",
+    "answerType": "single_choice",
+    "options": ["进入新段落", "同一段里加了东西", "鼓或贝斯换了走向", "整体力度变了", "说不清"],
     "triggers": ["STRUCTURE_CANDIDATE", "NOVELTY_HIGH"]
   },
   {

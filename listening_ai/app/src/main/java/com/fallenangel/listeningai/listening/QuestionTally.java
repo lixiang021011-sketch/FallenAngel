@@ -23,7 +23,7 @@ import java.util.List;
  * "acceptable", it is a number to compare against next week's number.
  */
 public final class QuestionTally {
-    private int asked, answered, ignored, remarks, annoyedAsking, annoyedSaying;
+    private int asked, answered, ignored, remarks;
     private final List<Double> answerSeconds = new ArrayList<>();
 
     /** One question reached the listener. */
@@ -50,22 +50,6 @@ public final class QuestionTally {
         remarks++;
     }
 
-    /**
-     * The listener said that one was too much. Asked for, not inferred.
-     *
-     * Split by what the app was doing at the time, because the interesting
-     * question is not "how much does this annoy them" - it is "does being asked
-     * annoy them more than being talked to, or the other way round", and a single
-     * count cannot say.
-     */
-    public void annoyed(boolean whileAsking) {
-        if (whileAsking) {
-            annoyedAsking++;
-        } else {
-            annoyedSaying++;
-        }
-    }
-
     public int askedCount() {
         return asked;
     }
@@ -80,14 +64,6 @@ public final class QuestionTally {
 
     public int remarkedCount() {
         return remarks;
-    }
-
-    public int annoyedAskingCount() {
-        return annoyedAsking;
-    }
-
-    public int annoyedSayingCount() {
-        return annoyedSaying;
     }
 
     /**
@@ -114,8 +90,6 @@ public final class QuestionTally {
         answered = 0;
         ignored = 0;
         remarks = 0;
-        annoyedAsking = 0;
-        annoyedSaying = 0;
         answerSeconds.clear();
     }
 
@@ -128,14 +102,12 @@ public final class QuestionTally {
                 Integer.toString(answered),
                 Integer.toString(ignored),
                 Integer.toString(remarks),
-                Integer.toString(annoyedAsking),
-                Integer.toString(annoyedSaying),
                 String.format(java.util.Locale.US, "%.1f", medianAnswerSeconds()));
     }
 
     /** The columns, in the order {@link #csvRow} fills them. */
     public static String header() {
-        return "when,song,asked,answered,ignored,remarks,annoyedAsking,annoyedSaying,answerMedianSeconds";
+        return "when,song,asked,answered,ignored,remarks,answerMedianSeconds";
     }
 
     /**

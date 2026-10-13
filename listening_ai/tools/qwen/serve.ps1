@@ -100,9 +100,13 @@ $arguments = @(
     '-c', "$Ctx",
     '-fa', 'on',              # flash attention: the KV cache is the thing that
                               # would not fit beside a 7B model on 8 GB
-    '-n', '250',              # an explanation that needs more than this is not
-                              # the answer we asked for; and the cap is what keeps
-                              # the wait inside what the app will sit through
+    # An explanation that needs more than this is not the answer we asked for, and
+    # the cap is what keeps the wait inside what the app will sit through - but 250
+    # was low enough that a 3B answering at length ran past it, mid-string, and the
+    # app read a truncated answer as no answer (2026-10-13: four candidates, cut off
+    # at 250 tokens, card fell back to the rules). The client now salvages what
+    # arrived; this is the other half of the same fix.
+    '-n', '400',
     '--jinja',                # the model's own chat template
     # Bound to every interface so the phone can reach it, which also means the
     # rest of the network can: the key is what keeps this from being an open

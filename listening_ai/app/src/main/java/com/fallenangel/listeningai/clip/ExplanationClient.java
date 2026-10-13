@@ -65,7 +65,11 @@ public final class ExplanationClient {
                 (java.net.HttpURLConnection) new java.net.URL(url).openConnection();
         try {
             connection.setRequestMethod("POST");
-            connection.setConnectTimeout(10_000);
+            // Short, because a model that is not there is not going to be there in a
+            // moment either: ten seconds of "正在问模型…" per question, and two
+            // questions after one seek, is twenty seconds of a card saying nothing.
+            // The read timeout stays long - generation is slow and that is fine.
+            connection.setConnectTimeout(2_500);
             // The answer has to be waited out: a hosted model answers in a second
             // or two, and a model on the desk has to encode the clip first, so the
             // same question takes twenty. Thirty seconds was chosen when the only
@@ -101,6 +105,19 @@ public final class ExplanationClient {
     public List<PauseQuestion.Candidate> explain(short[] pcm, int offset, int count, int rate,
                                                  String facts)
             throws IOException, org.json.JSONException {
+        return explain(pcm, offset, count, rate, facts, "");
+    }
+
+    /**
+     * The same question, with one more rule for the model to follow.
+     *
+     * The extra text is the closed vocabulary when there is one: the labels it may
+     * use, verbatim. Passed in rather than held here, because the list is an asset
+     * of the app and can be replaced without this class knowing.
+     */
+    public List<PauseQuestion.Candidate> explain(short[] pcm, int offset, int count, int rate,
+                                                 String facts, String extraRule)
+            throws IOException, org.json.JSONException {
         byte[] wav = Wav.of(Wav.resample(pcm, offset, count, rate, 16000), 16000);
         String audio = Base64.getEncoder().encodeToString(wav);
 
@@ -112,7 +129,8 @@ public final class ExplanationClient {
                         .put("data", audio)
                         .put("format", "wav")));
         JSONArray messages = new JSONArray();
-        messages.put(new JSONObject().put("role", "system").put("content", SYSTEM));
+        String system = SYSTEM + (extraRule == null || extraRule.isEmpty() ? "" : extraRule);
+        messages.put(new JSONObject().put("role", "system").put("content", system));
         messages.put(new JSONObject().put("role", "user").put("content", content));
         JSONObject body = new JSONObject()
                 .put("model", model)
@@ -123,7 +141,29 @@ public final class ExplanationClient {
                 java.util.Map.of("Authorization", "Bearer " + apiKey,
                         "Content-Type", "application/json"),
                 new String(body.toString().getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8));
-        List<PauseQuestion.Candidate> out = parse(answer);
+        // Read the words out of the envelope first, so that a cut-off answer is
+        // salvaged as the text the model wrote rather than as the envelope it
+        // arrived in - the envelope is valid JSON and salvaging it would find
+        // nothing, silently turning this back into the failure it exists to fix.
+        String text;
+        try {
+            text = contentOf(answer);
+        } catch (org.json.JSONException notChatShaped) {
+            text = answer;
+        }
+        List<PauseQuestion.Candidate> out;
+        try {
+            out = parseText(text);
+        } catch (org.json.JSONException broken) {
+            // A model that answers at length runs past the server's token ceiling,
+            // and what arrives is valid up to where it stopped. Throwing all of it
+            // away because the last candidate is unfinished turns a usable answer
+            // into no answer - which is exactly what happened on 2026-10-13: four
+            // candidates, cut off mid-string, card fell back to the rules, and from
+            // the listener's side the model looked like it had gone quiet.
+            out = salvage(text);
+            if (out.isEmpty()) throw broken;
+        }
         if (out.isEmpty()) {
             throw new IOException("the answer had no usable candidates");
         }
@@ -140,7 +180,11 @@ public final class ExplanationClient {
      * never allowed to be wrong has to offer a way to say it is.
      */
     static List<PauseQuestion.Candidate> parse(String answer) throws org.json.JSONException {
-        String text = contentOf(answer);
+        return parseText(contentOf(answer));
+    }
+
+    /** The same, for the text the model wrote, with the envelope already off. */
+    static List<PauseQuestion.Candidate> parseText(String text) throws org.json.JSONException {
         JSONObject parsed = new JSONObject(text);
         JSONArray array = parsed.optJSONArray("candidates");
         List<PauseQuestion.Candidate> out = new ArrayList<>();
@@ -171,6 +215,70 @@ public final class ExplanationClient {
     }
 
     /**
+     * The candidates out of an answer that was cut off part way through.
+     *
+     * Reads the array by hand, one object at a time, keeping every object whose
+     * closing brace arrived. The last one is almost always the casualty - a label
+     * with no end, or a quote still open - and it is dropped rather than repaired,
+     * because a repaired candidate would be a candidate the model did not write.
+     */
+    static List<PauseQuestion.Candidate> salvage(String text) {
+        List<PauseQuestion.Candidate> out = new ArrayList<>();
+        if (text == null) return out;
+        int array = text.indexOf('[');
+        if (array < 0) return out;
+        int at = array + 1;
+        while (at < text.length() && out.size() < 4) {
+            int open = text.indexOf('{', at);
+            if (open < 0) break;
+            int close = matchingBrace(text, open);
+            if (close < 0) break;          // this is the one that was cut off
+            try {
+                JSONObject item = new JSONObject(text.substring(open, close + 1));
+                String label = item.optString("label", "").trim();
+                if (!label.isEmpty()) {
+                    out.add(new PauseQuestion.Candidate(
+                            item.optString("id", "m" + out.size()), label,
+                            item.optDouble("confidence", 0.5),
+                            item.optString("evidence", "")));
+                }
+            } catch (org.json.JSONException halfWritten) {
+                // Skip it and keep going: one unusable object is not a reason to
+                // drop the ones around it.
+            }
+            at = close + 1;
+        }
+        return out;
+    }
+
+    /**
+     * Where the brace that closes the one at {@code open} is, or -1 if it never
+     * arrives.
+     *
+     * Strings are tracked, because a label may contain a brace and a quote may be
+     * escaped - and getting that wrong would silently cut a candidate in half.
+     */
+    private static int matchingBrace(String text, int open) {
+        int depth = 0;
+        boolean inString = false;
+        for (int i = open; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (inString) {
+                if (c == '\\') i++;
+                else if (c == '"') inString = false;
+                continue;
+            }
+            if (c == '"') inString = true;
+            else if (c == '{') depth++;
+            else if (c == '}') {
+                depth--;
+                if (depth == 0) return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
      * What a remark is asked for: one sentence, not a set of choices.
      *
      * The ban on "感觉/氛围" and on asking anything is not style advice. A remark
@@ -179,9 +287,11 @@ public final class ExplanationClient {
      * the app talk is that what it says about the music can be read back later.
      */
     private static final String REMARK_SYSTEM =
-            "用一句不超过 12 个字的中文，说出现在这段音乐里正在发生什么。"
-                    + "不要提问，不要给建议，不要用「感觉」「氛围」「情绪」这类词，"
-                    + "只说一件你听到的具体的事，例如「鼓点变密了」「贝斯进来了」。"
+            "用一句不超过 12 个字的中文，说出一件他自己听不出来、或者叫不出名字的事："
+                    + "和刚才那几秒相比这一段里最明显的变化，"
+                    + "或者这里面用到的一个手法，用行话说它，例如 shuffle、切分重音、半音上行、切音。"
+                    + "不要提问，不要给建议，不要复述他自己就听得见的东西（音量、密度、鼓点变快这类），"
+                    + "不要用「感觉」「氛围」「情绪」。"
                     + "直接说那句话，不要引号，不要 JSON，不要解释。";
 
     /**
@@ -214,6 +324,14 @@ public final class ExplanationClient {
                 body.toString());
         String said = tidy(contentOf(answer));
         if (said.isEmpty()) throw new IOException("the remark came back empty");
+        // A remark that asks something is a question with worse manners: it
+        // arrives without the card, the choices or the music being held, so the
+        // listener is asked something they cannot answer properly and the app
+        // never learns what they said. Refused here rather than tolerated, so the
+        // caller falls back to the local reading, which at least does not ask.
+        if (said.endsWith("？") || said.endsWith("?")) {
+            throw new IOException("a remark came back as a question: " + said);
+        }
         return said;
     }
 
@@ -245,6 +363,8 @@ public final class ExplanationClient {
                     + "要求："
                     + "每个解释都要短（不超过 12 个字），是音乐上的具体事情，"
                     + "不要笼统地说「变化」「感觉」；"
+                    + "只给 3 条，不要更多；"
+                    + "evidence 不超过 12 个字；"
                     + "必须能被这段音频支持，不要编造本地事实里没有提到的乐器或事件；"
                     + "confidence 是 0 到 1 的把握，不要都写同一个数；"
                     + "只输出 JSON，形如 "

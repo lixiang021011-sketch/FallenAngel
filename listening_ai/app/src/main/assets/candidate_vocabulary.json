@@ -1,0 +1,31 @@
+{
+  "_comment": "What a candidate explanation is allowed to say. The same idea as question_bank.json, applied to the other half of the exchange: a question is stable by id, and an answer is only countable if the words it can be given are a fixed set. Measured 2026-10-13: given this list the model answered '鼓点变密' and stayed inside it; given no list it echoed the facts it was sent, and once answered the same fact three times in three phrasings. Anything outside the list cannot be said, which is the price - 其他 and 都不是 are here so that it can still say so.",
+  "version": "vocabulary-v1",
+  "labels": [
+    "底鼓变化",
+    "军鼓加入",
+    "鼓点加密",
+    "鼓点变稀",
+    "填充过门",
+    "贝斯进入",
+    "贝斯退出",
+    "贝斯切分",
+    "低音提前进入",
+    "吉他和弦变化",
+    "吉他音色变化",
+    "吉他进入",
+    "人声进入",
+    "人声退出",
+    "和声变化",
+    "旋律上行",
+    "旋律下行",
+    "力度变大",
+    "力度变小",
+    "编排加密",
+    "编排变疏",
+    "段落转折",
+    "突然停顿",
+    "新乐器加入",
+    "其他"
+  ]
+}

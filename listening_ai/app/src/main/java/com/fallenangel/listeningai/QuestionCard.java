@@ -62,13 +62,24 @@ public final class QuestionCard extends LinearLayout {
     private final LinearLayout pill;
     private final TextView pillSong;
     private final TextView pillStatus;
+    /**
+     * The chord, in its own small box.
+     *
+     * It started inside the remarks, which is the wrong home for it: a remark is
+     * an event - something the app noticed and said once - and a chord is a state
+     * that is true the whole time it is playing. In a remark it could only ever be
+     * stale, or absent, or read as something that had just happened.
+     */
+    private final LinearLayout chordHolder;
+    private final TextView pillChord;
+    private final TextView pillChordPrev;
+    private final TextView pillChordSource;
     private final Button pillTap;
     private final LinearLayout body;
     private final TextView title;
     private final LinearLayout choices;
     private PauseQuestion question;
     private Runnable onOpen;
-    private Runnable onAnnoyed;
     private String lastSaid = "";
     private DragListener dragListener;
     private final int touchSlop;
@@ -117,6 +128,49 @@ public final class QuestionCard extends LinearLayout {
         pillStatus.setText("在听");
         pillStatus.setSingleLine(true);
         pillInfo.addView(pillStatus);
+
+        // Two lines in the one box: what it is now, and what it was before. A
+        // listener reading a chord wants the movement, not the state - "Ⅳ after Ⅰ"
+        // is the thing that was heard, and a single line makes them remember what
+        // the last one was.
+        chordHolder = new LinearLayout(context);
+        chordHolder.setOrientation(VERTICAL);
+        chordHolder.setPadding(dp(7), dp(3), dp(7), dp(3));
+        GradientDrawable box = new GradientDrawable();
+        box.setColor(0x33FFFFFF);
+        box.setCornerRadius(dp(6));
+        box.setStroke(dp(1), 0x66FFFFFF);
+        chordHolder.setBackground(box);
+        chordHolder.setVisibility(GONE);
+
+        pillChord = new TextView(context);
+        pillChord.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        pillChord.setTextColor(0xFFE8ECF6);
+        pillChord.setSingleLine(true);
+        chordHolder.addView(pillChord);
+
+        pillChordPrev = new TextView(context);
+        pillChordPrev.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
+        pillChordPrev.setTextColor(0xFF8C94A6);
+        pillChordPrev.setSingleLine(true);
+        pillChordPrev.setVisibility(GONE);
+        chordHolder.addView(pillChordPrev);
+
+        // Its own line, and short. Appended to the chord it was clipped away: the
+        // line is already as wide as the window, and a single-line view does not
+        // wrap what does not fit - it just ends. Measured 2026-10-13: the cache was
+        // being used and the word for it was not on screen.
+        pillChordSource = new TextView(context);
+        pillChordSource.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+        pillChordSource.setTextColor(0xFF7EE0A8);
+        pillChordSource.setSingleLine(true);
+        pillChordSource.setVisibility(GONE);
+        chordHolder.addView(pillChordSource);
+
+        LinearLayout.LayoutParams chordParams = new LinearLayout.LayoutParams(
+                LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+        chordParams.topMargin = dp(4);
+        pillInfo.addView(chordHolder, chordParams);
 
         // The widths are capped on the lines rather than the block: the block
         // wraps its contents, and a title longer than the cap is cut instead of
@@ -175,6 +229,28 @@ public final class QuestionCard extends LinearLayout {
         String name = song == null ? "" : song.trim();
         pillSong.setText(name);
         pillSong.setVisibility(name.isEmpty() ? GONE : VISIBLE);
+    }
+
+    /**
+     * What the harmony is right now, or "" when the app cannot say.
+     *
+     * Called as often as the reading changes; the box is hidden rather than shown
+     * empty, because an empty box on a floating window reads as a broken one.
+     */
+    public void setChord(String reading, String before, boolean fromCache) {
+        String now = reading == null ? "" : reading.trim();
+        String previous = before == null ? "" : before.trim();
+        // Whether this is a known song being replayed or the app working it out now
+        // is not a detail a listener should have to open logcat to find: the two look
+        // identical on screen and mean very different things about what they are
+        // hearing.
+        pillChord.setText(now);
+        pillChordSource.setText(now.isEmpty() || !fromCache ? "" : "缓存");
+        pillChordSource.setVisibility(now.isEmpty() || !fromCache ? GONE : VISIBLE);
+        boolean hasPrevious = !previous.isEmpty() && !previous.equals(now);
+        pillChordPrev.setText(hasPrevious ? "← " + previous : "");
+        pillChordPrev.setVisibility(hasPrevious ? VISIBLE : GONE);
+        chordHolder.setVisibility(now.isEmpty() ? GONE : VISIBLE);
     }
 
     /** What a tap on the resting button does. */
@@ -341,7 +417,6 @@ public final class QuestionCard extends LinearLayout {
                 if (listener != null) listener.onAnswer(candidate);
             }), new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
         }
-        addAnnoyed();
         expand();
     }
 
@@ -362,43 +437,7 @@ public final class QuestionCard extends LinearLayout {
         choices.addView(choice(dismiss, () -> {
             if (listener != null) listener.onAnswer(null);
         }), new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
-        addAnnoyed();
         expand();
-    }
-
-    /**
-     * Called when the listener says this question was one too many.
-     *
-     * Set once by whoever owns the card: the complaint is the same every time,
-     * and which question it attaches to is whichever one is on screen - the card
-     * knows that, and the listener should not have to say it.
-     */
-    public void setOnAnnoyed(Runnable action) {
-        onAnnoyed = action;
-    }
-
-    /**
-     * "This was too much", beside the answers rather than among them.
-     *
-     * It must not read as an answer, so it sits apart, it does not dismiss the
-     * question, and it confirms itself by changing its own text. The one thing
-     * that would make it useless is asking the listener to explain: during music
-     * the answer has to be one tap, or it is nothing.
-     */
-    private void addAnnoyed() {
-        if (onAnnoyed == null) return;
-        Button mark = choice("这次有点烦", null);
-        mark.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
-        mark.setOnClickListener(v -> {
-            onAnnoyed.run();
-            mark.setText("已记下");
-            mark.setEnabled(false);
-        });
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-        params.topMargin = dp(10);
-        params.gravity = Gravity.END;
-        choices.addView(mark, params);
     }
 
     /**

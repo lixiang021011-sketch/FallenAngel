@@ -82,6 +82,63 @@ public class ExplanationClientTest {
     }
 
     @Test
+    public void anAnswerCutOffByTheTokenLimitStillYieldsTheCandidatesItFinished() {
+        // Copied from this app's own logcat: the model ran past the server's token
+        // ceiling mid-string. Before this, a usable answer and no answer looked
+        // identical from the listener's side - the card fell back to the rules and
+        // nothing said why.
+        String truncated = "{\"candidates\":["
+                + "{\"id\":\"c1\",\"label\":\"鼓型变化\",\"confidence\":0.35,\"evidence\":\"电子\"},"
+                + "{\"id\":\"c2\",\"label\":\"小节 5 第 4 拍的鼓型\",\"confidence\":0.3,\"evidence\":\"电子\"},"
+                + "{\"id\":\"c3\",\"label\":\"鼓型相似度变化\",\"confidence\":0.3,\"evidence\":\"电子\"},"
+                + "{\"id\":\"c4\",\"label\":\"小节 5 的鼓型\",\"confidence\":0.3,\"evidence\":\"电子\"},"
+                + "{\"id\":\"c5\",\"label\":\"鼓型发生变化（电";
+
+        java.util.List<com.fallenangel.listeningai.listening.PauseQuestion.Candidate> out =
+                ExplanationClient.salvage(truncated);
+
+        assertEquals(4, out.size());
+        assertEquals("鼓型变化", out.get(0).label);
+        assertEquals("小节 5 的鼓型", out.get(3).label);
+        assertEquals(0.35, out.get(0).confidence, 1e-9);
+    }
+
+    @Test
+    public void aTruncatedAnswerIsUsedRatherThanThrownAway() throws Exception {
+        String truncated = "{\"candidates\":["
+                + "{\"id\":\"c1\",\"label\":\"底鼓提前\",\"confidence\":0.6,\"evidence\":\"拍前\"},"
+                + "{\"id\":\"c2\",\"label\":\"贝斯进";
+        Fake fake = new Fake(chat(truncated));
+        ExplanationClient client = new ExplanationClient("u", "k", null, fake);
+
+        java.util.List<com.fallenangel.listeningai.listening.PauseQuestion.Candidate> out =
+                client.explain(clip(), 0, clip().length, RATE, "facts");
+
+        // The one complete candidate, plus "都不是" which is always appended.
+        assertEquals(2, out.size());
+        assertEquals("底鼓提前", out.get(0).label);
+    }
+
+    @Test
+    public void nothingUsefulInTheAnswerIsStillAFailure() {
+        assertTrue(ExplanationClient.salvage("{\"candidates\":[{\"id\":\"c1\",\"lab").isEmpty());
+        assertTrue(ExplanationClient.salvage("the model said no").isEmpty());
+    }
+
+    @Test
+    public void aRemarkThatAsksAQuestionIsNotARemark() throws Exception {
+        Fake fake = new Fake(chat("这里是换段了吗？"));
+        ExplanationClient client = new ExplanationClient("u", "k", null, fake);
+        try {
+            client.remark(clip(), 0, clip().length, RATE);
+            org.junit.Assert.fail("a question is not a remark - it is a question with "
+                    + "worse manners, and the caller must be able to fall back");
+        } catch (Exception expected) {
+            // The app says what the local reading says instead, or says nothing.
+        }
+    }
+
+    @Test
     public void anEmptyRemarkIsAFailureNotAnEmptyLine() throws Exception {
         Fake fake = new Fake(chat("   "));
         ExplanationClient client = new ExplanationClient("u", "k", null, fake);
