@@ -29,8 +29,7 @@ import java.util.Locale;
  *   neither              只有 bpm 和 audioTime 的条目（human_snapped 的 tap、只有
  *                        sixteenthLock 的 workbench）：那是锚点，不是网格，不用。
  *
- * And the readings disagree about what `audioTime` is, so it is checked rather than
- * believed:
+ * And `audioTime` is checked rather than believed:
  *
  *   audioTime = 该读法第一条网格线的音频秒（网格原点）
  *
@@ -39,9 +38,15 @@ import java.util.Locale;
  * BeatThis 158, madmom 220, workbench 47, mapperatorinator-filled/erased 54), and
  * the one reading that breaks it is mapperatorinator, where audioTime ==
  * validRanges[0].start instead (156 of 156) while its `beats` start somewhere else
- * entirely. So a list whose first element is not its audioTime is a list in another
- * coordinate system, and it is refused rather than used: mapperatorinator's `beats`
- * is refused every time, its `barLines` (which are its measures) is what may be used.
+ * entirely.
+ *
+ * A reading may write both lists, and `audioTime` can only be the first line of one
+ * of them - so which one it is the first line *of* is what says which list that entry
+ * is written in. Anchored to the beats, the beats are the grid and the bar lines only
+ * place the bar. Anchored to the bar lines, they are the grid and the beats are a
+ * division of the bar. Anchored to neither, the entry is in a coordinate of its own
+ * and is refused: mapperatorinator's `beats` is refused every time, its `barLines`
+ * (which are its measures) is what may be used.
  *
  * What else is read, and what is deliberately not:
  *
@@ -372,25 +377,47 @@ public final class WorkbenchGrid {
                     bars = times(item, "barLines");
                     barField = "barLines";
                 }
+                // Which list this entry is written in: the one whose first line is where
+                // the reading says its origin is. A reading may carry both, and only one
+                // of them can be anchored - the other is then either the bar placement
+                // (when the beats are anchored) or a division of the bar (when the bar
+                // lines are).
+                double anchor = item.optDouble("audioTime", Double.NaN);
                 double[] line;
                 String shapeHere;
                 int offset = 0;
-                if (beatTimes != null) {
+                boolean listIsBarLines = false;
+                if (beatTimes != null && anchored(beatTimes, anchor)) {
                     line = beatTimes;
                     shapeHere = bars != null ? "beats+" + barField : "beats";
                     if (bars != null) offset = barOffsetIn(beatTimes, bars);
-                } else if (bars != null) {
+                } else if (bars != null && anchored(bars, anchor)) {
                     // Bar lines alone: the beats between them are a division of the bar,
                     // and nothing past the last line is invented.
                     line = expandBars(bars, perBar);
                     shapeHere = barField;
-                } else {
+                    listIsBarLines = true;
+                    if (beatTimes != null) {
+                        // Said out loud, because it is the kind of thing that looks like a
+                        // bug later: this entry's beats start somewhere other than the
+                        // first bar line, and they are not being used.
+                        notes.add(reading + " 的 audioTime " + format(bars[0])
+                                + " 是第一根" + barField + "，beats 从 " + format(beatTimes[0])
+                                + " 开始 → 按" + barField + "铺拍点");
+                    }
+                } else if (beatTimes == null && bars == null) {
                     notes.add(reading + " 里没有拍点也没有小节线（只有 bpm/audioTime 那种锚点），"
                             + "当不了网格");
                     continue;
+                } else {
+                    notes.add(reading + " 的列表与 audioTime " + format(anchor)
+                            + " 不是一个坐标（beats "
+                            + (beatTimes == null ? "无" : format(beatTimes[0])) + "，"
+                            + barField + " " + (bars == null ? "无" : format(bars[0])) + "），不用");
+                    continue;
                 }
 
-                String problem = check(line, item, duration, perBar, beatTimes == null);
+                String problem = check(line, item, duration, perBar, listIsBarLines);
                 if (problem != null) {
                     notes.add(reading + " 的 " + shapeHere + " 不能用：" + problem);
                     continue;
@@ -485,20 +512,12 @@ public final class WorkbenchGrid {
     /**
      * Whether a list of times may be believed, and if not, why not.
      *
-     * The anchor is the rule the Workbench's own files agree on: `audioTime` is the
-     * first line of that reading. A list that starts somewhere else is a list in
-     * another coordinate (mapperatorinator's `beats` does this every time), and using
-     * it would put every bar in the wrong place while looking confident.
+     * The anchor has already done its work by here - it is what decided which list the
+     * entry is written in. What is left is whether the times themselves hang together.
      */
     private static String check(double[] times, JSONObject item, double duration, int perBar,
                                 boolean theListIsBarLines) {
         if (times.length == 0) return "空的";
-        double anchor = item.optDouble("audioTime", Double.NaN);
-        if (!Double.isNaN(anchor) && Math.abs(times[0] - anchor) > ANCHOR_TOLERANCE_SECONDS) {
-            return String.format(Locale.US,
-                    "首元素 %.3f 与 audioTime %.3f 不是一个坐标（差 %.3f 秒）",
-                    times[0], anchor, times[0] - anchor);
-        }
         if (times[0] < -0.001) return String.format(Locale.US, "首元素为负（%.3f）", times[0]);
         double previous = times[0];
         for (int i = 1; i < times.length; i++) {
@@ -558,6 +577,20 @@ public final class WorkbenchGrid {
         if (own.isEmpty()) return "";
         if (own.equals(songAudio)) return "mix";
         return own;
+    }
+
+    /**
+     * Whether a list's first element is where the reading says its origin is.
+     *
+     * With no `audioTime` there is nothing to check, and a list is better than nothing.
+     */
+    private static boolean anchored(double[] times, double anchor) {
+        return times.length > 0
+                && (Double.isNaN(anchor) || Math.abs(times[0] - anchor) <= ANCHOR_TOLERANCE_SECONDS);
+    }
+
+    private static String format(double seconds) {
+        return Double.isNaN(seconds) ? "没写" : String.format(Locale.US, "%.3f", seconds);
     }
 
     /** ".../drums.wav" -> "drums". */

@@ -144,6 +144,48 @@ public class WorkbenchGridTest {
     }
 
     @Test
+    public void whenAudioTimeIsTheFirstBarLineTheBarLinesAreTheGrid() throws Exception {
+        // Which list an entry is written in is decided by which one `audioTime` is the
+        // first line of. The Workbench hard-checks audioTime == downbeats[0]; BeatThis
+        // writes audioTime == beats[0] in every file measured so far. Both are the same
+        // song, so both are accepted, and the notes say which one was used.
+        JSONObject beatThis = new JSONObject()
+                .put("calibrationId", "BeatThis")
+                .put("reading", "BeatThis")
+                .put("bpm", 191.994)
+                .put("audioTime", 21.28)
+                .put("beatsPerBar", 4)
+                .put("health", "ok")
+                .put("beats", numbers(20.64, 20.96, 21.28, 21.6, 21.92, 22.24))
+                .put("downbeats", numbers(21.28, 23.78));
+        List<String> journal = new ArrayList<>();
+        WorkbenchGrid grid = WorkbenchGrid.from(file("打上花火", -1, beatThis), journal);
+        assertNotNull(grid);
+        assertEquals("BeatThis", grid.reading);
+        assertEquals("downbeats", grid.shape);
+        assertEquals(21.28, grid.firstBeat(), 1e-9);
+        assertEquals(5, grid.beatCount());
+        assertEquals(0, grid.barAt(21.3));
+        assertTrue(journal.toString(), journal.toString().contains("按downbeats铺拍点"));
+    }
+
+    @Test
+    public void aReadingWhoseListsAreBothInAnotherCoordinateIsRefused() throws Exception {
+        JSONObject odd = new JSONObject()
+                .put("calibrationId", "BeatThis")
+                .put("reading", "BeatThis")
+                .put("bpm", 120)
+                .put("audioTime", 99.0)
+                .put("beatsPerBar", 4)
+                .put("health", "ok")
+                .put("beats", numbers(1.0, 1.5, 2.0))
+                .put("downbeats", numbers(1.0, 3.0));
+        List<String> journal = new ArrayList<>();
+        assertNull(WorkbenchGrid.from(file("打上花火", -1, odd), journal));
+        assertTrue(journal.toString(), journal.toString().contains("不是一个坐标"));
+    }
+
+    @Test
     public void aReadingInAnotherCoordinateIsRefusedWithItsReason() throws Exception {
         // mapperatorinator: audioTime is the start of its valid range and its beats
         // start 1.657 s earlier (打上花火: 27.895 against 26.238), so its beats are in a
