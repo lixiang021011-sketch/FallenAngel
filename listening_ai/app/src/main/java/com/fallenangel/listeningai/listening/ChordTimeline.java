@@ -37,6 +37,19 @@ public final class ChordTimeline {
      */
     public static final double LOOK_AHEAD_SECONDS = 1.2;
 
+    /**
+     * How long one reading stands for.
+     *
+     * A reading taken at 30s says what the chord was at 30s, not what it is at 45s.
+     * Records have holes - a window too noisy to read, a stretch where the harmony
+     * could not be named, a listen that was cut off - and filling a hole by holding
+     * the last reading is how the box came to sit on one chord while the music moved:
+     * measured 2026-10-14, 雲と幽霊 26.3s-78.7s, every line written `from=cache` and
+     * `unreadable`, the box showing "D 调 Ⅰ 级" for fifty-two seconds. Past this the
+     * timeline says nothing, and a caller that must say something measures instead.
+     */
+    public static final double MAX_HOLD_SECONDS = 3.0;
+
     private final double[] times;
     private final String[] readings;
 
@@ -71,22 +84,30 @@ public final class ChordTimeline {
      * cache at all.
      */
     public boolean covers(double seconds) {
-        if (times.length == 0) return false;
-        return seconds + LOOK_AHEAD_SECONDS <= times[times.length - 1];
+        return indexAt(seconds + LOOK_AHEAD_SECONDS) >= 0;
     }
 
     /** The chord the app would have shown at this point of the song. */
     public String at(double seconds) {
-        if (times.length == 0) return "";
-        double wanted = seconds + LOOK_AHEAD_SECONDS;
-        if (wanted < times[0]) return readings[0];
+        int found = indexAt(seconds + LOOK_AHEAD_SECONDS);
+        return found < 0 ? "" : readings[found];
+    }
+
+    /**
+     * The reading that still stands at this point, or -1 when none does.
+     *
+     * Nothing before the first reading (it describes its own moment, not the one
+     * before it) and nothing after the last one by more than the look-ahead.
+     */
+    private int indexAt(double wanted) {
+        if (times.length == 0 || wanted < times[0]) return -1;
         // The readings arrive in order; a scan is enough for a few hundred of them.
         int found = 0;
         for (int i = 0; i < times.length; i++) {
             if (times[i] <= wanted) found = i;
             else break;
         }
-        return readings[found];
+        return wanted - times[found] <= MAX_HOLD_SECONDS ? found : -1;
     }
 
     /**

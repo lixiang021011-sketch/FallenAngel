@@ -176,9 +176,21 @@ public final class WorkbenchGrid {
      * Static because the file has to be judged before it is known to hold a usable
      * grid: a file that is about this song and has nothing usable in it is worth a
      * line saying why, and one about another song is worth silence.
+     *
+     * Two shapes of title have to work. The older files write "ACIDMAN - 赤橙
+     * (Remastered 2019)" and the words are the identity. The v5 export writes the title
+     * alone with the artist in a field of its own - "Monster", "打上花火" - and a
+     * one-word title in a label is a substring, not a word count: measured 2026-10-14,
+     * the word rule rejected every one of the four samples, which would have read to the
+     * listener as "no file for this song".
      */
     public static boolean sameSong(String fileTitle, String appLabel) {
-        return words(normalise(fileTitle)).size() >= 2 && overlap(fileTitle, appLabel) >= 0.8;
+        String mine = normalise(fileTitle);
+        java.util.Set<String> words = words(mine);
+        if (words.size() >= 2) return overlap(fileTitle, appLabel) >= 0.8;
+        // One word, so it has to be in the label - and long enough to stand for a song
+        // rather than a syllable that turns up anywhere.
+        return mine.length() >= 3 && appLabel != null && normalise(appLabel).contains(mine);
     }
 
     /** The title inside a file, without reading the rest of it. */
@@ -294,6 +306,13 @@ public final class WorkbenchGrid {
         int position = positionAt(seconds);
         if (position < 0 || beatsPerBar <= 0 || position < barOffset) return -1;
         return (position - barOffset) / beatsPerBar;
+    }
+
+    /** When that bar began, which is what says how late a flash for it was. */
+    public double barLineSeconds(long bar) {
+        if (bar < 0 || beatsPerBar <= 0) return 0;
+        long index = bar * beatsPerBar + barOffset;
+        return beat((int) Math.max(0, Math.min(beats.length - 1, index)));
     }
 
     /** Where this point falls in the bar, 0-based, or -1 when the grid does not know. */
@@ -430,8 +449,15 @@ public final class WorkbenchGrid {
                 }
                 int perBar = item.optInt("beatsPerBar", 0);
                 if (perBar < 1 || perBar > 12) {
-                    notes.add(reading + " beatsPerBar=" + perBar + "，这一条不用");
-                    continue;
+                    // No meter in the file (the v5 export stopped writing it). Four is
+                    // what every file measured so far uses, and the bar lines themselves
+                    // come from the file, so only the division *inside* a bar is a guess -
+                    // which is why it is marked rather than assumed quietly. A 3/4 song
+                    // read this way has its bars right and its beats four to a bar.
+                    perBar = 4;
+                    caution = true;
+                    notes.add(reading + " 没写 beatsPerBar，按 4/4 用"
+                            + "（小节线仍是文件给的，小节里怎么分是猜的）");
                 }
 
                 double[] beatTimes = times(item, "beats");
@@ -635,11 +661,14 @@ public final class WorkbenchGrid {
 
     /** The validator's own words for why a reading is not clean. */
     private static String reasons(JSONObject item) {
-        // A list of lines in the newer files, one line in some of the older ones.
-        String single = item.optString("suspectReasons", "");
-        if (!single.isEmpty()) return single;
+        // A list of lines in the newer files, a single line in some of the older ones.
+        // The array is looked at first: `optString` would answer with its JSON text.
         JSONArray list = item.optJSONArray("suspectReasons");
-        if (list == null || list.length() == 0) return "没写原因";
+        if (list == null) {
+            String single = item.optString("suspectReasons", "");
+            return single.isEmpty() ? "没写原因" : single;
+        }
+        if (list.length() == 0) return "没写原因";
         StringBuilder out = new StringBuilder();
         for (int i = 0; i < list.length(); i++) {
             if (out.length() > 0) out.append("；");

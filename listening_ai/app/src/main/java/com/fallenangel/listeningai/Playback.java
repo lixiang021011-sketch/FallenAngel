@@ -31,8 +31,30 @@ public final class Playback {
      * each fresh report so a stale one is never trusted twice.
      */
     static volatile double positionSeconds = -1;
+    /** When that position was written, on the same clock as SystemClock.elapsedRealtime. */
+    static volatile long positionAtRealtime;
     static volatile long positionGeneration;
     static volatile double durationSeconds = -1;
+
+    /**
+     * Where the song is now, with the player's own reports filled in between.
+     *
+     * A player publishes a position when it feels like it, and between those reports
+     * the raw number stands still: measured 2026-10-14, that is a staircase about a
+     * second wide. Anything that has to land on a beat - the bar flash above all -
+     * reads this instead, which walks with the clock in between and snaps back to the
+     * player the moment it says something again.
+     */
+    static double positionNow() {
+        double at = positionSeconds;
+        if (at < 0) return at;
+        if (!playing || positionAtRealtime == 0) return at;
+        double since = (android.os.SystemClock.elapsedRealtime() - positionAtRealtime) / 1000.0;
+        // A player that has said nothing for two seconds has stopped talking, and
+        // walking on without it would be inventing a playhead rather than following one.
+        if (since <= 0) return at;
+        return at + Math.min(since, 2.0);
+    }
 
     private Playback() {}
 }

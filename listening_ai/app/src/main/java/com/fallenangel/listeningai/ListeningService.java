@@ -249,8 +249,8 @@ import java.util.List;
      */
     private ChordTimeline timeline;
     private boolean lookedForTimeline;
-    /** Whether the earlier listen has been found to stop before the song does. */
-    private boolean timelineRanOut;
+    /** Whether the moment being listened to was last answered from the earlier listen. */
+    private boolean cacheWasOn;
     /** When the last seek happened, so a pause caused by one is not read as attention. */
     private long lastSeekMillis;
     private static final long SEEK_QUIET_MILLIS = 2_500;
@@ -312,6 +312,8 @@ import java.util.List;
         gridFromFile = true;
         gridSource = imported.reading;
         importedGrid = imported;
+        fileFlashes = 0;
+        lastFlashedBar = Long.MIN_VALUE;
         if (song != null) {
             song.event(gridSourceLine(imported), imported.firstBeat());
             song.say("记", "网格来自 " + imported.reading
@@ -962,24 +964,29 @@ import java.util.List;
                 String harmonyNow;
                 boolean fromCache = false;
                 double atNow = whereInSong(grid);
-                if (timeline != null && timeline.useful() && Playback.available
-                        && timeline.covers(atNow)) {
+                boolean cacheHere = timeline != null && timeline.useful() && Playback.available
+                        && timeline.covers(atNow);
+                if (cacheHere) {
                     harmonyNow = timeline.at(atNow);
                     fromCache = true;
-                } else if (timeline != null && timeline.useful() && Playback.available
-                        && timelineRanOut == false) {
-                    // The earlier listen stops here - it was cut short. Past this
-                    // point the app goes back to measuring, and says so, because a
-                    // cache that quietly ends is indistinguishable from a reader that
-                    // has stopped working.
-                    timelineRanOut = true;
-                    Log.i(TAG, "the earlier listen stops at " + (int) atNow
-                            + "s; measuring from here");
-                    heardNow = harmonyNow(recent);
-                    harmonyNow = heardNow == null ? "" : Harmony.sentence(heardNow, songKey);
                 } else {
                     heardNow = harmonyNow(recent);
                     harmonyNow = heardNow == null ? "" : Harmony.sentence(heardNow, songKey);
+                }
+                // Where the earlier listen runs out - at the end of a song that was cut
+                // short, or in a hole in the middle of one - is asked again every moment
+                // rather than remembered as an ending: measured 2026-10-14, a cache with
+                // a gap in it was held over the gap, and the box sat on one chord for
+                // fifty-two seconds while the music went on ("有字，但不跟着音乐变").
+                // Both directions are said out loud, because a cache that quietly stops
+                // and one that quietly starts again look the same from the box.
+                if (timeline != null && timeline.useful() && Playback.available
+                        && cacheHere != cacheWasOn) {
+                    cacheWasOn = cacheHere;
+                    Log.i(TAG, cacheHere
+                            ? "the earlier listen covers " + (int) atNow + "s; reading it back"
+                            : "nothing in the earlier listen at " + (int) atNow
+                                    + "s; measuring until it does");
                 }
                 // Shown whether or not anything is being said: a chord is a state,
                 // and the box is where a state belongs. The remark below is an
@@ -2110,10 +2117,22 @@ import java.util.List;
             // line is not always its first beat (BeatThis on 打上花火 reports its first
             // bar line 0.64s after its first beat), and dividing by the meter would then
             // flash for the whole song one beat out.
-            long bar = importedGrid.barAt(whereInSong(beat));
+            double where = whereInSong(beat);
+            long bar = importedGrid.barAt(where);
             if (bar < 0) return false;
             if (bar == lastFlashedBar) return false;
             lastFlashedBar = bar;
+            // How late the flash for this bar line is, and what the capture's own clock
+            // made of the same moment: "the flash is off" is either the file's bar line
+            // or the playhead, and only the two together say which.
+            if (fileFlashes < 8) {
+                fileFlashes++;
+                Log.i(TAG, String.format(java.util.Locale.US,
+                        "flash(file) %d bar=%d line=%.3f where=%.3f late=%.0fms audioClock=%.3f",
+                        fileFlashes, bar, importedGrid.barLineSeconds(bar), where,
+                        (where - importedGrid.barLineSeconds(bar)) * 1000.0,
+                        beat == null ? -1 : Math.max(0, beat.audioTime() - songStartAudioTime)));
+            }
             main.post(() -> {
                 if (card != null) card.flash();
             }
@@ -2178,6 +2197,8 @@ import java.util.List;
 
 /** The last bar a flash was made for, so each bar flashes once. */
     private long lastFlashedBar = Long.MIN_VALUE;
+    /** How many flashes off a file's bar lines have been logged since the file took over. */
+    private int fileFlashes;
     
 
 /** How many flashes have been logged since the last anchor. */
@@ -2537,7 +2558,9 @@ import java.util.List;
   * counted from the moment this song started. Everything written down uses
   * this, so "以歌曲为基准" holds even on a phone where the session is not.  */
     private double whereInSong(BeatDetector grid) {
-        double reported = Playback.positionSeconds;
+        // Not the raw report: between reports the player's number stands still, and a
+        // bar flash that reads a standing number lands late and in jumps.
+        double reported = Playback.positionNow();
         if (Playback.available && reported >= 0) return reported;
         if (grid == null) return atSeconds;
         return Math.max(0, grid.audioTime() - songStartAudioTime);
@@ -2576,7 +2599,7 @@ import java.util.List;
         // A new song: whatever was known about the last one says nothing here.
         timeline = null;
         lookedForTimeline = false;
-        timelineRanOut = false;
+        cacheWasOn = false;
         // And the grids it locked, written now that the song is finished: only
         // this song's presses belong in this song's document.
         writeTheExport(song, true);

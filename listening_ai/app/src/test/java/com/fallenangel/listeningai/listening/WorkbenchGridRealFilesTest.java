@@ -194,8 +194,10 @@ public class WorkbenchGridRealFilesTest {
 
         int nowBeatThis = 0;
         int wouldUseWorkbench = 0;
+        int looked = 0;
         for (File file : files) {
             if (!file.isFile() || !file.getName().endsWith(".mgmcs.json")) continue;
+            looked++;
             String text = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
             WorkbenchGrid now = WorkbenchGrid.from(new JSONObject(text), new ArrayList<String>());
             if (now == null || !"BeatThis".equals(now.reading)) continue;
@@ -213,6 +215,6 @@ public class WorkbenchGridRealFilesTest {
         }
         System.out.println("现在用 BeatThis 的 " + nowBeatThis + " 首里，"
                 + wouldUseWorkbench + " 首会改用 workbench（若 suspect 的 workbench 也算可用）");
-        assertTrue(nowBeatThis > 0);
+        assertTrue("一个文件都没看：" + docs, looked > 0);
     }
 }

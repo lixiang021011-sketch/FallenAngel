@@ -315,7 +315,17 @@ public class MediaWatcher extends NotificationListenerService {
         double position = state.getPosition() / 1000.0;
         long now = SystemClock.elapsedRealtime();
         if (position >= 0) {
+            // The position in a PlaybackState is a snapshot taken at its own update time,
+            // not at the moment it is read. Filling in the difference is the documented
+            // way to read it, and without it every reading is behind by however long the
+            // player has been playing since it last spoke - which is exactly the error
+            // the bar flash used to sit on.
+            if (playing) {
+                long updated = state.getLastPositionUpdateTime();
+                if (updated > 0 && now > updated) position += (now - updated) / 1000.0;
+            }
             Playback.positionSeconds = position;
+            Playback.positionAtRealtime = now;
             Playback.positionGeneration++;
         }
         if (expectedAtMs != 0 && position >= 0) {

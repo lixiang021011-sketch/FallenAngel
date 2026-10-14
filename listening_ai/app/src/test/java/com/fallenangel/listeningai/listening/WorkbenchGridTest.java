@@ -534,6 +534,19 @@ public class WorkbenchGridTest {
     }
 
     @Test
+    public void aBareTitleStillFindsItsSong() throws Exception {
+        // The v5 export writes the title alone and the artist in its own field, while the
+        // player's label still carries the artist: the word rule rejected all four
+        // samples, which on the phone would have looked like "this song has no file".
+        assertTrue(WorkbenchGrid.sameSong("Monster", "YOASOBI - Monster"));
+        assertTrue(WorkbenchGrid.sameSong("打上花火", "Daoko × 米津玄師 - 打上花火"));
+        assertTrue(WorkbenchGrid.sameSong("消えちゃう前に", "Cö shu Nie - 消えちゃう前に"));
+        assertTrue(WorkbenchGrid.sameSong("雲と幽霊", "ヨルシカ - 雲と幽霊 (云与幽灵)"));
+        assertFalse(WorkbenchGrid.sameSong("Monster", "YOASOBI - 怪物"));
+        assertFalse("太短的名字不算身份", WorkbenchGrid.sameSong("月", "说说Crystal - 月"));
+    }
+
+    @Test
     public void matchingIsByTitleAndForbearingAboutPunctuation() throws Exception {
         // The real pair, from the two systems' own files: the Workbench writes
         // "ACIDMAN - 赤橙 (Remastered 2019)" and the app's player gives
