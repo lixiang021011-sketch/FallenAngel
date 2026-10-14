@@ -236,6 +236,85 @@ public class WorkbenchGridTest {
     }
 
     @Test
+    public void aReadingDowngradedByTheFieldIsLookedAtLastWithoutAnyProse() throws Exception {
+        // Monster as exported after 03:11 on 2026-10-14: the downgrade is a field now
+        // (`locallyDowngraded` plus `downgraded: [{start, end, reason}]`) and no wording
+        // says it. The rule has to work off the field, not off the prose.
+        JSONObject beatThis = new JSONObject()
+                .put("reading", "BeatThis")
+                .put("audioSource", "drums")
+                .put("audioTime", 2.12)
+                .put("bpm", 169.998)
+                .put("beatsPerBar", 4)
+                .put("health", "ok")
+                .put("locallyDowngraded", true)
+                .put("downbeats", barsEvery(2.12, 1.4118, 180))
+                .put("downgraded", new JSONArray().put(new JSONObject()
+                        .put("start", 142.56).put("end", 197.64)
+                        .put("reason", "只在这一段降级 BeatThis 的小节线")))
+                .put("suspectReasons", new JSONArray()
+                        .put("准入 diagnosis: source_measure_count_error"));
+        JSONObject madmom = new JSONObject()
+                .put("reading", "madmom")
+                .put("audioSource", "drums")
+                .put("audioTime", 2.12)
+                .put("bpm", 171.429)
+                .put("beatsPerBar", 4)
+                .put("health", "ok")
+                .put("downbeats", barsEvery(2.12, 1.4, 143));
+        List<String> journal = new ArrayList<>();
+        WorkbenchGrid grid = WorkbenchGrid.from(file("Monster", 205, beatThis, madmom), journal);
+        assertNotNull(grid);
+        assertEquals("madmom", grid.reading);
+        // The skip is the evidence: it only happens for a reading the field named, since
+        // nothing in this fixture's prose says it was downgraded.
+        assertTrue(journal.toString(), journal.toString().contains("先看别的读法"));
+        assertFalse(grid.shakyAt(160));
+    }
+
+    @Test
+    public void aDoubtedStretchSaysSoOnlyWhileTheMusicIsInIt() throws Exception {
+        // Two shapes of doubt. kiechau's workbench is the reading a person confirmed and
+        // is still cautious for the short bars its rules proposed - that covers the song.
+        JSONObject workbench = new JSONObject()
+                .put("reading", "workbench")
+                .put("audioSource", "mix")
+                .put("audioTime", 1.399867)
+                .put("bpm", 105.004)
+                .put("beatsPerBar", 4)
+                .put("health", "caution")
+                .put("needsEars", true)
+                .put("needsEarsNote", "含 2 个规则推出来的短小节")
+                .put("downbeats", barsEvery(1.399867, 2.2857, 96));
+        WorkbenchGrid kiechau = WorkbenchGrid.from(file("消えちゃう前に", 224.627, workbench));
+        assertNotNull(kiechau);
+        assertTrue(kiechau.shakyAt(10));
+        assertTrue(kiechau.shakyAt(200));
+
+        // Monster with nothing but a reading doubted over 142.56-197.64 s: the other 140
+        // seconds of it were never doubted, and the marker should follow the music.
+        JSONObject beatThis = new JSONObject()
+                .put("reading", "BeatThis")
+                .put("audioSource", "drums")
+                .put("audioTime", 2.12)
+                .put("bpm", 169.998)
+                .put("beatsPerBar", 4)
+                .put("health", "ok")
+                .put("locallyDowngraded", true)
+                .put("downbeats", barsEvery(2.12, 1.4118, 180))
+                .put("downgraded", new JSONArray().put(new JSONObject()
+                        .put("start", 142.56).put("end", 197.64).put("reason", "小节长度异常")))
+                .put("coverageSeconds", 200.48);
+        WorkbenchGrid monster = WorkbenchGrid.from(file("Monster", 205, beatThis));
+        assertNotNull(monster);
+        assertEquals("BeatThis", monster.reading);
+        assertFalse("区间外不必说谨慎", monster.caution);
+        assertFalse(monster.shakyAt(60));
+        assertTrue("进了被降级那段就要说", monster.shakyAt(160));
+        assertFalse("出了那段又干净了", monster.shakyAt(198.5));
+    }
+
+    @Test
     public void coverageSecondsIsWhereTheReadingStopsClaiming() throws Exception {
         // kiechau's BeatThis covers 214.88 s from 0.26: past that it is not saying "no
         // beat here", it is saying nothing at all.

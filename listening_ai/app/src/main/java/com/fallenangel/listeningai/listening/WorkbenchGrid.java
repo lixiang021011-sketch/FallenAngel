@@ -56,6 +56,11 @@ import java.util.Locale;
  *   health           a gate. ok is used as-is, suspect is dropped, and anything else
  *                    (caution, derived, missing) is used but marked: see `caution`.
  *   suspectReasons   the validator's own words, carried into the notes
+ *   locallyDowngraded  whether the validator threw this reading out over part of the
+ *                    song, with `downgraded: [{start, end, reason}]` for where. A
+ *                    reading marked that way is looked at after the ones that are not,
+ *                    and where it is used anyway, the stretch it was doubted over says
+ *                    so on screen: being doubted in one place is not being wrong.
  *   audioFileName    which audio a reading was made from. `drums.wav` on an entry
  *                    whose song is the mix means the reading is from the stem, which
  *                    is marked rather than rejected - same time axis, other material.
@@ -117,11 +122,13 @@ public final class WorkbenchGrid {
     private final double[][] validRanges;
     /** Where the reading says its coverage ends, or -1 when it does not say. */
     private final double coverageEnd;
+    /** Stretches the validator doubted this reading over, or null when it doubted none. */
+    private final double[][] shakyRanges;
 
     private WorkbenchGrid(String title, double durationSeconds, String reading, String generatedBy,
                           String audioSource, String shape, int beatsPerBar, boolean caution,
                           List<String> notes, double bpm, double[] beats, int barOffset,
-                          double[][] validRanges, double coverageEnd) {
+                          double[][] validRanges, double coverageEnd, double[][] shakyRanges) {
         this.title = title == null ? "" : title;
         this.durationSeconds = durationSeconds;
         this.reading = reading == null ? "" : reading;
@@ -137,6 +144,7 @@ public final class WorkbenchGrid {
         this.barOffset = barOffset;
         this.validRanges = validRanges;
         this.coverageEnd = coverageEnd;
+        this.shakyRanges = shakyRanges;
     }
 
     public int beatCount() {
@@ -238,6 +246,23 @@ public final class WorkbenchGrid {
         return insideValidRanges(seconds);
     }
 
+    /**
+     * Whether this moment is one the grid is not fully behind.
+     *
+     * True when the reading itself is only a caution, and true inside the stretches the
+     * validator threw this reading out over but nothing better turned up to replace it:
+     * a file that says "here it is doubtful" is worth more than one that says nothing,
+     * as long as the screen repeats it.
+     */
+    public boolean shakyAt(double seconds) {
+        if (caution) return true;
+        if (shakyRanges == null) return false;
+        for (double[] range : shakyRanges) {
+            if (seconds >= range[0] && seconds <= range[1]) return true;
+        }
+        return false;
+    }
+
     private boolean insideValidRanges(double seconds) {
         if (validRanges == null || validRanges.length == 0) return true;
         for (double[] range : validRanges) {
@@ -332,17 +357,19 @@ public final class WorkbenchGrid {
         double duration = song.optDouble("durationSeconds", -1);
         String songAudio = stem(song.optString("audioFileName", ""));
 
-        // Readings the file's own records say were downgraded: the Workbench writes
-        // "降级来源 BeatThis" into the reasons of every entry of a song where BeatThis's
-        // bar lines were thrown out over some ranges, and until that is a field of its
-        // own this is how a reading that said so about itself is read. It is looked at
-        // last rather than dropped: it is still better than tracking the beat.
+        // Readings the file itself says were downgraded over part of the song. `locally
+        // Downgraded` is the field - and the older files only said it in prose ("降级来源
+        // BeatThis" inside the reasons), which is still read so that a file written
+        // before the field existed is not quietly taken as clean. Such a reading is
+        // looked at last rather than dropped: it is still better than tracking the beat.
         java.util.Set<String> downgraded = new java.util.HashSet<>();
         for (int i = 0; i < calibrations.length(); i++) {
             JSONObject item = calibrations.optJSONObject(i);
             if (item == null) continue;
             String reading = readingOf(item);
-            if (saysDowngraded(item, reading)) downgraded.add(reading);
+            if (item.optBoolean("locallyDowngraded", false) || saysDowngraded(item, reading)) {
+                downgraded.add(reading);
+            }
         }
 
         for (int pass = 0; pass < 2; pass++) {
@@ -361,9 +388,12 @@ public final class WorkbenchGrid {
             String shape = "";
             boolean caution = false;
             double coverageEnd = -1;
+            List<double[]> shaky = new ArrayList<>();
             if (pass == 1 && downgraded.contains(rank)) {
-                caution = true;
                 notes.add(rank + " 只剩它还能用，但它自己的记录说它被降级过");
+                // Whether that makes the whole reading a caution is decided below, once
+                // the stretches are known: a file that says where it doubted a reading
+                // is saying the rest of it is all right.
             }
 
             for (int i = 0; i < calibrations.length(); i++) {
@@ -392,6 +422,11 @@ public final class WorkbenchGrid {
                     // best reading there is - and not to be shown as a clean one.
                     caution = true;
                     notes.add(reading + " needsEars：" + item.optString("needsEarsNote", "有规则推出来的小节，等人听"));
+                }
+                if (item.optBoolean("locallyDowngraded", false)) {
+                    List<double[]> where = shakyRangesOf(item);
+                    shaky.addAll(where);
+                    notes.add(reading + " locallyDowngraded" + describe(where));
                 }
                 int perBar = item.optInt("beatsPerBar", 0);
                 if (perBar < 1 || perBar > 12) {
@@ -472,6 +507,7 @@ public final class WorkbenchGrid {
             double[] stitched = pieces.isEmpty() ? null : stitch(pieces, notes);
             for (String note : notes) say(journal, note);
             if (stitched == null || stitched.length == 0) continue;
+            if (pass == 1 && downgraded.contains(rank) && shaky.isEmpty()) caution = true;
             say(journal, String.format(Locale.US,
                     "用 %s（%s，%d 个拍点，首条 %.3f，%d/4%s%s）",
                     rank, shape, stitched.length, stitched[0], beatsPerBar,
@@ -480,7 +516,7 @@ public final class WorkbenchGrid {
             return new WorkbenchGrid(title, duration, rank, root.optString("generatedBy", ""),
                     audioSource, shape, beatsPerBar, caution, notes, bpm,
                     stitched, barOffset, ranges.isEmpty() ? null : ranges.toArray(new double[0][]),
-                    coverageEnd);
+                    coverageEnd, shaky.isEmpty() ? null : shaky.toArray(new double[0][]));
         }
         }
         say(journal, "文件里没有能用的读法");
@@ -616,6 +652,31 @@ public final class WorkbenchGrid {
     private static boolean saysDowngraded(JSONObject item, String reading) {
         if (reading.isEmpty()) return false;
         return reasons(item).contains("降级来源 " + reading);
+    }
+
+    /** The stretches a local downgrade covers, from `downgraded: [{start, end, reason}]`. */
+    private static List<double[]> shakyRangesOf(JSONObject item) {
+        List<double[]> out = new ArrayList<>();
+        JSONArray list = item.optJSONArray("downgraded");
+        if (list == null) return out;
+        for (int i = 0; i < list.length(); i++) {
+            JSONObject range = list.optJSONObject(i);
+            if (range == null) continue;
+            out.add(new double[] {range.optDouble("start", Double.NaN),
+                    range.optDouble("end", Double.NaN)});
+        }
+        return out;
+    }
+
+    /** Those stretches, in the words of a log line. */
+    private static String describe(List<double[]> ranges) {
+        if (ranges.isEmpty()) return "（没写区间）";
+        StringBuilder out = new StringBuilder("（");
+        for (int i = 0; i < ranges.size(); i++) {
+            if (i > 0) out.append("、");
+            out.append(format(ranges.get(i)[0])).append("–").append(format(ranges.get(i)[1]));
+        }
+        return out.append(" 秒）").toString();
     }
 
     /** Which reading an entry is, whether it says so under `reading` or only `calibrationId`. */

@@ -1173,7 +1173,7 @@ import java.util.List;
                         // tracker's own guess. Worth a word on screen as well as the
                         // colour on the tempo, because "why is the number green" should
                         // be answerable without opening logcat.
-                        text.append(gridSourceTag());
+                        text.append(gridSourceTag(where));
                         // What the model makes of it, next to the fact that it is
                         // hearing something: the two together are the whole
                         // answer to "is this working, and is it right".
@@ -1711,12 +1711,14 @@ import java.util.List;
      * "谨慎" is on screen as well as in the file: a grid built from a reading the
      * validator doubted, or from the drums rather than the mix, is still the best
      * thing here, and the one thing that must not happen is it looking like a clean
-     * one.
+     * one. It is asked per moment, because a reading the validator only doubted over
+     * one stretch is doubted over one stretch - telling the listener "this whole song
+     * is shaky" would be its own kind of lie.
      */
-    private String gridSourceTag() {
+    private String gridSourceTag(double seconds) {
         if (gridFromFile) {
             return " · 网格:" + (gridSource.isEmpty() ? "文件" : gridSource)
-                    + (importedGrid != null && importedGrid.caution ? "(谨慎)" : "");
+                    + (importedGrid != null && importedGrid.shakyAt(seconds) ? "(谨慎)" : "");
         }
         return " · 网格:自追";
     }
