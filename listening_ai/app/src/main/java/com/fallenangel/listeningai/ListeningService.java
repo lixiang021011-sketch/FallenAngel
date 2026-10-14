@@ -37,6 +37,7 @@ import com.fallenangel.listeningai.listening.CandidateFilter;
 import com.fallenangel.listeningai.listening.ChordChangeGate;
 import com.fallenangel.listeningai.listening.ChordDisplay;
 import com.fallenangel.listeningai.listening.ChordTimeline;
+import com.fallenangel.listeningai.listening.ChordTrack;
 import com.fallenangel.listeningai.listening.DrumPattern;
 import com.fallenangel.listeningai.listening.Harmony;
 import com.fallenangel.listeningai.listening.HeldPause;
@@ -239,7 +240,8 @@ import java.util.List;
     /** The chord before the one on screen, for the second line of the box. */
     private String previousChord = "";
     /** Whether what is in the box came from an earlier listen. */
-    private boolean shownFromCache;
+    /** Where the chord on screen came from: "" measured, "缓存" an earlier listen, "文件" the Workbench. */
+    private String shownChordSource = "";
     /**
      * What this song's chords were last time, if it has been played before.
      *
@@ -251,6 +253,14 @@ import java.util.List;
     private boolean lookedForTimeline;
     /** Whether the moment being listened to was last answered from the earlier listen. */
     private boolean cacheWasOn;
+    /**
+     * The song's chords as the Workbench worked them out, if it has handed a file over.
+     *
+     * Read once per song and preferred over both the cache and measuring: it is the
+     * same answer, worked out with the whole song in front of whoever made it.
+     */
+    private ChordTrack chordTrack;
+    private boolean lookedForChordTrack;
     /** When the last seek happened, so a pause caused by one is not read as attention. */
     private long lastSeekMillis;
     private static final long SEEK_QUIET_MILLIS = 2_500;
@@ -960,19 +970,36 @@ import java.util.List;
                     lookedForTimeline = true;
                     timeline = findTimeline(song);
                 }
+                // And a song the Workbench has already worked out is read from that file
+                // instead of either: a measurement of the same thing, made with the whole
+                // song in front of it, is not something to measure again on a phone.
+                if (!lookedForChordTrack && song != null) {
+                    lookedForChordTrack = true;
+                    chordTrack = chordTrack(song);
+                }
                 Harmony.Reading heardNow = null;
                 String harmonyNow;
                 boolean fromCache = false;
+                boolean fromFile = false;
                 double atNow = whereInSong(grid);
-                boolean cacheHere = timeline != null && timeline.useful() && Playback.available
+                ChordTrack.Chord written = chordTrack == null ? null : chordTrack.at(atNow);
+                boolean fileHere = written != null;
+                boolean cacheHere = !fileHere && timeline != null && timeline.useful() && Playback.available
                         && timeline.covers(atNow);
-                if (cacheHere) {
+                if (fileHere) {
+                    harmonyNow = written.label;
+                    fromFile = true;
+                } else if (cacheHere) {
                     harmonyNow = timeline.at(atNow);
                     fromCache = true;
                 } else {
                     heardNow = harmonyNow(recent);
                     harmonyNow = heardNow == null ? "" : Harmony.sentence(heardNow, songKey);
                 }
+                // Which half bar is worth a listener's ear, said the way the box says
+                // things: the file's three readings disagreeing about a chord is the one
+                // thing in it that is a question rather than an answer.
+                boolean doubtedChord = fileHere && written.disagreed;
                 // Where the earlier listen runs out - at the end of a song that was cut
                 // short, or in a hole in the middle of one - is asked again every moment
                 // rather than remembered as an ending: measured 2026-10-14, a cache with
@@ -1000,16 +1027,24 @@ import java.util.List;
                         // The tracker's lock state decides only when the tracker owns
                         // the grid: with a file in charge the beats above are the only
                         // moments, whatever the tracker thinks it has locked.
-                        || (!gridFromFile && (grid == null || !grid.locked()));
+                        || (!gridFromFile && (grid == null || !grid.locked()))
+                        // A written chord track is the one case where the box does not
+                        // have to wait for a beat: the moment the chord changes is in the
+                        // file, to the millisecond, and it is a musical moment already.
+                        || fileHere;
                 String boxNow = chordBox.consider(harmonyNow,
                         heardNow == null ? 1.0 : heardNow.margin(), canSwitch);
-                showChord(boxNow, fromCache);
+                showChord(boxNow, fromFile ? "文件" : (fromCache ? "缓存" : ""),
+                        doubtedChord);
                 // Written either way, with where it came from. A listen that reads a
                 // cache used to leave an empty record behind, and since the newest
                 // record is the one the next listen reads, an empty one poisoned the
                 // cache for the listen after it - the app's own file, hiding the good
                 // one behind it.
-                if (heardPlaying) writeChordReading(heardNow, harmonyNow, boxNow, fromCache);
+                if (heardPlaying) {
+                    writeChordReading(heardNow, harmonyNow, boxNow,
+                            fromFile ? "file" : (fromCache ? "cache" : "measured"));
+                }
                 boolean due = !boxNow.isEmpty()
                         ? chordChanges.due(now, heardPlaying, busy, boxNow)
                         : remarks.due(now, heardPlaying, busy) && reading != null && reading.said();
@@ -2600,6 +2635,8 @@ import java.util.List;
         timeline = null;
         lookedForTimeline = false;
         cacheWasOn = false;
+        chordTrack = null;
+        lookedForChordTrack = false;
         // And the grids it locked, written now that the song is finished: only
         // this song's presses belong in this song's document.
         writeTheExport(song, true);
@@ -3042,6 +3079,48 @@ import java.util.List;
     }
 
     /**
+     * This song's chords as the Workbench worked them out, from a file dropped beside
+     * the grid files.
+     *
+     * Read the same way the grids are: files are put there by hand and the app fetches
+     * nothing. One file may hold every song (a `songs[]` list, matched on the audio
+     * file name it was measured from) or one song (`spans` at the top), because both
+     * are ways the other side may hand it over. With a track in hand the app neither
+     * measures nor remembers: the answer was already known.
+     */
+    private com.fallenangel.listeningai.listening.ChordTrack chordTrack(
+            com.fallenangel.listeningai.listening.SongLog current) {
+        if (current == null) return null;
+        java.io.File root = new java.io.File(listeningDirectory().getParentFile(), "analysis");
+        java.io.File[] files = root.isDirectory() ? root.listFiles() : null;
+        if (files == null || files.length == 0) return null;
+        String label = current.label();
+        for (java.io.File file : files) {
+            if (!file.isFile() || !file.getName().endsWith(".json")) continue;
+            try {
+                String text = new String(java.nio.file.Files.readAllBytes(file.toPath()),
+                        java.nio.charset.StandardCharsets.UTF_8);
+                com.fallenangel.listeningai.listening.ChordTrack found =
+                        com.fallenangel.listeningai.listening.ChordTrack.from(
+                                new org.json.JSONObject(text), label);
+                if (found == null) continue;
+                Log.i(TAG, "chords from " + file.getName() + ": " + found.size() + " 个半小节格"
+                        + (found.keyName.isEmpty() ? "" : "，" + found.keyName)
+                        + (found.reading.isEmpty() ? "" : "，小节来自 " + found.reading));
+                if (song != null) {
+                    song.say("记", "和弦来自 " + file.getName() + "（" + found.size()
+                            + " 个半小节格）", 0);
+                }
+                return found;
+            } catch (Exception unreadable) {
+                Log.i(TAG, "could not read chords from " + file.getName() + ": " + unreadable);
+            }
+        }
+        Log.i(TAG, "no analysis file has chords for " + label + "; measuring them instead");
+        return null;
+    }
+
+    /**
      * Look for an earlier listen of this song, and read its chords back.
      *
      * Found by the song's label, which is what the directory names carry. Songs
@@ -3137,7 +3216,7 @@ import java.util.List;
      * it do while it could not". Nothing here is ever rewritten; the per-bar view
      * is derived from this later, if the beat grid ever earns the right to.
      */
-    private void writeChordReading(Harmony.Reading heard, String reading, String box, boolean fromCache) {
+    private void writeChordReading(Harmony.Reading heard, String reading, String box, String from) {
         com.fallenangel.listeningai.listening.SongLog about = song;
         if (about == null) return;
         org.json.JSONObject line = new org.json.JSONObject();
@@ -3158,7 +3237,7 @@ import java.util.List;
             line.put("shown", box);
             // Where it came from, so a later reader can tell a measurement from a
             // replay - and so this file can be reused by the next listen either way.
-            line.put("from", fromCache ? "cache" : "measured");
+            line.put("from", from);
         } catch (org.json.JSONException ignored) {
             // A JSONObject is a map; only out-of-memory throws here.
         }
@@ -3172,15 +3251,16 @@ import java.util.List;
      * say: this runs every pass through the loop, and a view being set to the same
      * text five times a minute is a view being redrawn for nothing.
      */
-    private void showChord(String reading, boolean fromCache) {
+    private void showChord(String reading, String source, boolean doubted) {
         String text = reading == null ? "" : reading;
-        if (text.equals(shownChord) && fromCache == shownFromCache) return;
+        String label = doubted ? source + "·存疑" : source;
+        if (text.equals(shownChord) && label.equals(shownChordSource)) return;
         // The one that was up becomes the one before it: the pair is what was heard.
         previousChord = shownChord;
         shownChord = text;
-        shownFromCache = fromCache;
+        shownChordSource = label;
         main.post(() -> {
-            if (card != null) card.setChord(text, previousChord, fromCache);
+            if (card != null) card.setChord(text, previousChord, label);
         });
     }
 

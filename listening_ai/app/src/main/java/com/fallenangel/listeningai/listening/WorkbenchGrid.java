@@ -186,11 +186,21 @@ public final class WorkbenchGrid {
      */
     public static boolean sameSong(String fileTitle, String appLabel) {
         String mine = normalise(fileTitle);
-        java.util.Set<String> words = words(mine);
-        if (words.size() >= 2) return overlap(fileTitle, appLabel) >= 0.8;
-        // One word, so it has to be in the label - and long enough to stand for a song
-        // rather than a syllable that turns up anywhere.
-        return mine.length() >= 3 && appLabel != null && normalise(appLabel).contains(mine);
+        String theirs = normalise(appLabel);
+        if (mine.isEmpty() || theirs.isEmpty()) return false;
+        // One word on either side is a name rather than a word count: it has to be in
+        // the other, and long enough to stand for a song rather than a syllable that
+        // turns up anywhere.
+        if (words(mine).size() < 2 || words(theirs).size() < 2) {
+            String shorter = words(mine).size() < words(theirs).size() ? mine : theirs;
+            String longer = shorter.equals(mine) ? theirs : mine;
+            return shorter.length() >= 3 && longer.contains(shorter);
+        }
+        // Both directions, because either side may be the shorter one: the file carries
+        // the audio's own name ("ACIDMAN - 赤橙 (Remastered 2019)") and the player may
+        // give the artist's spelling as well ("ACIDMAN (アシッドマン) — 赤橙 …") - or
+        // give less than the file does.
+        return Math.max(overlap(fileTitle, appLabel), overlap(appLabel, fileTitle)) >= 0.8;
     }
 
     /** The title inside a file, without reading the rest of it. */

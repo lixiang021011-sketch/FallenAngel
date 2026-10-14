@@ -258,7 +258,7 @@ public final class QuestionCard extends LinearLayout {
      * Called as often as the reading changes; the box is hidden rather than shown
      * empty, because an empty box on a floating window reads as a broken one.
      */
-    public void setChord(String reading, String before, boolean fromCache) {
+    public void setChord(String reading, String before, String source) {
         String now = reading == null ? "" : reading.trim();
         String previous = before == null ? "" : before.trim();
         // Whether this is a known song being replayed or the app working it out now
@@ -266,8 +266,12 @@ public final class QuestionCard extends LinearLayout {
         // identical on screen and mean very different things about what they are
         // hearing.
         pillChord.setText(now);
-        pillChordSource.setText(now.isEmpty() || !fromCache ? "" : "缓存");
-        pillChordSource.setVisibility(now.isEmpty() || !fromCache ? GONE : VISIBLE);
+        // And where it came from is worth a word whenever it is not a measurement:
+        // "缓存" is this device's previous listen, "文件" is the Workbench's own track
+        // for the song, and the two are as different as a guess and an answer.
+        String where = now.isEmpty() || source == null ? "" : source;
+        pillChordSource.setText(where);
+        pillChordSource.setVisibility(where.isEmpty() ? GONE : VISIBLE);
         boolean hasPrevious = !previous.isEmpty() && !previous.equals(now);
         pillChordPrev.setText(hasPrevious ? "← " + previous : "");
         pillChordPrev.setVisibility(hasPrevious ? VISIBLE : GONE);
