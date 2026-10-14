@@ -68,6 +68,13 @@ public class WorkbenchGridTest {
         return array;
     }
 
+    /** Bar lines every `step` seconds, which is what a reading of one tempo looks like. */
+    private static JSONArray barsEvery(double first, double step, int count) throws Exception {
+        JSONArray array = new JSONArray();
+        for (int i = 0; i < count; i++) array.put(first + i * step);
+        return array;
+    }
+
     @Test
     public void barLinesReadAsBeatsTooWhenTheyCarryTheirTime() throws Exception {
         // 打上花火, the Workbench's reading of the drums batch: bar lines as objects, 1.25 s
@@ -183,6 +190,72 @@ public class WorkbenchGridTest {
         List<String> journal = new ArrayList<>();
         assertNull(WorkbenchGrid.from(file("打上花火", -1, odd), journal));
         assertTrue(journal.toString(), journal.toString().contains("不是一个坐标"));
+    }
+
+    @Test
+    public void aReadingTheFileSaysWasDowngradedIsLookedAtLast() throws Exception {
+        // Monster, as exported on 2026-10-14: BeatThis ranks above madmom, and its own
+        // reasons say its bar lines were thrown out over a stretch of the song while the
+        // other readings agreed with each other. madmom is what should be used - and the
+        // file says so, in the only place it says it today.
+        JSONObject beatThis = new JSONObject()
+                .put("reading", "BeatThis")
+                .put("audioSource", "drums")
+                .put("audioTime", 2.12)
+                .put("bpm", 169.998)
+                .put("beatsPerBar", 4)
+                .put("health", "ok")
+                .put("downbeats", barsEvery(2.12, 1.4118, 180))
+                .put("coverageSeconds", 200.48)
+                .put("suspectReasons", new JSONArray()
+                        .put("准入 diagnosis: source_measure_count_error")
+                        .put("降级来源 BeatThis：只在这一段降级 BeatThis 的小节线"
+                                + "（小节长度异常 90 处（短 87 / 长 3）），其余读法互相一致；不进人工。"));
+        JSONObject madmom = new JSONObject()
+                .put("reading", "madmom")
+                .put("audioSource", "drums")
+                .put("audioTime", 2.12)
+                .put("bpm", 171.429)
+                .put("beatsPerBar", 4)
+                .put("health", "ok")
+                .put("downbeats", barsEvery(2.12, 1.4, 143))
+                .put("coverageSeconds", 199.58);
+        List<String> journal = new ArrayList<>();
+        WorkbenchGrid grid = WorkbenchGrid.from(file("Monster", 205, beatThis, madmom), journal);
+        assertNotNull(grid);
+        assertEquals("madmom", grid.reading);
+        assertFalse(grid.caution);
+        assertTrue(journal.toString(), journal.toString().contains("先看别的读法"));
+
+        // With nothing else to use it is still better than tracking the beat - and it
+        // says on screen that it is not a clean reading.
+        WorkbenchGrid lonely = WorkbenchGrid.from(file("Monster", 205, beatThis));
+        assertNotNull(lonely);
+        assertEquals("BeatThis", lonely.reading);
+        assertTrue(lonely.caution);
+    }
+
+    @Test
+    public void coverageSecondsIsWhereTheReadingStopsClaiming() throws Exception {
+        // kiechau's BeatThis covers 214.88 s from 0.26: past that it is not saying "no
+        // beat here", it is saying nothing at all.
+        JSONObject beatThis = new JSONObject()
+                .put("reading", "BeatThis")
+                .put("audioSource", "mix")
+                .put("audioTime", 0.26)
+                .put("bpm", 105.971)
+                .put("beatsPerBar", 4)
+                .put("health", "ok")
+                .put("beats", barsEvery(0.26, 0.5663, 400))
+                .put("downbeats", barsEvery(0.26, 2.2652, 100))
+                .put("coverageSeconds", 214.88);
+        WorkbenchGrid grid = WorkbenchGrid.from(file("消えちゃう前に", 224.627, beatThis));
+        assertNotNull(grid);
+        assertEquals("beats+downbeats", grid.shape);
+        assertEquals("mix", grid.audioSource);
+        assertTrue(grid.covers(214.0));
+        assertFalse("过了覆盖范围就不该再说话", grid.covers(216.0));
+        assertEquals(-1, grid.positionAt(220));
     }
 
     @Test

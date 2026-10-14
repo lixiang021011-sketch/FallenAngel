@@ -115,11 +115,13 @@ public final class WorkbenchGrid {
     private final int barOffset;
     /** What a local reading calls its windows, or null for the whole song. */
     private final double[][] validRanges;
+    /** Where the reading says its coverage ends, or -1 when it does not say. */
+    private final double coverageEnd;
 
     private WorkbenchGrid(String title, double durationSeconds, String reading, String generatedBy,
                           String audioSource, String shape, int beatsPerBar, boolean caution,
                           List<String> notes, double bpm, double[] beats, int barOffset,
-                          double[][] validRanges) {
+                          double[][] validRanges, double coverageEnd) {
         this.title = title == null ? "" : title;
         this.durationSeconds = durationSeconds;
         this.reading = reading == null ? "" : reading;
@@ -134,6 +136,7 @@ public final class WorkbenchGrid {
         this.beats = beats;
         this.barOffset = barOffset;
         this.validRanges = validRanges;
+        this.coverageEnd = coverageEnd;
     }
 
     public int beatCount() {
@@ -229,6 +232,9 @@ public final class WorkbenchGrid {
         if (beats.length == 0) return false;
         if (seconds < beats[0] - ANCHOR_TOLERANCE_SECONDS) return false;
         if (seconds > beats[beats.length - 1]) return false;
+        // And inside what the reading says it measured, when it says: a list can reach
+        // further than the part somebody stood behind.
+        if (coverageEnd >= 0 && seconds > coverageEnd) return false;
         return insideValidRanges(seconds);
     }
 
@@ -326,7 +332,25 @@ public final class WorkbenchGrid {
         double duration = song.optDouble("durationSeconds", -1);
         String songAudio = stem(song.optString("audioFileName", ""));
 
+        // Readings the file's own records say were downgraded: the Workbench writes
+        // "降级来源 BeatThis" into the reasons of every entry of a song where BeatThis's
+        // bar lines were thrown out over some ranges, and until that is a field of its
+        // own this is how a reading that said so about itself is read. It is looked at
+        // last rather than dropped: it is still better than tracking the beat.
+        java.util.Set<String> downgraded = new java.util.HashSet<>();
+        for (int i = 0; i < calibrations.length(); i++) {
+            JSONObject item = calibrations.optJSONObject(i);
+            if (item == null) continue;
+            String reading = readingOf(item);
+            if (saysDowngraded(item, reading)) downgraded.add(reading);
+        }
+
+        for (int pass = 0; pass < 2; pass++) {
         for (String rank : RANK) {
+            if (pass == 0 && downgraded.contains(rank)) {
+                say(journal, rank + "：这份文件说它被降级过，先看别的读法");
+                continue;
+            }
             List<double[]> pieces = new ArrayList<>();
             List<String> notes = new ArrayList<>();
             List<double[]> ranges = new ArrayList<>();
@@ -336,12 +360,17 @@ public final class WorkbenchGrid {
             String audioSource = "";
             String shape = "";
             boolean caution = false;
+            double coverageEnd = -1;
+            if (pass == 1 && downgraded.contains(rank)) {
+                caution = true;
+                notes.add(rank + " 只剩它还能用，但它自己的记录说它被降级过");
+            }
 
             for (int i = 0; i < calibrations.length(); i++) {
                 JSONObject item = calibrations.optJSONObject(i);
                 if (item == null) continue;
                 String named = item.optString("reading", "");
-                String reading = named.isEmpty() ? item.optString("calibrationId", "") : named;
+                String reading = readingOf(item);
                 if (!rank.equals(reading)) continue;
 
                 String health = item.optString("health", "");
@@ -417,7 +446,8 @@ public final class WorkbenchGrid {
                     continue;
                 }
 
-                String problem = check(line, item, duration, perBar, listIsBarLines);
+                String problem = check(line, item, duration, perBar,
+                        listIsBarLines && bars != null ? bars.length : 0);
                 if (problem != null) {
                     notes.add(reading + " 的 " + shapeHere + " 不能用：" + problem);
                     continue;
@@ -426,6 +456,12 @@ public final class WorkbenchGrid {
                     barOffset = offset;
                     shape = shapeHere;
                     if (audioSource.isEmpty()) audioSource = sourceOf(item, songAudio);
+                    // How far this reading says it measured, when it says: a list may
+                    // reach further than the part anybody stands behind.
+                    double coverage = item.optDouble("coverageSeconds", Double.NaN);
+                    if (!Double.isNaN(coverage) && coverage > 0) {
+                        coverageEnd = line[0] + coverage;
+                    }
                 }
                 pieces.add(line);
                 if (beatsPerBar == 0) beatsPerBar = perBar;
@@ -443,7 +479,9 @@ public final class WorkbenchGrid {
                     caution ? "，谨慎" : ""));
             return new WorkbenchGrid(title, duration, rank, root.optString("generatedBy", ""),
                     audioSource, shape, beatsPerBar, caution, notes, bpm,
-                    stitched, barOffset, ranges.isEmpty() ? null : ranges.toArray(new double[0][]));
+                    stitched, barOffset, ranges.isEmpty() ? null : ranges.toArray(new double[0][]),
+                    coverageEnd);
+        }
         }
         say(journal, "文件里没有能用的读法");
         return null;
@@ -514,9 +552,11 @@ public final class WorkbenchGrid {
      *
      * The anchor has already done its work by here - it is what decided which list the
      * entry is written in. What is left is whether the times themselves hang together.
+     *
+     * @param barLines how many bar lines the entry reported, or 0 when the list is beats
      */
     private static String check(double[] times, JSONObject item, double duration, int perBar,
-                                boolean theListIsBarLines) {
+                                int barLines) {
         if (times.length == 0) return "空的";
         if (times[0] < -0.001) return String.format(Locale.US, "首元素为负（%.3f）", times[0]);
         double previous = times[0];
@@ -542,15 +582,15 @@ public final class WorkbenchGrid {
                         + String.format(Locale.US, "%.3f", median) + " 秒）";
             }
         }
-        if (theListIsBarLines && duration > 0) {
+        if (barLines > 0 && duration > 0) {
             double bpm = item.optDouble("bpm", 0);
             if (bpm > 0) {
                 double barSeconds = 60.0 / bpm * perBar;
                 double expected = duration / barSeconds;
-                if (times.length < expected * 0.4) {
+                if (barLines < expected * 0.4) {
                     return String.format(Locale.US,
                             "只报了 %d 根小节线，整曲约 %.0f 根（只报了半首那种）",
-                            times.length, expected);
+                            barLines, expected);
                 }
             }
         }
@@ -559,6 +599,9 @@ public final class WorkbenchGrid {
 
     /** The validator's own words for why a reading is not clean. */
     private static String reasons(JSONObject item) {
+        // A list of lines in the newer files, one line in some of the older ones.
+        String single = item.optString("suspectReasons", "");
+        if (!single.isEmpty()) return single;
         JSONArray list = item.optJSONArray("suspectReasons");
         if (list == null || list.length() == 0) return "没写原因";
         StringBuilder out = new StringBuilder();
@@ -567,6 +610,18 @@ public final class WorkbenchGrid {
             out.append(list.opt(i));
         }
         return out.toString();
+    }
+
+    /** The reading whose own reasons say it was downgraded. */
+    private static boolean saysDowngraded(JSONObject item, String reading) {
+        if (reading.isEmpty()) return false;
+        return reasons(item).contains("降级来源 " + reading);
+    }
+
+    /** Which reading an entry is, whether it says so under `reading` or only `calibrationId`. */
+    private static String readingOf(JSONObject item) {
+        String named = item.optString("reading", "");
+        return named.isEmpty() ? item.optString("calibrationId", "") : named;
     }
 
     /** Which audio a reading was made from, when the file says so without a word for it. */

@@ -30,8 +30,19 @@ import java.util.TreeMap;
  */
 public class WorkbenchGridRealFilesTest {
 
-    /** The Workbench's own folder, found by walking up from wherever the tests run. */
+    /**
+     * The Workbench's own folder, found by walking up from wherever the tests run.
+     *
+     * `LISTENING_AI_MGMCS_DIR` points it somewhere else, which is how a handover folder
+     * from the other side gets tested as it is, without being copied into this repo -
+     * measured 2026-10-14, their samples arrive as a directory of their own.
+     */
     private static File docsDirectory() {
+        String given = System.getenv("LISTENING_AI_MGMCS_DIR");
+        if (given != null && !given.isEmpty()) {
+            File elsewhere = new File(given);
+            if (elsewhere.isDirectory()) return elsewhere;
+        }
         File at = new File(System.getProperty("user.dir", ".")).getAbsoluteFile();
         for (int up = 0; up < 8 && at != null; up++) {
             File candidate = new File(at, "mgmcs_validator" + File.separator + "static" + File.separator + "docs");
@@ -39,6 +50,41 @@ public class WorkbenchGridRealFilesTest {
             at = at.getParentFile();
         }
         return null;
+    }
+
+    /**
+     * The four samples the other side hands over, read one by one.
+     *
+     * The point is not that they parse - it is which reading each one lands on, since
+     * that is the whole output of this layer: a file full of readings is worth nothing
+     * if the one that gets used is the wrong one.
+     */
+    @Test
+    public void theHandoverSamplesComeOutAsExpected() throws Exception {
+        File docs = docsDirectory();
+        Assume.assumeTrue("没有样张目录，跳过", docs != null);
+        List<String> names = java.util.Arrays.asList("new_01", "new_140", "new_05", "kiechau");
+        StringBuilder summary = new StringBuilder("样张（" + docs + "）：");
+        int found = 0;
+        for (String name : names) {
+            File file = new File(docs, name + ".mgmcs.json");
+            if (!file.isFile()) continue;
+            found++;
+            List<String> journal = new ArrayList<>();
+            WorkbenchGrid grid = WorkbenchGrid.from(
+                    new JSONObject(new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8)),
+                    journal);
+            assertNotNull(name + " 读不出网格：" + journal, grid);
+            summary.append("\n  ").append(name).append(" → ").append(grid.reading)
+                    .append(" / ").append(grid.shape)
+                    .append(" / 素材 ").append(grid.audioSource.isEmpty() ? "没写" : grid.audioSource)
+                    .append(" / ").append(grid.beatCount()).append(" 个拍点")
+                    .append(" / 首条 ").append(String.format(java.util.Locale.US, "%.3f", grid.firstBeat()))
+                    .append(" / 到 ").append(String.format(java.util.Locale.US, "%.1f", grid.lastBeat()))
+                    .append(grid.caution ? " / 谨慎" : " / 干净");
+        }
+        System.out.println(summary);
+        assertTrue("样张不在 " + docs, found > 0);
     }
 
     @Test
@@ -107,8 +153,10 @@ public class WorkbenchGridRealFilesTest {
 
         Map<String, Integer> reasons = new TreeMap<>();
         int passedOver = 0;
+        int looked = 0;
         for (File file : files) {
             if (!file.isFile() || !file.getName().endsWith(".mgmcs.json")) continue;
+            looked++;
             String text = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
             List<String> journal = new ArrayList<>();
             WorkbenchGrid grid = WorkbenchGrid.from(new JSONObject(text), journal);
@@ -126,7 +174,7 @@ public class WorkbenchGridRealFilesTest {
             summary.append("\n  ").append(entry.getValue()).append(" 次  ").append(entry.getKey());
         }
         System.out.println(summary);
-        assertTrue("workbench 一次都没被让过，说明这条测试没在测东西", passedOver > 0);
+        assertTrue("一个文件都没看：" + docs, looked > 0);
     }
 
     /**
