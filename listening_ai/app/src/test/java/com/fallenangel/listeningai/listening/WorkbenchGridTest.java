@@ -109,12 +109,35 @@ public class WorkbenchGridTest {
     }
 
     @Test
+    public void positionAndTempoComeFromTheBeatTimes() throws Exception {
+        // Four beats at 120 bpm, then three at 60: the file's `bpm` field says one
+        // number for the whole file, and the number on screen has to be the one for
+        // where the music is.
+        WorkbenchGrid grid = WorkbenchGrid.from(file("变速", 100,
+                calibration("workbench", "ok", 120, 4,
+                        new double[] {0.0, 0.5, 1.0, 1.5, 2.5, 3.5, 4.5})));
+        assertEquals(0, grid.positionAt(0.1));
+        assertEquals(3, grid.positionAt(1.9));
+        // 4.5 is still ahead of 4.4, so the beat in force is the one at 3.5.
+        assertEquals(5, grid.positionAt(4.4));
+        assertEquals(120.0, grid.localBpm(0.6), 1.0);
+        assertEquals(60.0, grid.localBpm(4.0), 2.0);
+        assertEquals(3, grid.beatInBar(1.9));
+        assertEquals(1, grid.beatInBar(4.4));
+    }
+
+    @Test
     public void matchingIsByTitleAndForbearingAboutPunctuation() throws Exception {
+        // The real pair, from the two systems' own files: the Workbench writes
+        // "ACIDMAN - 赤橙 (Remastered 2019)" and the app's player gives
+        // "ACIDMAN (アシッドマン) — 赤橙 (Remastered 2019)". An equality test rejected
+        // exactly the file that was right.
         WorkbenchGrid grid = WorkbenchGrid.from(file("ACIDMAN - 赤橙 (Remastered 2019)", 305.9,
                 calibration("librosa", "ok", 136.0, 4, new double[] {0.0, 0.44})));
-        // The app's own label writes the artist into the title too, and the two
-        // systems punctuate differently.
+        assertTrue(grid.matches("ACIDMAN (アシッドマン) — 赤橙 (Remastered 2019)", 305.9));
         assertTrue(grid.matches("ACIDMAN - 赤橙 (Remastered 2019)", 305.9));
         assertFalse(grid.matches("完全另一首歌", 305.9));
+        assertFalse(grid.matches("ACIDMAN - 入秋的第一场雨真让人矫情", 210));
+        assertEquals(1.0, grid.titleOverlap("ACIDMAN (アシッドマン) — 赤橙 (Remastered 2019)"), 1e-9);
     }
 }

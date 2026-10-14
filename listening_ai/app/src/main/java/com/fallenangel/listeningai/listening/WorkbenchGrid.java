@@ -88,18 +88,87 @@ public final class WorkbenchGrid {
     /** Where this point falls in the bar, 0-based, or -1 when the grid has run out. */
     public int beatInBar(double seconds) {
         if (!covers(seconds) || beatsPerBar <= 0) return -1;
+        return positionAt(seconds) % beatsPerBar;
+    }
+
+    /** The index of the last beat at or before this point, or -1 past the end. */
+    public int positionAt(double seconds) {
+        if (!covers(seconds)) return -1;
         int found = 0;
         for (int i = 0; i < beats.length; i++) {
             if (beats[i] <= seconds) found = i;
             else break;
         }
-        return found % beatsPerBar;
+        return found;
     }
 
-    /** Whether this file is about the song the app is playing. */
+    /**
+     * The tempo around this point, from the spacing of the beats themselves.
+     *
+     * Measured locally rather than taken from the file's `bpm` field, because a song
+     * that changes tempo is written down as pieces with one bpm at the top: the
+     * number that belongs on screen is the one for where the music is, which is what
+     * the times of the nearby beats say.
+     */
+    public double localBpm(double seconds) {
+        int at = positionAt(seconds);
+        if (at < 0) at = beats.length - 1;
+        if (at < 1) {
+            return beats.length >= 2 && beats[1] > beats[0]
+                    ? 60.0 / (beats[1] - beats[0]) : bpm;
+        }
+        // Medians of the few beats around it, so one odd gap cannot move the number.
+        int first = Math.max(0, at - 3);
+        int last = Math.min(beats.length - 1, at + 3);
+        java.util.List<Double> gaps = new ArrayList<>();
+        for (int i = first; i < last; i++) {
+            double gap = beats[i + 1] - beats[i];
+            if (gap > 0) gaps.add(gap);
+        }
+        if (gaps.isEmpty()) return bpm;
+        java.util.Collections.sort(gaps);
+        double middle = gaps.get(gaps.size() / 2);
+        return middle > 0 ? 60.0 / middle : bpm;
+    }
+
+    /**
+     * How much of this file's title is in the app's label for what is playing.
+     *
+     * Not equality, and the reason is in the two systems' own files: the Workbench
+     * writes "ACIDMAN - 赤橙 (Remastered 2019)" and the app, reading the player's
+     * session, writes "ACIDMAN (アシッドマン) — 赤橙 (Remastered 2019)". The same song,
+     * with the artist's own spelling added in the middle - so an equality test
+     * rejects exactly the file that is right.
+     *
+     * A share of the file's own words is the honest measure: the file's title is the
+     * shorter and cleaner of the two, and every one of its words ought to appear in
+     * the label the player gave.
+     */
+    public double titleOverlap(String appLabel) {
+        if (title.isEmpty() || appLabel == null) return 0;
+        java.util.Set<String> mine = words(normalise(title));
+        java.util.Set<String> theirs = words(normalise(appLabel));
+        if (mine.isEmpty()) return 0;
+        int found = 0;
+        for (String word : mine) if (theirs.contains(word)) found++;
+        return found / (double) mine.size();
+    }
+
+    /** Enough of the title to be the same song, and at least two words to go on. */
     public boolean matches(String appLabel, double appDurationSeconds) {
-        if (title.isEmpty() || appLabel == null) return false;
-        return normalise(title).equals(normalise(appLabel));
+        java.util.Set<String> mine = words(normalise(title));
+        return mine.size() >= 2 && titleOverlap(appLabel) >= 0.8;
+    }
+
+    private static java.util.Set<String> words(String normalised) {
+        java.util.Set<String> out = new java.util.HashSet<>();
+        for (String word : normalised.split(" ")) {
+            // One and two character words are punctuation-sized ("feat", "2019" aside)
+            // and carry almost no identity; every word counts, so this only drops the
+            // empty ones the split leaves behind.
+            if (!word.isEmpty()) out.add(word);
+        }
+        return out;
     }
 
     /** Titles differ in punctuation and spacing between the two systems. */

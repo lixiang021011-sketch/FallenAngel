@@ -265,6 +265,55 @@ import java.util.List;
     private static final long MODEL_SILENT_MILLIS = 60_000;
     private long modelSilentUntilMillis;
     /**
+     * Whether the grid in use came from a file rather than from tracking.
+     *
+     * Held so that the tempo can be shown in another colour: the number looks the
+     * same either way, and the difference between a guess that drifts and a value
+     * worked out in advance is the whole reason for importing anything.
+     */
+    private boolean gridFromFile;
+    /**
+     * The grid in charge, when it came from a file.
+     *
+     * The tracker keeps running and keeps its own opinion, and from here on none of
+     * it is read: position, bar, beat and the tempo on screen all come from these
+     * beat times. That is the difference between importing a grid and persuading the
+     * tracker for a few seconds - measured 2026-10-14, a lock of 136 was back to 90.7
+     * four seconds later.
+     */
+    private com.fallenangel.listeningai.listening.WorkbenchGrid importedGrid;
+    private String gridSource = "";
+    /** The song whose file has been looked for already, so it is looked for once. */
+    private String gridLookedUpFor = "";
+
+    /**
+     * Read this song's grid from a file, if one is there, and put it in charge.
+     *
+     * Called wherever a song turns out to have no grid - at the start, after a
+     * silence, after a track change - because all three are the same situation: the
+     * app is about to guess, and a file may already know.
+     */
+    private void importGridForThisSong(BeatDetector grid) {
+        com.fallenangel.listeningai.listening.WorkbenchGrid imported = workbenchGrid(song);
+        if (imported == null) {
+            gridFromFile = false;
+            gridSource = "";
+            return;
+        }
+        grid.setMeter(Math.max(1, imported.beatsPerBar));
+        lastMeter = Math.max(1, imported.beatsPerBar);
+        grid.lockTempoAndDownbeat(imported.bpm, imported.firstBeat(), true);
+        anchoredBpm = imported.bpm;
+        gridFromFile = true;
+        gridSource = imported.reading;
+        importedGrid = imported;
+        if (song != null) {
+            song.event(gridSourceLine(imported), imported.firstBeat());
+            song.say("记", "网格来自 " + imported.reading
+                    + "（" + imported.beatCount() + " 个拍点）", imported.firstBeat());
+        }
+    }
+    /**
      * The listener's pause that arrived while a question was up.
      *
      * Held until the question is out of the way, and only for as long as an answer
@@ -761,23 +810,6 @@ import java.util.List;
                         // And so is the tempo a person gave for the last one.
                         anchoredBpm = 0;
                         lastMeter = 4;
-                        // Unless somebody already worked this song out. A grid from a
-                        // file covers the tempo, the phase and the meter at once, and
-                        // it is used instead of tracking - which is the whole point of
-                        // importing one.
-                        com.fallenangel.listeningai.listening.WorkbenchGrid imported =
-                                workbenchGrid(song);
-                        if (imported != null) {
-                            grid.setMeter(Math.max(1, imported.beatsPerBar));
-                            lastMeter = Math.max(1, imported.beatsPerBar);
-                            grid.lockTempoAndDownbeat(imported.bpm, imported.firstBeat(), true);
-                            anchoredBpm = imported.bpm;
-                            if (song != null) {
-                                song.event(gridSourceLine(imported), imported.firstBeat());
-                                song.say("记", "网格来自 " + imported.reading
-                                        + "（" + imported.beatCount() + " 个拍点）", imported.firstBeat());
-                            }
-                        }
                         trackStartedMillis = android.os.SystemClock.elapsedRealtime();
                         Log.i(TAG, "track: " + Playback.trackTitle);
                         String previous = song == null ? "" : song.label();
@@ -796,6 +828,17 @@ import java.util.List;
                         if (song != null) {
                             song.event(songEnterLine(previous), 0);
                         }
+                        // Unless somebody already worked this song out - and only now,
+                        // because until startSong ran, `song` was still the *previous*
+                        // one. Importing before it looked up the last song's file and
+                        // handed its grid to this one: measured 2026-10-14, "接口接错
+                        // 了，是不是导入了多余的错网格" - it did exactly that, and the
+                        // GRID_SOURCE line went into the record of the song before.
+                        // The file is looked for from the loop, wherever this song
+                        // turns out to have no grid - see importGridForThisSong.
+                        gridFromFile = false;
+                        importedGrid = null;
+                        gridSource = "";
                         Log.i(TAG, "grid hard reset: session=" + grid.gridSessionId() + " reason=" + grid.lastResetReason());
                     }
                     if (Playback.seekGeneration != lastSeek) {
@@ -853,6 +896,16 @@ import java.util.List;
                 if (barLine) lastBarLineMillis = System.currentTimeMillis();
                 boolean beatLine = onBeatLine(grid);
                 if (beatLine) lastBeatMillis = System.currentTimeMillis();
+                // A grid from a file is looked for whenever this song has none - not
+                // only when the track changes. Measured 2026-10-14: starting to listen
+                // while the song was already playing, or a grid dropped by a silence,
+                // meant the import never ran at all, and the tempo on screen was the
+                // tracker's guess while the file that knew better sat unread.
+                if (!gridFromFile && song != null && !grid.locked()
+                        && !song.label().equals(gridLookedUpFor)) {
+                    gridLookedUpFor = song.label();
+                    importGridForThisSong(grid);
+                }
                 keepTheAnchor(grid);
                 // Asking on our own: the model said something changed, and the
                 // asking happens here rather than where that was noticed,
@@ -926,7 +979,10 @@ import java.util.List;
                 // most half a second away.
                 boolean canSwitch = beatLine
                         || System.currentTimeMillis() - lastBeatMillis < BEAT_GRACE_MILLIS
-                        || grid == null || !grid.locked();
+                        // The tracker's lock state decides only when the tracker owns
+                        // the grid: with a file in charge the beats above are the only
+                        // moments, whatever the tracker thinks it has locked.
+                        || (!gridFromFile && (grid == null || !grid.locked()));
                 String boxNow = chordBox.consider(harmonyNow,
                         heardNow == null ? 1.0 : heardNow.margin(), canSwitch);
                 showChord(boxNow, fromCache);
@@ -1064,7 +1120,12 @@ import java.util.List;
                     // "is it working?" is answered by looking rather than by
                     // pausing to find out.
                     final boolean heard = heardPlaying;
-                    final double bpm = grid.bpm();
+                    // The tempo on screen is the file's when a file is in charge: the
+                    // tracker's own number is a different opinion, and showing it beside
+                    // a green marker would say "this came from the file" about a value
+                    // that did not.
+                    final double bpm = gridFromFile && importedGrid != null
+                            ? importedGrid.localBpm(atSeconds) : grid.bpm();
                     final com.fallenangel.listeningai.clip.StyleReading said = reading;
                     final String songName = song == null ? "" : song.label();
                     final double where = atSeconds;
@@ -1087,10 +1148,29 @@ import java.util.List;
                         // heard, how fast, and what the model makes of it.
                         StringBuilder text = new StringBuilder("在听"); // What is shown is the tempo a person gave when there is
                         // one, and the tracker's own estimate only until then.
-                        double shown = anchoredBpm > 0 ? anchoredBpm : bpm; if (shown > 0) text.append(" · ").append(Math.round(shown)); text.append(" · ").append(lastMeter).append("/4"); // What the model makes of it, next to the fact that it is
+                        double shown = anchoredBpm > 0 ? anchoredBpm : bpm;
+                        int tempoFrom = -1;
+                        int tempoTo = -1;
+                        if (shown > 0) {
+                            text.append(" · ");
+                            tempoFrom = text.length();
+                            text.append(Math.round(shown));
+                            tempoTo = text.length();
+                        }
+                        text.append(" · ").append(lastMeter).append("/4");
+                        // Which grid this is: a file somebody worked out, or the
+                        // tracker's own guess. Worth a word on screen as well as the
+                        // colour on the tempo, because "why is the number green" should
+                        // be answerable without opening logcat.
+                        text.append(gridSourceTag());
+                        // What the model makes of it, next to the fact that it is
                         // hearing something: the two together are the whole
                         // answer to "is this working, and is it right".
-                        if (said != null && said.said()) text.append(" · ").append(said.shortPhrase()); card.setPillText(text.toString());
+                        if (said != null && said.said()) text.append(" · ").append(said.shortPhrase());
+                        final int from = tempoFrom;
+                        final int to = tempoTo;
+                        final boolean green = gridFromFile;
+                        card.setPillText(text.toString(), from, to, green);
                     }
 );
                     Log.i(TAG, String.format(java.util.Locale.US, "state song=%s playing=%s source=%s quiet=%s bpm=%.1f held=%.1fs " + "events=%d asked=%d answered=%d said=%d model=%s" + "(%d, %dms, nov=%.2f %d/%d, %s)" + " grid=%d/%s locked=%s half=%s taps=%d phase=%.0f" + " meter=%d/4 anchored=%.1f drift=%.0f/%d fit=%d/%d" + " low=%d%% high=%d%% drum=%.2f lag=%.2f", songName, heardPlaying, Playback.available ? "player" : "audio", grid.quiet(), grid.bpm(), recent.availableSeconds(), observations, questionsAsked, answersGiven, tally.remarkedCount(), onnx == null ? "off" : onnxVersion, modelObservations, onnx == null ? 0 : onnx.lastRunMillis(), lastNovelty, selfAsk.run(), selfAsk.required(), said == null ? "-" : said.sentence(), grid.gridSessionId(), grid.lastResetReason(), grid.locked(), grid.halfTempo(), grid.tapTempoCount(), grid.phaseFrames(), lastMeter, anchoredBpm, grid.driftFrames(), grid.corrections(), grid.alignedOnsets(), grid.alignedOnsets() + grid.misfitOnsets(), percent(grid.lowAligned(), grid.lowHits()), percent(grid.highAligned(), grid.highHits()), grid.drumScore(), grid.lagBeats()));
@@ -1609,6 +1689,14 @@ import java.util.List;
     }
 
     /**
+     * The word about where this song's grid came from, for the resting button.
+     */
+    private String gridSourceTag() {
+        if (gridFromFile) return " · 网格:" + (gridSource.isEmpty() ? "文件" : gridSource);
+        return " · 网格:自追";
+    }
+
+    /**
      * Whether the app may say anything at all right now.
      *
      * Read at the moment of speaking rather than cached, because it is a setting the
@@ -1987,6 +2075,21 @@ import java.util.List;
         // Not while the listener is tapping: the flash is a metronome, and a
         // metronome that argues with the person counting is worse than none.
         if (tapping) return false;
+        // A grid from a file is the one that flashes: its bar lines are the ones the
+        // music actually has, and the tracker's own are a second opinion nobody asked
+        // for once a file is in charge.
+        if (gridFromFile && importedGrid != null) {
+            int position = importedGrid.positionAt(whereInSong(beat));
+            if (position < 0 || importedGrid.beatsPerBar <= 0) return false;
+            long bar = position / importedGrid.beatsPerBar;
+            if (bar == lastFlashedBar) return false;
+            lastFlashedBar = bar;
+            main.post(() -> {
+                if (card != null) card.flash();
+            }
+);
+            return true;
+        }
         if (beat == null || !beat.locked()) return false;
         int perBar = beat.positionsPerBar();
         if (perBar <= 0) return false;
@@ -2021,6 +2124,13 @@ import java.util.List;
      * actually moves in and the wait is at most half a second.
      */
     private boolean onBeatLine(BeatDetector beat) {
+        if (gridFromFile && importedGrid != null) {
+            int position = importedGrid.positionAt(whereInSong(beat));
+            if (position < 0) return false;
+            if (position == lastBeatIndex) return false;
+            lastBeatIndex = position;
+            return true;
+        }
         if (beat == null || !beat.locked()) return false;
         int perBar = beat.positionsPerBar();
         int perBeat = Math.max(1, perBar / Math.max(1, beat.beatsPerBar()));
@@ -2831,7 +2941,12 @@ import java.util.List;
     private com.fallenangel.listeningai.listening.WorkbenchGrid workbenchGrid(
             com.fallenangel.listeningai.listening.SongLog current) {
         if (current == null) return null;
-        java.io.File root = new java.io.File(listeningDirectory(), "analysis");
+        // Beside the session folders, not inside them: this is where files the
+        // listener drops in live, and the session folder is the app's own - which is
+        // also the one that gets pruned when a song has been heard too many times.
+        // Measured 2026-10-14: the first version looked inside it, and the file that
+        // had just been put beside it was never found.
+        java.io.File root = new java.io.File(listeningDirectory().getParentFile(), "analysis");
         java.io.File[] files = root.isDirectory() ? root.listFiles() : null;
         if (files == null || files.length == 0) {
             Log.i(TAG, "no analysis folder to read a grid from (" + root + ")");

@@ -218,6 +218,27 @@ public final class QuestionCard extends LinearLayout {
     }
 
     /**
+     * The same, with one run of it in another colour.
+     *
+     * Used for the tempo when the grid came from a file rather than from tracking:
+     * the number looks identical either way, and the difference is whether it is a
+     * guess that drifts or a value somebody worked out in advance. A colour is the
+     * smallest way to say that - it costs no line, and the line is where the music
+     * also has to fit.
+     */
+    public void setPillText(String text, int colourFrom, int colourTo, boolean highlighted) {
+        String clean = text == null ? "" : text;
+        if (!highlighted || colourFrom < 0 || colourTo <= colourFrom || colourTo > clean.length()) {
+            pillStatus.setText(clean);
+            return;
+        }
+        android.text.SpannableString span = new android.text.SpannableString(clean);
+        span.setSpan(new android.text.style.ForegroundColorSpan(0xFF7EE0A8),
+                colourFrom, colourTo, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        pillStatus.setText(span);
+    }
+
+    /**
      * The song, on its own line.
      *
      * Allowed to be cut off: a title is usually longer than a floating button,
