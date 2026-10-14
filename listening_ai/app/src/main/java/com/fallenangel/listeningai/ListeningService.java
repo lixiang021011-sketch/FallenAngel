@@ -294,7 +294,12 @@ import java.util.List;
      * app is about to guess, and a file may already know.
      */
     private void importGridForThisSong(BeatDetector grid) {
-        com.fallenangel.listeningai.listening.WorkbenchGrid imported = workbenchGrid(song);
+        // Every refusal is written down: a reading that was in the file and was not
+        // used is the difference between "there is no file" and "the file said
+        // something I did not take", and only one of those is a bug.
+        java.util.List<String> journal = new java.util.ArrayList<>();
+        com.fallenangel.listeningai.listening.WorkbenchGrid imported = workbenchGrid(song, journal);
+        for (String line : journal) Log.i(TAG, "读法: " + line);
         if (imported == null) {
             gridFromFile = false;
             gridSource = "";
@@ -310,7 +315,8 @@ import java.util.List;
         if (song != null) {
             song.event(gridSourceLine(imported), imported.firstBeat());
             song.say("记", "网格来自 " + imported.reading
-                    + "（" + imported.beatCount() + " 个拍点）", imported.firstBeat());
+                    + "（" + imported.beatCount() + " 个拍点"
+                    + (imported.caution ? "，谨慎" : "") + "）", imported.firstBeat());
         }
     }
     /**
@@ -839,6 +845,11 @@ import java.util.List;
                         gridFromFile = false;
                         importedGrid = null;
                         gridSource = "";
+                        // And the fact that this song's file was looked for: a second
+                        // play of the same song is a new song, and it goes and looks
+                        // again. Measured 2026-10-14: without this the file was read on
+                        // the first play only, and every replay tracked the beat itself.
+                        gridLookedUpFor = "";
                         Log.i(TAG, "grid hard reset: session=" + grid.gridSessionId() + " reason=" + grid.lastResetReason());
                     }
                     if (Playback.seekGeneration != lastSeek) {
@@ -1173,7 +1184,7 @@ import java.util.List;
                         card.setPillText(text.toString(), from, to, green);
                     }
 );
-                    Log.i(TAG, String.format(java.util.Locale.US, "state song=%s playing=%s source=%s quiet=%s bpm=%.1f held=%.1fs " + "events=%d asked=%d answered=%d said=%d model=%s" + "(%d, %dms, nov=%.2f %d/%d, %s)" + " grid=%d/%s locked=%s half=%s taps=%d phase=%.0f" + " meter=%d/4 anchored=%.1f drift=%.0f/%d fit=%d/%d" + " low=%d%% high=%d%% drum=%.2f lag=%.2f", songName, heardPlaying, Playback.available ? "player" : "audio", grid.quiet(), grid.bpm(), recent.availableSeconds(), observations, questionsAsked, answersGiven, tally.remarkedCount(), onnx == null ? "off" : onnxVersion, modelObservations, onnx == null ? 0 : onnx.lastRunMillis(), lastNovelty, selfAsk.run(), selfAsk.required(), said == null ? "-" : said.sentence(), grid.gridSessionId(), grid.lastResetReason(), grid.locked(), grid.halfTempo(), grid.tapTempoCount(), grid.phaseFrames(), lastMeter, anchoredBpm, grid.driftFrames(), grid.corrections(), grid.alignedOnsets(), grid.alignedOnsets() + grid.misfitOnsets(), percent(grid.lowAligned(), grid.lowHits()), percent(grid.highAligned(), grid.highHits()), grid.drumScore(), grid.lagBeats()));
+                    Log.i(TAG, String.format(java.util.Locale.US, "state song=%s playing=%s source=%s quiet=%s bpm=%.1f held=%.1fs " + "events=%d asked=%d answered=%d said=%d model=%s" + "(%d, %dms, nov=%.2f %d/%d, %s)" + " grid=%d/%s locked=%s half=%s taps=%d phase=%.0f" + " meter=%d/4 anchored=%.1f drift=%.0f/%d fit=%d/%d" + " low=%d%% high=%d%% drum=%.2f lag=%.2f" + " read=%s/%s%s", songName, heardPlaying, Playback.available ? "player" : "audio", grid.quiet(), grid.bpm(), recent.availableSeconds(), observations, questionsAsked, answersGiven, tally.remarkedCount(), onnx == null ? "off" : onnxVersion, modelObservations, onnx == null ? 0 : onnx.lastRunMillis(), lastNovelty, selfAsk.run(), selfAsk.required(), said == null ? "-" : said.sentence(), grid.gridSessionId(), grid.lastResetReason(), grid.locked(), grid.halfTempo(), grid.tapTempoCount(), grid.phaseFrames(), lastMeter, anchoredBpm, grid.driftFrames(), grid.corrections(), grid.alignedOnsets(), grid.alignedOnsets() + grid.misfitOnsets(), percent(grid.lowAligned(), grid.lowHits()), percent(grid.highAligned(), grid.highHits()), grid.drumScore(), grid.lagBeats(), importedGrid == null ? (gridFromFile ? "文件?" : "-") : importedGrid.reading + ":" + importedGrid.shape, importedGrid == null ? "-" : (importedGrid.audioSource.isEmpty() ? "素材未写" : importedGrid.audioSource), importedGrid != null && importedGrid.caution ? "(谨慎)" : ""));
                 }
             }
             inference.close();
@@ -1681,6 +1692,12 @@ import java.util.List;
             line.put("beatsPerBar", grid.beatsPerBar);
             line.put("beats", grid.beatCount());
             line.put("coveredUntil", grid.beat(grid.beatCount() - 1));
+            line.put("shape", grid.shape);
+            line.put("audioSource", grid.audioSource);
+            line.put("caution", grid.caution);
+            org.json.JSONArray reasons = new org.json.JSONArray();
+            for (String note : grid.notes) reasons.put(note);
+            line.put("readingNotes", reasons);
             line.put("title", grid.title);
         } catch (org.json.JSONException ignored) {
             // A JSONObject is a map; only out-of-memory throws here.
@@ -1690,9 +1707,17 @@ import java.util.List;
 
     /**
      * The word about where this song's grid came from, for the resting button.
+     *
+     * "谨慎" is on screen as well as in the file: a grid built from a reading the
+     * validator doubted, or from the drums rather than the mix, is still the best
+     * thing here, and the one thing that must not happen is it looking like a clean
+     * one.
      */
     private String gridSourceTag() {
-        if (gridFromFile) return " · 网格:" + (gridSource.isEmpty() ? "文件" : gridSource);
+        if (gridFromFile) {
+            return " · 网格:" + (gridSource.isEmpty() ? "文件" : gridSource)
+                    + (importedGrid != null && importedGrid.caution ? "(谨慎)" : "");
+        }
         return " · 网格:自追";
     }
 
@@ -2079,9 +2104,12 @@ import java.util.List;
         // music actually has, and the tracker's own are a second opinion nobody asked
         // for once a file is in charge.
         if (gridFromFile && importedGrid != null) {
-            int position = importedGrid.positionAt(whereInSong(beat));
-            if (position < 0 || importedGrid.beatsPerBar <= 0) return false;
-            long bar = position / importedGrid.beatsPerBar;
+            // The bar the file names, not position / beatsPerBar: a reading's first bar
+            // line is not always its first beat (BeatThis on 打上花火 reports its first
+            // bar line 0.64s after its first beat), and dividing by the meter would then
+            // flash for the whole song one beat out.
+            long bar = importedGrid.barAt(whereInSong(beat));
+            if (bar < 0) return false;
             if (bar == lastFlashedBar) return false;
             lastFlashedBar = bar;
             main.post(() -> {
@@ -2939,7 +2967,7 @@ import java.util.List;
      * duration check reject exactly the files that are right.
      */
     private com.fallenangel.listeningai.listening.WorkbenchGrid workbenchGrid(
-            com.fallenangel.listeningai.listening.SongLog current) {
+            com.fallenangel.listeningai.listening.SongLog current, java.util.List<String> journal) {
         if (current == null) return null;
         // Beside the session folders, not inside them: this is where files the
         // listener drops in live, and the session folder is the app's own - which is
@@ -2953,22 +2981,31 @@ import java.util.List;
             return null;
         }
         String label = current.label();
-        double duration = Playback.durationSeconds;
         for (java.io.File file : files) {
             if (!file.isFile() || !file.getName().endsWith(".json")) continue;
             try {
                 String text = new String(java.nio.file.Files.readAllBytes(file.toPath()),
                         java.nio.charset.StandardCharsets.UTF_8);
-                com.fallenangel.listeningai.listening.WorkbenchGrid grid =
-                        com.fallenangel.listeningai.listening.WorkbenchGrid.from(
-                                new org.json.JSONObject(text));
-                if (grid == null) {
-                    Log.i(TAG, "no usable grid in " + file.getName());
+                org.json.JSONObject fileJson = new org.json.JSONObject(text);
+                // Whose song this file is about is decided before anything is read out of
+                // it: a file about another song is worth silence, and a file about this
+                // one that turns out to hold nothing usable is worth every reason why.
+                if (!com.fallenangel.listeningai.listening.WorkbenchGrid.sameSong(
+                        com.fallenangel.listeningai.listening.WorkbenchGrid.titleOf(fileJson), label)) {
                     continue;
                 }
-                if (!grid.matches(label, duration)) continue;
+                Log.i(TAG, file.getName() + " 是这首歌的文件，开始挑读法");
+                com.fallenangel.listeningai.listening.WorkbenchGrid grid =
+                        com.fallenangel.listeningai.listening.WorkbenchGrid.from(fileJson, journal);
+                if (grid == null) {
+                    Log.i(TAG, "文件在，但没有一条读法能用：" + file.getName());
+                    continue;
+                }
                 Log.i(TAG, "grid from " + file.getName() + ": reading " + grid.reading
-                        + ", " + grid.beatCount() + " beats, " + grid.beatsPerBar + "/4"
+                        + " (" + grid.shape + "), " + grid.beatCount() + " beats, "
+                        + grid.beatsPerBar + "/4"
+                        + (grid.audioSource.isEmpty() ? ", 素材没写" : ", 素材 " + grid.audioSource)
+                        + (grid.caution ? ", 谨慎" : "")
                         + (grid.generatedBy.isEmpty() ? "" : ", by " + grid.generatedBy));
                 return grid;
             } catch (Exception unreadable) {
