@@ -8,8 +8,10 @@
   "cautionRanges": "下游做小节级特征时应当标 caution 的区段（秒）"
  },
  "counts": {
-  "caution": 14,
-  "eligible": 17
+  "caution": 87,
+  "eligible": 117,
+  "ineligible": 67,
+  "songs": 271
  },
  "songs": [
   {
@@ -490,6 +492,3692 @@
    ]
   },
   {
+   "song": "new_01",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_measure_count_error",
+   "soundReadings": [
+    "madmom",
+    "mapperatorinator",
+    "workbench"
+   ],
+   "downgraded": [
+    {
+     "source": "BeatThis",
+     "ranges": [
+      [
+       31.88,
+       44.38
+      ]
+     ],
+     "why": "只在这一段降级 BeatThis 的小节线（小节长度异常 36 处（短 34 / 长 2）），其余读法互相一致；不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "只在这一段降级 BeatThis 的小节线（小节长度异常 36 处（短 34 / 长 2）），其余读法互相一致；不进人工。"
+   ]
+  },
+  {
+   "song": "new_02",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "unresolved_phase",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "整拍分歧（mapperatorinator↔madmom），相关来源自身都没有异常、到结尾也没合回来：这才是需要人听的一类。",
+    "分诊没能解释掉，等人工听审"
+   ]
+  },
+  {
+   "song": "new_03",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     113.24,
+     125.24
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_04",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_05",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_measure_count_error",
+   "soundReadings": [
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [
+    {
+     "source": "BeatThis",
+     "ranges": [
+      [
+       142.56,
+       197.64
+      ]
+     ],
+     "why": "只在这一段降级 BeatThis 的小节线（小节长度异常 90 处（短 87 / 长 3）），其余读法互相一致；不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "只在这一段降级 BeatThis 的小节线（小节长度异常 90 处（短 87 / 长 3）），其余读法互相一致；不进人工。"
+   ]
+  },
+  {
+   "song": "new_06",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_measure_count_error",
+   "soundReadings": [
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [
+    {
+     "source": "BeatThis",
+     "ranges": [
+      [
+       22.46,
+       28.88
+      ]
+     ],
+     "why": "只在这一段降级 BeatThis 的小节线（小节长度异常 26 处（短 3 / 长 23）），其余读法互相一致；不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "只在这一段降级 BeatThis 的小节线（小节长度异常 26 处（短 3 / 长 23）），其余读法互相一致；不进人工。"
+   ]
+  },
+  {
+   "song": "new_07",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_08",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_09",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     129.6,
+     141.6
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_10",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_measure_count_error",
+   "soundReadings": [
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [
+    {
+     "source": "BeatThis",
+     "ranges": [
+      [
+       188.676,
+       194.01
+      ]
+     ],
+     "why": "只在这一段降级 BeatThis 的小节线（小节长度异常 39 处（短 36 / 长 3）），其余读法互相一致；不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "只在这一段降级 BeatThis 的小节线（小节长度异常 39 处（短 36 / 长 3）），其余读法互相一致；不进人工。"
+   ]
+  },
+  {
+   "song": "new_100",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_measure_count_error",
+   "soundReadings": [
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [
+    {
+     "source": "BeatThis",
+     "ranges": [
+      [
+       121.86,
+       235.86
+      ],
+      [
+       1.87,
+       25.77
+      ]
+     ],
+     "why": "只在这一段降级 BeatThis 的小节线（小节长度异常 2 处（短 0 / 长 2）），其余读法互相一致；不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "只在这一段降级 BeatThis 的小节线（小节长度异常 2 处（短 0 / 长 2）），其余读法互相一致；不进人工。"
+   ]
+  },
+  {
+   "song": "new_101",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_self_anomaly",
+   "soundReadings": [
+    "BeatThis",
+    "madmom"
+   ],
+   "downgraded": [
+    {
+     "source": "mapperatorinator",
+     "ranges": [
+      [
+       205.552,
+       209.547
+      ]
+     ],
+     "why": "整拍分歧，且 mapperatorinator 自身有异常（health=suspect；小节长度异常 25 处（短 0 / 长 25））：局部降级这条来源，不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "整拍分歧，且 mapperatorinator 自身有异常（health=suspect；小节长度异常 25 处（短 0 / 长 25））：局部降级这条来源，不进人工。"
+   ]
+  },
+  {
+   "song": "new_102",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_103",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_104",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_105",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     200.94,
+     212.94
+    ],
+    [
+     200.94,
+     212.94
+    ],
+    [
+     200.91,
+     212.91
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_106",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     153.38,
+     165.38
+    ],
+    [
+     210.097,
+     222.097
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_107",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     23.44,
+     35.44
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_108",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_measure_count_error",
+   "soundReadings": [
+    "BeatThis",
+    "mapperatorinator"
+   ],
+   "downgraded": [
+    {
+     "source": "madmom",
+     "ranges": [
+      [
+       39.348,
+       42.326
+      ]
+     ],
+     "why": "只在这一段降级 madmom 的小节线（小节长度异常 7 处（短 0 / 长 7）），其余读法互相一致；不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "只在这一段降级 madmom 的小节线（小节长度异常 7 处（短 0 / 长 7）），其余读法互相一致；不进人工。"
+   ]
+  },
+  {
+   "song": "new_109",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     156.615,
+     168.615
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_11",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     65.132,
+     77.132
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_110",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_111",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_measure_count_error",
+   "soundReadings": [
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [
+    {
+     "source": "BeatThis",
+     "ranges": [
+      [
+       165.48,
+       199.35
+      ]
+     ],
+     "why": "只在这一段降级 BeatThis 的小节线（小节头只有 48 个（同类中位数 107）），其余读法互相一致；不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "只在这一段降级 BeatThis 的小节线（小节头只有 48 个（同类中位数 107）），其余读法互相一致；不进人工。"
+   ]
+  },
+  {
+   "song": "new_112",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_113",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     179.0,
+     191.0
+    ],
+    [
+     179.0,
+     191.0
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_114",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_self_anomaly",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [
+    {
+     "source": "workbench",
+     "ranges": [
+      [
+       168.328,
+       257.148
+      ],
+      [
+       63.79,
+       72.19
+      ]
+     ],
+     "why": "整拍分歧，且 workbench 自身有异常（health=suspect）：局部降级这条来源，不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "整拍分歧，且 workbench 自身有异常（health=suspect）：局部降级这条来源，不进人工。"
+   ]
+  },
+  {
+   "song": "new_115",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "half_bar_in_music",
+   "soundReadings": [
+    "mapperatorinator",
+    "workbench"
+   ],
+   "downgraded": [
+    {
+     "source": "BeatThis",
+     "ranges": [
+      [
+       188.12,
+       206.05
+      ]
+     ],
+     "why": "这一带音乐里真的有半小节，周期性读法表示不了"
+    },
+    {
+     "source": "madmom",
+     "ranges": [
+      [
+       188.12,
+       206.05
+      ]
+     ],
+     "why": "这一带音乐里真的有半小节，周期性读法表示不了"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "这一带音乐里真的有半小节：唯一能表示它的读法（workbench 写下来的小节线）与三条周期性读法差半小节，而那三条彼此完全一致。人工已三次确认（kaitou / kiechau / seiza），所以这里判那三条在该段错，不进人工。"
+   ]
+  },
+  {
+   "song": "new_116",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     105.74,
+     117.74
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_117",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     200.46,
+     212.46
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_118",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_119",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     63.81,
+     75.81
+    ],
+    [
+     65.792,
+     77.792
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_12",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     142.097,
+     154.097
+    ],
+    [
+     139.75,
+     151.75
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_120",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_self_anomaly",
+   "soundReadings": [
+    "BeatThis",
+    "madmom"
+   ],
+   "downgraded": [
+    {
+     "source": "mapperatorinator",
+     "ranges": [
+      [
+       87.518,
+       93.518
+      ]
+     ],
+     "why": "整拍分歧，且 mapperatorinator 自身有异常（health=suspect；小节头只有 3 个（同类中位数 23））：局部降级这条来源，不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "整拍分歧，且 mapperatorinator 自身有异常（health=suspect；小节头只有 3 个（同类中位数 23））：局部降级这条来源，不进人工。"
+   ]
+  },
+  {
+   "song": "new_121",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "reconvergence",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     23.833,
+     89.835
+    ]
+   ],
+   "reasons": [
+    "部分区段分歧后合回来了（那些只标范围）；剩下 2 段到结尾没合回来（support 最大 15），需要人听一次。",
+    "分诊没能解释掉，等人工听审"
+   ]
+  },
+  {
+   "song": "new_122",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     28.62,
+     40.62
+    ],
+    [
+     24.383,
+     36.383
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_123",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_124",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     6.12,
+     18.12
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_125",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_self_anomaly",
+   "soundReadings": [
+    "madmom",
+    "mapperatorinator",
+    "workbench"
+   ],
+   "downgraded": [
+    {
+     "source": "BeatThis",
+     "ranges": [
+      [
+       10.4,
+       27.64
+      ]
+     ],
+     "why": "整拍分歧，且 BeatThis 自身有异常（小节长度异常 65 处（短 48 / 长 17））：局部降级这条来源，不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "整拍分歧，且 BeatThis 自身有异常（小节长度异常 65 处（短 48 / 长 17））：局部降级这条来源，不进人工。"
+   ]
+  },
+  {
+   "song": "new_126",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_127",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     173.64,
+     185.64
+    ],
+    [
+     173.64,
+     185.64
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_128",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_129",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_13",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     161.87,
+     173.87
+    ],
+    [
+     138.562,
+     150.562
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_130",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_131",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_self_anomaly",
+   "soundReadings": [
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [
+    {
+     "source": "BeatThis",
+     "ranges": [
+      [
+       34.896,
+       39.48
+      ]
+     ],
+     "why": "整拍分歧，且 BeatThis 自身有异常（小节长度异常 61 处（短 47 / 长 14））：局部降级这条来源，不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "整拍分歧，且 BeatThis 自身有异常（小节长度异常 61 处（短 47 / 长 14））：局部降级这条来源，不进人工。"
+   ]
+  },
+  {
+   "song": "new_132",
+   "eligibility": "caution",
+   "status": "REVIEW",
+   "diagnosis": "reconvergence",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator",
+    "workbench"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     86.828,
+     148.147
+    ],
+    [
+     2.16,
+     52.161
+    ],
+    [
+     168.92,
+     194.846
+    ]
+   ],
+   "reasons": [
+    "分歧之后都合回来了：只标这些区段，不把整首歌定性为异常。"
+   ]
+  },
+  {
+   "song": "new_133",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "source_measure_count_error",
+   "soundReadings": [
+    "madmom",
+    "mapperatorinator",
+    "workbench"
+   ],
+   "downgraded": [
+    {
+     "source": "BeatThis",
+     "ranges": [
+      [
+       75.287,
+       88.634
+      ]
+     ],
+     "why": "只在这一段降级 BeatThis 的小节线（小节长度异常 47 处（短 33 / 长 14）），其余读法互相一致；不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "只在这一段降级 BeatThis 的小节线（小节长度异常 47 处（短 33 / 长 14）），其余读法互相一致；不进人工。"
+   ]
+  },
+  {
+   "song": "new_134",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator",
+    "workbench"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     140.22,
+     152.22
+    ],
+    [
+     140.22,
+     152.22
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_135",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     19.34,
+     31.34
+    ],
+    [
+     177.216,
+     189.216
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_136",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_137",
+   "eligibility": "caution",
+   "status": "REVIEW",
+   "diagnosis": "reconvergence",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator",
+    "workbench"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     154.5,
+     211.602
+    ],
+    [
+     120.2,
+     139.6
+    ]
+   ],
+   "reasons": [
+    "分歧之后都合回来了：只标这些区段，不把整首歌定性为异常。"
+   ]
+  },
+  {
+   "song": "new_138",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_139",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_14",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "structure_only_attribution",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     102.196,
+     134.269
+    ]
+   ],
+   "reasons": [
+    "整拍分歧，形状是「只有 madmom 不同、其余互相一致」，但它没有自身异常症状：只报形状，不自动降级（这类形状有过反例）。",
+    "分诊没能解释掉，等人工听审"
+   ]
+  },
+  {
+   "song": "new_140",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_141",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "unresolved_phase",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "整拍分歧（madmom↔BeatThis、mapperatorinator↔madmom），相关来源自身都没有异常、到结尾也没合回来：这才是需要人听的一类。",
+    "分诊没能解释掉，等人工听审"
+   ]
+  },
+  {
+   "song": "new_142",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_143",
+   "eligibility": "caution",
+   "status": "REVIEW",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     58.532,
+     70.532
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_144",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     92.16,
+     104.16
+    ],
+    [
+     37.5,
+     49.5
+    ],
+    [
+     45.47,
+     57.47
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_145",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     256.8,
+     268.8
+    ],
+    [
+     36.8,
+     48.8
+    ],
+    [
+     26.62,
+     38.62
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_146",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_147",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     43.57,
+     55.57
+    ],
+    [
+     45.541,
+     57.541
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_148",
+   "eligibility": "caution",
+   "status": "REVIEW",
+   "diagnosis": "reconvergence",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator",
+    "workbench"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     11.795,
+     199.772
+    ],
+    [
+     223.775,
+     269.107
+    ]
+   ],
+   "reasons": [
+    "分歧之后都合回来了：只标这些区段，不把整首歌定性为异常。"
+   ]
+  },
+  {
+   "song": "new_149",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     9.56,
+     21.56
+    ],
+    [
+     11.38,
+     23.38
+    ],
+    [
+     11.36,
+     23.36
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_15",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_150",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_151",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_152",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_measure_count_error",
+   "soundReadings": [
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [
+    {
+     "source": "BeatThis",
+     "ranges": [
+      [
+       105.76,
+       118.5
+      ],
+      [
+       67.14,
+       77.74
+      ]
+     ],
+     "why": "只在这一段降级 BeatThis 的小节线（小节长度异常 77 处（短 40 / 长 37）），其余读法互相一致；不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "只在这一段降级 BeatThis 的小节线（小节长度异常 77 处（短 40 / 长 37）），其余读法互相一致；不进人工。"
+   ]
+  },
+  {
+   "song": "new_153",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     66.56,
+     78.56
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_154",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_self_anomaly",
+   "soundReadings": [
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [
+    {
+     "source": "BeatThis",
+     "ranges": [
+      [
+       3.665,
+       17.162
+      ]
+     ],
+     "why": "整拍分歧，且 BeatThis 自身有异常（小节长度异常 42 处（短 33 / 长 9））：局部降级这条来源，不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "整拍分歧，且 BeatThis 自身有异常（小节长度异常 42 处（短 33 / 长 9））：局部降级这条来源，不进人工。"
+   ]
+  },
+  {
+   "song": "new_155",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_self_anomaly",
+   "soundReadings": [
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [
+    {
+     "source": "BeatThis",
+     "ranges": [
+      [
+       125.92,
+       152.32
+      ],
+      [
+       212.32,
+       233.93
+      ],
+      [
+       89.92,
+       99.52
+      ],
+      [
+       1.12,
+       4.73
+      ]
+     ],
+     "why": "整拍分歧，且 BeatThis 自身有异常（小节长度异常 126 处（短 124 / 长 2））：局部降级这条来源，不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "整拍分歧，且 BeatThis 自身有异常（小节长度异常 126 处（短 124 / 长 2））：局部降级这条来源，不进人工。"
+   ]
+  },
+  {
+   "song": "new_156",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "reconvergence",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator",
+    "workbench"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     131.122,
+     216.02
+    ]
+   ],
+   "reasons": [
+    "部分区段分歧后合回来了（那些只标范围）；剩下 4 段到结尾没合回来（support 最大 50），需要人听一次。",
+    "分诊没能解释掉，等人工听审"
+   ]
+  },
+  {
+   "song": "new_157",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     102.09,
+     114.09
+    ],
+    [
+     100.638,
+     112.638
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_158",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     143.66,
+     155.66
+    ],
+    [
+     117.9,
+     129.9
+    ],
+    [
+     182.309,
+     194.309
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_159",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_self_anomaly",
+   "soundReadings": [
+    "madmom",
+    "mapperatorinator",
+    "workbench"
+   ],
+   "downgraded": [
+    {
+     "source": "BeatThis",
+     "ranges": [
+      [
+       136.64,
+       148.02
+      ]
+     ],
+     "why": "整拍分歧，且 BeatThis 自身有异常（小节长度异常 42 处（短 21 / 长 21））：局部降级这条来源，不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "整拍分歧，且 BeatThis 自身有异常（小节长度异常 42 处（短 21 / 长 21））：局部降级这条来源，不进人工。"
+   ]
+  },
+  {
+   "song": "new_16",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "reconvergence",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     153.58,
+     193.579
+    ]
+   ],
+   "reasons": [
+    "部分区段分歧后合回来了（那些只标范围）；剩下 2 段到结尾没合回来（support 最大 16），需要人听一次。",
+    "分诊没能解释掉，等人工听审"
+   ]
+  },
+  {
+   "song": "new_17",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     59.38,
+     71.38
+    ],
+    [
+     18.373,
+     30.373
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_18",
+   "eligibility": "caution",
+   "status": "REVIEW",
+   "diagnosis": "reconvergence",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator",
+    "workbench"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     87.168,
+     145.27
+    ]
+   ],
+   "reasons": [
+    "分歧之后都合回来了：只标这些区段，不把整首歌定性为异常。"
+   ]
+  },
+  {
+   "song": "new_19",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_20",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_21",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "half_bar_in_music",
+   "soundReadings": [
+    "mapperatorinator",
+    "workbench"
+   ],
+   "downgraded": [
+    {
+     "source": "BeatThis",
+     "ranges": [
+      [
+       283.469,
+       329.26
+      ]
+     ],
+     "why": "这一带音乐里真的有半小节，周期性读法表示不了"
+    },
+    {
+     "source": "madmom",
+     "ranges": [
+      [
+       283.469,
+       329.26
+      ]
+     ],
+     "why": "这一带音乐里真的有半小节，周期性读法表示不了"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "这一带音乐里真的有半小节：唯一能表示它的读法（workbench 写下来的小节线）与三条周期性读法差半小节，而那三条彼此完全一致。人工已三次确认（kaitou / kiechau / seiza），所以这里判那三条在该段错，不进人工。"
+   ]
+  },
+  {
+   "song": "new_22",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     143.17,
+     155.17
+    ],
+    [
+     126.342,
+     138.342
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_23",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_measure_count_error",
+   "soundReadings": [
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [
+    {
+     "source": "BeatThis",
+     "ranges": [
+      [
+       121.62,
+       149.22
+      ]
+     ],
+     "why": "只在这一段降级 BeatThis 的小节线（小节长度异常 18 处（短 17 / 长 1）），其余读法互相一致；不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "只在这一段降级 BeatThis 的小节线（小节长度异常 18 处（短 17 / 长 1）），其余读法互相一致；不进人工。"
+   ]
+  },
+  {
+   "song": "new_24",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     141.62,
+     153.62
+    ],
+    [
+     136.82,
+     148.82
+    ],
+    [
+     124.794,
+     136.794
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_25",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "structure_only_attribution",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     102.366,
+     211.37
+    ]
+   ],
+   "reasons": [
+    "分歧的形状是「只有 madmom 一条不同、其余互相一致」，但它自己没报出异常小节长度。这类形状有过反例（kaitou：与众不同的那条才是准的），所以只报形状、不自动降级。",
+    "分诊没能解释掉，等人工听审"
+   ]
+  },
+  {
+   "song": "new_26",
+   "eligibility": "caution",
+   "status": "REVIEW",
+   "diagnosis": "reconvergence",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator",
+    "workbench"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     154.48,
+     215.667
+    ],
+    [
+     22.24,
+     28.325
+    ]
+   ],
+   "reasons": [
+    "分歧之后都合回来了：只标这些区段，不把整首歌定性为异常。"
+   ]
+  },
+  {
+   "song": "new_27",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "structure_only_attribution",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     7.38,
+     180.353
+    ]
+   ],
+   "reasons": [
+    "分歧的形状是「只有 madmom 一条不同、其余互相一致」，但它自己没报出异常小节长度。这类形状有过反例（kaitou：与众不同的那条才是准的），所以只报形状、不自动降级。",
+    "分诊没能解释掉，等人工听审"
+   ]
+  },
+  {
+   "song": "new_28",
+   "eligibility": "caution",
+   "status": "REVIEW",
+   "diagnosis": "reconvergence",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     8.8,
+     47.19
+    ]
+   ],
+   "reasons": [
+    "分歧之后都合回来了：只标这些区段，不把整首歌定性为异常。"
+   ]
+  },
+  {
+   "song": "new_29",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     101.26,
+     113.26
+    ],
+    [
+     99.041,
+     111.041
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_30",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_31",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     141.7,
+     153.7
+    ],
+    [
+     138.045,
+     150.045
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_32",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     134.43,
+     146.43
+    ],
+    [
+     134.4,
+     146.4
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_33",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     129.24,
+     141.24
+    ],
+    [
+     129.227,
+     141.227
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_34",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "reconvergence",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator",
+    "workbench"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     2.495,
+     201.249
+    ]
+   ],
+   "reasons": [
+    "部分区段分歧后合回来了（那些只标范围）；剩下 3 段到结尾没合回来（support 最大 107），需要人听一次。",
+    "分诊没能解释掉，等人工听审"
+   ]
+  },
+  {
+   "song": "new_35",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_measure_count_error",
+   "soundReadings": [
+    "BeatThis",
+    "madmom"
+   ],
+   "downgraded": [
+    {
+     "source": "mapperatorinator",
+     "ranges": [
+      [
+       119.471,
+       123.164
+      ]
+     ],
+     "why": "只在这一段降级 mapperatorinator 的小节线（小节长度异常 2 处（短 0 / 长 2）），其余读法互相一致；不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "只在这一段降级 mapperatorinator 的小节线（小节长度异常 2 处（短 0 / 长 2）），其余读法互相一致；不进人工。"
+   ]
+  },
+  {
+   "song": "new_36",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator",
+    "workbench"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     -2.2,
+     9.8
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_37",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_38",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     14.56,
+     26.56
+    ],
+    [
+     17.58,
+     29.58
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_39",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "unresolved_phase",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "整拍分歧（mapperatorinator↔madmom），相关来源自身都没有异常、到结尾也没合回来：这才是需要人听的一类。",
+    "分诊没能解释掉，等人工听审"
+   ]
+  },
+  {
+   "song": "new_40",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     109.64,
+     121.64
+    ],
+    [
+     112.951,
+     124.951
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_41",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_42",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     27.36,
+     39.36
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_43",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_measure_count_error",
+   "soundReadings": [
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [
+    {
+     "source": "BeatThis",
+     "ranges": [
+      [
+       121.62,
+       149.21
+      ]
+     ],
+     "why": "只在这一段降级 BeatThis 的小节线（小节长度异常 13 处（短 11 / 长 2）），其余读法互相一致；不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "只在这一段降级 BeatThis 的小节线（小节长度异常 13 处（短 11 / 长 2）），其余读法互相一致；不进人工。"
+   ]
+  },
+  {
+   "song": "new_44",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     126.2,
+     138.2
+    ],
+    [
+     126.192,
+     138.192
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_45",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_self_anomaly",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [
+    {
+     "source": "workbench",
+     "ranges": [
+      [
+       163.4,
+       210.32
+      ]
+     ],
+     "why": "整拍分歧，且 workbench 自身有异常（health=suspect）：局部降级这条来源，不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "整拍分歧，且 workbench 自身有异常（health=suspect）：局部降级这条来源，不进人工。"
+   ]
+  },
+  {
+   "song": "new_46",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_47",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_48",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_measure_count_error",
+   "soundReadings": [
+    "BeatThis",
+    "madmom"
+   ],
+   "downgraded": [
+    {
+     "source": "mapperatorinator",
+     "ranges": [
+      [
+       192.812,
+       260.122
+      ]
+     ],
+     "why": "只在这一段降级 mapperatorinator 的小节线（health=suspect），其余读法互相一致；不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "只在这一段降级 mapperatorinator 的小节线（health=suspect），其余读法互相一致；不进人工。"
+   ]
+  },
+  {
+   "song": "new_49",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_measure_count_error",
+   "soundReadings": [
+    "madmom",
+    "mapperatorinator",
+    "workbench"
+   ],
+   "downgraded": [
+    {
+     "source": "BeatThis",
+     "ranges": [
+      [
+       119.74,
+       123.62
+      ]
+     ],
+     "why": "只在这一段降级 BeatThis 的小节线（小节长度异常 19 处（短 14 / 长 5）），其余读法互相一致；不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "只在这一段降级 BeatThis 的小节线（小节长度异常 19 处（短 14 / 长 5）），其余读法互相一致；不进人工。"
+   ]
+  },
+  {
+   "song": "new_50",
+   "eligibility": "caution",
+   "status": "REVIEW",
+   "diagnosis": "continuous_drift",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator",
+    "workbench"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     185.88,
+     197.88
+    ],
+    [
+     129.32,
+     139.6
+    ]
+   ],
+   "reasons": [
+    "相位连续滑：这是 tempo / affine 假设的风险（两条线的小节长度略有出入），不是相位错位；不判小节错。"
+   ]
+  },
+  {
+   "song": "new_51",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     159.77,
+     171.77
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_52",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "unresolved_phase",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "整拍分歧（madmom↔BeatThis、mapperatorinator↔madmom），相关来源自身都没有异常、到结尾也没合回来：这才是需要人听的一类。",
+    "分诊没能解释掉，等人工听审"
+   ]
+  },
+  {
+   "song": "new_53",
+   "eligibility": "caution",
+   "status": "REVIEW",
+   "diagnosis": "reconvergence",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator",
+    "workbench"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     8.8,
+     45.721
+    ]
+   ],
+   "reasons": [
+    "分歧之后都合回来了：只标这些区段，不把整首歌定性为异常。"
+   ]
+  },
+  {
+   "song": "new_54",
+   "eligibility": "caution",
+   "status": "REVIEW",
+   "diagnosis": "reconvergence",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator",
+    "workbench"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     1.58,
+     165.621
+    ]
+   ],
+   "reasons": [
+    "分歧之后都合回来了：只标这些区段，不把整首歌定性为异常。"
+   ]
+  },
+  {
+   "song": "new_55",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_self_anomaly",
+   "soundReadings": [
+    "BeatThis",
+    "mapperatorinator"
+   ],
+   "downgraded": [
+    {
+     "source": "madmom",
+     "ranges": [
+      [
+       212.32,
+       214.81
+      ]
+     ],
+     "why": "整拍分歧，且 madmom 自身有异常（小节长度异常 18 处（短 0 / 长 18））：局部降级这条来源，不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "整拍分歧，且 madmom 自身有异常（小节长度异常 18 处（短 0 / 长 18））：局部降级这条来源，不进人工。"
+   ]
+  },
+  {
+   "song": "new_56",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     190.61,
+     202.61
+    ],
+    [
+     93.85,
+     105.85
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_57",
+   "eligibility": "caution",
+   "status": "REVIEW",
+   "diagnosis": "reconvergence",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator",
+    "workbench"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     178.07,
+     187.3
+    ]
+   ],
+   "reasons": [
+    "分歧都没合回来，但每段只有 3 个 matched measure 支持（低于 4）：登记为局部单点，不占人工。"
+   ]
+  },
+  {
+   "song": "new_58",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_59",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "structure_only_attribution",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     3.12,
+     97.04
+    ]
+   ],
+   "reasons": [
+    "分歧的形状是「只有 madmom 一条不同、其余互相一致」，但它自己没报出异常小节长度。这类形状有过反例（kaitou：与众不同的那条才是准的），所以只报形状、不自动降级。",
+    "分诊没能解释掉，等人工听审"
+   ]
+  },
+  {
+   "song": "new_60",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_measure_count_error",
+   "soundReadings": [
+    "BeatThis",
+    "mapperatorinator"
+   ],
+   "downgraded": [
+    {
+     "source": "madmom",
+     "ranges": [
+      [
+       9.25,
+       214.215
+      ]
+     ],
+     "why": "只在这一段降级 madmom 的小节线（小节长度异常 2 处（短 0 / 长 2）），其余读法互相一致；不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "只在这一段降级 madmom 的小节线（小节长度异常 2 处（短 0 / 长 2）），其余读法互相一致；不进人工。"
+   ]
+  },
+  {
+   "song": "new_61",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_measure_count_error",
+   "soundReadings": [
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [
+    {
+     "source": "BeatThis",
+     "ranges": [
+      [
+       180.72,
+       183.54
+      ]
+     ],
+     "why": "只在这一段降级 BeatThis 的小节线（小节长度异常 81 处（短 0 / 长 81）），其余读法互相一致；不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "只在这一段降级 BeatThis 的小节线（小节长度异常 81 处（短 0 / 长 81）），其余读法互相一致；不进人工。"
+   ]
+  },
+  {
+   "song": "new_62",
+   "eligibility": "caution",
+   "status": "REVIEW",
+   "diagnosis": "reconvergence",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator",
+    "workbench"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     154.3,
+     215.487
+    ],
+    [
+     19.6,
+     29.4
+    ]
+   ],
+   "reasons": [
+    "分歧之后都合回来了：只标这些区段，不把整首歌定性为异常。"
+   ]
+  },
+  {
+   "song": "new_63",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     54.0,
+     66.0
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_64",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_self_anomaly",
+   "soundReadings": [
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [
+    {
+     "source": "BeatThis",
+     "ranges": [
+      [
+       20.457,
+       28.04
+      ]
+     ],
+     "why": "整拍分歧，且 BeatThis 自身有异常（小节长度异常 3 处（短 0 / 长 3））：局部降级这条来源，不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "整拍分歧，且 BeatThis 自身有异常（小节长度异常 3 处（短 0 / 长 3））：局部降级这条来源，不进人工。"
+   ]
+  },
+  {
+   "song": "new_65",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_66",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     141.7,
+     153.7
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_67",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_measure_count_error",
+   "soundReadings": [
+    "madmom",
+    "mapperatorinator",
+    "workbench"
+   ],
+   "downgraded": [
+    {
+     "source": "BeatThis",
+     "ranges": [
+      [
+       178.653,
+       183.74
+      ]
+     ],
+     "why": "只在这一段降级 BeatThis 的小节线（小节长度异常 26 处（短 23 / 长 3）），其余读法互相一致；不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "只在这一段降级 BeatThis 的小节线（小节长度异常 26 处（短 23 / 长 3）），其余读法互相一致；不进人工。"
+   ]
+  },
+  {
+   "song": "new_68",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_measure_count_error",
+   "soundReadings": [
+    "BeatThis",
+    "mapperatorinator"
+   ],
+   "downgraded": [
+    {
+     "source": "madmom",
+     "ranges": [
+      [
+       47.13,
+       95.14
+      ],
+      [
+       195.72,
+       207.14
+      ]
+     ],
+     "why": "只在这一段降级 madmom 的小节线（小节长度异常 2 处（短 2 / 长 0）），其余读法互相一致；不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "只在这一段降级 madmom 的小节线（小节长度异常 2 处（短 2 / 长 0）），其余读法互相一致；不进人工。"
+   ]
+  },
+  {
+   "song": "new_69",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_measure_count_error",
+   "soundReadings": [
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [
+    {
+     "source": "BeatThis",
+     "ranges": [
+      [
+       172.5,
+       178.13
+      ]
+     ],
+     "why": "只在这一段降级 BeatThis 的小节线（小节长度异常 120 处（短 114 / 长 6）），其余读法互相一致；不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "只在这一段降级 BeatThis 的小节线（小节长度异常 120 处（短 114 / 长 6）），其余读法互相一致；不进人工。"
+   ]
+  },
+  {
+   "song": "new_70",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_measure_count_error",
+   "soundReadings": [
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [
+    {
+     "source": "BeatThis",
+     "ranges": [
+      [
+       245.634,
+       321.859
+      ],
+      [
+       177.853,
+       231.513
+      ]
+     ],
+     "why": "只在这一段降级 BeatThis 的小节线（小节长度异常 20 处（短 19 / 长 1）；小节头只有 125 个（同类中位数 231）），其余读法互相一致；不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "只在这一段降级 BeatThis 的小节线（小节长度异常 20 处（短 19 / 长 1）；小节头只有 125 个（同类中位数 231）），其余读法互相一致；不进人工。"
+   ]
+  },
+  {
+   "song": "new_71",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_self_anomaly",
+   "soundReadings": [
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [
+    {
+     "source": "BeatThis",
+     "ranges": [
+      [
+       142.42,
+       147.48
+      ]
+     ],
+     "why": "整拍分歧，且 BeatThis 自身有异常（小节长度异常 69 处（短 30 / 长 39））：局部降级这条来源，不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "整拍分歧，且 BeatThis 自身有异常（小节长度异常 69 处（短 30 / 长 39））：局部降级这条来源，不进人工。"
+   ]
+  },
+  {
+   "song": "new_72",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "source_self_anomaly",
+   "soundReadings": [
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [
+    {
+     "source": "BeatThis",
+     "ranges": [
+      [
+       187.88,
+       196.98
+      ]
+     ],
+     "why": "整拍分歧，且 BeatThis 自身有异常（小节长度异常 84 处（短 55 / 长 29））：局部降级这条来源，不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "整拍分歧，且 BeatThis 自身有异常（小节长度异常 84 处（短 55 / 长 29））：局部降级这条来源，不进人工。"
+   ]
+  },
+  {
+   "song": "new_73",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_measure_count_error",
+   "soundReadings": [
+    "BeatThis",
+    "madmom"
+   ],
+   "downgraded": [
+    {
+     "source": "mapperatorinator",
+     "ranges": [
+      [
+       3.645,
+       17.142
+      ]
+     ],
+     "why": "只在这一段降级 mapperatorinator 的小节线（小节长度异常 14 处（短 0 / 长 14）），其余读法互相一致；不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "只在这一段降级 mapperatorinator 的小节线（小节长度异常 14 处（短 0 / 长 14）），其余读法互相一致；不进人工。"
+   ]
+  },
+  {
+   "song": "new_74",
+   "eligibility": "caution",
+   "status": "REVIEW",
+   "diagnosis": "reconvergence",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator",
+    "workbench"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     86.898,
+     146.57
+    ],
+    [
+     45.74,
+     58.72
+    ],
+    [
+     12.98,
+     19.48
+    ],
+    [
+     173.551,
+     178.751
+    ]
+   ],
+   "reasons": [
+    "分歧之后都合回来了：只标这些区段，不把整首歌定性为异常。"
+   ]
+  },
+  {
+   "song": "new_75",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "reconvergence",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator",
+    "workbench"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     178.253,
+     216.842
+    ]
+   ],
+   "reasons": [
+    "部分区段分歧后合回来了（那些只标范围）；剩下 6 段到结尾没合回来（support 最大 23），需要人听一次。",
+    "分诊没能解释掉，等人工听审"
+   ]
+  },
+  {
+   "song": "new_76",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "structure_only_attribution",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     43.923,
+     99.19
+    ]
+   ],
+   "reasons": [
+    "分歧的形状是「只有 madmom 一条不同、其余互相一致」，但它自己没报出异常小节长度。这类形状有过反例（kaitou：与众不同的那条才是准的），所以只报形状、不自动降级。",
+    "分诊没能解释掉，等人工听审"
+   ]
+  },
+  {
+   "song": "new_77",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_78",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_self_anomaly",
+   "soundReadings": [
+    "BeatThis",
+    "madmom"
+   ],
+   "downgraded": [
+    {
+     "source": "mapperatorinator",
+     "ranges": [
+      [
+       2.28,
+       59.869
+      ]
+     ],
+     "why": "整拍分歧，且 mapperatorinator 自身有异常（health=suspect）：局部降级这条来源，不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "整拍分歧，且 mapperatorinator 自身有异常（health=suspect）：局部降级这条来源，不进人工。"
+   ]
+  },
+  {
+   "song": "new_79",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_measure_count_error",
+   "soundReadings": [
+    "madmom",
+    "mapperatorinator",
+    "workbench"
+   ],
+   "downgraded": [
+    {
+     "source": "BeatThis",
+     "ranges": [
+      [
+       30.759,
+       43.63
+      ]
+     ],
+     "why": "只在这一段降级 BeatThis 的小节线（小节长度异常 99 处（短 84 / 长 15）），其余读法互相一致；不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "只在这一段降级 BeatThis 的小节线（小节长度异常 99 处（短 84 / 长 15）），其余读法互相一致；不进人工。"
+   ]
+  },
+  {
+   "song": "new_80",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_measure_count_error",
+   "soundReadings": [
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [
+    {
+     "source": "BeatThis",
+     "ranges": [
+      [
+       106.36,
+       148.7
+      ],
+      [
+       61.34,
+       78.28
+      ]
+     ],
+     "why": "只在这一段降级 BeatThis 的小节线（小节长度异常 77 处（短 27 / 长 50）），其余读法互相一致；不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "只在这一段降级 BeatThis 的小节线（小节长度异常 77 处（短 27 / 长 50）），其余读法互相一致；不进人工。"
+   ]
+  },
+  {
+   "song": "new_81",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_self_anomaly",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [
+    {
+     "source": "workbench",
+     "ranges": [
+      [
+       244.51,
+       286.86
+      ],
+      [
+       211.663,
+       222.956
+      ],
+      [
+       310.484,
+       321.778
+      ]
+     ],
+     "why": "整拍分歧，且 workbench 自身有异常（health=suspect）：局部降级这条来源，不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "整拍分歧，且 workbench 自身有异常（health=suspect）：局部降级这条来源，不进人工。"
+   ]
+  },
+  {
+   "song": "new_82",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_self_anomaly",
+   "soundReadings": [
+    "BeatThis",
+    "mapperatorinator",
+    "workbench"
+   ],
+   "downgraded": [
+    {
+     "source": "madmom",
+     "ranges": [
+      [
+       111.68,
+       129.04
+      ],
+      [
+       225.333,
+       228.28
+      ]
+     ],
+     "why": "整拍分歧，且 madmom 自身有异常（小节长度异常 17 处（短 0 / 长 17））：局部降级这条来源，不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "整拍分歧，且 madmom 自身有异常（小节长度异常 17 处（短 0 / 长 17））：局部降级这条来源，不进人工。"
+   ]
+  },
+  {
+   "song": "new_83",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_measure_count_error",
+   "soundReadings": [
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [
+    {
+     "source": "BeatThis",
+     "ranges": [
+      [
+       180.469,
+       203.514
+      ],
+      [
+       19.19,
+       28.81
+      ]
+     ],
+     "why": "只在这一段降级 BeatThis 的小节线（小节长度异常 61 处（短 61 / 长 0）），其余读法互相一致；不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "只在这一段降级 BeatThis 的小节线（小节长度异常 61 处（短 61 / 长 0）），其余读法互相一致；不进人工。"
+   ]
+  },
+  {
+   "song": "new_84",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     226.87,
+     238.87
+    ],
+    [
+     226.873,
+     238.873
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_85",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_self_anomaly",
+   "soundReadings": [
+    "BeatThis",
+    "madmom"
+   ],
+   "downgraded": [
+    {
+     "source": "mapperatorinator",
+     "ranges": [
+      [
+       12.02,
+       148.477
+      ],
+      [
+       226.52,
+       235.54
+      ]
+     ],
+     "why": "整拍分歧，且 mapperatorinator 自身有异常（health=suspect）：局部降级这条来源，不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "整拍分歧，且 mapperatorinator 自身有异常（health=suspect）：局部降级这条来源，不进人工。"
+   ]
+  },
+  {
+   "song": "new_86",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_measure_count_error",
+   "soundReadings": [
+    "BeatThis",
+    "mapperatorinator"
+   ],
+   "downgraded": [
+    {
+     "source": "madmom",
+     "ranges": [
+      [
+       51.21,
+       56.48
+      ]
+     ],
+     "why": "只在这一段降级 madmom 的小节线（小节长度异常 18 处（短 1 / 长 17）），其余读法互相一致；不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "只在这一段降级 madmom 的小节线（小节长度异常 18 处（短 1 / 长 17）），其余读法互相一致；不进人工。"
+   ]
+  },
+  {
+   "song": "new_87",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     113.66,
+     125.66
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_88",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     44.42,
+     56.42
+    ],
+    [
+     48.4,
+     60.4
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_89",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     69.14,
+     81.14
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_90",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_self_anomaly",
+   "soundReadings": [
+    "BeatThis",
+    "madmom"
+   ],
+   "downgraded": [
+    {
+     "source": "mapperatorinator",
+     "ranges": [
+      [
+       171.773,
+       219.78
+      ]
+     ],
+     "why": "整拍分歧，且 mapperatorinator 自身有异常（health=suspect；小节头只有 72 个（同类中位数 123））：局部降级这条来源，不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "整拍分歧，且 mapperatorinator 自身有异常（health=suspect；小节头只有 72 个（同类中位数 123））：局部降级这条来源，不进人工。"
+   ]
+  },
+  {
+   "song": "new_91",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_92",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_93",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "new_94",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_self_anomaly",
+   "soundReadings": [
+    "madmom",
+    "mapperatorinator",
+    "workbench"
+   ],
+   "downgraded": [
+    {
+     "source": "BeatThis",
+     "ranges": [
+      [
+       171.083,
+       177.104
+      ]
+     ],
+     "why": "整拍分歧，且 BeatThis 自身有异常（小节长度异常 37 处（短 37 / 长 0））：局部降级这条来源，不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "整拍分歧，且 BeatThis 自身有异常（小节长度异常 37 处（短 37 / 长 0））：局部降级这条来源，不进人工。"
+   ]
+  },
+  {
+   "song": "new_95",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     165.18,
+     177.18
+    ],
+    [
+     167.44,
+     179.44
+    ],
+    [
+     161.398,
+     173.398
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_96",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     234.25,
+     246.25
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_97",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     154.62,
+     166.62
+    ],
+    [
+     154.62,
+     166.62
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "new_98",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_measure_count_error",
+   "soundReadings": [
+    "madmom",
+    "mapperatorinator",
+    "workbench"
+   ],
+   "downgraded": [
+    {
+     "source": "BeatThis",
+     "ranges": [
+      [
+       102.5,
+       135.84
+      ]
+     ],
+     "why": "只在这一段降级 BeatThis 的小节线（小节长度异常 120 处（短 26 / 长 94）），其余读法互相一致；不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "只在这一段降级 BeatThis 的小节线（小节长度异常 120 处（短 26 / 长 94）），其余读法互相一致；不进人工。"
+   ]
+  },
+  {
+   "song": "new_99",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "mapperatorinator"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     259.642,
+     271.642
+    ],
+    [
+     201.82,
+     213.82
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
    "song": "onewish",
    "eligibility": "caution",
    "status": "REVIEW",
@@ -841,6 +4529,1215 @@
    "cautionRanges": [],
    "reasons": [
     "只在这一段降级 BeatThis 的小节线（小节长度异常 38 处（短 4 / 长 34）），其余读法互相一致；不进人工。"
+   ]
+  },
+  {
+   "song": "yrk_01",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     144.43,
+     156.43
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "yrk_02",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "yrk_03",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "yrk_04",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_self_anomaly",
+   "soundReadings": [
+    "BeatThis",
+    "workbench"
+   ],
+   "downgraded": [
+    {
+     "source": "madmom",
+     "ranges": [
+      [
+       11.28,
+       17.53
+      ]
+     ],
+     "why": "整拍分歧，且 madmom 自身有异常（小节长度异常 2 处（短 0 / 长 2））：局部降级这条来源，不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "整拍分歧，且 madmom 自身有异常（小节长度异常 2 处（短 0 / 长 2））：局部降级这条来源，不进人工。"
+   ]
+  },
+  {
+   "song": "yrk_05",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     161.14,
+     173.14
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "yrk_06",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     1.2,
+     13.2
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "yrk_07",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "yrk_08",
+   "eligibility": "caution",
+   "status": "REVIEW",
+   "diagnosis": "source_measure_count_error",
+   "soundReadings": [
+    "madmom"
+   ],
+   "downgraded": [
+    {
+     "source": "BeatThis",
+     "ranges": [
+      [
+       174.32,
+       191.46
+      ]
+     ],
+     "why": "只在这一段降级 BeatThis 的小节线（小节长度异常 76 处（短 3 / 长 73）），其余读法互相一致；不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "只在这一段降级 BeatThis 的小节线（小节长度异常 76 处（短 3 / 长 73）），其余读法互相一致；不进人工。",
+    "只剩 madmom 一条可用读法，无法交叉核对"
+   ]
+  },
+  {
+   "song": "yrk_09",
+   "eligibility": "caution",
+   "status": "REVIEW",
+   "diagnosis": "reconvergence",
+   "soundReadings": [
+    "BeatThis",
+    "madmom"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     224.7,
+     234.81
+    ]
+   ],
+   "reasons": [
+    "分歧之后都合回来了：只标这些区段，不把整首歌定性为异常。"
+   ]
+  },
+  {
+   "song": "yrk_10",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "yrk_11",
+   "eligibility": "caution",
+   "status": "REVIEW",
+   "diagnosis": "reconvergence",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "workbench"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     239.58,
+     254.56
+    ]
+   ],
+   "reasons": [
+    "分歧都没合回来，但每段只有 3 个 matched measure 支持（低于 4）：登记为局部单点，不占人工。"
+   ]
+  },
+  {
+   "song": "yrk_12",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     14.48,
+     26.48
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "yrk_13",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_measure_count_error",
+   "soundReadings": [
+    "madmom",
+    "workbench"
+   ],
+   "downgraded": [
+    {
+     "source": "BeatThis",
+     "ranges": [
+      [
+       177.28,
+       189.601
+      ],
+      [
+       8.05,
+       14.21
+      ]
+     ],
+     "why": "只在这一段降级 BeatThis 的小节线（小节长度异常 37 处（短 37 / 长 0）），其余读法互相一致；不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "只在这一段降级 BeatThis 的小节线（小节长度异常 37 处（短 37 / 长 0）），其余读法互相一致；不进人工。"
+   ]
+  },
+  {
+   "song": "yrk_14",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     240.72,
+     252.72
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "yrk_15",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "yrk_16",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "yrk_17",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     147.26,
+     159.26
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "yrk_18",
+   "eligibility": "ineligible",
+   "status": "OK",
+   "diagnosis": "structure_only_attribution",
+   "soundReadings": [
+    "BeatThis",
+    "madmom",
+    "workbench"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     17.74,
+     38.16
+    ]
+   ],
+   "reasons": [
+    "整拍分歧，形状是「只有 madmom 不同、其余互相一致」，但它没有自身异常症状：只报形状，不自动降级（这类形状有过反例）。",
+    "分诊没能解释掉，等人工听审"
+   ]
+  },
+  {
+   "song": "yrk_19",
+   "eligibility": "caution",
+   "status": "OK",
+   "diagnosis": "single_flip",
+   "soundReadings": [
+    "BeatThis",
+    "madmom"
+   ],
+   "downgraded": [],
+   "cautionRanges": [
+    [
+     168.92,
+     180.92
+    ]
+   ],
+   "reasons": [
+    "单点跳变，前后立即恢复：只登记，不当异常。"
+   ]
+  },
+  {
+   "song": "yrk_20",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "yrk_21",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "source_measure_count_error",
+   "soundReadings": [
+    "madmom",
+    "workbench"
+   ],
+   "downgraded": [
+    {
+     "source": "BeatThis",
+     "ranges": [
+      [
+       31.52,
+       50.72
+      ],
+      [
+       217.12,
+       236.3
+      ]
+     ],
+     "why": "只在这一段降级 BeatThis 的小节线（小节长度异常 49 处（短 0 / 长 49）），其余读法互相一致；不进人工。"
+    }
+   ],
+   "cautionRanges": [],
+   "reasons": [
+    "只在这一段降级 BeatThis 的小节线（小节长度异常 49 处（短 0 / 长 49）），其余读法互相一致；不进人工。"
+   ]
+  },
+  {
+   "song": "yrk_22",
+   "eligibility": "eligible",
+   "status": "OK",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis",
+    "madmom"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "atom",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "feishu",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "kaishin",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "kaishin2",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "langzhizhu",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "light",
+   "eligibility": "caution",
+   "status": "REVIEW",
+   "diagnosis": "local_timing_drift",
+   "soundReadings": [
+    "BeatThis"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "B 层干净，只有 A 层显示拍子在局部漂：不判小节错，下游用到拍层结论时带保留。"
+   ]
+  },
+  {
+   "song": "yoru",
+   "eligibility": "eligible",
+   "status": "REVIEW",
+   "diagnosis": "clean",
+   "soundReadings": [
+    "BeatThis"
+   ],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "机器读法之间无显著分歧；不等于真值正确。"
+   ]
+  },
+  {
+   "song": "skn_01",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_02",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_03",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_04",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_05",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_06",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_07",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_08",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_09",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_10",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_11",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_12",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_13",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_14",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_15",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_16",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_17",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_18",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_19",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_20",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_21",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_22",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_23",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_24",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_25",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_26",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_27",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_28",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_29",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_30",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_31",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_32",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_33",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_34",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_35",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_36",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_37",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_38",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_39",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_40",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_41",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_42",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_43",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_44",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_45",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_46",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_47",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_48",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_49",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_50",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_51",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
+   ]
+  },
+  {
+   "song": "skn_52",
+   "eligibility": "ineligible",
+   "status": "REVIEW",
+   "diagnosis": "material_not_song",
+   "soundReadings": [],
+   "downgraded": [],
+   "cautionRanges": [],
+   "reasons": [
+    "这不是整曲：是单个 REAPER 工程导出的分件（06_Piano / 06_ADD_Kick / 06_Prologue-01 / 06_Synth C_LR …），时长 0.24–110 秒；所有模型读数都是空的（BeatThis 2 拍、ADTOF 56 字节、ByteDance 2 字节）。原判 eligible 是在一条读法都没有的情况下发出的，作废。",
+    "要进名单，上游先给整曲音频与分轨，再按 tools/admit_songs.py --song <歌> 重判。"
    ]
   }
  ]
