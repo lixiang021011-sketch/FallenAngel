@@ -1,0 +1,11 @@
+{
+  "name": "fallenangel-attention-annotator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Mobile-first instrument attention annotation prototype (research tool, not part of the game).",
+  "scripts": {
+    "test": "node --test",
+    "serve": "node tools/serve.mjs"
+  }
+}

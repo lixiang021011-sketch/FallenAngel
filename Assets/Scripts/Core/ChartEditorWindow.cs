@@ -16,7 +16,8 @@ namespace FallenAngel.Core
     /// </summary>
     public sealed class ChartEditorWindow : EditorWindow
     {
-        private const int Lanes = 5;
+        /// <summary>当前谱面的键数（metadata.laneCount 优先；旧 v2 谱 = 5，v1 谱 = 4）</summary>
+        private int Lanes => chart != null ? chart.LaneCount : 5;
         // 轨道配色统一取自 Core.LaneColors（与游戏同一份来源）——此前这里是第二份拷贝，
         // 一旦两边不同步，"打谱与游玩共用同一套颜色语言"就不成立。
 
@@ -46,6 +47,11 @@ namespace FallenAngel.Core
         private const int UndoLimit = 60;
         // 开源谱面导入：调 chart_tools/chart_import.py（一份解析逻辑，命令行与编辑器共用）
         private string pythonPath = "python";
+        // AI 草稿导入走独立工程 chart_adapter（不在本工程里）：键数原样、不删音不改节奏，导入前先选声部
+        private string importPart = "Bass";
+        private const string AdapterPrefKey = "FallenAngel.ChartEditor.AdapterScript";
+        private const string DefaultAdapterScript = "D:/fa_tools/chart_adapter/osu_adapter.py";
+        private string adapterScript;
         private string importLog = "";
         private float scrollTime;
         private float pixelsPerSecond = 220f;
@@ -411,6 +417,13 @@ namespace FallenAngel.Core
                 if (GUILayout.Button("新建 5 轨", EditorStyles.toolbarButton, GUILayout.Width(72))) NewChart();
                 if (GUILayout.Button("保存 v2", EditorStyles.toolbarButton, GUILayout.Width(70))) Save();
                 if (GUILayout.Button("导入开源谱面…", EditorStyles.toolbarButton, GUILayout.Width(108))) PickAndImport();
+                if (GUILayout.Button("导入 AI 草稿…", EditorStyles.toolbarButton, GUILayout.Width(96))) PickAndImportDraft();
+                GUILayout.Label("声部", EditorStyles.miniLabel, GUILayout.Width(26));
+                importPart = EditorGUILayout.TextField(importPart, GUILayout.Width(60));
+                if (adapterScript == null) adapterScript = EditorPrefs.GetString(AdapterPrefKey, DefaultAdapterScript);
+                GUILayout.Label("Adapter", EditorStyles.miniLabel, GUILayout.Width(44));
+                string newScript = EditorGUILayout.TextField(adapterScript, GUILayout.Width(200));
+                if (newScript != adapterScript) { adapterScript = newScript; EditorPrefs.SetString(AdapterPrefKey, adapterScript); }
                 GUILayout.Label("python", EditorStyles.miniLabel, GUILayout.Width(38));
                 pythonPath = EditorGUILayout.TextField(pythonPath, GUILayout.Width(90));
             }
@@ -423,19 +436,37 @@ namespace FallenAngel.Core
         }
 
         /// <summary>
-        /// 调 Python 导入器把外部谱面转成内部 v2 JSON，再读回编辑器继续编辑。
-        /// 这样三种格式的解析只有一份实现（chart_tools/chart_import.py），不会与 C# 版漂移。
+        /// 自动制谱草稿（Mapperatorinator 的 osu!mania 4K/5K）走独立工程 chart_adapter 的 osu_adapter：键数原样，不铺轨、不去重以外的任何清洗。
+        /// 与"导入开源谱面"分开：那条路会铺到 5 轨并做护栏清洗（两指化、长按裁剪等），对草稿是不可逆的改动。
         /// </summary>
-        private void RunImport(string sourcePath)
+        private void PickAndImportDraft()
+        {
+            if (string.IsNullOrEmpty(importPart)) { importLog = "先在「声部」里填乐器名（如 Bass / Drums / Guitar）"; return; }
+            string path = EditorUtility.OpenFilePanel("导入 AI 草稿（osu!mania 4K / 5K）", "", "osu");
+            if (!string.IsNullOrEmpty(path)) RunImport(path, true);
+        }
+
+        /// <summary>
+        /// 调 Python 导入器把外部谱面转成内部 v2 JSON，再读回编辑器继续编辑。
+        /// 这样各格式的解析只有一份实现（chart_tools/ 下的脚本），不会与 C# 版漂移。
+        /// </summary>
+        private void RunImport(string sourcePath, bool aiDraft = false)
         {
             string projectRoot = Directory.GetParent(Application.dataPath).FullName;
-            string script = Path.Combine(projectRoot, "chart_tools", "chart_import.py");
-            if (!File.Exists(script)) { importLog = "找不到导入脚本：" + script; return; }
+            string script = aiDraft
+                ? (adapterScript ?? EditorPrefs.GetString(AdapterPrefKey, DefaultAdapterScript))
+                : Path.Combine(projectRoot, "chart_tools", "chart_import.py");
+            if (!File.Exists(script))
+            {
+                importLog = "找不到导入脚本：" + script + (aiDraft ? "\n（在工具条的 Adapter 栏填 chart_adapter 工程里 osu_adapter.py 的路径）" : "");
+                return;
+            }
             string outPath = Path.Combine(Path.GetTempPath(), "fa_import_" + System.Guid.NewGuid().ToString("N") + ".json");
             var start = new System.Diagnostics.ProcessStartInfo
             {
                 FileName = pythonPath,
-                Arguments = "-X utf8 \"" + script + "\" \"" + sourcePath + "\" --out \"" + outPath + "\" --flick-direction alternate",
+                Arguments = "-X utf8 \"" + script + "\" \"" + sourcePath + "\" --out \"" + outPath + "\""
+                    + (aiDraft ? " --part \"" + importPart.Replace("\"", "") + "\"" : " --flick-direction alternate"),
                 WorkingDirectory = projectRoot,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
@@ -1005,7 +1036,7 @@ namespace FallenAngel.Core
             return list;
         }
 
-        private static Color NoteColor(NoteData n)
+        private Color NoteColor(NoteData n)
         {
             switch (n.type)
             {
@@ -1039,7 +1070,7 @@ namespace FallenAngel.Core
             hasUnsavedChanges = false;
             burstFired.Clear();
             if (chart != null && chart.metadata.formatVersion < 2)
-                Debug.LogWarning("[ChartEditor] 该谱面是 v1（4 轨）；保存时会按 5 轨 v2 写回。");
+                Debug.LogWarning("[ChartEditor] 该谱面是 v1（4 轨）；保存时按 v2 格式写回，键数保持 4（laneCount=4）。");
         }
 
         private void Save()
@@ -1058,48 +1089,161 @@ namespace FallenAngel.Core
             saveChangesMessage = "谱面有未保存的改动，保存到 " + chartPath + " 吗？";
         }
 
-        /// <summary>按 v2 协议序列化（JsonUtility 写不了字符串枚举，这里手写）。</summary>
+        /// <summary>
+        /// 按 v2 协议序列化（JsonUtility 写不了字符串枚举，这里手写）。
+        /// 元数据要原样写回：partName / stems / switchTiming / laneCount / sourceMetadata / events
+        /// 任何一项丢了，切谱用的谱面就会和它那首歌脱钩，或者 4K 谱被当成 5 轨。
+        /// </summary>
         private static string ToV2Json(ChartData c)
         {
             var sb = new StringBuilder();
-            var inv = CultureInfo.InvariantCulture;
             var m = c.metadata;
-            sb.Append("{\n  \"metadata\": {\n");
-            sb.Append("    \"songName\": \"").Append(m.songName).Append("\",\n");
-            sb.Append("    \"songArtist\": \"").Append(m.songArtist).Append("\",\n");
-            sb.Append("    \"chartAuthor\": \"").Append(m.chartAuthor).Append("\",\n");
-            sb.Append("    \"difficulty\": ").Append((int)m.difficulty).Append(",\n");
-            sb.Append("    \"level\": ").Append(m.level).Append(",\n");
-            sb.Append("    \"bpm\": ").Append(m.bpm.ToString("0.###", inv)).Append(",\n");
-            sb.Append("    \"offset\": ").Append(m.offset.ToString("0.###", inv)).Append(",\n");
-            sb.Append("    \"audioFileName\": \"").Append(m.audioFileName).Append("\",\n");
-            sb.Append("    \"previewStartTime\": ").Append(m.previewStartTime.ToString("0.###", inv)).Append(",\n");
-            sb.Append("    \"previewDuration\": ").Append(m.previewDuration.ToString("0.###", inv)).Append(",\n");
-            sb.Append("    \"formatVersion\": 2\n  },\n  \"notes\": [\n");
+
+            // 先数音符，noteCounts 要写进 metadata（游戏读这份）和顶层（旧脚本读这份）
             int tap = 0, hold = 0, drag = 0, flick = 0, slide = 0;
-            for (int i = 0; i < c.notes.Count; i++)
+            var noteLines = new List<string>();
+            foreach (var n in c.notes)
             {
-                var n = c.notes[i];
                 if (n.type == NoteType.LongBody || n.type == NoteType.LongEnd) continue;
                 string type = n.type == NoteType.LongStart ? "hold" : n.type == NoteType.Slide ? "slide"
                     : n.type == NoteType.Drag ? "drag" : n.type == NoteType.Flick ? "flick" : "tap";
                 if (type == "tap") tap++; else if (type == "hold") hold++; else if (type == "drag") drag++;
                 else if (type == "flick") flick++; else slide++;
-                sb.Append("    {\"type\": \"").Append(type).Append("\", \"lane\": ").Append(n.lane)
-                  .Append(", \"time\": ").Append(n.time.ToString("0.###", inv))
-                  .Append(", \"duration\": ").Append(n.duration.ToString("0.###", inv))
-                  .Append(", \"direction\": \"").Append(n.direction == FlickDirection.Down ? "down" : "up").Append("\"")
-                  .Append(", \"wide\": ").Append(n.wide ? "true" : "false");
-                sb.Append(", \"path\": [");
+                var line = new StringBuilder();
+                line.Append("    {\"type\": \"").Append(type).Append("\", \"lane\": ").Append(n.lane)
+                    .Append(", \"time\": ").Append(Num(n.time))
+                    .Append(", \"duration\": ").Append(Num(n.duration))
+                    .Append(", \"direction\": \"").Append(n.direction == FlickDirection.Down ? "down" : "up").Append("\"")
+                    .Append(", \"wide\": ").Append(n.wide ? "true" : "false")
+                    .Append(", \"path\": [");
                 if (n.type == NoteType.Slide && n.path != null)
                     for (int p = 0; p < n.path.Count; p++)
-                        sb.Append(p == 0 ? "" : ", ").Append("{\"t\": ").Append(n.path[p].t.ToString("0.###", inv))
-                          .Append(", \"x\": ").Append(n.path[p].x.ToString("0.###", inv)).Append("}");
-                sb.Append("]}").Append(i == c.notes.Count - 1 ? "\n" : ",\n");
+                        line.Append(p == 0 ? "" : ", ").Append("{\"t\": ").Append(Num(n.path[p].t))
+                            .Append(", \"x\": ").Append(Num(n.path[p].x)).Append("}");
+                line.Append("]}");
+                noteLines.Add(line.ToString());
             }
-            sb.Append("  ],\n  \"noteCounts\": {\"tap\": ").Append(tap).Append(", \"hold\": ").Append(hold)
-              .Append(", \"drag\": ").Append(drag).Append(", \"flick\": ").Append(flick).Append(", \"slide\": ").Append(slide).Append("},\n");
-            sb.Append("  \"events\": []\n}\n");
+            string counts = "{\"tap\": " + tap + ", \"hold\": " + hold + ", \"drag\": " + drag
+                + ", \"flick\": " + flick + ", \"slide\": " + slide + "}";
+
+            sb.Append("{\n  \"metadata\": {\n");
+            sb.Append("    \"songName\": ").Append(Str(m.songName)).Append(",\n");
+            sb.Append("    \"songArtist\": ").Append(Str(m.songArtist)).Append(",\n");
+            sb.Append("    \"chartAuthor\": ").Append(Str(m.chartAuthor)).Append(",\n");
+            sb.Append("    \"difficulty\": ").Append((int)m.difficulty).Append(",\n");
+            sb.Append("    \"level\": ").Append(m.level).Append(",\n");
+            sb.Append("    \"bpm\": ").Append(Fine(m.bpm)).Append(",\n");
+            sb.Append("    \"offset\": ").Append(Num(m.offset)).Append(",\n");
+            sb.Append("    \"audioFileName\": ").Append(Str(m.audioFileName)).Append(",\n");
+            if (!string.IsNullOrEmpty(m.partName))
+                sb.Append("    \"partName\": ").Append(Str(m.partName)).Append(",\n");
+            if (m.stems != null && m.stems.Count > 0)
+            {
+                sb.Append("    \"stems\": [");
+                for (int i = 0; i < m.stems.Count; i++)
+                {
+                    var s = m.stems[i];
+                    sb.Append(i == 0 ? "\n" : ",\n").Append("      {\"partName\": ").Append(Str(s.partName))
+                      .Append(", \"audioFileName\": ").Append(Str(s.audioFileName))
+                      .Append(", \"gain\": ").Append(Num(s.gain)).Append("}");
+                }
+                sb.Append("\n    ],\n");
+            }
+            var st = m.switchTiming;
+            if (st.mode != PartSwitchMode.Immediate || st.minIntervalSeconds != 0f || (st.beatsPerBar != 0f && st.beatsPerBar != 4f))
+                sb.Append("    \"switchTiming\": {\"mode\": ").Append((int)st.mode)
+                  .Append(", \"minIntervalSeconds\": ").Append(Num(st.minIntervalSeconds))
+                  .Append(", \"beatsPerBar\": ").Append(Num(st.beatsPerBar)).Append("},\n");
+            sb.Append("    \"previewStartTime\": ").Append(Num(m.previewStartTime)).Append(",\n");
+            sb.Append("    \"previewDuration\": ").Append(Num(m.previewDuration)).Append(",\n");
+            sb.Append("    \"formatVersion\": 2,\n");
+            sb.Append("    \"laneCount\": ").Append(c.LaneCount).Append(",\n");
+            var src = m.sourceMetadata;
+            if (src != null && !string.IsNullOrEmpty(src.format))
+            {
+                sb.Append("    \"sourceMetadata\": {\"format\": ").Append(Str(src.format))
+                  .Append(", \"fileFormat\": ").Append(Str(src.fileFormat))
+                  .Append(", \"sourceFileName\": ").Append(Str(src.sourceFileName))
+                  .Append(", \"sourceSha256\": ").Append(Str(src.sourceSha256))
+                  .Append(", \"importer\": ").Append(Str(src.importer))
+                  .Append(", \"generator\": ").Append(Str(src.generator))
+                  .Append(", \"generatorVersion\": ").Append(Str(src.generatorVersion))
+                  .Append(", \"importedAt\": ").Append(Str(src.importedAt))
+                  .Append(", \"title\": ").Append(Str(src.title))
+                  .Append(", \"titleUnicode\": ").Append(Str(src.titleUnicode))
+                  .Append(", \"artist\": ").Append(Str(src.artist))
+                  .Append(", \"creator\": ").Append(Str(src.creator))
+                  .Append(", \"version\": ").Append(Str(src.version))
+                  .Append(", \"tags\": ").Append(Str(src.tags))
+                  .Append(", \"beatOffset\": ").Append(Fine(src.beatOffset))
+                  .Append(", \"timingPoints\": [");
+                if (src.timingPoints != null)
+                    for (int i = 0; i < src.timingPoints.Count; i++)
+                    {
+                        var tp = src.timingPoints[i];
+                        sb.Append(i == 0 ? "" : ", ").Append("{\"time\": ").Append(Fine(tp.time))
+                          .Append(", \"bpm\": ").Append(Fine(tp.bpm)).Append(", \"meter\": ").Append(tp.meter).Append("}");
+                    }
+                sb.Append("]");
+                var st2 = src.importStats;
+                if (st2 != null)
+                    sb.Append(", \"importStats\": {\"removedDuplicate\": ").Append(st2.removedDuplicate)
+                      .Append(", \"removedInvalidHold\": ").Append(st2.removedInvalidHold)
+                      .Append(", \"removedNegativeTime\": ").Append(st2.removedNegativeTime)
+                      .Append(", \"unsupportedObjects\": ").Append(st2.unsupportedObjects)
+                      .Append(", \"unparsableLines\": ").Append(st2.unparsableLines)
+                      .Append(", \"laneClamped\": ").Append(st2.laneClamped)
+                      .Append(", \"notesInsideHold\": ").Append(st2.notesInsideHold).Append("}");
+                sb.Append("},\n");
+            }
+            sb.Append("    \"noteCounts\": ").Append(counts).Append("\n  },\n  \"notes\": [\n");
+            sb.Append(string.Join(",\n", noteLines)).Append(noteLines.Count > 0 ? "\n" : "");
+            sb.Append("  ],\n  \"noteCounts\": ").Append(counts).Append(",\n");
+            sb.Append("  \"events\": [");
+            if (c.events != null)
+                for (int i = 0; i < c.events.Count; i++)
+                {
+                    var ev = c.events[i];
+                    sb.Append(i == 0 ? "\n" : ",\n").Append("    {\"time\": ").Append(Num(ev.time))
+                      .Append(", \"type\": ").Append(Str(ev.type)).Append(", \"value\": ").Append(Num(ev.value)).Append("}");
+                }
+            sb.Append(c.events != null && c.events.Count > 0 ? "\n  ]\n}\n" : "]\n}\n");
+            return sb.ToString();
+        }
+
+        private static string Num(float v)
+        {
+            return v.ToString("0.###", CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>来源节拍信息多留几位：毫秒以下的相位误差会在整首歌里累积成网格漂移</summary>
+        private static string Fine(float v)
+        {
+            return v.ToString("0.######", CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>JSON 字符串字面量（转义引号、反斜杠和控制字符；曲名里有引号也不会写坏文件）</summary>
+        private static string Str(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return "\"\"";
+            var sb = new StringBuilder(s.Length + 2);
+            sb.Append('"');
+            foreach (char ch in s)
+            {
+                switch (ch)
+                {
+                    case '"': sb.Append("\\\""); break;
+                    case '\\': sb.Append("\\\\"); break;
+                    case '\n': sb.Append("\\n"); break;
+                    case '\r': sb.Append("\\r"); break;
+                    case '\t': sb.Append("\\t"); break;
+                    default:
+                        if (ch < 0x20) sb.Append("\\u").Append(((int)ch).ToString("x4"));
+                        else sb.Append(ch);
+                        break;
+                }
+            }
+            sb.Append('"');
             return sb.ToString();
         }
     }

@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0b0d12">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Attention Annotator</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ---------------------------------------------------------------- library -->
+  <section id="view-library" class="view is-active" data-view="library">
+    <header class="bar">
+      <div class="bar-title">
+        <h1>Attention Annotator</h1>
+        <p class="muted small">Research prototype v0.1</p>
+      </div>
+    </header>
+
+    <div class="scroll">
+      <div id="library-progress" class="summary" hidden></div>
+      <div id="song-list" class="song-list"></div>
+
+      <details class="panel" id="add-panel">
+        <summary>Add a song</summary>
+        <div class="panel-body">
+          <label class="field">
+            <span>Song title</span>
+            <input id="add-title" type="text" placeholder="Song001" autocomplete="off">
+          </label>
+
+          <div class="row">
+            <button id="btn-pick-files" class="btn" type="button">Choose audio files</button>
+            <button id="btn-pick-folder" class="btn" type="button">Choose folder</button>
+          </div>
+          <input id="file-input" type="file" accept="audio/*,.wav,.mp3,.m4a,.ogg,.flac" multiple hidden>
+          <input id="folder-input" type="file" webkitdirectory directory hidden>
+
+          <p class="muted small">
+            One file becomes the <b>master</b> (name it <code>master</code> / <code>mix</code>, or it is the
+            only file). The rest become stems by keyword: guitar, bass, drums, piano, vocal, strings, synth.
+          </p>
+          <ul id="add-preview" class="preview"></ul>
+          <button id="btn-add-song" class="btn primary wide" type="button" disabled>Add to library</button>
+        </div>
+      </details>
+
+      <details class="panel" id="bulk-panel">
+        <summary>Add many songs (one file = one song)</summary>
+        <div class="panel-body">
+          <p class="muted small">
+            For listening through a whole library: pick a folder or a pile of tracks from your phone's
+            storage, and each file becomes its own song. Full mix only &mdash; no stems, so review will
+            not offer stem solo for these.
+          </p>
+          <div class="row">
+            <button id="btn-bulk-files" class="btn" type="button">Choose files</button>
+            <button id="btn-bulk-folder" class="btn" type="button">Choose folder</button>
+          </div>
+          <input id="bulk-file-input" type="file" accept="audio/*,.wav,.mp3,.m4a,.ogg,.flac" multiple hidden>
+          <input id="bulk-folder-input" type="file" webkitdirectory directory hidden>
+          <p class="muted small" id="bulk-status"></p>
+          <div id="bulk-bar" class="progress" hidden><i></i></div>
+        </div>
+      </details>
+
+      <div class="panel">
+        <div class="panel-body">
+          <p class="muted small">
+            No audio handy? Generate a short synthesized 4-stem demo song, or load it from
+            <code>demo/manifest.json</code> if the generator has already been run.
+          </p>
+          <div class="row">
+            <button id="btn-load-demo" class="btn ghost" type="button">Load demo song</button>
+          </div>
+        </div>
+      </div>
+
+      <details class="panel" id="analysis-panel">
+        <summary>Attach Workbench analysis (JSON)</summary>
+        <div class="panel-body">
+          <p class="muted small">
+            Workbench computes timing, sections and boundaries offline; this is where the annotator
+            reads them. The file is matched to a song by its <code>songId</code> (or by title when
+            that matches nothing). Bar and beat are attached to new events as derived information
+            &mdash; machine results are never written as annotations.
+          </p>
+          <div class="row">
+            <button id="btn-pick-analysis" class="btn" type="button">Choose analysis JSON</button>
+          </div>
+          <input id="analysis-input" type="file" accept="application/json,.json" hidden>
+          <p class="muted small" id="analysis-status"></p>
+        </div>
+      </details>
+
+      <h3 class="section-title">Recent sessions</h3>
+      <div id="session-list" class="region-list"></div>
+    </div>
+
+    <footer class="statusbar">
+      <span id="net-status" class="chip">offline-ready</span>
+      <span id="queue-status" class="chip">queue 0</span>
+      <button id="btn-settings" class="chip btn-chip" type="button">Settings</button>
+    </footer>
+  </section>
+
+  <!-- ----------------------------------------------------------------- listen -->
+  <section id="view-listen" class="view" data-view="listen">
+    <header class="bar">
+      <button class="btn icon" data-action="back-to-library" type="button" aria-label="Back">&#8592;</button>
+      <div class="bar-title">
+        <h2 id="listen-title">Song</h2>
+        <p class="muted small" id="listen-meta"></p>
+      </div>
+      <span id="rec-dot" class="rec"><i></i>REC</span>
+    </header>
+
+    <div class="scroll listen-body">
+      <div class="clock">
+        <div id="listen-time" class="big-time">00:00.0 / 00:00.0</div>
+        <input id="seek-bar" class="seek" type="range" min="0" max="1000" value="0" step="1"
+               aria-label="Seek">
+      </div>
+
+      <!--
+        The structure layer: Workbench's coordinates, read-only. The whole block
+        stays hidden when the song has no analysis - no bar numbers are invented
+        to fill it.
+      -->
+      <div id="structure" class="structure" hidden>
+        <div class="structure-head">
+          <span id="structure-position" class="chip">Bar &mdash;</span>
+          <span id="structure-segment" class="chip">Segment &mdash;</span>
+          <span id="structure-loop" class="chip is-on" hidden>Loop</span>
+        </div>
+        <div class="row">
+          <button id="btn-prev-bar" class="btn small-btn" type="button">&#8249; Bar</button>
+          <button id="btn-next-bar" class="btn small-btn" type="button">Bar &#8250;</button>
+          <button id="btn-loop-1" class="btn small-btn" type="button">Loop 1</button>
+          <button id="btn-loop-4" class="btn small-btn" type="button">Loop 4</button>
+          <button id="btn-replay-segment" class="btn small-btn" type="button">Replay segment</button>
+          <button id="btn-similar" class="btn small-btn ghost" type="button" hidden>Similar</button>
+        </div>
+        <div id="machine" class="machine" hidden>
+          <span id="machine-line" class="muted small"></span>
+          <div id="machine-review" class="row" hidden>
+            <span class="muted small">机器认为这里换段</span>
+            <button id="btn-bnd-yes" class="btn small-btn" type="button">&#10003; 同意</button>
+            <button id="btn-bnd-no" class="btn small-btn" type="button">&#10005; 不同意</button>
+            <button id="btn-bnd-ignore" class="btn small-btn ghost" type="button">忽略</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="transport">
+        <button id="btn-play" class="btn round big" type="button">&#9654;</button>
+        <button id="btn-restart" class="btn round ghost" type="button" aria-label="Restart">&#8635;</button>
+      </div>
+
+      <div id="part-grid" class="part-grid"></div>
+
+      <p class="muted small center hint">
+        Tap a part the moment it grabs your attention. Tap it again when it lets go.
+        Nothing else is required.
+      </p>
+
+      <button id="btn-section-boundary" class="btn wide" type="button">这里换段</button>
+    </div>
+
+    <footer class="footer-actions">
+      <div class="row">
+        <button id="btn-end-session" class="btn primary" type="button" style="flex:1 1 auto">End &#8594; Review</button>
+        <button id="btn-skip-next" class="btn ghost" type="button">End &#8594; Next song</button>
+      </div>
+    </footer>
+  </section>
+
+  <!-- ----------------------------------------------------------------- review -->
+  <section id="view-review" class="view" data-view="review">
+    <header class="bar">
+      <button class="btn icon" data-action="back-to-library" type="button" aria-label="Back">&#8592;</button>
+      <div class="bar-title">
+        <h2 id="review-title">Song</h2>
+        <p class="muted small" id="review-meta"></p>
+      </div>
+      <button id="btn-export" class="btn ghost small-btn" type="button">Export</button>
+    </header>
+
+    <div class="scroll">
+      <h3 class="section-title">Attention regions</h3>
+      <div id="region-list" class="region-list"></div>
+      <div id="region-detail" class="region-detail" hidden></div>
+      <h3 class="section-title">Raw events <span class="muted small" id="raw-count"></span></h3>
+      <div id="raw-list" class="raw-list"></div>
+    </div>
+
+    <footer class="footer-actions">
+      <div class="row">
+        <button id="btn-next-song" class="btn primary" type="button" style="flex:1 1 auto">Next unannotated &#8594;</button>
+        <button id="btn-cancel-auto" class="btn ghost" type="button" hidden>Cancel</button>
+        <button id="btn-listen-again" class="btn" type="button">Listen again</button>
+      </div>
+    </footer>
+  </section>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+<div id="modal" class="modal" hidden><div class="modal-card" id="modal-card"></div></div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,1007 @@
+package com.fallenangel.overlaybeat;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Turns captured audio into a stream of single-lane notes.
+ *
+ * Port of the offline prototype in rhythm_lab/, which was tuned against real
+ * multitracks. Two conclusions shaped this class.
+ *
+ * First, notes are not onsets. A generic onset detector fires 4-12 times a
+ * second, which no single-lane game can ask a player to hit, so notes sit on a
+ * beat grid locked to the music, and the density is a choice rather than an
+ * accident of how busy the song is.
+ *
+ * Second, a grid that is merely *estimated* drifts. Re-estimating the tempo
+ * every second and smoothing it made the displayed BPM wander and the notes
+ * slide out of time - the estimate is never exact enough to run open-loop for
+ * minutes. So the tempo estimate is used once, to acquire the beat, and a
+ * phase-locked loop then holds the grid onto the music: every strong hit nudges
+ * the phase, and a persistent phase error corrects the period. The periodic
+ * estimate only notices when the music changes metrical level outright.
+ *
+ * Notes are scheduled {@link #SCHEDULE_LEAD_SECONDS} ahead of their beat,
+ * because a player has to see a note before they hear it, and a detected onset
+ * is only known after the sound.
+ */
+public final class BeatDetector {
+    public static final int SAMPLE_RATE = 44100;
+    public static final int FFT_SIZE = 2048;
+    public static final int HOP_SIZE = 220;
+    public static final int CURVE_PER_SECOND = SAMPLE_RATE / HOP_SIZE;
+
+    public static final double SCHEDULE_LEAD_SECONDS = 1.4;
+    public static final double TRAVEL_SECONDS = 1.2;
+
+    private static final int LEAD_FRAMES = (int) (SCHEDULE_LEAD_SECONDS * CURVE_PER_SECOND);
+    private static final int MIN_LEAD_FRAMES =
+            (int) ((TRAVEL_SECONDS + 0.1) * CURVE_PER_SECOND);
+    private static final double MAX_CLOCK_LEAD_SECONDS = 0.06;
+
+    private static final int CURVE_CAPACITY = CURVE_PER_SECOND * 16;
+    private static final int TEMPO_WINDOW = CURVE_PER_SECOND * 14;
+    private static final int MIN_CURVE_FOR_LOCK = CURVE_PER_SECOND * 6;
+    private static final int TEMPO_INTERVAL = CURVE_PER_SECOND;
+
+    private static final double BPM_MIN = 80;
+    private static final double BPM_MAX = 160;
+    private static final double PEAK_PROMINENCE = 1.4;
+    private static final double LOCK_TOLERANCE = 0.12;
+
+    /** How hard a single hit pulls the grid, and how fast the period adapts. */
+    private static final double PHASE_GAIN = 0.08;
+    /**
+     * The period keeps adapting even after the tempo is "locked".
+     *
+     * A locked tempo is a starting point, not the truth. A human tapping four
+     * beats is easily 2-3% off, and 3% over a three-minute song is five seconds
+     * of drift - the grid would walk off the music entirely. So the loop keeps
+     * refining the period from the onsets. What stays put is only the *metrical
+     * level*, so it can follow the music without jumping to half or double time.
+     */
+    private static final double PERIOD_GAIN = 0.03;
+    /** How far off a hit has to be before it stops being evidence about the grid. */
+    private static final double PLL_NEAR_BEAT = 0.08;
+    private static final double PLL_MAX_ERROR = 0.25;
+    /** A hit only steers the loop if it is clearly louder than the running level. */
+    private static final double PLL_STRENGTH_FACTOR = 1.8;
+
+    private static final double QUIET_FRACTION_OF_PEAK = 0.02;
+    private static final double ABSOLUTE_FLOOR_RMS = 0.004;
+    private static final int QUIET_FRAMES_TO_UNLOCK = CURVE_PER_SECOND / 2;
+
+    /** Beats in a bar. The meter is assumed, not detected. */
+    private static final int BEATS_PER_BAR = 4;
+    /**
+     * How many positions per beat the chart may commit to.
+     *
+     * 1 puts a note at most on every beat; 4 allows sixteenths. The extra
+     * positions are not events invented between the beats - they are places the
+     * music may already have been putting something, which a grid that only
+     * knows about beats has no way to say, and therefore has to leave out.
+     */
+    private static final int DEFAULT_SUBDIVISIONS = 4;
+    /** Positions per beat the chart is written on, as the app runs it. */
+    public static final int POSITIONS_PER_BEAT = DEFAULT_SUBDIVISIONS;
+    private static final int MAX_SLOTS = BEATS_PER_BAR * 8;
+    private static final double SLOT_EMA = 0.3;
+    /** How much of each beat's history survives a bar, so figures can change. */
+    private static final double FIGURE_DECAY = 0.9;
+    /** How often a figure has to be heard before it is predicted. */
+    private static final double FIGURE_MIN_EVIDENCE = 2;
+    /** How loud a position has to be, against the average, to count as an onset. */
+    private static final double FIGURE_SHARE = 0.5;
+
+    private final double[] frame = new double[FFT_SIZE];
+    private final double[] windowed = new double[FFT_SIZE];
+    /** The shared feature extraction: the same one the offline analyser uses. */
+    private final OnsetCurves.FrameAnalyser analyser = new OnsetCurves.FrameAnalyser();
+
+    private int frameFill;
+    private long samplesSeen;
+    private volatile long lastPushNanos;
+    private volatile double lastPushSeconds;
+    private double kickLog = -30;
+    private double snareLog = -30;
+    private double kickLevel;
+    private double snareLevel;
+    private double level;
+    private double peakLevel;
+    private int quietFrames = QUIET_FRAMES_TO_UNLOCK;
+    private double strengthEma;
+
+    private final double[] curve = new double[CURVE_CAPACITY];
+    private final double[] kickCurve = new double[CURVE_CAPACITY];
+    private final double[] snareCurve = new double[CURVE_CAPACITY];
+    private int curveCount;
+    private int curveBase;
+
+    /** Lock state: period and the frame of one grid beat, in double precision. */
+    private double periodFrames;
+    private double phaseFrame = -1;
+    /**
+     * Position counters, counted in grid positions from the phase origin.
+     *
+     * The position a note belongs to has to be an identity, not a calculation:
+     * deriving it from the phase each time looks equivalent and is not, because
+     * the loop keeps moving the phase onto the music, so the same moment lands
+     * in a different position a moment later and everything learned about the
+     * bar is scattered across positions it does not belong to. The counters
+     * advance by one per position and never look back; the frame they land on is
+     * then just where the grid currently is.
+     */
+    private int nextNoteIndex = -1;
+    private int nextEnergyIndex = -1;
+    private int lastTempoFrame = -TEMPO_INTERVAL;
+    /** The tempo the loop is actually running at, before any manual halving. */
+    private double lockedPeriodFrames;
+    private boolean halfTempo;
+    /**
+     * Acquisition versus hold. For the first window's worth of music the
+     * estimate keeps improving as more of it is heard - that is what makes a
+     * whole-file analysis accurate - so it is allowed to revise. After that it
+     * is frozen, because a tempo that keeps changing is unplayable and the
+     * displayed number has to mean something.
+     */
+    private boolean lockFrozen;
+    /**
+     * How many consecutive estimates have found our own period to be a poor
+     * explanation of the music. A frozen lock is right for one song and wrong
+     * for the next one, so a stale grid has to be noticed and dropped.
+     */
+    private int staleChecks;
+    /** How much worse our own period has to look before the fallback gives up on it. */
+    private static final double STALE_FALLBACK_RATIO = 0.35;
+    /**
+     * Only used when the player's own actions are unavailable.
+     *
+     * This heuristic cannot tell "the song changed" from "this song's eighth
+     * notes are nearly as loud as its beats" - it fired constantly on real
+     * music and made the tempo flip between 80 and 160. Now that the media
+     * session reports track changes directly, guessing is only a fallback, and
+     * a deliberately stubborn one.
+     */
+    private static final int STALE_CHECKS_TO_UNLOCK = 5;
+    /**
+     * Set when the tempo came from the player tapping the beat. Their ears beat
+     * every automatic test here, so nothing may quietly overrule it - not the
+     * staleness check, not the periodic estimate. Only silence clears it.
+     */
+    private boolean manualLock;
+    /** Set by the media session; the audio alone cannot tell pause from silence. */
+    private boolean playing = true;
+    /** A seek moved the playhead, so the phase is unknown but the tempo is not. */
+    private boolean phaseUnknown;
+
+    private final double[] slotEnergy = new double[MAX_SLOTS];
+    private final double[] slotKick = new double[MAX_SLOTS];
+    private final double[] slotSnare = new double[MAX_SLOTS];
+    private final int[] slotCount = new int[MAX_SLOTS];
+    /**
+     * What the last bar had on each position.
+     *
+     * This is the difference between a chart that repeats and a chart that has
+     * groove. Averaging the whole song produces one "typical bar" and plays it
+     * for three minutes, so every fill, every break and every changed pattern
+     * goes by with the chart still doing the same thing. The bar just gone is
+     * real evidence about the bar coming, and it is already in the past by the
+     * time a note has to be committed.
+     */
+    private final double[] slotRecent = new double[MAX_SLOTS];
+    private final double[] slotRecentKick = new double[MAX_SLOTS];
+    private final double[] slotRecentSnare = new double[MAX_SLOTS];
+    /**
+     * The figure heard at each beat of the bar, and how often.
+     *
+     * A beat is a shape, not a set of places that happen to have something on
+     * them. A kick on the beat and a hat after it is one figure - the same one
+     * every time - whereas predicting each of the four places on its own happily
+     * produces the kick, the hat and whatever else was ever there, which is a
+     * row of evenly spaced notes rather than a groove. So the unit of prediction
+     * is the whole figure of a beat, and the commonest one wins.
+     */
+    private double[][] figureCounts;
+    private int[] figurePrediction;
+    private boolean[] figureKnown;
+    private int currentFigure;
+    private int currentFigureBeat = -1;
+    /** The figure being scheduled, held between the positions of one beat. */
+    private int predictedFigure;
+    private boolean predictedFigureKnown;
+    /**
+     * Positions per beat the chart may use. A knob rather than a constant
+     * because it is the main lever on how dense the generated chart is, and the
+     * only honest way to choose it is to measure.
+     */
+    private volatile int subdivisions = DEFAULT_SUBDIVISIONS;
+    private double averageEnergy;
+    private double shownBpm;
+    private int alignedOnsets;
+    private int misfitOnsets;
+    private int misfitSeconds;
+    /** Positions the lead time did not leave room for. */
+    private int droppedForLead;
+
+    /**
+     * Beats predicted ahead of time, oldest first.
+     *
+     * The analysis stops here: it reports when the beats are and how much
+     * usually happens on them, and says nothing about lanes, note types or
+     * difficulty. {@link ChartBuilder} turns these into the chart.
+     */
+    private final List<Beat> beats = new ArrayList<>();
+
+    /**
+     * Tap tempo.
+     *
+     * The automatic estimate is good enough on well-behaved material and not
+     * good enough on the rest, and no amount of tuning fixes that - a song can
+     * honestly sit at 80 or 160 BPM and both readings are defensible from the
+     * audio alone. The player can hear which one it is, so the reliable path is
+     * to let them tap four beats and take the period from that.
+     */
+    private static final int TAPS_NEEDED = 4;
+    private final double[] tapSeconds = new double[8];
+    private int tapCount;
+    private boolean tapTempoMode;
+
+    // ------------------------------------------------------------------ input
+
+    public BeatDetector() {
+        resetFigures();
+    }
+
+    /** Size the figure model to the current grid, forgetting what it knew. */
+    private void resetFigures() {
+        int buckets = 1 << subdivisions;
+        figureCounts = new double[BEATS_PER_BAR][buckets];
+        figurePrediction = new int[BEATS_PER_BAR];
+        figureKnown = new boolean[BEATS_PER_BAR];
+        currentFigure = 0;
+        currentFigureBeat = -1;
+        predictedFigure = 0;
+        predictedFigureKnown = false;
+    }
+
+    public void push(short[] buffer, int count) {
+        for (int i = 0; i < count; i++) {
+            frame[frameFill++] = buffer[i] / 32768.0;
+            samplesSeen++;
+            if (frameFill >= FFT_SIZE) {
+                analyseFrame();
+                System.arraycopy(frame, HOP_SIZE, frame, 0, FFT_SIZE - HOP_SIZE);
+                frameFill = FFT_SIZE - HOP_SIZE;
+            }
+        }
+        lastPushSeconds = samplesSeen / (double) SAMPLE_RATE;
+        lastPushNanos = System.nanoTime();
+    }
+
+    private void analyseFrame() {
+        double sum = 0;
+        for (int i = 0; i < FFT_SIZE; i += 4) sum += frame[i] * frame[i];
+        double rms = Math.sqrt(sum / (FFT_SIZE / 4.0));
+        level = level * 0.8 + rms * 0.2;
+        peakLevel = Math.max(level, peakLevel * 0.995);
+        // A paused player is silent, but that is not the same as the song being
+        // over - the grid should survive a pause and resume exactly where it was.
+        boolean quiet = playing
+                && (level < ABSOLUTE_FLOOR_RMS || level < peakLevel * QUIET_FRACTION_OF_PEAK);
+        quietFrames = quiet ? quietFrames + 1 : 0;
+
+        double[] hann = OnsetCurves.hann();
+        for (int i = 0; i < FFT_SIZE; i++) windowed[i] = frame[i] * hann[i];
+        analyser.analyse(windowed);
+        kickLevel = analyser.kickEnergy;
+        snareLevel = analyser.snareEnergy;
+
+        double strength = analyser.strength;
+        strengthEma = strengthEma * 0.995 + strength * 0.005;
+        if (curveCount == CURVE_CAPACITY) {
+            System.arraycopy(curve, 1, curve, 0, CURVE_CAPACITY - 1);
+            System.arraycopy(kickCurve, 1, kickCurve, 0, CURVE_CAPACITY - 1);
+            System.arraycopy(snareCurve, 1, snareCurve, 0, CURVE_CAPACITY - 1);
+            curveCount--;
+            curveBase++;
+        }
+        curve[curveCount] = strength;
+        kickCurve[curveCount] = analyser.kickOnset;
+        snareCurve[curveCount] = analyser.snareOnset;
+        curveCount++;
+
+        int frameIndex = curveBase + curveCount - 1;
+        updatePll(frameIndex, strength);
+        recordBeatEnergy(frameIndex);
+        scheduleBeats(frameIndex);
+        if (curveCount >= MIN_CURVE_FOR_LOCK
+                && frameIndex - lastTempoFrame >= TEMPO_INTERVAL) {
+            estimateTempo();
+        }
+    }
+
+    private double frameTime(double frameIndex) {
+        return (FFT_SIZE + frameIndex * HOP_SIZE) / (double) SAMPLE_RATE;
+    }
+
+    // -------------------------------------------------------------------- pll
+
+    /**
+     * Hold the grid onto the music. Each strong hit pulls the phase a little and
+     * reveals, through how far it sits from the grid, whether the period is off.
+     */
+    private void updatePll(int frameIndex, double strength) {
+        if (periodFrames <= 0 || phaseFrame < 0) return;
+        if (strength < Math.max(0.04, strengthEma * PLL_STRENGTH_FACTOR)) return;
+
+        double beatsAway = Math.round((frameIndex - phaseFrame) / periodFrames);
+        double nearestBeat = phaseFrame + beatsAway * periodFrames;
+        double error = frameIndex - nearestBeat;
+        if (Math.abs(error) > periodFrames * PLL_MAX_ERROR) {
+            // A hit landing between the beats says nothing about where the beats
+            // are, and letting it steer would slowly drag the grid off them.
+            misfitOnsets++;
+            return;
+        }
+        if (Math.abs(error) > periodFrames * PLL_NEAR_BEAT) misfitOnsets++;
+        else alignedOnsets++;
+
+        if (Math.abs(beatsAway) >= 1) {
+            // A phase error that grows with distance is a period error. This is
+            // what follows a drifting tempo, and what corrects a hand-tapped
+            // starting point that was never going to be exact.
+            periodFrames += (error / beatsAway) * PERIOD_GAIN;
+            periodFrames = Math.max(4, Math.min(CURVE_PER_SECOND * 2, periodFrames));
+            if (manualLock) lockedPeriodFrames = periodFrames;
+        }
+        phaseFrame += error * PHASE_GAIN;
+    }
+
+    // ------------------------------------------------------------------ tempo
+
+    private void estimateTempo() {
+        lastTempoFrame = curveBase + curveCount - 1;
+
+        // The one signal that means the grid itself is wrong is hits landing
+        // between its beats - unlike the autocorrelation, which cannot tell that
+        // apart from a song whose off-beats are simply loud.
+        int onsets = alignedOnsets + misfitOnsets;
+        // Only a fallback, and only without a media session: when the track is
+        // known, the level was chosen deliberately and re-locking on evidence
+        // that also fits a half-tempo reading just reintroduces the flipping.
+        if (periodFrames > 0 && onsets >= 6 && !manualLock && !Playback.available) {
+            misfitSeconds = misfitOnsets > alignedOnsets * 2 ? misfitSeconds + 1 : 0;
+            if (misfitSeconds >= 6) {
+                unlock();
+                misfitSeconds = 0;
+            }
+        }
+        alignedOnsets = 0;
+        misfitOnsets = 0;
+
+        if (!playing) return;
+        if (quietFrames > QUIET_FRAMES_TO_UNLOCK) {
+            unlock();
+            return;
+        }
+
+        int n = Math.min(curveCount, TEMPO_WINDOW);
+        double[] window = new double[n];
+        System.arraycopy(curve, curveCount - n, window, 0, n);
+        int windowStart = curveBase + curveCount - n;
+
+        // After a seek the tempo still holds; only the phase has to be found
+        // again, which is much cheaper than re-acquiring from nothing.
+        if (phaseUnknown && periodFrames > 0) {
+            double[] comb = bestPhase(window, (int) Math.round(periodFrames));
+            if (comb[0] > 0) {
+                startGridAt(windowStart + (int) comb[1]);
+                phaseUnknown = false;
+            }
+            return;
+        }
+
+        double mean = 0;
+        for (double value : window) mean += value;
+        mean /= n;
+        for (int i = 0; i < n; i++) window[i] -= mean;
+
+        int lagLo = Math.max(2, (int) (CURVE_PER_SECOND * 60.0 / BPM_MAX));
+        int lagHi = Math.min(n / 2, (int) (CURVE_PER_SECOND * 60.0 / BPM_MIN));
+        if (lagHi <= lagLo) return;
+
+        double bestScore = -1;
+        int bestLag = 0;
+        double scoreAtOurLag = 0;
+        double lagMean = 0;
+        int lagCount = 0;
+        int ourLag = periodFrames > 0 ? (int) Math.round(periodFrames) : -1;
+        for (int lag = lagLo; lag <= lagHi; lag++) {
+            double sum = 0;
+            for (int i = 0; i + lag < n; i++) sum += window[i] * window[i + lag];
+            sum /= (n - lag);
+            lagMean += sum;
+            lagCount++;
+            if (lag == ourLag) scoreAtOurLag = sum;
+            if (sum > bestScore) {
+                bestScore = sum;
+                bestLag = lag;
+            }
+        }
+        if (bestLag == 0) return;
+        lagMean = lagCount == 0 ? 0 : lagMean / lagCount;
+
+        // Does our own grid still explain what is playing? If some other period
+        // is a far better description, the music probably changed underneath us.
+        if (!manualLock
+                && !Playback.available      // with a media session, only a track change re-locks
+                && periodFrames > 0
+                && ourLag >= lagLo && ourLag <= lagHi
+                && scoreAtOurLag < bestScore * STALE_FALLBACK_RATIO) {
+            staleChecks++;
+            if (staleChecks >= STALE_CHECKS_TO_UNLOCK) {
+                unlock();
+                staleChecks = 0;
+                adopt(bestLag, (int) bestPhase(window, bestLag)[1], n);
+                return;
+            }
+        } else {
+            staleChecks = 0;
+        }
+
+        if (bestScore <= 0 || bestScore < lagMean * PEAK_PROMINENCE) {
+            // No findable pulse. Keep whatever the loop already has; if nothing,
+            // stay unlocked rather than inventing a grid.
+            if (periodFrames <= 0) unlock();
+            return;
+        }
+
+        double chosen = -1;
+        int chosenLag = bestLag;
+        int chosenPhase = 0;
+        for (int candidate : new int[]{bestLag / 2, bestLag, bestLag * 2}) {
+            if (candidate < lagLo || candidate > lagHi) continue;
+            double[] comb = bestPhase(window, candidate);
+            if (comb[0] > chosen) {
+                chosen = comb[0];
+                chosenLag = candidate;
+                chosenPhase = (int) comb[1];
+            }
+        }
+        if (chosenLag == 0) return;
+
+        if (manualLock) return;
+        if (periodFrames <= 0) {
+            adopt(chosenLag, chosenPhase, n);
+        } else if (!lockFrozen) {
+            // Still acquiring: follow the improving estimate, but keep the
+            // current phase so the grid does not jolt when the period refines.
+            double previous = periodFrames;
+            periodFrames = chosenLag;
+            lockedPeriodFrames = chosenLag;
+            double beats = Math.ceil((curveBase + curveCount - 1 - phaseFrame) / periodFrames);
+            int ahead = (int) Math.max(0, beats) * subdivisions;
+            nextEnergyIndex = ahead;
+            nextNoteIndex = ahead;
+            if (previous > 0 && Math.abs(chosenLag - previous) > 0.5) {
+                lastTempoFrame = curveBase + curveCount - 1;
+            }
+        }
+        if (curveCount >= TEMPO_WINDOW) lockFrozen = true;
+    }
+
+    private void adopt(int lag, int phaseOffset, int windowLength) {
+        int current = curveBase + curveCount - 1;
+        int windowStart = curveBase + curveCount - windowLength;
+        periodFrames = lag;
+        lockedPeriodFrames = lag;
+        halfTempo = false;
+        lockFrozen = false;
+        manualLock = false;
+        startGridAt(windowStart + phaseOffset);
+    }
+
+    /** Point the grid at the beat nearest to (but not before) the given frame. */
+    private void startGridAt(int onBeat) {
+        int current = curveBase + curveCount - 1;
+        int delta = Math.floorMod(onBeat - current, (int) Math.round(periodFrames));
+        phaseFrame = current + delta;
+        nextEnergyIndex = 0;
+        nextNoteIndex = leadPositions();
+    }
+
+    /** The first position far enough ahead that a player could see a note there. */
+    private int leadPositions() {
+        return (int) Math.ceil(MIN_LEAD_FRAMES / Math.max(1, slotStep()));
+    }
+
+    private void unlock() {
+        periodFrames = 0;
+        lockedPeriodFrames = 0;
+        halfTempo = false;
+        lockFrozen = false;
+        manualLock = false;
+        phaseFrame = -1;
+        nextNoteIndex = -1;
+        nextEnergyIndex = -1;
+    }
+
+    private static double[] bestPhase(double[] window, int period) {
+        double best = -1;
+        int bestOffset = 0;
+        for (int offset = 0; offset < period; offset++) {
+            double sum = 0;
+            int count = 0;
+            for (int i = offset; i < window.length; i += period) {
+                sum += window[i];
+                count++;
+            }
+            if (count < 4) continue;
+            double score = sum / count;
+            if (score > best) {
+                best = score;
+                bestOffset = offset;
+            }
+        }
+        return new double[]{best, bestOffset};
+    }
+
+    // ------------------------------------------------------------------ notes
+
+    /** Frames between two positions the chart may use. */
+    private double slotStep() {
+        return periodFrames / subdivisions;
+    }
+
+    private int slots() {
+        return BEATS_PER_BAR * subdivisions;
+    }
+
+    /** Where a position sits in the frame curve, given the grid as it is now. */
+    private double frameOf(int index) {
+        return phaseFrame + index * slotStep();
+    }
+
+    private int slotOf(int index) {
+        return Math.floorMod(index, slots());
+    }
+
+    /** Which position inside the beat, for a pattern that treats them differently. */
+    private int subdivisionOf(int index) {
+        return Math.floorMod(index, subdivisions);
+    }
+
+    /**
+     * Learn what each position in the bar usually holds.
+     *
+     * The window is a fraction of the spacing, not a fixed few milliseconds, so
+     * that neighbouring positions cannot both claim the same hit - but it is
+     * still a window around the grid, which means a hit landing far from every
+     * position is not recorded at all. That is the honest cost of committing to
+     * a grid, and the reason the grid has to stay locked.
+     *
+     * Kick and snare are learned separately, because which one it is decides
+     * what the note means - and the combined curve, which the tempo loop uses,
+     * has already thrown that away by the time it gets here.
+     */
+    private void recordBeatEnergy(int frameIndex) {
+        if (periodFrames <= 0 || nextEnergyIndex < 0) return;
+        double step = slotStep();
+        // How far from a position an onset may sit and still be counted as
+        // happening there. It is the loop's own idea of "on the beat", not a
+        // fraction of the spacing: a smaller window loses sharp drums entirely,
+        // and with more positions per beat it would also fall between them.
+        int half = (int) Math.round(periodFrames * PLL_NEAR_BEAT);
+        half = Math.max(2, Math.min(half, (int) Math.round(step / 2) - 1));
+        // Learn a position only once the audio around it has actually been
+        // heard. A hit shows up in the window that ends just after it, so
+        // sampling at the moment a position arrives looks only at what came
+        // before it and finds nothing - which is what "the drum is there but the
+        // chart is empty" turned out to be.
+        int lag = FFT_SIZE / HOP_SIZE;
+        while (frameOf(nextEnergyIndex) + lag <= frameIndex) {
+            int center = (int) Math.round(frameOf(nextEnergyIndex)) - curveBase;
+            double peak = 0;
+            double kick = 0;
+            double snare = 0;
+            for (int i = Math.max(0, center - half);
+                 i < Math.min(curveCount, center + half + 1); i++) {
+                peak = Math.max(peak, curve[i]);
+                kick = Math.max(kick, kickCurve[i]);
+                snare = Math.max(snare, snareCurve[i]);
+            }
+            int slot = slotOf(nextEnergyIndex);
+            int subdivision = subdivisionOf(nextEnergyIndex);
+            if (subdivision == 0) {
+                // A beat has just started, so the one before it is complete and
+                // can be filed as the figure the player will hear again.
+                closeFigure();
+                currentFigureBeat = Math.floorDiv(nextEnergyIndex, subdivisions) % BEATS_PER_BAR;
+                currentFigure = 0;
+            }
+            if (peak > 0 && averageEnergy > 0 && peak >= averageEnergy * FIGURE_SHARE) {
+                currentFigure |= 1 << subdivision;
+            }
+            slotRecent[slot] = peak;
+            slotRecentKick[slot] = kick;
+            slotRecentSnare[slot] = snare;
+            slotEnergy[slot] = slotEnergy[slot] * (1 - SLOT_EMA) + peak * SLOT_EMA;
+            slotKick[slot] = slotKick[slot] * (1 - SLOT_EMA) + kick * SLOT_EMA;
+            slotSnare[slot] = slotSnare[slot] * (1 - SLOT_EMA) + snare * SLOT_EMA;
+            slotCount[slot]++;
+            averageEnergy = averageEnergy * (1 - SLOT_EMA) + peak * SLOT_EMA;
+            nextEnergyIndex++;
+        }
+    }
+
+    /**
+     * File the beat that just finished as a figure: four places, each on or off.
+     *
+     * Old figures fade rather than being forgotten outright, so a song that
+     * changes what it plays changes what is predicted, without the first bar of
+     * the new part having to be right before it can be played at all.
+     */
+    private void closeFigure() {
+        if (currentFigureBeat < 0) return;
+        double[] counts = figureCounts[currentFigureBeat];
+        for (int i = 0; i < counts.length; i++) counts[i] *= FIGURE_DECAY;
+        counts[currentFigure] += 1;
+
+        int best = 0;
+        double bestCount = -1;
+        for (int i = 0; i < counts.length; i++) {
+            if (counts[i] > bestCount) {
+                bestCount = counts[i];
+                best = i;
+            }
+        }
+        figurePrediction[currentFigureBeat] = best;
+        // A figure of "nothing happens here" is not knowledge, it is the absence
+        // of it: something in the song has to have been heard for the analysis to
+        // have an opinion. Taking an empty figure seriously is how the lane ends
+        // up completely blank - the prediction says nothing, so nothing is
+        // written, and the fallback that would have found notes never runs.
+        figureKnown[currentFigureBeat] = bestCount >= FIGURE_MIN_EVIDENCE && best != 0;
+        currentFigureBeat = -1;
+    }
+
+    private void scheduleBeats(int frameIndex) {
+        if (periodFrames <= 0 || nextNoteIndex < 0) return;
+        if (!playing || quietFrames > 0) {
+            beats.clear();
+            return;
+        }
+        double limit = frameIndex + LEAD_FRAMES;
+        while (frameOf(nextNoteIndex) <= limit) {
+            double at = frameOf(nextNoteIndex);
+            int subdivision = subdivisionOf(nextNoteIndex);
+            if (subdivision == 0) {
+                // Which beat of the bar this is, and therefore which figure the
+                // music is about to play there.
+                int beatInBar = Math.floorDiv(nextNoteIndex, subdivisions) % BEATS_PER_BAR;
+                predictedFigure = figurePrediction[beatInBar];
+                predictedFigureKnown = figureKnown[beatInBar];
+            }
+            boolean enoughLead = at >= frameIndex + MIN_LEAD_FRAMES;
+            if (enoughLead) {
+                int slot = slotOf(nextNoteIndex);
+                boolean known = slotCount[slot] >= 2;
+                beats.add(new Beat(frameTime(at), nextNoteIndex, slot, subdivision,
+                        predictedFigureKnown,
+                        predictedFigureKnown && (predictedFigure & (1 << subdivision)) != 0,
+                        known ? lastBar(slotRecent[slot], slotEnergy[slot]) : -1,
+                        known ? lastBar(slotRecentKick[slot], slotKick[slot]) : -1,
+                        known ? lastBar(slotRecentSnare[slot], slotSnare[slot]) : -1,
+                        averageEnergy));
+            } else {
+                // The grid moved back under the note that was about to be
+                // written, and a note that cannot be seen before it arrives is
+                // worse than a note that is missing.
+                droppedForLead++;
+            }
+            nextNoteIndex++;
+        }
+    }
+
+    /** Positions thrown away because they could not be shown in time. */
+    public int droppedForLead() {
+        return droppedForLead;
+    }
+
+    /**
+     * What the coming bar is expected to hold at a position.
+     *
+     * The bar just gone is the answer, and the song-so-far average is only what
+     * this falls back on for a position that has not been round once yet. That
+     * ordering is the whole point: the average is what made the chart repeat
+     * while the music moved.
+     */
+    private static double lastBar(double recent, double learned) {
+        return useSongAverage || recent < 0 ? learned : recent;
+    }
+
+    /** Measurement switch: predict from the song-so-far average instead of the last bar. */
+    public static boolean useSongAverage;
+
+    // ------------------------------------------------------------------- read
+
+    public double audioTime() {
+        long nanos = lastPushNanos;
+        if (nanos == 0) return samplesSeen / (double) SAMPLE_RATE;
+        double elapsed = (System.nanoTime() - nanos) / 1e9;
+        if (elapsed <= 0) return lastPushSeconds;
+        return lastPushSeconds + Math.min(elapsed, MAX_CLOCK_LEAD_SECONDS);
+    }
+
+    public double bpm() {
+        return periodFrames <= 0 ? 0 : 60.0 * CURVE_PER_SECOND / periodFrames;
+    }
+
+    /**
+     * What to put on screen.
+     *
+     * The period fine-tunes itself continuously, which would make a raw readout
+     * flicker by fractions of a BPM. Showing a value that only moves when the
+     * tempo really has moved keeps the number readable without ever lying about
+     * where the notes actually are.
+     */
+    public synchronized double displayBpm() {
+        double current = bpm();
+        if (current <= 0) {
+            shownBpm = 0;
+            return 0;
+        }
+        if (shownBpm <= 0 || Math.abs(current - shownBpm) >= 1.5) {
+            shownBpm = shownBpm <= 0 ? current : shownBpm + (current - shownBpm) * 0.5;
+        }
+        return shownBpm;
+    }
+
+    public int periodFrames() {
+        return (int) Math.round(periodFrames);
+    }
+
+    /**
+     * Positions per beat the chart may commit to.
+     *
+     * Changing it throws away what has been learned about the bar, because the
+     * positions no longer mean the same thing. Nothing else about the grid moves
+     * - the tempo and the phase are the same music either way.
+     */
+    public synchronized void setSubdivisions(int value) {
+        int clamped = Math.max(1, Math.min(MAX_SLOTS / BEATS_PER_BAR, value));
+        if (clamped == subdivisions) return;
+        subdivisions = clamped;
+        java.util.Arrays.fill(slotEnergy, 0);
+        java.util.Arrays.fill(slotKick, 0);
+        java.util.Arrays.fill(slotSnare, 0);
+        java.util.Arrays.fill(slotCount, 0);
+        java.util.Arrays.fill(slotRecent, 0);
+        java.util.Arrays.fill(slotRecentKick, 0);
+        java.util.Arrays.fill(slotRecentSnare, 0);
+        resetFigures();
+        // The positions are a different lattice now, so where the counters were
+        // pointing no longer means anything; the phase is unchanged, so position
+        // zero is still the beat they were locked to.
+        if (periodFrames > 0) {
+            nextEnergyIndex = 0;
+            nextNoteIndex = leadPositions();
+        }
+    }
+
+    public int subdivisions() {
+        return subdivisions;
+    }
+
+    /** How many positions one bar is divided into, as the grid stands now. */
+    public int positionsPerBar() {
+        return slots();
+    }
+
+    /**
+     * The figure the analysis expects at each beat of the bar, as text.
+     *
+     * Written for the screen: it is the only way to see what the prediction
+     * actually believes, and the difference between "the chart is wrong" and
+     * "the analysis believes something wrong" is not visible any other way.
+     */
+    public synchronized String describeFigures() {
+        StringBuilder text = new StringBuilder();
+        for (int beat = 0; beat < BEATS_PER_BAR; beat++) {
+            if (beat > 0) text.append(' ');
+            if (!figureKnown[beat]) {
+                for (int i = 0; i < subdivisions; i++) text.append('?');
+                continue;
+            }
+            for (int i = 0; i < subdivisions; i++) {
+                text.append((figurePrediction[beat] & (1 << i)) != 0 ? 'X' : '.');
+            }
+        }
+        return text.toString();
+    }
+
+    /**
+     * Which grid position a moment in the audio falls nearest to.
+     *
+     * This is what lets a tap be understood as "the player hit this place in the
+     * bar" rather than merely "the player touched the screen at this time", which
+     * is the whole difference between a loop machine and a tap counter. The count
+     * runs from the phase origin rather than the bar, so the bar a tap belongs to
+     * falls out of dividing.
+     *
+     * @return the position index, or {@link Integer#MIN_VALUE} before the grid is up
+     */
+    public int positionAt(double audioSeconds) {
+        double step = slotStep();
+        double phase = phaseFrame;
+        if (periodFrames <= 0 || phase < 0 || step <= 0) return Integer.MIN_VALUE;
+        double frames = (audioSeconds * SAMPLE_RATE - FFT_SIZE) / (double) HOP_SIZE;
+        return (int) Math.round((frames - phase) / step);
+    }
+
+    public boolean locked() {
+        return periodFrames > 0;
+    }
+
+    public boolean quiet() {
+        return quietFrames > QUIET_FRAMES_TO_UNLOCK;
+    }
+
+    public double level() {
+        return level;
+    }
+
+    public double kickLevel() {
+        return kickLevel;
+    }
+
+    public double snareLevel() {
+        return snareLevel;
+    }
+
+    public double latestStrength() {
+        return curveCount == 0 ? 0 : curve[curveCount - 1];
+    }
+
+    // ------------------------------------------------- events from the player
+
+    /**
+     * The media session knows what the audio cannot: these are the player's
+     * actions, not musical features. Reacting to them directly is both faster
+     * and more reliable than inferring them from silence and drift.
+     */
+    public synchronized void setPlaying(boolean isPlaying) {
+        playing = isPlaying;
+        if (!isPlaying) beats.clear();
+    }
+
+    public synchronized void onTrackChanged() {
+        // A new song plays new figures. Note that this is here and not in
+        // unlock(): the grid comes and goes - silence, a stumble in the tempo
+        // estimate - but the figure the music plays is the song's, not the
+        // loop's, and throwing it away every time the grid blinked meant it was
+        // never learned at all.
+        resetFigures();
+        unlock();
+    }
+
+    /**
+     * Take a tempo established earlier (or by the player's own tapping) and use
+     * it straight away, only looking for the phase.
+     */
+    public synchronized void lockTempo(double bpmValue, boolean manual) {
+        if (bpmValue <= 0) return;
+        periodFrames = CURVE_PER_SECOND * 60.0 / bpmValue;
+        lockedPeriodFrames = periodFrames;
+        halfTempo = false;
+        lockFrozen = true;
+        manualLock = manual;
+        phaseUnknown = true;
+        beats.clear();
+        nextNoteIndex = -1;
+        nextEnergyIndex = -1;
+    }
+
+    public synchronized void onSeek() {
+        beats.clear();
+        if (periodFrames > 0) {
+            phaseUnknown = true;   // keep the tempo, find the phase again
+            nextNoteIndex = -1;
+            nextEnergyIndex = -1;
+        } else {
+            unlock();
+        }
+    }
+
+    /**
+     * Manual escape hatch.
+     *
+     * Octave errors are the one failure the estimator cannot reliably fix by
+     * itself: a song can genuinely sit at 80 or 160 BPM and both look plausible
+     * from the audio. Rather than letting the lock flip between them mid-song,
+     * it holds one and the player can halve or restore it.
+     */
+    public void toggleHalfTempo() {
+        if (lockedPeriodFrames <= 0) return;
+        halfTempo = !halfTempo;
+        periodFrames = halfTempo ? lockedPeriodFrames * 2 : lockedPeriodFrames;
+        if (phaseFrame >= 0) {
+            int current = curveBase + curveCount - 1;
+            double beats = Math.ceil((current - phaseFrame) / periodFrames);
+            int ahead = (int) Math.max(0, beats) * subdivisions;
+            nextEnergyIndex = ahead;
+            nextNoteIndex = ahead;
+        }
+    }
+
+    public boolean halfTempo() {
+        return halfTempo;
+    }
+
+    /** True when the tempo came from the player tapping it, not from the estimator. */
+    public boolean manualLock() {
+        return manualLock;
+    }
+
+    public boolean tapTempoActive() {
+        return tapTempoMode;
+    }
+
+    public int tapTempoCount() {
+        return tapCount;
+    }
+
+    public void beginTapTempo() {
+        tapTempoMode = true;
+        tapCount = 0;
+    }
+
+    public void cancelTapTempo() {
+        tapTempoMode = false;
+        tapCount = 0;
+    }
+
+    /**
+     * Record a beat tap. Returns true once the tempo has been taken from them.
+     */
+    public boolean onTapTempo(double audioSeconds) {
+        if (!tapTempoMode) return false;
+        if (tapCount == tapSeconds.length) {
+            System.arraycopy(tapSeconds, 1, tapSeconds, 0, tapSeconds.length - 1);
+            tapCount--;
+        }
+        tapSeconds[tapCount++] = audioSeconds;
+        if (tapCount < TAPS_NEEDED) return false;
+
+        double[] intervals = new double[tapCount - 1];
+        for (int i = 1; i < tapCount; i++) intervals[i - 1] = tapSeconds[i] - tapSeconds[i - 1];
+        java.util.Arrays.sort(intervals);
+        double median = intervals[intervals.length / 2];
+        if (median < 0.2 || median > 2.0) return false; // not a plausible beat
+
+        periodFrames = median * CURVE_PER_SECOND;
+        lockedPeriodFrames = periodFrames;
+        halfTempo = false;
+        // Trust the taps over the estimator: the player is the better sensor.
+        lockFrozen = true;
+        manualLock = true;
+        phaseFrame = (tapSeconds[tapCount - 1] * SAMPLE_RATE - FFT_SIZE) / (double) HOP_SIZE;
+
+        // The tap is the beat itself, so the next thing to measure is one beat on.
+        nextEnergyIndex = subdivisions;
+        nextNoteIndex = leadPositions();
+        tapTempoMode = false;
+        tapCount = 0;
+        return true;
+    }
+
+    /** Beats predicted since the last call, oldest first. */
+    public synchronized List<Beat> drainBeats() {
+        if (beats.isEmpty()) return java.util.Collections.emptyList();
+        List<Beat> out = new ArrayList<>(beats);
+        beats.clear();
+        return out;
+    }
+
+}
