@@ -100,3 +100,7 @@ annotation_tool/demo/*.ogg
 _local/
 _charts_tmp/
 capture_probe/
+
+# 验证器已独立成仓库（github.com/lixiang021011-sketch/mgmcs-validator）。
+# 这里只留历史，不再跟踪；本地文件照旧在。
+mgmcs_validator/
